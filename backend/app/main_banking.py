@@ -1,0 +1,142 @@
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
+from datetime import datetime
+import os
+
+from .storage.memory_adapter import db
+from .routes import (
+    auth, accounts, transactions, categories,
+    budgets, goals, recurring, contacts, messages, conversations,
+    notifications, analytics, analytics_export, users, search, notes,
+    cards, savings, business, subscriptions, exports,
+    security, banking, payment_methods, credit, transfers, p2p, uploads, crypto, insurance, loans, unified,
+    investments, currency_converter, credit_cards
+)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    db.create_database()
+    # Populate with initial data using memory-based system
+    db.populate_database(seed=42)
+    yield
+    # Shutdown
+
+app = FastAPI(
+    title="Banking & Finance Application API", 
+    version="1.0.0",
+    description="Comprehensive banking, budgeting, and finance management API",
+    lifespan=lifespan
+)
+
+# Add CORS middleware first (so it executes last in the response chain)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3001", "http://localhost:3000"],  # Allow specific origins
+    allow_credentials=True,  # Enable credentials
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Core Routers
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(accounts.router, prefix="/api/accounts", tags=["Accounts"])
+app.include_router(transactions.router, prefix="/api/transactions", tags=["Transactions"])
+app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
+
+# Financial Planning
+app.include_router(budgets.router, prefix="/api/budgets", tags=["Budgets"])
+app.include_router(goals.router, prefix="/api/goals", tags=["Goals"])
+app.include_router(recurring.router, prefix="/api/recurring", tags=["Recurring Transactions"])
+
+# Transfers and Payments
+app.include_router(transfers.router, prefix="/api/transfers", tags=["Transfers & Payments"])
+app.include_router(p2p.router, prefix="/api/p2p", tags=["P2P Payments"])
+
+# Social & Messaging
+app.include_router(contacts.router, prefix="/api/contacts", tags=["Contacts"])
+app.include_router(messages.router, prefix="/api/messages", tags=["Messaging"])
+app.include_router(conversations.router, prefix="/api/conversations", tags=["Conversations"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+
+# Analytics & Insights
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(analytics_export.router, prefix="/api/analytics", tags=["Analytics Export"])
+app.include_router(search.router, prefix="/api/search", tags=["Search"])
+
+# User Management
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(notes.router, prefix="/api/notes", tags=["Notes"])
+
+# Payment & Security
+app.include_router(payment_methods.router, prefix="/api/payment-methods", tags=["Payment Methods"])
+app.include_router(security.router, prefix="/api/security", tags=["Security"])
+
+# External Integrations
+app.include_router(exports.router, prefix="/api/exports", tags=["Import/Export"])
+app.include_router(banking.router, prefix="/api/banking", tags=["Banking Integration"])
+
+# File Uploads
+app.include_router(uploads.router, prefix="/api/uploads", tags=["File Uploads"])
+
+# New Feature Routes
+app.include_router(cards.router, prefix="/api/cards", tags=["Card Management"])
+app.include_router(credit.router, prefix="/api/credit", tags=["Credit Management"])
+app.include_router(savings.router, prefix="/api/savings", tags=["Smart Savings"])
+app.include_router(business.router, prefix="/api/business", tags=["Business Banking"])
+app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["Subscription Management"])
+app.include_router(crypto.router, prefix="/api/crypto", tags=["Digital Assets"])
+app.include_router(insurance.router, prefix="/api/insurance", tags=["Insurance Management"])
+app.include_router(loans.router, prefix="/api/loans", tags=["Loan Management"])
+app.include_router(unified.router, prefix="/api/unified", tags=["Unified Financial System"])
+app.include_router(investments.router, prefix="/api/investments", tags=["Investment Management"])
+app.include_router(currency_converter.router, prefix="/api/currency-converter", tags=["Currency Converter"])
+app.include_router(credit_cards.router, prefix="/api/credit-cards", tags=["Credit Cards"])
+
+
+# Mount static files for uploads
+uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+@app.get("/")
+def read_root():
+    return {
+        "message": "Banking & Finance API is running",
+        "version": "1.0.0",
+        "endpoints": {
+            "auth": "/api/auth",
+            "accounts": "/api/accounts",
+            "transactions": "/api/transactions",
+            "budgets": "/api/budgets",
+            "goals": "/api/goals",
+            "contacts": "/api/contacts",
+            "messages": "/api/messages",
+            "notes": "/api/notes",
+            "analytics": "/api/analytics",
+            "cards": "/api/cards",
+            "credit": "/api/credit",
+            "savings": "/api/savings",
+            "business": "/api/business",
+            "subscriptions": "/api/subscriptions",
+            "crypto": "/api/crypto",
+            "insurance": "/api/insurance",
+            "loans": "/api/loans",
+            "unified": "/api/unified",
+            "investments": "/api/investments",
+            "currency_converter": "/api/currency-converter",
+            "docs": "/docs",
+        }
+    }
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "database": "connected",
+        "timestamp": datetime.utcnow().isoformat()
+    }
