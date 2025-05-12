@@ -1,0 +1,18 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+pydantic==2.10.5
+# sqlalchemy==2.0.23  # Not needed - using memory storage
+faker==22.6.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+python-multipart==0.0.6
+email-validator==2.1.0
+pandas==2.2.3
+python-dateutil==2.8.2
+pyotp==2.9.0
+qrcode==7.4.2
+reportlab==4.4.2
+Pillow==11.2.1
+requests==2.32.4
+PyPDF2==3.0.1
