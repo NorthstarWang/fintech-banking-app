@@ -1,0 +1,413 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from typing import List, Optional, Any
+from datetime import datetime, date
+
+from ..storage.memory_adapter import db, desc
+from ..models import Goal, GoalContribution, Account, Transaction
+from ..models import (
+    GoalCreate, GoalUpdate, GoalContribute, GoalResponse, GoalSummary
+)
+from ..models.enums import GoalStatus
+from ..utils.auth import get_current_user
+from ..utils.validators import Validators, ValidationError
+from ..utils.session_manager import session_manager
+
+router = APIRouter()
+
+@router.get("/debug")
+async def debug_goals():
+    """Debug endpoint to verify correct router is loaded"""
+    from ..repositories.data_manager import data_manager
+    return {
+        "message": "This is the real goals router",
+        "total_goals": len(data_manager.goals),
+        "file": __file__
+    }
+
+def calculate_goal_progress(goal: Goal) -> float:
+    """Calculate goal progress percentage"""
+    if goal.target_amount <= 0:
+        return 0.0
+    return min((goal.current_amount / goal.target_amount) * 100, 100.0)
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_goal(
+    request: Request,
+    goal_data: GoalCreate,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Create a new financial goal"""
+    try:
+        session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
+        
+        # Log incoming request data
+        )
+        
+        # Validate account if linked
+        if goal_data.account_id:
+            account = Validators.validate_account_ownership(
+                db_session,
+                goal_data.account_id,
+                current_user['user_id']
+            )
+        
+        # Validate allocation rules if account is linked
+        if goal_data.account_id and goal_data.auto_allocate_percentage:
+            from ..services.goal_update_service import GoalUpdateService
+            validation = GoalUpdateService.validate_allocation_rules(
+                db_session,
+                goal_data.account_id,
+                None,  # No existing goal ID for new goal
+                goal_data.auto_allocate_percentage
+            )
+            if not validation['is_valid']:
+                raise ValidationError(validation['message'])
+        
+        # Create goal
+        initial_amount = goal_data.initial_amount or 0.0
+        new_goal = Goal(
+            user_id=current_user['user_id'],
+            name=goal_data.name,
+            description=goal_data.description,
+            target_amount=goal_data.target_amount,
+            current_amount=initial_amount,
+            target_date=goal_data.target_date,
+            category=goal_data.category or 'other',
+            priority=goal_data.priority or 'medium',
+            status=GoalStatus.ACTIVE.value,
+            account_id=goal_data.account_id,
+            auto_transfer_amount=goal_data.auto_transfer_amount,
+            auto_transfer_frequency=goal_data.auto_transfer_frequency,
+            # New allocation fields
+            auto_allocate_percentage=goal_data.auto_allocate_percentage,
+            auto_allocate_fixed_amount=goal_data.auto_allocate_fixed_amount,
+            allocation_priority=goal_data.allocation_priority or 1,
+            allocation_source_types=goal_data.allocation_source_types or ['income', 'deposit']
+        )
+        
+        db_session.add(new_goal)
+        db_session.commit()
+        
+        db_session.refresh(new_goal)
+        
+        # Log goal creation
+        # Get values safely with proper None handling
+        goal_id = str(getattr(new_goal, 'id', 'unknown'))
+        goal_name = getattr(new_goal, 'name', 'Unknown Goal') or 'Unknown Goal'
+        target_amount_val = getattr(new_goal, 'target_amount', None)
+        target_amount = float(target_amount_val) if target_amount_val is not None else 0.0
+        target_date = getattr(new_goal, 'target_date', None)
+        target_date_str = target_date.isoformat() if target_date else "No target date"
+        
+            goal_id,
+            str(current_user['user_id']),
+            goal_name,
+            target_amount,
+            target_date_str
+        )
+        
+        # Create response
+        response = GoalResponse.from_orm(new_goal)
+        response.progress_percentage = calculate_goal_progress(new_goal)
+        
+        return response
+    except ValidationError as e:
+            }
+        )
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/", response_model=List[GoalResponse])
+async def get_goals(
+    status: Optional[GoalStatus] = None,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Get all user goals"""
+    query = db_session.query(Goal).filter(Goal.user_id == current_user['user_id'])
+    
+    if status:
+        query = query.filter(Goal.status == status)
+    
+    goals = query.order_by(Goal.created_at.desc()).all()
+    
+    results = []
+    for goal in goals:
+        response = GoalResponse.from_orm(goal)
+        response.progress_percentage = calculate_goal_progress(goal)
+        results.append(response)
+    
+    return results
+
+@router.get("/summary", response_model=GoalSummary)
+async def get_goals_summary(
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Get summary of all goals"""
+    goals = db_session.query(Goal).filter(
+        Goal.user_id == current_user['user_id']
+    ).all()
+    
+    total_goals = len(goals)
+    active_goals = sum(1 for g in goals if g.status == GoalStatus.ACTIVE.value)
+    completed_goals = sum(1 for g in goals if g.status == GoalStatus.COMPLETED.value)
+    total_target = sum(g.target_amount for g in goals)
+    total_saved = sum(g.current_amount for g in goals)
+    
+    goal_responses = []
+    for goal in goals:
+        response = GoalResponse.from_orm(goal)
+        response.progress_percentage = calculate_goal_progress(goal)
+        goal_responses.append(response)
+    
+    return GoalSummary(
+        total_goals=total_goals,
+        active_goals=active_goals,
+        completed_goals=completed_goals,
+        total_target=round(total_target, 2),
+        total_saved=round(total_saved, 2),
+        goals=goal_responses
+    )
+
+@router.get("/{goal_id}", response_model=GoalResponse)
+async def get_goal(
+    goal_id: int,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Get specific goal details"""
+    goal = db_session.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user['user_id']
+    ).first()
+    
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal not found"
+        )
+    
+    response = GoalResponse.from_orm(goal)
+    response.progress_percentage = calculate_goal_progress(goal)
+    
+    return response
+
+@router.put("/{goal_id}", response_model=GoalResponse)
+async def update_goal(
+    request: Request,
+    goal_id: int,
+    update_data: GoalUpdate,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Update goal details"""
+    try:
+        session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
+        
+        # Log incoming request data
+        )
+        
+        goal = db_session.query(Goal).filter(
+            Goal.id == goal_id,
+            Goal.user_id == current_user['user_id']
+        ).first()
+        
+        if not goal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Goal not found"
+            )
+        
+        # Validate allocation rules if updating percentage allocation
+        if 'auto_allocate_percentage' in update_data.dict(exclude_unset=True) and goal.account_id:
+            from ..services.goal_update_service import GoalUpdateService
+            validation = GoalUpdateService.validate_allocation_rules(
+                db_session,
+                goal.account_id,
+                goal_id,
+                update_data.auto_allocate_percentage
+            )
+            if not validation['is_valid']:
+                raise ValidationError(validation['message'])
+        
+        # Update fields
+        update_dict = update_data.dict(exclude_unset=True)
+        for field, value in update_dict.items():
+            if hasattr(goal, field) and value is not None:
+                setattr(goal, field, value)
+        
+        # Check if goal is completed
+        if goal.current_amount >= goal.target_amount and goal.status == GoalStatus.ACTIVE.value:
+            goal.status = GoalStatus.COMPLETED.value
+            goal.completed_at = datetime.utcnow()
+        
+        goal.updated_at = datetime.utcnow()
+        db_session.commit()
+        db_session.refresh(goal)
+        
+        # Log successful update
+            "goals",
+            str(goal.id),
+            "update",
+            f"Goal '{goal.name}' updated successfully",
+            update_dict
+        )
+        
+        response = GoalResponse.from_orm(goal)
+        response.progress_percentage = calculate_goal_progress(goal)
+        
+        return response
+    except HTTPException:
+        raise
+    except Exception as e:
+            }
+        )
+        raise HTTPException(status_code=500, detail="Failed to update goal. Please try again.")
+
+@router.post("/{goal_id}/contribute", response_model=GoalResponse)
+async def contribute_to_goal(
+    request: Request,
+    goal_id: int,
+    contribution: GoalContribute,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Add contribution to a goal"""
+    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
+    
+    goal = db_session.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user['user_id']
+    ).first()
+    
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal not found"
+        )
+    
+    if goal.status != GoalStatus.ACTIVE.value:
+        raise ValidationError("Can only contribute to active goals")
+    
+    # Create contribution record
+    new_contribution = GoalContribution(
+        goal_id=goal_id,
+        amount=contribution.amount,
+        contribution_date=datetime.utcnow(),
+        notes=contribution.notes
+    )
+    
+    # Update goal current amount
+    goal.current_amount += contribution.amount
+    
+    # Check if goal is completed
+    if goal.current_amount >= goal.target_amount:
+        goal.status = GoalStatus.COMPLETED.value
+        goal.completed_at = datetime.utcnow()
+    
+    db_session.add(new_contribution)
+    db_session.commit()
+    db_session.refresh(goal)
+    
+    # Log contribution
+        str(goal_id),
+        contribution.amount,
+        goal.current_amount,
+        goal.target_amount
+    )
+    
+    response = GoalResponse.from_orm(goal)
+    response.progress_percentage = calculate_goal_progress(goal)
+    
+    return response
+
+@router.get("/{goal_id}/contributions")
+async def get_goal_contributions(
+    goal_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Get contribution history for a goal"""
+    goal = db_session.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user['user_id']
+    ).first()
+    
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal not found"
+        )
+    
+    contributions = db_session.query(GoalContribution).filter(
+        GoalContribution.goal_id == goal_id
+    ).order_by(GoalContribution.contribution_date.desc()).limit(limit).all()
+    
+    return {
+        "goal_id": goal_id,
+        "goal_name": goal.name,
+        "contributions": [
+            for c in contributions
+        ]
+    }
+
+@router.delete("/{goal_id}")
+async def delete_goal(
+    request: Request,
+    goal_id: int,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Delete (cancel) a goal"""
+    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
+    
+    goal = db_session.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == current_user['user_id']
+    ).first()
+    
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal not found"
+        )
+    
+    # Cancel instead of hard delete
+    goal.status = GoalStatus.CANCELLED.value
+    goal.updated_at = datetime.utcnow()
+    db_session.commit()
+    
+    # Log deletion
+        "goals",
+        str(goal_id),
+        "update",
+        f"Goal '{goal.name}' cancelled",
+        {"status": "CANCELLED"}
+    )
+    
+    return {"message": "Goal cancelled successfully"}
+
+@router.get("/allocation-summary/{account_id}")
+async def get_allocation_summary(
+    account_id: int,
+    current_user: dict = Depends(get_current_user),
+    db_session: Any = Depends(db.get_db_dependency)
+):
+    """Get automatic allocation summary for an account"""
+    # Validate account ownership
+    account = Validators.validate_account_ownership(
+        db_session,
+        account_id,
+        current_user['user_id']
+    )
+    
+    from ..services.goal_update_service import GoalUpdateService
+    summary = GoalUpdateService.get_allocation_summary(db_session, account_id)
+    
+    return summary
