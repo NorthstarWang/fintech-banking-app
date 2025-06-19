@@ -1,0 +1,1077 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  PiggyBank,
+  Target,
+  DollarSign,
+  TrendingDown,
+  AlertCircle,
+  Plus,
+  ShoppingBag,
+  Coffee,
+  Car,
+  Home,
+  Zap,
+  Music,
+  Heart,
+  Plane,
+  Gift,
+  Briefcase,
+  RefreshCw
+} from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
+import DatePicker from '@/components/ui/DatePicker';
+import Dropdown from '@/components/ui/Dropdown';
+import BudgetCategoryCard from '@/components/budget/BudgetCategoryCard';
+import BudgetOverview from '@/components/budget/BudgetOverview';
+import BudgetGoals from '@/components/budget/BudgetGoals';
+import BudgetErrorBoundary from '@/components/budget/BudgetErrorBoundary';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAlert } from '@/contexts/AlertContext';
+import { 
+  budgetsService,
+  goalsService,
+  categoriesService,
+  transactionsService,
+  Goal,
+  BudgetSummary,
+  GoalSummary,
+  Category
+} from '@/lib/api';
+
+export interface BudgetCategory {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  color: string;
+  allocated: number;
+  spent: number;
+  remaining: number;
+  percentage: number;
+  transactions: number;
+}
+
+export interface BudgetGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  category: string;
+  progress: number;
+  monthlyContribution: number;
+  status: 'on-track' | 'at-risk' | 'completed';
+}
+
+export default function BudgetPage() {
+  const { user } = useAuth();
+  const { showError, showSuccess } = useAlert();
+  const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
+  const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('quarter');
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [goalSummary, setGoalSummary] = useState<GoalSummary | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [editingGoal, setEditingGoal] = useState<BudgetGoal | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingBudget, setDeletingBudget] = useState<BudgetCategory | null>(null);
+  const [showDeleteGoalConfirm, setShowDeleteGoalConfirm] = useState(false);
+  const [deletingGoal, setDeletingGoal] = useState<BudgetGoal | null>(null);
+  
+  // Form state for budget modal
+  const [budgetForm, setBudgetForm] = useState({
+    categoryId: '',
+    amount: '',
+    period: 'monthly' as 'monthly' | 'weekly' | 'yearly'
+  });
+
+  // Form state for goal modal
+  const [goalForm, setGoalForm] = useState({
+    name: '',
+    targetAmount: '',
+    currentAmount: '',
+    targetDate: '',
+    category: ''
+  });
+
+  const categoryIcons: { [key: string]: React.ReactNode } = {
+    'Shopping': <ShoppingBag className="w-5 h-5" />,
+    'Groceries': <ShoppingBag className="w-5 h-5" />,
+    'Dining': <Coffee className="w-5 h-5" />,
+    'Transportation': <Car className="w-5 h-5" />,
+    'Housing': <Home className="w-5 h-5" />,
+    'Utilities': <Zap className="w-5 h-5" />,
+    'Entertainment': <Music className="w-5 h-5" />,
+    'Healthcare': <Heart className="w-5 h-5" />,
+    'Travel': <Plane className="w-5 h-5" />,
+    'Business': <Briefcase className="w-5 h-5" />,
+    'Gifts': <Gift className="w-5 h-5" />,
+  };
+
+  const categoryColors: { [key: string]: string } = {
+    'Shopping': 'from-[var(--cat-indigo)] to-[var(--cat-indigo)]/80',
+    'Groceries': 'from-[var(--cat-emerald)] to-[var(--cat-emerald)]/80',
+    'Dining': 'from-[var(--cat-amber)] to-[var(--cat-amber)]/80',
+    'Transportation': 'from-[var(--cat-blue)] to-[var(--cat-blue)]/80',
+    'Housing': 'from-[var(--cat-emerald)] to-[var(--cat-teal)]/80',
+    'Utilities': 'from-[var(--cat-teal)] to-[var(--cat-teal)]/80',
+    'Entertainment': 'from-[var(--cat-pink)] to-[var(--cat-pink)]/80',
+    'Healthcare': 'from-[var(--cat-pink)] to-[var(--cat-red)]/80',
+    'Travel': 'from-[var(--cat-blue)] to-[var(--cat-indigo)]/80',
+    'Business': 'from-[var(--cat-indigo)] to-[var(--cat-navy)]/80',
+    'Gifts': 'from-[var(--cat-amber)] to-[var(--cat-yellow)]/80',
+  };
+
+  useEffect(() => {
+      text: `User ${user?.username || 'unknown'} viewed budget page`,
+      page_name: 'Budget',
+      user_id: user?.id,
+      default_period: selectedPeriod,
+      timestamp: new Date().toISOString()
+    });
+  }, [user]);
+
+  useEffect(() => {
+    loadBudgetData();
+  }, [selectedPeriod]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadBudgetData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Load all necessary data
+      // Map UI period to API period
+      // For quarterly view, we'll fetch all budgets and aggregate them
+      const apiPeriod = selectedPeriod === 'month' ? 'monthly' : 
+                        selectedPeriod === 'quarter' ? undefined : // Get all budgets for quarterly view
+                        selectedPeriod === 'year' ? 'yearly' : undefined;
+      
+      const [budgetsData, goalsData, budgetSummaryData, goalSummaryData, categoriesData] = await Promise.all([
+        budgetsService.getBudgets(),
+        goalsService.getGoals(),
+        budgetsService.getBudgetSummary(apiPeriod),
+        goalsService.getGoalSummary(),
+        categoriesService.getCategories()
+      ]);
+
+      setBudgetSummary(budgetSummaryData);
+      setGoalSummary(goalSummaryData);
+      setCategories(categoriesData);
+
+      // Get transaction stats for each budget category to get transaction counts
+      const currentDate = new Date();
+      const startDate = new Date();
+      
+      // Set start date based on selected period for viewing
+      // This is for the UI filtering, not for the actual budget period calculation
+      if (selectedPeriod === 'month') {
+        // Show last 30 days
+        startDate.setDate(currentDate.getDate() - 30);
+      } else if (selectedPeriod === 'quarter') {
+        // Show last 90 days
+        startDate.setDate(currentDate.getDate() - 90);
+      } else {
+        // Show last 365 days
+        startDate.setDate(currentDate.getDate() - 365);
+      }
+
+      // Transform budgets to UI format
+      const transformedBudgets: BudgetCategory[] = await Promise.all(
+        budgetsData
+          .filter(budget => budget.is_active)
+          .map(async (budget) => {
+            const category = categoriesData.find(c => c.id === budget.category_id);
+            const categoryName = category?.name || 'Uncategorized';
+            
+            // Get transaction count for this category
+            let transactionCount = 0;
+            try {
+              const stats = await transactionsService.getTransactionStats({
+                category_id: budget.category_id,
+                start_date: startDate.toISOString(),
+                end_date: currentDate.toISOString()
+              });
+              transactionCount = stats.transaction_count;
+            } catch (err) {
+              console.error(`Failed to get transaction stats for budget ${budget.id}:`, err);
+              transactionCount = 0;
+            }
+            
+            return {
+              id: budget.id.toString(),
+              name: categoryName,
+              icon: categoryIcons[categoryName] || <DollarSign className="w-5 h-5" />,
+              color: categoryColors[categoryName] || 'from-[var(--cat-gray)] to-[var(--cat-gray)]/80',
+              allocated: Number(budget.amount) || 0,
+              spent: Number(budget.spent_amount) || 0,
+              remaining: Number(budget.remaining_amount) || 0,
+              percentage: Number(budget.percentage_used) || 0,
+              transactions: transactionCount
+            };
+          })
+      );
+
+      setBudgetCategories(transformedBudgets);
+
+      // Transform goals to UI format
+      const transformedGoals: BudgetGoal[] = goalsData
+        .filter(goal => !goal.is_achieved)
+        .map(goal => {
+          // Calculate monthly contribution needed with null checks
+          const daysRemaining = Number(goal.days_remaining) || 30;
+          const monthsRemaining = Math.max(1, daysRemaining / 30);
+          const targetAmount = Number(goal.target_amount) || 0;
+          const currentAmount = Number(goal.current_amount) || 0;
+          const amountNeeded = Math.max(0, targetAmount - currentAmount);
+          const monthlyContribution = monthsRemaining > 0 ? amountNeeded / monthsRemaining : 0;
+          
+          // Determine status
+          let status: BudgetGoal['status'] = 'on-track';
+          if (goal.progress_percentage >= 100) {
+            status = 'completed';
+          } else if (goal.days_remaining < 30 && goal.progress_percentage < 80) {
+            status = 'at-risk';
+          } else if (monthlyContribution > goal.monthly_target * 1.2) {
+            status = 'at-risk';
+          }
+          
+          return {
+            id: goal.id.toString(),
+            name: goal.name,
+            targetAmount: targetAmount,
+            currentAmount: currentAmount,
+            deadline: goal.target_date,
+            category: goal.category,
+            progress: Number(goal.progress_percentage) || 0,
+            monthlyContribution,
+            status
+          };
+        });
+
+      setBudgetGoals(transformedGoals);
+
+        text: `Budget data loaded: ${transformedBudgets.length} budgets, ${transformedGoals.length} goals for ${selectedPeriod} view`,
+        custom_action: 'budget_data_loaded',
+        data: {
+          budgets_count: transformedBudgets.length,
+          goals_count: transformedGoals.length,
+          period: selectedPeriod,
+          total_budget: budgetSummaryData.total_budget,
+          total_spent: budgetSummaryData.total_spent,
+          total_remaining: budgetSummaryData.total_remaining,
+          over_budget_count: budgetSummaryData.over_budget_count,
+          goals_on_track: transformedGoals.filter(g => g.status === 'on-track').length,
+          goals_at_risk: transformedGoals.filter(g => g.status === 'at-risk').length,
+          total_goal_value: goalSummaryData?.total_target_amount || 0
+        }
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load budget data';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = () => {
+      text: `User refreshing budget page with ${budgetCategories.length} budgets in ${selectedPeriod} view`,
+      custom_action: 'refresh_budget',
+      data: {
+        current_budgets_count: budgetCategories.length,
+        current_goals_count: budgetGoals.length,
+        current_period: selectedPeriod,
+        total_allocated: budgetSummary?.total_budget || 0,
+        total_spent: budgetSummary?.total_spent || 0
+      }
+    });
+    loadBudgetData();
+  };
+
+  const handleEditBudget = (category: BudgetCategory) => {
+      text: `User editing budget for ${category.name} category`,
+      custom_action: 'edit_budget_initiated',
+      data: {
+        category_id: category.id,
+        category_name: category.name,
+        current_allocation: category.allocated,
+        current_spent: category.spent,
+        current_percentage: category.percentage,
+        is_over_budget: category.percentage > 100
+      }
+    });
+    setEditingCategory(category);
+    // Find the budget data to get the category_id
+    const budget = budgetCategories.find(b => b.id === category.id);
+    if (budget) {
+      // Find the original budget from the API data to get category_id
+      const originalBudget = budgetSummary?.budgets.find(b => b.id.toString() === category.id);
+      if (originalBudget) {
+        setBudgetForm({
+          categoryId: originalBudget.category_id.toString(),
+          amount: originalBudget.amount.toString(),
+          period: originalBudget.period === 'weekly' ? 'weekly' : 
+                  originalBudget.period === 'yearly' ? 'yearly' : 'monthly'
+        });
+      }
+    }
+    setShowAddCategory(true);
+  };
+
+  const handleDeleteBudget = (category: BudgetCategory) => {
+      text: `User initiating deletion of ${category.name} budget`,
+      custom_action: 'delete_budget_initiated',
+      data: {
+        category_id: category.id,
+        category_name: category.name,
+        allocated_amount: category.allocated,
+        spent_amount: category.spent,
+        percentage_used: category.percentage,
+        will_recover_amount: category.allocated
+      }
+    });
+    setDeletingBudget(category);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteBudget = async () => {
+    if (!deletingBudget) return;
+    
+    try {
+      await budgetsService.deleteBudget(parseInt(deletingBudget.id));
+        text: `User successfully deleted ${deletingBudget.name} budget`,
+        custom_action: 'budget_deleted',
+        data: {
+          category_id: deletingBudget.id,
+          category_name: deletingBudget.name,
+          recovered_amount: deletingBudget.allocated,
+          was_over_budget: deletingBudget.percentage > 100
+        }
+      });
+      showSuccess('Budget Deleted', `Budget for ${deletingBudget.name} has been deleted successfully.`);
+      setShowDeleteConfirm(false);
+      setDeletingBudget(null);
+      loadBudgetData();
+    } catch (err) {
+      console.error('Failed to delete budget:', err);
+      showError('Delete Failed', 'Unable to delete the budget. Please try again.');
+    }
+  };
+
+  const handleAddGoal = async () => {
+    try {
+      if (!goalForm.name || !goalForm.targetAmount || !goalForm.targetDate || !goalForm.category) {
+        showError('Form Incomplete', 'Please fill in all required fields.');
+        return;
+      }
+
+      if (editingGoal) {
+        // Update existing goal
+        await goalsService.updateGoal(parseInt(editingGoal.id), {
+          name: goalForm.name,
+          target_amount: parseFloat(goalForm.targetAmount),
+          target_date: goalForm.targetDate,
+          category: goalForm.category as Goal['category']
+        });
+        
+        // If current amount changed, add contribution or withdrawal
+        const newAmount = parseFloat(goalForm.currentAmount || '0');
+        const difference = newAmount - editingGoal.currentAmount;
+        if (Math.abs(difference) > 0.01) {
+          if (difference > 0) {
+            await goalsService.addContribution(parseInt(editingGoal.id), {
+              amount: difference,
+              note: 'Updated via goal edit'
+            });
+          } else {
+            await goalsService.withdrawFromGoal(parseInt(editingGoal.id), Math.abs(difference), 'Updated via goal edit');
+          }
+        }
+        
+        showSuccess('Goal Updated', 'Your financial goal has been updated successfully.');
+      } else {
+        // Create new goal
+        await goalsService.createGoal({
+          name: goalForm.name,
+          target_amount: parseFloat(goalForm.targetAmount),
+          target_date: goalForm.targetDate,
+          category: goalForm.category as Goal['category'],
+          priority: 'MEDIUM',
+          initial_amount: goalForm.currentAmount ? parseFloat(goalForm.currentAmount) : 0
+        });
+        
+        showSuccess('Goal Created', 'Your financial goal has been created successfully.');
+      }
+      
+      setShowAddGoal(false);
+      setEditingGoal(null);
+      setGoalForm({ name: '', targetAmount: '', currentAmount: '', targetDate: '', category: '' });
+      loadBudgetData();
+    } catch (err) {
+      console.error('Failed to save goal:', err);
+      showError(
+        editingGoal ? 'Goal Update Failed' : 'Goal Creation Failed', 
+        'Unable to save the goal. Please try again.'
+      );
+    }
+  };
+
+  const handleDeleteGoal = (goal: BudgetGoal) => {
+      text: `User initiating deletion of goal "${goal.name}"`,
+      custom_action: 'delete_goal_initiated',
+      data: {
+        goal_id: goal.id,
+        goal_name: goal.name,
+        current_progress: goal.progress,
+        current_amount: goal.currentAmount,
+        target_amount: goal.targetAmount,
+        status: goal.status,
+        days_to_deadline: Math.floor((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+      }
+    });
+    setDeletingGoal(goal);
+    setShowDeleteGoalConfirm(true);
+  };
+
+  const confirmDeleteGoal = async () => {
+    if (!deletingGoal) return;
+    
+    try {
+      await goalsService.deleteGoal(parseInt(deletingGoal.id));
+        text: `User successfully deleted goal "${deletingGoal.name}"`,
+        custom_action: 'goal_deleted',
+        data: {
+          goal_id: deletingGoal.id,
+          goal_name: deletingGoal.name,
+          was_on_track: deletingGoal.status === 'on-track',
+          progress_at_deletion: deletingGoal.progress,
+          target_amount: deletingGoal.targetAmount
+        }
+      });
+      showSuccess('Goal Deleted', `Goal "${deletingGoal.name}" has been deleted successfully.`);
+      setShowDeleteGoalConfirm(false);
+      setDeletingGoal(null);
+      loadBudgetData();
+    } catch (err) {
+      console.error('Failed to delete goal:', err);
+      showError('Delete Failed', 'Unable to delete the goal. Please try again.');
+    }
+  };
+
+  const handleCreateBudget = async () => {
+    try {
+      if (!budgetForm.categoryId || !budgetForm.amount || !budgetForm.period) {
+        showError('Form Incomplete', 'Please fill in all fields before creating a budget.');
+        return;
+      }
+
+      const periodMap = {
+        'monthly': 'monthly' as const,
+        'weekly': 'weekly' as const,
+        'yearly': 'yearly' as const
+      };
+
+      if (editingCategory) {
+        // Update existing budget
+        await budgetsService.updateBudget(parseInt(editingCategory.id), {
+          amount: parseFloat(budgetForm.amount),
+          alert_threshold: 0.8,
+          is_active: true
+        });
+        showSuccess('Budget Updated', 'Your budget has been updated successfully.');
+      } else {
+        // Calculate start_date based on current date
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+
+        await budgetsService.createBudget({
+          category_id: parseInt(budgetForm.categoryId),
+          amount: parseFloat(budgetForm.amount),
+          period: periodMap[budgetForm.period],
+          start_date: startDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          alert_threshold: 0.8 // Default to 80% threshold
+        });
+        showSuccess('Budget Created', 'Your budget has been created successfully.');
+      }
+
+      setShowAddCategory(false);
+      setEditingCategory(null);
+      setBudgetForm({ categoryId: '', amount: '', period: 'monthly' });
+      loadBudgetData();
+    } catch (err) {
+      console.error('Failed to save budget:', err);
+      showError(
+        editingCategory ? 'Budget Update Failed' : 'Budget Creation Failed', 
+        'Unable to save the budget. Please try again.'
+      );
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  };
+
+  // Ensure numeric values to prevent NaN
+  const totalBudget = Number(budgetSummary?.total_budget) || 0;
+  const totalSpent = Number(budgetSummary?.total_spent) || 0;
+  const totalRemaining = Number(budgetSummary?.total_remaining) || 0;
+  const overBudgetCount = Number(budgetSummary?.over_budget_count) || 0;
+
+  const periodOptions = [
+    { value: 'quarter', label: 'All Budgets' },
+    { value: 'month', label: 'Monthly Budgets' },
+    { value: 'year', label: 'Yearly Budgets' },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary-blue)] mx-auto"></div>
+          <p className="mt-4 text-[var(--text-2)]">Loading your budget...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card variant="prominent" className="p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-[var(--primary-red)] mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-[var(--text-1)] mb-2">
+            Unable to Load Budget
+          </h2>
+          <p className="text-[var(--text-2)] mb-6">{error}</p>
+          <Button onClick={handleRefresh} variant="primary">
+            Try Again
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 className="text-3xl font-bold text-[var(--text-1)]">
+              Budget Management
+            </h1>
+            <p className="text-[var(--text-2)] mt-2">
+              Track your spending and reach your financial goals
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 mt-4 md:mt-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<RefreshCw size={18} />}
+              onClick={handleRefresh}
+              className="w-auto"
+            >
+              Refresh
+            </Button>
+            <div className="flex flex-1 lg:flex-none gap-3 w-full lg:w-auto">
+              <div 
+                className="relative group flex-1 lg:flex-none"
+              >
+                <Dropdown
+                  items={periodOptions}
+                  value={selectedPeriod}
+                  onChange={(value) => {
+                    const oldPeriod = selectedPeriod;
+                    setSelectedPeriod(value as typeof selectedPeriod);
+                      text: `User changed budget period from ${oldPeriod} to ${value}`,
+                      custom_action: 'change_budget_period',
+                      data: {
+                        old_period: oldPeriod,
+                        new_period: value,
+                        current_budgets_count: budgetCategories.length,
+                        current_spent: totalSpent,
+                        current_remaining: totalRemaining,
+                        over_budget_count: overBudgetCount
+                      }
+                    });
+                  }}
+                  placeholder="Select period"
+                  analyticsId="budget-period"
+                  analyticsLabel="Budget Period"
+                />
+                <div className="absolute top-full mt-2 right-0 w-64 p-2 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-2)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Filters which budgets to display. Each budget's spending is calculated based on its own period (current month for monthly, current year for yearly).
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Plus size={18} />}
+                onClick={() => {
+                  setEditingCategory(null);
+                  setShowAddCategory(true);
+                    text: `User opening add budget modal with ${budgetCategories.length} existing budgets`,
+                    custom_action: 'open_add_budget_modal',
+                    data: {
+                      existing_budgets_count: budgetCategories.length,
+                      total_allocated: totalBudget,
+                      total_spent: totalSpent,
+                      categories_available: categories.filter(c => 
+                        !budgetCategories.find(b => b.name === c.name)
+                      ).length,
+                      current_period: selectedPeriod
+                    }
+                  });
+                }}
+                className="flex-1 lg:flex-none"
+              >
+                Add Budget
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card variant="default" className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--text-2)]">Total Budget</p>
+                <p className="text-2xl font-bold text-[var(--text-1)]">
+                  ${totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <PiggyBank className="w-8 h-8 text-[var(--primary-blue)] opacity-20" />
+            </div>
+          </Card>
+
+          <Card variant="default" className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--text-2)]">Total Spent</p>
+                <p className="text-2xl font-bold text-[var(--primary-amber)]">
+                  ${totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <TrendingDown className="w-8 h-8 text-[var(--primary-amber)] opacity-20" />
+            </div>
+          </Card>
+
+          <Card variant="default" className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--text-2)]">Remaining</p>
+                <p className="text-2xl font-bold text-[var(--primary-emerald)]">
+                  ${totalRemaining.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <DollarSign className="w-8 h-8 text-[var(--primary-emerald)] opacity-20" />
+            </div>
+          </Card>
+
+          <Card variant="default" className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--text-2)]">Goals Progress</p>
+                <p className="text-2xl font-bold gradient-text">
+                  {Number(goalSummary?.overall_progress || 0).toFixed(0)}%
+                </p>
+              </div>
+              <Target className="w-8 h-8 text-[var(--primary-blue)] opacity-20" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Budget Alerts */}
+        {overBudgetCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card variant="prominent" className="p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-[var(--primary-amber)]" />
+                <p className="text-[var(--text-1)] font-medium">
+                  {overBudgetCount} budget{overBudgetCount > 1 ? 's are' : ' is'} over the limit
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => {
+                      text: `User viewing details for ${overBudgetCount} over-budget categories`,
+                      custom_action: 'view_over_budget_details',
+                      data: {
+                        over_budget_count: overBudgetCount,
+                        total_budgets: budgetCategories.length,
+                        over_budget_categories: budgetCategories
+                          .filter(c => c.percentage > 100)
+                          .map(c => ({ name: c.name, spent: c.spent, allocated: c.allocated }))
+                      }
+                    });
+                    // Scroll to budget categories
+                    document.getElementById('budget-categories')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  View Details
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Budget Categories */}
+          <div className="lg:col-span-2 space-y-6">
+            <BudgetErrorBoundary onReset={handleRefresh}>
+              <BudgetOverview 
+                totalAllocated={totalBudget}
+                totalSpent={totalSpent}
+                totalRemaining={totalRemaining}
+                period={selectedPeriod}
+              />
+            </BudgetErrorBoundary>
+            
+            <div id="budget-categories">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[var(--text-1)]">
+                  Budget Categories
+                </h2>
+                <p className="text-sm text-[var(--text-2)]">
+                  {budgetCategories.length} active
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {budgetCategories.length === 0 ? (
+                  <Card variant="subtle" className="col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 p-8 text-center">
+                    <PiggyBank className="w-12 h-12 mx-auto mb-4 text-[var(--text-2)] opacity-50" />
+                    <p className="text-[var(--text-2)]">No budgets set up yet</p>
+                    <p className="text-sm text-[var(--text-2)] mt-2">
+                      Click &quot;Add Budget&quot; to create your first budget category
+                    </p>
+                  </Card>
+                ) : (
+                  budgetCategories.map((category) => (
+                    <BudgetErrorBoundary key={category.id} onReset={handleRefresh}>
+                      <BudgetCategoryCard
+                        category={category}
+                        onEdit={() => handleEditBudget(category)}
+                        onDelete={() => handleDeleteBudget(category)}
+                      />
+                    </BudgetErrorBoundary>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Goals Section */}
+          <div className="lg:col-span-1">
+            <BudgetErrorBoundary onReset={handleRefresh}>
+              <BudgetGoals
+                goals={budgetGoals}
+                onAddGoal={() => {
+                    text: `User opening add goal modal with ${budgetGoals.length} existing goals`,
+                    custom_action: 'open_add_goal_modal',
+                    data: {
+                      existing_goals_count: budgetGoals.length,
+                      goals_on_track: budgetGoals.filter(g => g.status === 'on-track').length,
+                      goals_at_risk: budgetGoals.filter(g => g.status === 'at-risk').length,
+                      total_goal_value: budgetGoals.reduce((sum, g) => sum + g.targetAmount, 0),
+                      categories_used: [...new Set(budgetGoals.map(g => g.category))].length
+                    }
+                  });
+                  setShowAddGoal(true);
+                }}
+                onEditGoal={(goal) => {
+                    text: `User editing goal "${goal.name}"`,
+                    custom_action: 'edit_goal_initiated',
+                    data: {
+                      goal_id: goal.id,
+                      goal_name: goal.name,
+                      current_progress: goal.progress,
+                      current_amount: goal.currentAmount,
+                      target_amount: goal.targetAmount,
+                      days_to_deadline: Math.floor((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+                      status: goal.status,
+                      monthly_contribution_needed: goal.monthlyContribution
+                    }
+                  });
+                  setEditingGoal(goal);
+                  setGoalForm({
+                    name: goal.name,
+                    targetAmount: goal.targetAmount.toString(),
+                    currentAmount: goal.currentAmount.toString(),
+                    targetDate: goal.deadline,
+                    category: goal.category
+                  });
+                  setShowAddGoal(true);
+                }}
+                onDeleteGoal={handleDeleteGoal}
+              />
+            </BudgetErrorBoundary>
+          </div>
+        </div>
+
+        {/* Add/Edit Budget Modal */}
+        <Modal
+          isOpen={showAddCategory}
+          onClose={() => {
+            setShowAddCategory(false);
+            setEditingCategory(null);
+            setBudgetForm({ categoryId: '', amount: '', period: 'monthly' });
+          }}
+          title={editingCategory ? 'Edit Budget' : 'Add Budget Category'}
+          size="md"
+        >
+          <div className="space-y-4">
+            <Dropdown
+              label="Category"
+              items={categories
+                .filter(cat => cat.type === 'EXPENSE') // Only show expense categories for budgets
+                .map(cat => ({ value: cat.id.toString(), label: cat.name }))}
+              value={budgetForm.categoryId}
+              onChange={(value) => setBudgetForm({ ...budgetForm, categoryId: value })}
+              placeholder="Select expense category"
+              disabled={!!editingCategory}
+            />
+            <Input
+              label="Budget Amount"
+              type="number"
+              placeholder="0.00"
+              value={budgetForm.amount}
+              onChange={(e) => setBudgetForm({ ...budgetForm, amount: e.target.value })}
+              icon={<DollarSign size={18} />}
+            />
+            {!editingCategory && (
+              <Dropdown
+                label="Period"
+                items={[
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'weekly', label: 'Weekly' },
+                  { value: 'yearly', label: 'Yearly' },
+                ]}
+                value={budgetForm.period}
+                onChange={(value) => setBudgetForm({ ...budgetForm, period: value as 'monthly' | 'weekly' | 'yearly' })}
+                placeholder="Select period"
+              />
+            )}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setShowAddCategory(false);
+                  setEditingCategory(null);
+                  setBudgetForm({ categoryId: '', amount: '', period: 'monthly' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                fullWidth
+                onClick={handleCreateBudget}
+              >
+                {editingCategory ? 'Update' : 'Create'} Budget
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Add Goal Modal */}
+        <Modal
+          isOpen={showAddGoal}
+          onClose={() => {
+            setShowAddGoal(false);
+            setEditingGoal(null);
+            setGoalForm({ name: '', targetAmount: '', currentAmount: '', targetDate: '', category: '' });
+          }}
+          title={editingGoal ? 'Edit Financial Goal' : 'Add Financial Goal'}
+          size="md"
+        >
+          <div className="space-y-4">
+            <Input
+              label="Goal Name"
+              type="text"
+              placeholder="e.g., Emergency Fund"
+              value={goalForm.name}
+              onChange={(e) => setGoalForm({ ...goalForm, name: e.target.value })}
+              required
+            />
+            <Input
+              label="Target Amount"
+              type="number"
+              placeholder="0.00"
+              icon={<DollarSign size={18} />}
+              value={goalForm.targetAmount}
+              onChange={(e) => setGoalForm({ ...goalForm, targetAmount: e.target.value })}
+              required
+            />
+            <Input
+              label="Current Amount"
+              type="number"
+              placeholder="0.00"
+              icon={<DollarSign size={18} />}
+              value={goalForm.currentAmount}
+              onChange={(e) => setGoalForm({ ...goalForm, currentAmount: e.target.value })}
+            />
+            <DatePicker
+              label="Target Date"
+              minDate={new Date().toISOString().split('T')[0]}
+              value={goalForm.targetDate}
+              onChange={(date) => setGoalForm({ ...goalForm, targetDate: date })}
+              required
+            />
+            <Dropdown
+              label="Category"
+              items={[
+                { value: 'SAVINGS', label: 'Savings' },
+                { value: 'DEBT', label: 'Debt Payoff' },
+                { value: 'INVESTMENT', label: 'Investment' },
+                { value: 'PURCHASE', label: 'Purchase' },
+                { value: 'OTHER', label: 'Other' },
+              ]}
+              value={goalForm.category}
+              onChange={(value) => setGoalForm({ ...goalForm, category: value })}
+              placeholder="Select category"
+            />
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setShowAddGoal(false);
+                  setEditingGoal(null);
+                  setGoalForm({ name: '', targetAmount: '', currentAmount: '', targetDate: '', category: '' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                fullWidth
+                onClick={handleAddGoal}
+              >
+                {editingGoal ? 'Update Goal' : 'Create Goal'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteConfirm}
+          onClose={() => {
+            setShowDeleteConfirm(false);
+            setDeletingBudget(null);
+          }}
+          title="Delete Budget"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[var(--primary-amber)] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-[var(--text-1)] font-medium">
+                  Are you sure you want to delete this budget?
+                </p>
+                {deletingBudget && (
+                  <p className="text-sm text-[var(--text-2)] mt-2">
+                    This will remove the budget for <span className="font-medium">{deletingBudget.name}</span> 
+                    {deletingBudget.allocated > 0 && ` with an allocation of $${deletingBudget.allocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}.
+                  </p>
+                )}
+                <p className="text-sm text-[var(--text-2)] mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingBudget(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="danger" 
+                fullWidth
+                onClick={confirmDeleteBudget}
+              >
+                Delete Budget
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Delete Goal Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteGoalConfirm}
+          onClose={() => {
+            setShowDeleteGoalConfirm(false);
+            setDeletingGoal(null);
+          }}
+          title="Delete Goal"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[var(--primary-amber)] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-[var(--text-1)] font-medium">
+                  Are you sure you want to delete this goal?
+                </p>
+                {deletingGoal && (
+                  <p className="text-sm text-[var(--text-2)] mt-2">
+                    This will permanently delete the goal <span className="font-medium">"{deletingGoal.name}"</span> 
+                    {deletingGoal.currentAmount > 0 && ` with ${formatCurrency(deletingGoal.currentAmount)} already saved`}.
+                  </p>
+                )}
+                <p className="text-sm text-[var(--text-2)] mt-2">
+                  This action cannot be undone and all associated progress will be lost.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  setShowDeleteGoalConfirm(false);
+                  setDeletingGoal(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="danger" 
+                fullWidth
+                onClick={confirmDeleteGoal}
+              >
+                Delete Goal
+              </Button>
+            </div>
+          </div>
+        </Modal>
+    </div>
+  );
+}
