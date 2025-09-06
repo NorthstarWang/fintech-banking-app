@@ -1,0 +1,1012 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  CreditCard,
+  Calendar,
+  DollarSign,
+  AlertCircle,
+  Plus,
+  Search,
+  Filter,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  RefreshCw,
+  Pause,
+  Play,
+  Trash2,
+  Edit2,
+  Bell,
+  BellOff,
+  Music,
+  Video,
+  Cloud,
+  Shield,
+  Zap,
+  Globe,
+  Briefcase,
+  Heart,
+  Book,
+  Gamepad2,
+  Download
+} from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
+import Dropdown from '@/components/ui/Dropdown';
+import SubscriptionCard from '@/components/subscriptions/SubscriptionCard';
+import SubscriptionStats from '@/components/subscriptions/SubscriptionStats';
+import SubscriptionCalendar from '@/components/subscriptions/SubscriptionCalendar';
+import { useAuth } from '@/contexts/AuthContext';
+import { subscriptionsService, Subscription as ApiSubscription } from '@/lib/api';
+
+export interface Subscription {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  icon: React.ReactNode;
+  color: string;
+  amount: number;
+  billing: 'monthly' | 'yearly' | 'weekly';
+  nextBilling: string;
+  lastBilling: string;
+  status: 'active' | 'paused' | 'cancelled';
+  paymentMethod: string;
+  notifications: boolean;
+  usage?: {
+    current: number;
+    limit: number;
+    unit: string;
+  };
+  savings?: {
+    amount: number;
+    percentage: number;
+  };
+  trialEnd?: string;
+  cancellationDate?: string;
+  autoRenew: boolean;
+}
+
+export default function SubscriptionsPage() {
+  const { user } = useAuth();
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [filteredSubscriptions, setFilteredSubscriptions] = useState<Subscription[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'amount' | 'date'>('date');
+  const [showAddSubscription, setShowAddSubscription] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const categoryIcons: { [key: string]: React.ReactNode } = {
+    'Entertainment': <Video className="w-5 h-5" />,
+    'Music': <Music className="w-5 h-5" />,
+    'Cloud Storage': <Cloud className="w-5 h-5" />,
+    'Security': <Shield className="w-5 h-5" />,
+    'Productivity': <Briefcase className="w-5 h-5" />,
+    'Health': <Heart className="w-5 h-5" />,
+    'Education': <Book className="w-5 h-5" />,
+    'Gaming': <Gamepad2 className="w-5 h-5" />,
+    'News': <Globe className="w-5 h-5" />,
+    'Other': <Zap className="w-5 h-5" />,
+  };
+
+  const categoryColors: { [key: string]: string } = {
+    'Entertainment': 'from-[var(--cat-pink)] to-[var(--cat-pink)]/80',
+    'Music': 'from-[var(--cat-violet)] to-[var(--cat-violet)]/80',
+    'Cloud Storage': 'from-[var(--cat-blue)] to-[var(--cat-blue)]/80',
+    'Security': 'from-[var(--cat-emerald)] to-[var(--cat-emerald)]/80',
+    'Productivity': 'from-[var(--cat-indigo)] to-[var(--cat-indigo)]/80',
+    'Health': 'from-[var(--cat-red)] to-[var(--cat-red)]/80',
+    'Education': 'from-[var(--cat-amber)] to-[var(--cat-amber)]/80',
+    'Gaming': 'from-[var(--cat-teal)] to-[var(--cat-teal)]/80',
+    'News': 'from-[var(--cat-yellow)] to-[var(--cat-yellow)]/80',
+    'Other': 'from-[var(--primary-blue)] to-[var(--primary-indigo)]/80',
+  };
+
+  useEffect(() => {
+    // Enhanced page view logging
+      text: `User ${user?.username || 'unknown'} viewed subscriptions page`,
+      page_name: 'Subscriptions',
+      user_id: user?.id,
+      timestamp: new Date().toISOString(),
+      data: {
+        available_features: ['subscription_tracking', 'spending_analytics', 'calendar_view', 'subscription_management'],
+        initial_filter_category: filterCategory,
+        initial_filter_status: filterStatus,
+        initial_sort: sortBy
+      }
+    });
+
+    // Load real subscriptions from backend
+    loadSubscriptions();
+  }, [user]);
+
+  const loadSubscriptions = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get subscriptions from API
+      const apiSubscriptions = await subscriptionsService.getSubscriptions();
+      
+      // Get subscription analysis for additional data
+      const analysis = await subscriptionsService.getSubscriptionAnalysis();
+      
+      // Convert API subscriptions to frontend format
+      const formattedSubscriptions: Subscription[] = apiSubscriptions.map(sub => {
+        const category = mapApiCategoryToDisplay(sub.category);
+        const billing = mapApiBillingToDisplay(sub.billing_cycle);
+        
+        return {
+          id: sub.id.toString(),
+          name: sub.name,
+          description: sub.merchant_name,
+          category,
+          icon: categoryIcons[category] || categoryIcons['Other'],
+          color: categoryColors[category] || categoryColors['Other'],
+          amount: sub.amount,
+          billing,
+          nextBilling: sub.next_billing_date,
+          lastBilling: sub.last_billing_date || sub.start_date,
+          status: mapApiStatusToDisplay(sub.status),
+          paymentMethod: 'Card ****' + Math.floor(Math.random() * 9000 + 1000), // Mock payment method
+          notifications: true,
+          autoRenew: sub.status === 'ACTIVE',
+          trialEnd: sub.free_trial_end_date,
+          ...(sub.days_until_billing && sub.days_until_billing < 0 ? { cancellationDate: sub.next_billing_date } : {})
+        };
+      });
+      
+      setSubscriptions(formattedSubscriptions);
+      setFilteredSubscriptions(formattedSubscriptions);
+      setIsLoading(false);
+      
+      // Log data loaded event
+        text: `Loaded ${formattedSubscriptions.length} subscriptions with $${analysis.total_monthly_cost.toFixed(2)} monthly spend`,
+        custom_action: 'subscriptions_data_loaded',
+        data: {
+          total_subscriptions: formattedSubscriptions.length,
+          active_subscriptions: analysis.active_subscriptions,
+          total_monthly_spend: analysis.total_monthly_cost,
+          total_annual_cost: analysis.total_annual_cost,
+          categories: analysis.cost_by_category,
+          average_cost: analysis.average_subscription_cost
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load subscriptions:', error);
+      // Fall back to mock data
+      loadMockData();
+    }
+  };
+
+  const mapApiCategoryToDisplay = (category: ApiSubscription['category']): string => {
+    const categoryMap: Record<ApiSubscription['category'], string> = {
+      'STREAMING': 'Entertainment',
+      'SOFTWARE': 'Productivity',
+      'FITNESS': 'Health',
+      'FOOD': 'Food',
+      'NEWS': 'News',
+      'UTILITIES': 'Utilities',
+      'GAMING': 'Gaming',
+      'EDUCATION': 'Education',
+      'OTHER': 'Other'
+    };
+    return categoryMap[category] || 'Other';
+  };
+
+  const mapApiBillingToDisplay = (billing: ApiSubscription['billing_cycle']): 'monthly' | 'yearly' | 'weekly' => {
+    const billingMap: Record<ApiSubscription['billing_cycle'], 'monthly' | 'yearly' | 'weekly'> = {
+      'WEEKLY': 'weekly',
+      'MONTHLY': 'monthly',
+      'QUARTERLY': 'monthly', // Treat quarterly as monthly for display
+      'YEARLY': 'yearly',
+      'CUSTOM': 'monthly'
+    };
+    return billingMap[billing] || 'monthly';
+  };
+
+  const mapApiStatusToDisplay = (status: ApiSubscription['status']): 'active' | 'paused' | 'cancelled' => {
+    const statusMap: Record<ApiSubscription['status'], 'active' | 'paused' | 'cancelled'> = {
+      'ACTIVE': 'active',
+      'PAUSED': 'paused',
+      'CANCELLED': 'cancelled',
+      'EXPIRED': 'cancelled',
+      'TRIAL': 'active'
+    };
+    return statusMap[status] || 'active';
+  };
+
+  const loadMockData = () => {
+    const mockSubscriptions: Subscription[] = [
+      {
+        id: '1',
+        name: 'Netflix',
+        description: 'Premium streaming service',
+        category: 'Entertainment',
+        icon: categoryIcons['Entertainment'],
+        color: categoryColors['Entertainment'],
+        amount: 19.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-15',
+        lastBilling: '2025-06-15',
+        status: 'active',
+        paymentMethod: 'Visa ****7890',
+        notifications: true,
+        autoRenew: true,
+        usage: {
+          current: 127,
+          limit: 200,
+          unit: 'hours',
+        },
+      },
+      {
+        id: '2',
+        name: 'Spotify Premium',
+        description: 'Music streaming service',
+        category: 'Music',
+        icon: categoryIcons['Music'],
+        color: categoryColors['Music'],
+        amount: 9.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-01',
+        lastBilling: '2025-06-01',
+        status: 'active',
+        paymentMethod: 'Visa ****7890',
+        notifications: true,
+        autoRenew: true,
+      },
+      {
+        id: '3',
+        name: 'Adobe Creative Cloud',
+        description: 'Complete creative suite',
+        category: 'Productivity',
+        icon: categoryIcons['Productivity'],
+        color: categoryColors['Productivity'],
+        amount: 599.88,
+        billing: 'yearly',
+        nextBilling: '2026-01-15',
+        lastBilling: '2025-01-15',
+        status: 'active',
+        paymentMethod: 'Visa ****7890',
+        notifications: true,
+        autoRenew: true,
+        savings: {
+          amount: 120.00,
+          percentage: 16.7,
+        },
+      },
+      {
+        id: '4',
+        name: 'iCloud+',
+        description: '2TB cloud storage',
+        category: 'Cloud Storage',
+        icon: categoryIcons['Cloud Storage'],
+        color: categoryColors['Cloud Storage'],
+        amount: 9.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-20',
+        lastBilling: '2025-06-20',
+        status: 'active',
+        paymentMethod: 'Apple Pay',
+        notifications: false,
+        autoRenew: true,
+        usage: {
+          current: 1247,
+          limit: 2048,
+          unit: 'GB',
+        },
+      },
+      {
+        id: '5',
+        name: 'Gym Membership',
+        description: 'Local fitness center',
+        category: 'Health',
+        icon: categoryIcons['Health'],
+        color: categoryColors['Health'],
+        amount: 49.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-01',
+        lastBilling: '2025-06-01',
+        status: 'paused',
+        paymentMethod: 'Debit ****4523',
+        notifications: true,
+        autoRenew: false,
+      },
+      {
+        id: '6',
+        name: 'Coursera Plus',
+        description: 'Online learning platform',
+        category: 'Education',
+        icon: categoryIcons['Education'],
+        color: categoryColors['Education'],
+        amount: 399.00,
+        billing: 'yearly',
+        nextBilling: '2025-09-01',
+        lastBilling: '2024-09-01',
+        status: 'active',
+        paymentMethod: 'Visa ****7890',
+        notifications: true,
+        autoRenew: true,
+        trialEnd: '2025-07-01',
+      },
+      {
+        id: '7',
+        name: 'PlayStation Plus',
+        description: 'Gaming subscription',
+        category: 'Gaming',
+        icon: categoryIcons['Gaming'],
+        color: categoryColors['Gaming'],
+        amount: 9.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-10',
+        lastBilling: '2025-06-10',
+        status: 'cancelled',
+        paymentMethod: 'PayPal',
+        notifications: false,
+        autoRenew: false,
+        cancellationDate: '2025-07-10',
+      },
+      {
+        id: '8',
+        name: '1Password',
+        description: 'Password manager',
+        category: 'Security',
+        icon: categoryIcons['Security'],
+        color: categoryColors['Security'],
+        amount: 2.99,
+        billing: 'monthly',
+        nextBilling: '2025-07-05',
+        lastBilling: '2025-06-05',
+        status: 'active',
+        paymentMethod: 'Visa ****7890',
+        notifications: true,
+        autoRenew: true,
+      },
+    ];
+
+    setSubscriptions(mockSubscriptions);
+    setFilteredSubscriptions(mockSubscriptions);
+    setIsLoading(false);
+  };
+
+  // Apply filters and search
+  useEffect(() => {
+    let filtered = [...subscriptions];
+
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(sub => 
+        sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sub.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sub.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Category filter
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(sub => sub.category === filterCategory);
+    }
+
+    // Status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(sub => sub.status === filterStatus);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'amount':
+          const aMonthly = a.billing === 'yearly' ? a.amount / 12 : a.billing === 'weekly' ? a.amount * 4 : a.amount;
+          const bMonthly = b.billing === 'yearly' ? b.amount / 12 : b.billing === 'weekly' ? b.amount * 4 : b.amount;
+          return bMonthly - aMonthly;
+        case 'date':
+          return new Date(a.nextBilling).getTime() - new Date(b.nextBilling).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredSubscriptions(filtered);
+  }, [subscriptions, searchQuery, filterCategory, filterStatus, sortBy]);
+
+  const handleSubscriptionAction = (id: string, action: string) => {
+    const subscription = subscriptions.find(s => s.id === id);
+    if (!subscription) return;
+
+      text: `User ${user?.username || 'unknown'} ${action}d subscription "${subscription.name}"`,
+      custom_action: `subscription_${action}`,
+      data: {
+        subscription_id: id,
+        subscription_name: subscription.name,
+        subscription_category: subscription.category,
+        subscription_amount: subscription.amount,
+        subscription_billing: subscription.billing,
+        action: action,
+        user_id: user?.id,
+        previous_status: subscription.status,
+        new_status: action === 'pause' ? 'paused' : action === 'resume' ? 'active' : action === 'cancel' ? 'cancelled' : subscription.status,
+        monthly_savings: action === 'pause' || action === 'cancel' ? 
+          (subscription.billing === 'yearly' ? subscription.amount / 12 : 
+           subscription.billing === 'weekly' ? subscription.amount * 4 : 
+           subscription.amount) : 0
+      }
+    });
+
+    setSubscriptions(subscriptions.map(sub => {
+      if (sub.id === id) {
+        switch (action) {
+          case 'pause':
+            return { ...sub, status: 'paused' };
+          case 'resume':
+            return { ...sub, status: 'active' };
+          case 'cancel':
+            return { ...sub, status: 'cancelled', cancellationDate: sub.nextBilling };
+          case 'toggle-notifications':
+            return { ...sub, notifications: !sub.notifications };
+          default:
+            return sub;
+        }
+      }
+      return sub;
+    }));
+  };
+
+  const categories = ['all', ...Array.from(new Set(subscriptions.map(s => s.category)))];
+  const statuses = ['all', 'active', 'paused', 'cancelled'];
+
+  if (isLoading) {
+    return (
+      <div className="h-[calc(100vh-4rem)]">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-[var(--text-2)]">Loading subscriptions...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-1)]">
+              Subscriptions
+            </h1>
+            <p className="text-[var(--text-2)] mt-2">
+              Manage and track all your recurring payments
+            </p>
+          </div>
+          
+          <div className="flex gap-2 mt-4 md:mt-0">
+            <Button
+              variant="secondary"
+              icon={<Download size={18} />}
+              onClick={() => {
+                  text: 'User exporting subscriptions data',
+                  custom_action: 'export_subscriptions',
+                  data: {
+                    total_subscriptions: subscriptions.length,
+                    active_subscriptions: subscriptions.filter(s => s.status === 'active').length
+                  }
+                });
+                
+                // Generate CSV
+                const csvContent = [
+                  ['Name', 'Description', 'Category', 'Amount', 'Billing', 'Monthly Cost', 'Status', 'Next Billing', 'Payment Method'],
+                  ...subscriptions.map(sub => [
+                    sub.name,
+                    sub.description,
+                    sub.category,
+                    sub.amount.toFixed(2),
+                    sub.billing,
+                    (sub.billing === 'yearly' ? sub.amount / 12 : 
+                     sub.billing === 'weekly' ? sub.amount * 4 : 
+                     sub.amount).toFixed(2),
+                    sub.status,
+                    sub.nextBilling,
+                    sub.paymentMethod
+                  ])
+                ].map(row => row.join(',')).join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `subscriptions_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+              }}
+            >
+              Export
+            </Button>
+            <Button
+              variant="primary"
+              icon={<Plus size={18} />}
+              onClick={() => {
+                setShowAddSubscription(true);
+                  text: 'User clicked Add Subscription button',
+                  custom_action: 'open_add_subscription_modal',
+                  data: {
+                    from_location: 'header',
+                    current_subscriptions_count: subscriptions.length,
+                    active_subscriptions: subscriptions.filter(s => s.status === 'active').length,
+                    user_id: user?.id,
+                    total_monthly_spend: subscriptions.reduce((sum, sub) => {
+                      if (sub.status !== 'active') return sum;
+                      const monthly = sub.billing === 'yearly' ? sub.amount / 12 : 
+                                     sub.billing === 'weekly' ? sub.amount * 4 : 
+                                     sub.amount;
+                      return sum + monthly;
+                    }, 0)
+                  }
+                });
+              }}
+            >
+              Add Subscription
+            </Button>
+          </div>
+        </div>
+
+        {/* Statistics Overview */}
+        <SubscriptionStats subscriptions={subscriptions} />
+
+        {/* Search and Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search subscriptions..."
+              value={searchQuery}
+              onChange={(e) => {
+                const query = e.target.value;
+                setSearchQuery(query);
+                  text: `User searching subscriptions with query: "${query}"`,
+                  custom_action: 'search_subscriptions',
+                  data: {
+                    search_query: query,
+                    query_length: query.length,
+                    user_id: user?.id,
+                    current_filter_category: filterCategory,
+                    current_filter_status: filterStatus,
+                    current_sort: sortBy,
+                    total_subscriptions: subscriptions.length,
+                    visible_subscriptions: filteredSubscriptions.length
+                  }
+                });
+              }}
+              icon={<Search size={18} />}
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Dropdown
+              items={categories.map(cat => ({ 
+                value: cat, 
+                label: cat === 'all' ? 'All Categories' : cat 
+              }))}
+              value={filterCategory}
+              onChange={(value) => {
+                setFilterCategory(value);
+                  text: `User filtered subscriptions by category: ${value}`,
+                  filter_type: 'subscription_category',
+                  filter_value: value,
+                  data: {
+                    old_filter: filterCategory,
+                    new_filter: value,
+                    user_id: user?.id,
+                    subscriptions_matching: value === 'all' ? subscriptions.length : subscriptions.filter(s => s.category === value).length,
+                    current_search: searchQuery,
+                    current_status_filter: filterStatus,
+                    current_sort: sortBy
+                  }
+                });
+              }}
+              placeholder="Category"
+            />
+            
+            <Dropdown
+              items={statuses.map(status => ({ 
+                value: status, 
+                label: status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1) 
+              }))}
+              value={filterStatus}
+              onChange={(value) => {
+                setFilterStatus(value);
+                  text: `User filtered subscriptions by status: ${value}`,
+                  filter_type: 'subscription_status',
+                  filter_value: value,
+                  data: {
+                    old_filter: filterStatus,
+                    new_filter: value,
+                    user_id: user?.id,
+                    subscriptions_matching: value === 'all' ? subscriptions.length : subscriptions.filter(s => s.status === value).length,
+                    current_search: searchQuery,
+                    current_category_filter: filterCategory,
+                    current_sort: sortBy
+                  }
+                });
+              }}
+              placeholder="Status"
+            />
+            
+            <Dropdown
+              items={[
+                { value: 'date', label: 'Sort by Date' },
+                { value: 'amount', label: 'Sort by Amount' },
+                { value: 'name', label: 'Sort by Name' },
+              ]}
+              value={sortBy}
+              onChange={(value) => {
+                const newSort = value as 'name' | 'amount' | 'date';
+                setSortBy(newSort);
+                  text: `User sorted subscriptions by ${value}`,
+                  custom_action: 'sort_subscriptions',
+                  data: {
+                    old_sort: sortBy,
+                    new_sort: newSort,
+                    sort_direction: newSort === 'date' ? 'ascending' : newSort === 'amount' ? 'descending' : 'alphabetical',
+                    user_id: user?.id,
+                    current_filter_category: filterCategory,
+                    current_filter_status: filterStatus,
+                    current_search: searchQuery,
+                    subscriptions_count: filteredSubscriptions.length
+                  }
+                });
+              }}
+              placeholder="Sort by"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Subscriptions List */}
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredSubscriptions.map((subscription, index) => (
+                <SubscriptionCard
+                  key={subscription.id}
+                  subscription={subscription}
+                  onAction={handleSubscriptionAction}
+                  onClick={() => {
+                      setSelectedSubscription(subscription);
+                      setShowDetails(true);
+                        text: `User viewing details for subscription "${subscription.name}"`,
+                        custom_action: 'view_subscription_details',
+                        data: {
+                          subscription_id: subscription.id,
+                          subscription_name: subscription.name,
+                          subscription_category: subscription.category,
+                          subscription_amount: subscription.amount,
+                          subscription_billing: subscription.billing,
+                          subscription_status: subscription.status,
+                          user_id: user?.id,
+                          next_billing_date: subscription.nextBilling,
+                          days_until_billing: Math.floor((new Date(subscription.nextBilling).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+                          has_usage_data: !!subscription.usage,
+                          has_savings_data: !!subscription.savings,
+                          is_trial: !!subscription.trialEnd
+                        }
+                      });
+                    }}
+                  />
+              ))}
+
+              {filteredSubscriptions.length === 0 && (
+                <div className="col-span-full text-center py-12">
+                  <RefreshCw className="w-12 h-12 mx-auto mb-4 text-[var(--text-2)] opacity-50" />
+                  <p className="text-[var(--text-2)]">No subscriptions found</p>
+                  <p className="text-sm text-[var(--text-2)] mt-2">
+                    Try adjusting your filters or add a new subscription
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Calendar View */}
+          <div className="lg:col-span-1">
+            <SubscriptionCalendar subscriptions={subscriptions} />
+          </div>
+        </div>
+      {/* Add Subscription Modal */}
+      <Modal
+        isOpen={showAddSubscription}
+        onClose={() => setShowAddSubscription(false)}
+        title="Add New Subscription"
+        size="md"
+      >
+        <form className="space-y-4" onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          const newSubscription: Subscription = {
+            id: Date.now().toString(),
+            name: formData.get('name') as string,
+            description: formData.get('description') as string,
+            category: formData.get('category') as string,
+            icon: categoryIcons[formData.get('category') as string] || categoryIcons['Other'],
+            color: categoryColors[formData.get('category') as string] || categoryColors['Other'],
+            amount: parseFloat(formData.get('amount') as string),
+            billing: formData.get('billing') as 'monthly' | 'yearly' | 'weekly',
+            nextBilling: formData.get('nextBilling') as string,
+            lastBilling: new Date().toISOString().split('T')[0],
+            status: 'active',
+            paymentMethod: formData.get('paymentMethod') as string,
+            notifications: true,
+            autoRenew: true,
+          };
+          
+          setSubscriptions([...subscriptions, newSubscription]);
+          setShowAddSubscription(false);
+          
+            text: `User added new subscription "${newSubscription.name}"`,
+            custom_action: 'add_subscription',
+            data: {
+              subscription_name: newSubscription.name,
+              subscription_category: newSubscription.category,
+              subscription_amount: newSubscription.amount,
+              subscription_billing: newSubscription.billing,
+              monthly_cost: newSubscription.billing === 'yearly' ? newSubscription.amount / 12 : 
+                           newSubscription.billing === 'weekly' ? newSubscription.amount * 4 : 
+                           newSubscription.amount
+            }
+          });
+        }}>
+          <Input
+            name="name"
+            type="text"
+            placeholder="Subscription name"
+            required
+            label="Name"
+          />
+          
+          <Input
+            name="description"
+            type="text"
+            placeholder="Brief description"
+            label="Description"
+          />
+          
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-1)] mb-2">Category</label>
+            <select
+              name="category"
+              className="w-full px-3 py-2 bg-[rgba(var(--glass-rgb),0.1)] border border-[var(--border-1)] rounded-lg text-[var(--text-1)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]"
+              required
+            >
+              {Object.keys(categoryIcons).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              name="amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              required
+              label="Amount"
+              icon={<DollarSign size={18} />}
+            />
+            
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-1)] mb-2">Billing Cycle</label>
+              <select
+                name="billing"
+                className="w-full px-3 py-2 bg-[rgba(var(--glass-rgb),0.1)] border border-[var(--border-1)] rounded-lg text-[var(--text-1)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-blue)]"
+                required
+              >
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+          </div>
+          
+          <Input
+            name="nextBilling"
+            type="date"
+            required
+            label="Next Billing Date"
+            icon={<Calendar size={18} />}
+          />
+          
+          <Input
+            name="paymentMethod"
+            type="text"
+            placeholder="e.g., Visa ****1234"
+            required
+            label="Payment Method"
+            icon={<CreditCard size={18} />}
+          />
+          
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowAddSubscription(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+            >
+              Add Subscription
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Subscription Details Modal */}
+      {selectedSubscription && (
+        <Modal
+          isOpen={showDetails}
+          onClose={() => {
+            setShowDetails(false);
+            setSelectedSubscription(null);
+          }}
+          title={selectedSubscription.name}
+          size="lg"
+        >
+          <div className="space-y-6">
+            {/* Header with Status */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`
+                  p-3 rounded-lg bg-gradient-to-r ${selectedSubscription.color}
+                  flex items-center justify-center
+                `}>
+                  {selectedSubscription.icon}
+                </div>
+                <div>
+                  <p className="text-[var(--text-2)]">{selectedSubscription.description}</p>
+                  <p className="text-sm text-[var(--text-2)] mt-1">Category: {selectedSubscription.category}</p>
+                </div>
+              </div>
+              <div className={`
+                px-3 py-1 rounded-full text-sm font-medium
+                ${selectedSubscription.status === 'active' ? 'bg-[var(--primary-emerald)]/10 text-[var(--primary-emerald)]' : ''}
+                ${selectedSubscription.status === 'paused' ? 'bg-[var(--primary-amber)]/10 text-[var(--primary-amber)]' : ''}
+                ${selectedSubscription.status === 'cancelled' ? 'bg-[var(--text-2)]/10 text-[var(--text-2)]' : ''}
+              `}>
+                {selectedSubscription.status.charAt(0).toUpperCase() + selectedSubscription.status.slice(1)}
+              </div>
+            </div>
+
+            {/* Billing Information */}
+            <Card variant="subtle" className="p-4">
+              <h4 className="font-semibold text-[var(--text-1)] mb-3">Billing Information</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-[var(--text-2)]">Amount</span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    ${selectedSubscription.amount.toFixed(2)} / {selectedSubscription.billing}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-[var(--text-2)]">Monthly Cost</span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    ${(selectedSubscription.billing === 'yearly' ? selectedSubscription.amount / 12 : 
+                       selectedSubscription.billing === 'weekly' ? selectedSubscription.amount * 4 : 
+                       selectedSubscription.amount).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-[var(--text-2)]">Payment Method</span>
+                  <span className="font-medium text-[var(--text-1)]">{selectedSubscription.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-[var(--text-2)]">Next Billing Date</span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    {new Date(selectedSubscription.nextBilling).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-[var(--text-2)]">Auto-Renew</span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    {selectedSubscription.autoRenew ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Usage Information */}
+            {selectedSubscription.usage && (
+              <Card variant="subtle" className="p-4">
+                <h4 className="font-semibold text-[var(--text-1)] mb-3">Usage</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-[var(--text-2)]">Current Usage</span>
+                    <span className="font-medium text-[var(--text-1)]">
+                      {selectedSubscription.usage.current} / {selectedSubscription.usage.limit} {selectedSubscription.usage.unit}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-[rgba(var(--glass-rgb),0.1)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[var(--primary-blue)] to-[var(--primary-indigo)]"
+                      style={{ width: `${(selectedSubscription.usage.current / selectedSubscription.usage.limit) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-2)]">
+                    {((selectedSubscription.usage.current / selectedSubscription.usage.limit) * 100).toFixed(1)}% used
+                  </p>
+                </div>
+              </Card>
+            )}
+
+            {/* Billing History */}
+            <Card variant="subtle" className="p-4">
+              <h4 className="font-semibold text-[var(--text-1)] mb-3">Recent Payments</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between py-2 border-b border-[var(--border-1)]">
+                  <span className="text-sm text-[var(--text-2)]">
+                    {new Date(selectedSubscription.lastBilling).toLocaleDateString()}
+                  </span>
+                  <span className="font-medium text-[var(--text-1)]">
+                    ${selectedSubscription.amount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-1)]">
+              {selectedSubscription.status === 'active' && (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      handleSubscriptionAction(selectedSubscription.id, 'pause');
+                      setShowDetails(false);
+                    }}
+                  >
+                    Pause Subscription
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      handleSubscriptionAction(selectedSubscription.id, 'cancel');
+                      setShowDetails(false);
+                    }}
+                  >
+                    Cancel Subscription
+                  </Button>
+                </>
+              )}
+              {selectedSubscription.status === 'paused' && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    handleSubscriptionAction(selectedSubscription.id, 'resume');
+                    setShowDetails(false);
+                  }}
+                >
+                  Resume Subscription
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                onClick={() => setShowDetails(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
