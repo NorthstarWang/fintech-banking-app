@@ -1,0 +1,45 @@
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bankflow_backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - SEED=${SEED:-0000000000000000}
+      - ENV=${ENV:-production}
+      - PORT=${BACKEND_PORT:-8000}
+      - WORKERS=${WORKERS:-4}
+    networks:
+      - bankflow_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Use localhost for client-side API calls
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: bankflow_frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      # Use localhost for client-side API calls
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bankflow_net
+
+networks:
+  bankflow_net:
+    driver: bridge
