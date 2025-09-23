@@ -78,3 +78,12 @@ backend/simple_joint_test.py
 backend/create_all_mock_routes.py
 
 CLAUDE.md
+
+# Annotation scripts (contain API keys - NEVER COMMIT)
+utils.py
+set_api_key.sh
+script1_model_a_init.py
+script2_model_b_init.py
+script3_model_b_capture.py
+TASK-*/
+*.log
