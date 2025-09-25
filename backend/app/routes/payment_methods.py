@@ -110,23 +110,7 @@ async def add_card(
     db_session.add(payment_method)
     db_session.commit()
     db_session.refresh(payment_method)
-    
-    # Log the action
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Added {payment_method.card_brand} card ending in {card_last_four}",
-            "table_name": "payment_methods",
-            "update_type": "insert",
-            "values": {
-                "id": payment_method.id,
-                "type": payment_method.type.value,
-                "card_brand": payment_method.card_brand,
-                "last_four": card_last_four
-            }
-        }
-    )
-    
+
     # Log security event
     log_security_event(
         db_session,
@@ -178,23 +162,7 @@ async def add_bank_account(
     db_session.add(payment_method)
     db_session.commit()
     db_session.refresh(payment_method)
-    
-    # Log the action
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Added bank account from {bank_data.bank_name}",
-            "table_name": "payment_methods",
-            "update_type": "insert",
-            "values": {
-                "id": payment_method.id,
-                "type": "bank_account",
-                "bank_name": bank_data.bank_name,
-                "last_four": payment_method.account_last_four
-            }
-        }
-    )
-    
+
     # Log security event
     log_security_event(
         db_session,
@@ -255,22 +223,7 @@ async def add_digital_wallet(
     db_session.add(payment_method)
     db_session.commit()
     db_session.refresh(payment_method)
-    
-    # Log the action
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Added {wallet_data.wallet_provider} wallet",
-            "table_name": "payment_methods",
-            "update_type": "insert",
-            "values": {
-                "id": payment_method.id,
-                "type": "digital_wallet",
-                "provider": wallet_data.wallet_provider
-            }
-        }
-    )
-    
+
     return PaymentMethodResponse.from_orm(payment_method)
 
 @router.get("/", response_model=List[PaymentMethodResponse])
@@ -356,21 +309,7 @@ async def update_payment_method(
     payment_method.updated_at = datetime.utcnow()
     db_session.commit()
     db_session.refresh(payment_method)
-    
-    # Log the update
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Updated payment method {payment_method.nickname or payment_method.id}",
-            "table_name": "payment_methods",
-            "update_type": "update",
-            "values": {
-                "id": payment_method_id,
-                "updates": update_data.dict(exclude_none=True)
-            }
-        }
-    )
-    
+
     return PaymentMethodResponse.from_orm(payment_method)
 
 @router.delete("/{payment_method_id}")
@@ -412,14 +351,7 @@ async def delete_payment_method(
     
     db_session.delete(payment_method)
     db_session.commit()
-    
-    # Log the deletion
-        session_id,
-        "payment_methods",
-        payment_method_id,
-        f"Deleted {pm_info['type']} payment method"
-    )
-    
+
     # Log security event
     log_security_event(
         db_session,

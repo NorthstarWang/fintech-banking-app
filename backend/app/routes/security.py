@@ -131,19 +131,7 @@ async def setup_two_factor(
         response_data["id"] = two_factor.id
     
     db_session.commit()
-    
-    # Log the setup
-        session_id,
-        "SECURITY_EVENT",
-        {
-            "text": f"Started 2FA setup for {setup_data.method.value}",
-            "page_url": "/security/2fa",
-            "event_type": "2fa_setup_initiated",
-            "success": True,
-            "method": setup_data.method.value
-        }
-    )
-    
+
     return TwoFactorSetupResponse(**response_data)
 
 @router.post("/2fa/verify/{method}")

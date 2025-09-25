@@ -90,10 +90,7 @@ async def create_savings_goal(
     db_session.add(goal)
     db_session.commit()
     db_session.refresh(goal)
-    
-        session_id, goal.id, goal.user_id, goal.name, goal.target_amount
-    )
-    
+
     # Prepare response with additional fields
     response_dict = {
         "id": goal.id,
@@ -361,9 +358,7 @@ async def contribute_to_goal(
     
     db_session.add(contribution_record)
     db_session.commit()
-    
-    from ..utils.logger import logger
-    
+
     response = {
         "contribution_amount": amount,
         "new_balance": goal.current_amount,
@@ -437,11 +432,9 @@ async def withdraw_from_goal(
             category_id=16  # Savings category
         )
         db_session.add(transaction)
-    
+
     db_session.commit()
-    
-    from ..utils.logger import logger
-    
+
     response = {
         "withdrawal_amount": amount,
         "new_balance": goal.current_amount,
@@ -474,10 +467,7 @@ async def delete_savings_goal(
     goal_name = goal.name
     db_session.delete(goal)
     db_session.commit()
-    
-        session_id, "goals", goal_id, f"Deleted savings goal: {goal_name}"
-    )
-    
+
     return {"message": f"Goal '{goal_name}' deleted successfully"}
 
 @router.get("", response_model=List[dict])
@@ -713,9 +703,7 @@ async def configure_auto_transfer(
     
     db_session.commit()
     db_session.refresh(goal)
-    
-    from ..utils.logger import logger
-    
+
     response = {
         "id": goal.id,
         "goal_name": goal.name,
@@ -844,10 +832,7 @@ async def create_shared_goal(
     db_session.add(goal2)
     db_session.commit()
     db_session.refresh(goal1)
-    
-        session_id, goal1.id, goal1.user_id, goal1.name, goal1.target_amount
-    )
-    
+
     response = {
         "id": goal1.id,
         "user_id": goal1.user_id,
@@ -964,9 +949,7 @@ async def configure_round_up(
     db_session.add(round_up_config)
     db_session.commit()
     db_session.refresh(round_up_config)
-    
-    from ..utils.logger import logger
-    
+
     return RoundUpConfigResponse.from_orm(round_up_config)
 
 @router.get("/roundup/transactions", response_model=List[RoundUpTransactionResponse])
@@ -1084,9 +1067,7 @@ async def create_savings_rule(
     db_session.add(savings_rule)
     db_session.commit()
     db_session.refresh(savings_rule)
-    
-    from ..utils.logger import logger
-    
+
     return SavingsRuleResponse.from_orm(savings_rule)
 
 @router.get("/rules", response_model=List[SavingsRuleResponse])
@@ -1231,9 +1212,7 @@ async def join_savings_challenge(
     
     db_session.add(participant)
     db_session.commit()
-    
-    from ..utils.logger import logger
-    
+
     return {"message": f"Successfully joined {challenge.name}"}
 
 # Mock challenge creation for demo
