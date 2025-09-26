@@ -102,12 +102,6 @@ export default function ETFDetailPage() {
       
       setEtf(processedETF);
       
-      // Track page view
-        text: `User viewed ETF detail for ${symbol}`,
-        page_name: 'ETF Detail',
-        asset_symbol: symbol,
-        timestamp: new Date().toISOString()
-      });
     } catch (err) {
       console.error('Error fetching ETF details:', err);
       setError('Failed to load ETF details');

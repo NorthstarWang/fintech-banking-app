@@ -173,24 +173,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                       onClick={() => {
-                          `transaction-item-${transaction.id}`,
-                          `${analyticsLabel} - Clicked ${transaction.description} - ${transaction.category}`
-                        );
                         onSelectTransaction(transaction);
                       }}
                       data-testid={`transaction-item-${transaction.id}`}
-                      onMouseEnter={() => {
-                          text: `User hovered over Transaction: ${transaction.description} - ${transaction.category} - ${formatAmount(transaction.amount, transaction.type)}`,
-                          element_identifier: `transaction-item-${transaction.id}`,
-                          data: {
-                            transaction_id: transaction.id,
-                            description: transaction.description,
-                            category: transaction.category,
-                            amount: transaction.amount,
-                            type: transaction.type
-                          }
-                        });
-                      }}
                       className={`
                         p-4 rounded-lg cursor-pointer transition-all
                         ${selectedTransaction?.id === transaction.id 

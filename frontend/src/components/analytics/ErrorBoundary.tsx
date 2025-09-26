@@ -35,16 +35,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to analytics
-      text: `Error caught: ${error.message}`,
-      custom_action: 'error_boundary_catch',
-      data: {
-        error_name: error.name,
-        error_stack: error.stack,
-        component_stack: errorInfo.componentStack,
-        error_timestamp: new Date().toISOString(),
-      },
-    });
 
     this.setState({
       error,

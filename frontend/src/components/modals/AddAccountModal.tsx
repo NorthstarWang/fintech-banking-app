@@ -147,13 +147,6 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
         await accountsService.createAccount(accountData);
       }
 
-        text: 'Account created successfully',
-        custom_action: 'account_created',
-        data: {
-          account_type: accountType,
-          is_joint: isJointAccount,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {

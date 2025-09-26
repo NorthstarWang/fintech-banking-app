@@ -133,9 +133,6 @@ export const BudgetGoals: React.FC<BudgetGoalsProps> = ({
                           onEditGoal(goal);
                         }
                       }}
-                        `edit-goal-${goal.id}`,
-                        `Edit Goal: ${goal.name}`
-                      )}
                       title="Edit Goal"
                     />
                     {onDeleteGoal && (
@@ -146,9 +143,6 @@ export const BudgetGoals: React.FC<BudgetGoalsProps> = ({
                         onClick={() => {
                           onDeleteGoal(goal);
                         }}
-                          `delete-goal-${goal.id}`,
-                          `Delete Goal: ${goal.name}`
-                        )}
                         title="Delete Goal"
                         className="text-[var(--primary-red)] hover:text-[var(--primary-red)]"
                       />

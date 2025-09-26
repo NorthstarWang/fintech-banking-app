@@ -107,14 +107,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     try {
       await transactionsService.createTransaction(formData);
       
-        text: 'Transaction created successfully',
-        custom_action: 'add_transaction',
-        data: {
-          transaction_type: formData.transaction_type,
-          amount: formData.amount,
-          category_id: formData.category_id
-        }
-      });
 
       onSuccess();
       onClose();

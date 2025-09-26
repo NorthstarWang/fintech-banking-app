@@ -15,7 +15,6 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { useSyntheticTracking } from '@/hooks/useSyntheticTracking';
 
 interface Currency {
   code: string;
@@ -120,7 +119,6 @@ const TRANSFER_METHOD_LABELS = {
 };
 
 export default function CurrencyConverterPage() {
-  const { trackCurrencyConversion } = useSyntheticTracking();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [balances, setBalances] = useState<CurrencyBalance[]>([]);
   const [activeTab, setActiveTab] = useState<'convert' | 'p2p' | 'history'>('convert');
@@ -145,11 +143,6 @@ export default function CurrencyConverterPage() {
   useEffect(() => {
     fetchInitialData();
     
-    // Track page view
-      text: 'User viewed currency converter page',
-      page_name: 'Currency Converter',
-      timestamp: new Date().toISOString()
-    });
   }, []);
 
   useEffect(() => {

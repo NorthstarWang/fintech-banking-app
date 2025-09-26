@@ -48,9 +48,6 @@ export const BudgetCategoryCard: React.FC<BudgetCategoryCardProps> = ({
       variant="default" 
       className="h-full"
       onClick={() => {
-          `${analyticsId}-${category.id}`,
-          `${analyticsLabel} - ${category.name} - ${category.percentage.toFixed(1)}% used`
-        );
       }}
     >
       <div className="p-6">
@@ -78,14 +75,8 @@ export const BudgetCategoryCard: React.FC<BudgetCategoryCardProps> = ({
               className="!p-1.5 hover:bg-[rgba(var(--glass-rgb),0.3)]"
               onClick={(e) => {
                 e.stopPropagation();
-                  `${analyticsId}-${category.id}-edit`,
-                  `${analyticsLabel} - ${category.name} - Edit`
-                );
                 onEdit();
               }}
-                `${analyticsId}-${category.id}-edit`,
-                `Edit ${category.name} Budget`
-              )}
               title="Edit Budget"
             >
               <Edit2 size={16} className="text-[var(--text-2)]" />
@@ -96,14 +87,8 @@ export const BudgetCategoryCard: React.FC<BudgetCategoryCardProps> = ({
               className="!p-1.5 hover:bg-[rgba(var(--glass-rgb),0.3)] hover:text-[var(--primary-red)]"
               onClick={(e) => {
                 e.stopPropagation();
-                  `${analyticsId}-${category.id}-delete`,
-                  `${analyticsLabel} - ${category.name} - Delete`
-                );
                 onDelete();
               }}
-                `${analyticsId}-${category.id}-delete`,
-                `Delete ${category.name} Budget`
-              )}
               title="Delete Budget"
             >
               <Trash2 size={16} className="text-[var(--text-2)]" />

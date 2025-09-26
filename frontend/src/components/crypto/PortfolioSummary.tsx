@@ -36,11 +36,6 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
   assetAllocation,
   className = ''
 }) => {
-  React.useEffect(() => {
-      totalValue: totalValueUSD,
-      assetCount: topAssets.length
-    });
-  }, [totalValueUSD, topAssets.length]);
 
   const getChangeColor = (change: number) => {
     if (change > 0) return 'var(--primary-emerald)';

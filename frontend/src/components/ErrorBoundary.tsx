@@ -35,11 +35,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error to analytics
-      error_name: error.name,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-    });
 
     this.setState({
       error,

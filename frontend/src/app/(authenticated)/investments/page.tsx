@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { useSyntheticTracking } from '@/hooks/useSyntheticTracking';
 
 interface InvestmentAccount {
   id: number;
@@ -82,7 +81,6 @@ const ASSET_TYPE_CONFIG = {
 
 export default function InvestmentsPage() {
   const router = useRouter();
-  const { trackInvestmentOrder } = useSyntheticTracking();
   const [accounts, setAccounts] = useState<InvestmentAccount[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [allocation, setAllocation] = useState<AssetAllocation[]>([]);
@@ -92,11 +90,6 @@ export default function InvestmentsPage() {
   useEffect(() => {
     fetchInvestmentData();
     
-    // Track page view
-      text: 'User viewed investments page',
-      page_name: 'Investments',
-      timestamp: new Date().toISOString()
-    });
   }, []);
 
   const fetchInvestmentData = async () => {
@@ -122,14 +115,6 @@ export default function InvestmentsPage() {
 
   const handleCreateAccount = async (accountType: string) => {
     try {
-      // Track account creation intent
-        text: `User creating ${accountType} investment account`,
-        custom_action: 'investment_account_creation',
-        data: {
-          account_type: accountType,
-          risk_level: ASSET_TYPE_CONFIG[accountType as keyof typeof ASSET_TYPE_CONFIG].riskLevel
-        }
-      });
 
       await fetchApi.post('/api/investments/accounts', {
         account_type: 'individual',
@@ -145,13 +130,6 @@ export default function InvestmentsPage() {
   };
 
   const navigateToTrading = (assetType: string) => {
-      text: `User navigating to ${assetType} trading`,
-      custom_action: 'navigate_to_trading',
-      data: {
-        asset_type: assetType,
-        source: 'investments_dashboard'
-      }
-    });
     router.push(`/investments/trade/${assetType}`);
   };
 
@@ -171,14 +149,6 @@ export default function InvestmentsPage() {
   };
 
   const handleTabChange = (tab: 'overview' | 'positions' | 'performance') => {
-      text: `User switched to ${tab} tab`,
-      custom_action: 'investment_tab_switch',
-      data: {
-        from_tab: activeTab,
-        to_tab: tab,
-        has_positions: positions.length > 0
-      }
-    });
     setActiveTab(tab);
   };
 

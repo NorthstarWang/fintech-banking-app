@@ -79,13 +79,9 @@ describe('AuthService', () => {
       await authService.login(mockCredentials)
 
         username: 'testuser',
-        text: 'Login attempt for user testuser',
-      })
 
         userId: 1,
         username: 'testuser',
-        text: 'User testuser logged in successfully',
-      })
     })
 
     it('should handle login failure', async () => {
@@ -96,8 +92,6 @@ describe('AuthService', () => {
 
         username: 'testuser',
         error: 'Invalid credentials',
-        text: 'Login failed for user testuser',
-      })
     })
   })
 
@@ -143,13 +137,9 @@ describe('AuthService', () => {
 
         username: 'newuser',
         email: 'newuser@example.com',
-        text: 'Registration attempt for user newuser',
-      })
 
         userId: 2,
         username: 'newuser',
-        text: 'User newuser registered successfully',
-      })
     })
 
     it('should handle registration failure', async () => {
@@ -162,8 +152,6 @@ describe('AuthService', () => {
 
         username: 'newuser',
         error: 'Username already exists',
-        text: 'Registration failed for user newuser',
-      })
     })
   })
 
@@ -203,8 +191,6 @@ describe('AuthService', () => {
 
         userId: 1,
         username: 'testuser',
-        text: 'User testuser logged out',
-      })
     })
 
     it('should clear local state even if API call fails', async () => {
@@ -314,8 +300,6 @@ describe('AuthService', () => {
       expect(mockApiClient.post).toHaveBeenCalledWith('/api/auth/refresh')
       expect(mockApiClient.setAuthToken).toHaveBeenCalledWith('new-token-456')
         userId: 1,
-        text: 'Token refreshed for user testuser',
-      })
     })
 
     it('should logout on refresh failure', async () => {

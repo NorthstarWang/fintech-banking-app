@@ -165,14 +165,6 @@ export const SpendingOverview: React.FC<SpendingOverviewProps> = ({ stats, budge
                       className="w-full h-full rounded-t-lg opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
                       style={{ backgroundColor: category.color }}
                       onMouseEnter={(e) => {
-                          text: `User hovered over ${category.name} - $${category.amount.toFixed(2)} (${category.percentage.toFixed(1)}%)`,
-                          element_identifier: `spending-chart-bar-${index}`,
-                          data: {
-                            category_name: category.name,
-                            amount: category.amount,
-                            percentage: category.percentage
-                          }
-                        });
                       }}
                     />
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-[var(--text-2)] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-color)] px-2 py-1 rounded shadow-lg z-10">
@@ -211,13 +203,6 @@ export const SpendingOverview: React.FC<SpendingOverviewProps> = ({ stats, budge
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-[rgba(var(--glass-rgb),0.1)]"
                 data-testid={`spending-category-${index}`}
                 onMouseEnter={() => {
-                    text: `User hovered over ${category.name} Category - $${category.amount.toFixed(2)}`,
-                    element_identifier: `spending-category-${index}`,
-                    data: {
-                      category_name: category.name,
-                      amount: category.amount
-                    }
-                  });
                 }}
               >
               <div
@@ -282,9 +267,6 @@ export const SpendingOverview: React.FC<SpendingOverviewProps> = ({ stats, budge
             }}
             data-testid="view-analytics-button"
             onMouseEnter={() => {
-                text: 'User hovered over View Detailed Analytics Button',
-                element_identifier: 'view-analytics-button'
-              });
             }}
           >
             View Detailed Analytics

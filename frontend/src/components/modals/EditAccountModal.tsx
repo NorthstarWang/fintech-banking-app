@@ -87,13 +87,6 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
 
       await accountsService.updateAccount(parseInt(account.id), updateData);
 
-        text: 'Account updated successfully',
-        custom_action: 'account_updated',
-        data: {
-          account_id: account.id,
-          account_type: account.type,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {
@@ -116,13 +109,6 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
 
       await accountsService.deleteAccount(parseInt(account.id));
 
-        text: 'Account deleted successfully',
-        custom_action: 'account_deleted',
-        data: {
-          account_id: account.id,
-          account_type: account.type,
-        }
-      });
 
       handleClose();
       onAccountDeleted?.();

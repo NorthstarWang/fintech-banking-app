@@ -24,11 +24,7 @@ export const useErrorHandler = () => {
 
     // Log to analytics
     if (logToAnalytics) {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack,
-        code: error?.response?.status,
-        data: error?.response?.data,
-      });
+      // Analytics logging removed
     }
 
     // Show user-friendly notification

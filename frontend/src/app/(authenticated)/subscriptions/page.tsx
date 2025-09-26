@@ -112,17 +112,6 @@ export default function SubscriptionsPage() {
 
   useEffect(() => {
     // Enhanced page view logging
-      text: `User ${user?.username || 'unknown'} viewed subscriptions page`,
-      page_name: 'Subscriptions',
-      user_id: user?.id,
-      timestamp: new Date().toISOString(),
-      data: {
-        available_features: ['subscription_tracking', 'spending_analytics', 'calendar_view', 'subscription_management'],
-        initial_filter_category: filterCategory,
-        initial_filter_status: filterStatus,
-        initial_sort: sortBy
-      }
-    });
 
     // Load real subscriptions from backend
     loadSubscriptions();
@@ -168,17 +157,6 @@ export default function SubscriptionsPage() {
       setIsLoading(false);
       
       // Log data loaded event
-        text: `Loaded ${formattedSubscriptions.length} subscriptions with $${analysis.total_monthly_cost.toFixed(2)} monthly spend`,
-        custom_action: 'subscriptions_data_loaded',
-        data: {
-          total_subscriptions: formattedSubscriptions.length,
-          active_subscriptions: analysis.active_subscriptions,
-          total_monthly_spend: analysis.total_monthly_cost,
-          total_annual_cost: analysis.total_annual_cost,
-          categories: analysis.cost_by_category,
-          average_cost: analysis.average_subscription_cost
-        }
-      });
     } catch (error) {
       console.error('Failed to load subscriptions:', error);
       // Fall back to mock data
@@ -422,24 +400,6 @@ export default function SubscriptionsPage() {
     const subscription = subscriptions.find(s => s.id === id);
     if (!subscription) return;
 
-      text: `User ${user?.username || 'unknown'} ${action}d subscription "${subscription.name}"`,
-      custom_action: `subscription_${action}`,
-      data: {
-        subscription_id: id,
-        subscription_name: subscription.name,
-        subscription_category: subscription.category,
-        subscription_amount: subscription.amount,
-        subscription_billing: subscription.billing,
-        action: action,
-        user_id: user?.id,
-        previous_status: subscription.status,
-        new_status: action === 'pause' ? 'paused' : action === 'resume' ? 'active' : action === 'cancel' ? 'cancelled' : subscription.status,
-        monthly_savings: action === 'pause' || action === 'cancel' ? 
-          (subscription.billing === 'yearly' ? subscription.amount / 12 : 
-           subscription.billing === 'weekly' ? subscription.amount * 4 : 
-           subscription.amount) : 0
-      }
-    });
 
     setSubscriptions(subscriptions.map(sub => {
       if (sub.id === id) {
@@ -491,13 +451,6 @@ export default function SubscriptionsPage() {
               variant="secondary"
               icon={<Download size={18} />}
               onClick={() => {
-                  text: 'User exporting subscriptions data',
-                  custom_action: 'export_subscriptions',
-                  data: {
-                    total_subscriptions: subscriptions.length,
-                    active_subscriptions: subscriptions.filter(s => s.status === 'active').length
-                  }
-                });
                 
                 // Generate CSV
                 const csvContent = [
@@ -535,22 +488,6 @@ export default function SubscriptionsPage() {
               icon={<Plus size={18} />}
               onClick={() => {
                 setShowAddSubscription(true);
-                  text: 'User clicked Add Subscription button',
-                  custom_action: 'open_add_subscription_modal',
-                  data: {
-                    from_location: 'header',
-                    current_subscriptions_count: subscriptions.length,
-                    active_subscriptions: subscriptions.filter(s => s.status === 'active').length,
-                    user_id: user?.id,
-                    total_monthly_spend: subscriptions.reduce((sum, sub) => {
-                      if (sub.status !== 'active') return sum;
-                      const monthly = sub.billing === 'yearly' ? sub.amount / 12 : 
-                                     sub.billing === 'weekly' ? sub.amount * 4 : 
-                                     sub.amount;
-                      return sum + monthly;
-                    }, 0)
-                  }
-                });
               }}
             >
               Add Subscription
@@ -571,19 +508,6 @@ export default function SubscriptionsPage() {
               onChange={(e) => {
                 const query = e.target.value;
                 setSearchQuery(query);
-                  text: `User searching subscriptions with query: "${query}"`,
-                  custom_action: 'search_subscriptions',
-                  data: {
-                    search_query: query,
-                    query_length: query.length,
-                    user_id: user?.id,
-                    current_filter_category: filterCategory,
-                    current_filter_status: filterStatus,
-                    current_sort: sortBy,
-                    total_subscriptions: subscriptions.length,
-                    visible_subscriptions: filteredSubscriptions.length
-                  }
-                });
               }}
               icon={<Search size={18} />}
             />
@@ -598,19 +522,6 @@ export default function SubscriptionsPage() {
               value={filterCategory}
               onChange={(value) => {
                 setFilterCategory(value);
-                  text: `User filtered subscriptions by category: ${value}`,
-                  filter_type: 'subscription_category',
-                  filter_value: value,
-                  data: {
-                    old_filter: filterCategory,
-                    new_filter: value,
-                    user_id: user?.id,
-                    subscriptions_matching: value === 'all' ? subscriptions.length : subscriptions.filter(s => s.category === value).length,
-                    current_search: searchQuery,
-                    current_status_filter: filterStatus,
-                    current_sort: sortBy
-                  }
-                });
               }}
               placeholder="Category"
             />
@@ -623,19 +534,6 @@ export default function SubscriptionsPage() {
               value={filterStatus}
               onChange={(value) => {
                 setFilterStatus(value);
-                  text: `User filtered subscriptions by status: ${value}`,
-                  filter_type: 'subscription_status',
-                  filter_value: value,
-                  data: {
-                    old_filter: filterStatus,
-                    new_filter: value,
-                    user_id: user?.id,
-                    subscriptions_matching: value === 'all' ? subscriptions.length : subscriptions.filter(s => s.status === value).length,
-                    current_search: searchQuery,
-                    current_category_filter: filterCategory,
-                    current_sort: sortBy
-                  }
-                });
               }}
               placeholder="Status"
             />
@@ -650,19 +548,6 @@ export default function SubscriptionsPage() {
               onChange={(value) => {
                 const newSort = value as 'name' | 'amount' | 'date';
                 setSortBy(newSort);
-                  text: `User sorted subscriptions by ${value}`,
-                  custom_action: 'sort_subscriptions',
-                  data: {
-                    old_sort: sortBy,
-                    new_sort: newSort,
-                    sort_direction: newSort === 'date' ? 'ascending' : newSort === 'amount' ? 'descending' : 'alphabetical',
-                    user_id: user?.id,
-                    current_filter_category: filterCategory,
-                    current_filter_status: filterStatus,
-                    current_search: searchQuery,
-                    subscriptions_count: filteredSubscriptions.length
-                  }
-                });
               }}
               placeholder="Sort by"
             />
@@ -681,23 +566,6 @@ export default function SubscriptionsPage() {
                   onClick={() => {
                       setSelectedSubscription(subscription);
                       setShowDetails(true);
-                        text: `User viewing details for subscription "${subscription.name}"`,
-                        custom_action: 'view_subscription_details',
-                        data: {
-                          subscription_id: subscription.id,
-                          subscription_name: subscription.name,
-                          subscription_category: subscription.category,
-                          subscription_amount: subscription.amount,
-                          subscription_billing: subscription.billing,
-                          subscription_status: subscription.status,
-                          user_id: user?.id,
-                          next_billing_date: subscription.nextBilling,
-                          days_until_billing: Math.floor((new Date(subscription.nextBilling).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-                          has_usage_data: !!subscription.usage,
-                          has_savings_data: !!subscription.savings,
-                          is_trial: !!subscription.trialEnd
-                        }
-                      });
                     }}
                   />
               ))}
@@ -749,18 +617,6 @@ export default function SubscriptionsPage() {
           setSubscriptions([...subscriptions, newSubscription]);
           setShowAddSubscription(false);
           
-            text: `User added new subscription "${newSubscription.name}"`,
-            custom_action: 'add_subscription',
-            data: {
-              subscription_name: newSubscription.name,
-              subscription_category: newSubscription.category,
-              subscription_amount: newSubscription.amount,
-              subscription_billing: newSubscription.billing,
-              monthly_cost: newSubscription.billing === 'yearly' ? newSubscription.amount / 12 : 
-                           newSubscription.billing === 'weekly' ? newSubscription.amount * 4 : 
-                           newSubscription.amount
-            }
-          });
         }}>
           <Input
             name="name"

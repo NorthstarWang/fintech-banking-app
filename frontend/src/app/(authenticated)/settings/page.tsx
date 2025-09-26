@@ -122,11 +122,6 @@ export default function SettingsPage() {
   const [autoTheme, setAutoTheme] = useState(false);
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed settings page`,
-      page_name: 'Settings',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadUserProfile();
   }, [user]);
   
@@ -143,16 +138,6 @@ export default function SettingsPage() {
       });
       setIsLoading(false);
       
-      // Log profile data loaded
-        text: 'Settings profile data loaded successfully',
-        custom_action: 'settings_profile_loaded',
-        data: {
-          has_first_name: !!userProfile.first_name,
-          has_last_name: !!userProfile.last_name,
-          has_phone: !!userProfile.phone,
-          email: userProfile.email
-        }
-      });
     } catch (error) {
       console.error('Failed to load user profile:', error);
       showError('Error', 'Failed to load profile data');
@@ -199,35 +184,9 @@ export default function SettingsPage() {
       notif.id === id ? { ...notif, [type]: newState } : notif
     ));
     
-      text: `User ${newState ? 'enabled' : 'disabled'} ${type} notifications for ${notification?.label || id}`,
-      toggle_type: `notification_${type}`,
-      toggle_state: newState,
-      data: {
-        notification_id: id,
-        notification_label: notification?.label,
-        channel: type,
-        new_state: newState,
-        all_channels: {
-          email: id === notification?.id ? (type === 'email' ? newState : notification.email) : false,
-          push: id === notification?.id ? (type === 'push' ? newState : notification.push) : false,
-          sms: id === notification?.id ? (type === 'sms' ? newState : notification.sms) : false
-        }
-      }
-    });
   };
 
   const handleProfileUpdate = async () => {
-      text: `User updating profile information`,
-      custom_action: 'update_profile_attempt',
-      data: {
-        fields_updated: {
-          first_name: profileData.firstName !== '',
-          last_name: profileData.lastName !== '',
-          phone: profileData.phone !== '',
-          email: profileData.email
-        }
-      }
-    });
     
     try {
       // Prepare update data
@@ -251,17 +210,6 @@ export default function SettingsPage() {
       
       showSuccess('Profile Updated', 'Your profile information has been saved successfully.');
       
-      // Log successful update
-        text: 'User successfully updated profile',
-        custom_action: 'update_profile_success',
-        data: {
-          updated_fields: {
-            first_name: !!profileData.firstName,
-            last_name: !!profileData.lastName,
-            phone: !!profileData.phone
-          }
-        }
-      });
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       showError('Update Failed', error.message || 'Failed to update profile. Please try again.');
@@ -284,11 +232,6 @@ export default function SettingsPage() {
                   value={profileData.firstName}
                   onChange={(e) => {
                     setProfileData({ ...profileData, firstName: e.target.value });
-                      text: `User entered first name`,
-                      field_name: 'first_name',
-                      field_value: e.target.value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   placeholder="Enter your first name"
                 />
@@ -303,11 +246,6 @@ export default function SettingsPage() {
                   value={profileData.lastName}
                   onChange={(e) => {
                     setProfileData({ ...profileData, lastName: e.target.value });
-                      text: `User entered last name`,
-                      field_name: 'last_name',
-                      field_value: e.target.value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   placeholder="Enter your last name"
                 />
@@ -322,11 +260,6 @@ export default function SettingsPage() {
                   value={profileData.email}
                   onChange={(e) => {
                     setProfileData({ ...profileData, email: e.target.value });
-                      text: `User entered email`,
-                      field_name: 'email',
-                      field_value: e.target.value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   placeholder="Enter your email"
                 />
@@ -341,11 +274,6 @@ export default function SettingsPage() {
                   value={profileData.phone}
                   onChange={(e) => {
                     setProfileData({ ...profileData, phone: e.target.value });
-                      text: `User entered phone number`,
-                      field_name: 'phone',
-                      field_value: e.target.value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   placeholder="Enter your phone"
                 />
@@ -359,11 +287,6 @@ export default function SettingsPage() {
                   value={profileData.timezone}
                   onChange={(value) => {
                     setProfileData({ ...profileData, timezone: value });
-                      text: `User selected timezone`,
-                      field_name: 'timezone',
-                      field_value: value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   items={[
                     { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
@@ -391,11 +314,6 @@ export default function SettingsPage() {
                   value={profileData.currency}
                   onChange={(value) => {
                     setProfileData({ ...profileData, currency: value });
-                      text: `User selected currency`,
-                      field_name: 'currency',
-                      field_value: value,
-                      form_type: 'profile_settings'
-                    });
                   }}
                   items={[
                     { value: 'USD', label: 'USD - US Dollar' },
@@ -419,18 +337,6 @@ export default function SettingsPage() {
               <Button 
                 variant="primary" 
                 onClick={() => {
-                    text: 'User clicked save changes in profile settings',
-                    custom_action: 'click_save_profile',
-                    data: {
-                      has_changes: true,
-                      fields_filled: {
-                        first_name: !!profileData.firstName,
-                        last_name: !!profileData.lastName,
-                        email: !!profileData.email,
-                        phone: !!profileData.phone
-                      }
-                    }
-                  });
                   handleProfileUpdate();
                 }}
               >
@@ -439,12 +345,6 @@ export default function SettingsPage() {
               <Button 
                 variant="secondary"
                 onClick={() => {
-                    text: 'User cancelled profile changes',
-                    custom_action: 'cancel_profile_changes',
-                    data: {
-                      had_unsaved_changes: true
-                    }
-                  });
                   loadUserProfile(); // Reset to original values
                 }}
               >
@@ -525,12 +425,6 @@ export default function SettingsPage() {
                     size="sm"
                     onClick={() => {
                       setShowPasswordModal(true);
-                        text: 'User opened change password modal',
-                        custom_action: 'open_change_password',
-                        data: {
-                          from_section: 'security_settings'
-                        }
-                      });
                     }}
                   >
                     Change Password
@@ -551,15 +445,6 @@ export default function SettingsPage() {
                   <Switch 
                     checked={true} 
                     onCheckedChange={(checked) => {
-                        text: `User ${checked ? 'enabled' : 'disabled'} two-factor authentication`,
-                        toggle_type: 'two_factor_auth',
-                        toggle_state: checked,
-                        data: {
-                          security_feature: '2FA',
-                          was_enabled: true,
-                          now_enabled: checked
-                        }
-                      });
                     }}
                   />
                 </div>
@@ -578,16 +463,6 @@ export default function SettingsPage() {
                   <Switch 
                     checked={false} 
                     onCheckedChange={(checked) => {
-                        text: `User ${checked ? 'enabled' : 'disabled'} biometric login`,
-                        toggle_type: 'biometric_login',
-                        toggle_state: checked,
-                        data: {
-                          security_feature: 'biometric',
-                          was_enabled: false,
-                          now_enabled: checked,
-                          device_supports_biometric: true
-                        }
-                      });
                     }}
                   />
                 </div>
@@ -617,14 +492,6 @@ export default function SettingsPage() {
                     size="sm" 
                     fullWidth
                     onClick={() => {
-                        text: 'User clicked view all sessions',
-                        custom_action: 'view_all_sessions',
-                        data: {
-                          from_section: 'security_settings',
-                          visible_sessions: 3,
-                          current_session: 'Chrome on MacOS'
-                        }
-                      });
                     }}
                   >
                     View All Sessions
@@ -653,15 +520,6 @@ export default function SettingsPage() {
                       onChange={(value) => {
                         const oldValue = privacySettings.profileVisibility;
                         setPrivacySettings({ ...privacySettings, profileVisibility: value });
-                          text: `User changed profile visibility from ${oldValue} to ${value}`,
-                          custom_action: 'change_profile_visibility',
-                          data: {
-                            old_visibility: oldValue,
-                            new_visibility: value,
-                            privacy_level: value,
-                            change_direction: value === 'private' ? 'more_restrictive' : value === 'public' ? 'less_restrictive' : 'moderate'
-                          }
-                        });
                       }}
                       items={[
                         { value: 'public', label: 'Public' },
@@ -682,16 +540,6 @@ export default function SettingsPage() {
                       checked={privacySettings.transactionPrivacy}
                       onCheckedChange={(checked) => {
                         setPrivacySettings({ ...privacySettings, transactionPrivacy: checked });
-                          text: `User ${checked ? 'enabled' : 'disabled'} transaction privacy`,
-                          toggle_type: 'transaction_privacy',
-                          toggle_state: checked,
-                          data: {
-                            privacy_feature: 'transaction_privacy',
-                            was_enabled: privacySettings.transactionPrivacy,
-                            now_enabled: checked,
-                            hides_from_social: true
-                          }
-                        });
                       }}
                     />
                   </div>
@@ -707,17 +555,6 @@ export default function SettingsPage() {
                       checked={privacySettings.dataSharing}
                       onCheckedChange={(checked) => {
                         setPrivacySettings({ ...privacySettings, dataSharing: checked });
-                          text: `User ${checked ? 'enabled' : 'disabled'} data sharing for product improvement`,
-                          toggle_type: 'data_sharing',
-                          toggle_state: checked,
-                          data: {
-                            privacy_feature: 'data_sharing',
-                            was_enabled: privacySettings.dataSharing,
-                            now_enabled: checked,
-                            purpose: 'product_improvement',
-                            data_type: 'anonymized'
-                          }
-                        });
                       }}
                     />
                   </div>
@@ -733,17 +570,6 @@ export default function SettingsPage() {
                       checked={privacySettings.analyticsTracking}
                       onCheckedChange={(checked) => {
                         setPrivacySettings({ ...privacySettings, analyticsTracking: checked });
-                          text: `User ${checked ? 'enabled' : 'disabled'} analytics tracking`,
-                          toggle_type: 'analytics_tracking',
-                          toggle_state: checked,
-                          data: {
-                            privacy_feature: 'analytics_tracking',
-                            was_enabled: privacySettings.analyticsTracking,
-                            now_enabled: checked,
-                            helps_improve_app: true,
-                            tracking_type: 'usage_analytics'
-                          }
-                        });
                       }}
                     />
                   </div>
@@ -763,18 +589,6 @@ export default function SettingsPage() {
                       icon={<Download size={16} />}
                       onClick={() => {
                         setShowExportModal(true);
-                          text: 'User opened export data modal',
-                          custom_action: 'open_export_data_modal',
-                          data: {
-                            from_section: 'privacy_settings',
-                            privacy_settings: {
-                              profile_visibility: privacySettings.profileVisibility,
-                              transaction_privacy: privacySettings.transactionPrivacy,
-                              data_sharing: privacySettings.dataSharing,
-                              analytics_tracking: privacySettings.analyticsTracking
-                            }
-                          }
-                        });
                       }}
                     >
                       Export My Data
@@ -786,15 +600,6 @@ export default function SettingsPage() {
                       icon={<Trash2 size={16} />}
                       onClick={() => {
                         setShowDeleteModal(true);
-                          text: 'User opened delete account modal',
-                          custom_action: 'open_delete_account_modal',
-                          data: {
-                            from_section: 'privacy_settings',
-                            user_tenure_days: user?.created_at ? 
-                              Math.floor((new Date().getTime() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 
-                              'unknown'
-                          }
-                        });
                       }}
                     >
                       Delete My Account
@@ -873,13 +678,6 @@ export default function SettingsPage() {
                   size="sm" 
                   icon={<HelpCircle size={16} />}
                   onClick={() => {
-                      text: 'User clicked help & support in settings',
-                      custom_action: 'click_help_support',
-                      data: {
-                        from_section: 'settings_footer',
-                        current_tab: 'privacy' // This would ideally track the actual tab
-                      }
-                    });
                   }}
                 >
                   Help & Support
@@ -889,17 +687,6 @@ export default function SettingsPage() {
                   size="sm" 
                   icon={<LogOut size={16} />}
                   onClick={async () => {
-                      text: `User ${user?.username || 'unknown'} logging out from settings page`,
-                      custom_action: 'logout_from_settings',
-                      data: {
-                        user_id: user?.id,
-                        username: user?.username,
-                        from_section: 'settings_footer',
-                        session_duration_minutes: user?.last_login ? 
-                          Math.floor((new Date().getTime() - new Date(user.last_login).getTime()) / (1000 * 60)) : 
-                          'unknown'
-                      }
-                    });
                     await logout();
                   }}
                   className="text-[var(--primary-red)] hover:bg-[var(--primary-red)]/10"
@@ -927,15 +714,6 @@ export default function SettingsPage() {
               placeholder="Enter current password"
               icon={<Key size={18} />}
               onChange={(e) => {
-                  text: 'User entered current password',
-                  field_name: 'current_password',
-                  field_value: '[REDACTED]',
-                  form_type: 'change_password',
-                  data: {
-                    field_has_value: e.target.value.length > 0,
-                    field_length: e.target.value.length
-                  }
-                });
               }}
             />
           </div>
@@ -948,16 +726,6 @@ export default function SettingsPage() {
               placeholder="Enter new password"
               icon={<Key size={18} />}
               onChange={(e) => {
-                  text: 'User entered new password',
-                  field_name: 'new_password',
-                  field_value: '[REDACTED]',
-                  form_type: 'change_password',
-                  data: {
-                    field_has_value: e.target.value.length > 0,
-                    field_length: e.target.value.length,
-                    meets_minimum_length: e.target.value.length >= 8
-                  }
-                });
               }}
             />
           </div>
@@ -970,15 +738,6 @@ export default function SettingsPage() {
               placeholder="Confirm new password"
               icon={<Key size={18} />}
               onChange={(e) => {
-                  text: 'User entered password confirmation',
-                  field_name: 'confirm_password',
-                  field_value: '[REDACTED]',
-                  form_type: 'change_password',
-                  data: {
-                    field_has_value: e.target.value.length > 0,
-                    field_length: e.target.value.length
-                  }
-                });
               }}
             />
           </div>
@@ -987,13 +746,6 @@ export default function SettingsPage() {
               variant="primary" 
               fullWidth
               onClick={() => {
-                  text: 'User clicked update password button',
-                  custom_action: 'submit_password_change',
-                  data: {
-                    from_modal: 'change_password',
-                    form_complete: true
-                  }
-                });
               }}
             >
               Update Password
@@ -1003,12 +755,6 @@ export default function SettingsPage() {
               fullWidth 
               onClick={() => {
                 setShowPasswordModal(false);
-                  text: 'User cancelled password change',
-                  custom_action: 'cancel_password_change',
-                  data: {
-                    from_modal: 'change_password'
-                  }
-                });
               }}
             >
               Cancel
@@ -1037,15 +783,6 @@ export default function SettingsPage() {
             type="text"
             placeholder="Type DELETE to confirm"
             onChange={(e) => {
-                text: 'User typing delete confirmation',
-                field_name: 'delete_confirmation',
-                field_value: e.target.value,
-                form_type: 'delete_account',
-                data: {
-                  typed_correctly: e.target.value === 'DELETE',
-                  field_length: e.target.value.length
-                }
-              });
             }}
           />
           <div className="flex gap-3">
@@ -1053,17 +790,6 @@ export default function SettingsPage() {
               variant="danger" 
               fullWidth
               onClick={() => {
-                  text: 'User confirmed account deletion',
-                  custom_action: 'confirm_delete_account',
-                  data: {
-                    from_modal: 'delete_account',
-                    user_id: user?.id,
-                    username: user?.username,
-                    account_age_days: user?.created_at ? 
-                      Math.floor((new Date().getTime() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 
-                      'unknown'
-                  }
-                });
               }}
             >
               Delete My Account
@@ -1073,12 +799,6 @@ export default function SettingsPage() {
               fullWidth 
               onClick={() => {
                 setShowDeleteModal(false);
-                  text: 'User cancelled account deletion',
-                  custom_action: 'cancel_delete_account',
-                  data: {
-                    from_modal: 'delete_account'
-                  }
-                });
               }}
             >
               Cancel
@@ -1105,13 +825,6 @@ export default function SettingsPage() {
                 defaultChecked 
                 className="rounded" 
                 onChange={(e) => {
-                    text: `User ${e.target.checked ? 'selected' : 'deselected'} account information for export`,
-                    toggle_type: 'export_data_selection',
-                    toggle_state: e.target.checked,
-                    data: {
-                      export_type: 'account_information'
-                    }
-                  });
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Account Information</span>
@@ -1122,13 +835,6 @@ export default function SettingsPage() {
                 defaultChecked 
                 className="rounded" 
                 onChange={(e) => {
-                    text: `User ${e.target.checked ? 'selected' : 'deselected'} transaction history for export`,
-                    toggle_type: 'export_data_selection',
-                    toggle_state: e.target.checked,
-                    data: {
-                      export_type: 'transaction_history'
-                    }
-                  });
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Transaction History</span>
@@ -1139,13 +845,6 @@ export default function SettingsPage() {
                 defaultChecked 
                 className="rounded" 
                 onChange={(e) => {
-                    text: `User ${e.target.checked ? 'selected' : 'deselected'} messages for export`,
-                    toggle_type: 'export_data_selection',
-                    toggle_state: e.target.checked,
-                    data: {
-                      export_type: 'messages'
-                    }
-                  });
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Messages</span>
@@ -1156,13 +855,6 @@ export default function SettingsPage() {
                 defaultChecked 
                 className="rounded" 
                 onChange={(e) => {
-                    text: `User ${e.target.checked ? 'selected' : 'deselected'} settings & preferences for export`,
-                    toggle_type: 'export_data_selection',
-                    toggle_state: e.target.checked,
-                    data: {
-                      export_type: 'settings_preferences'
-                    }
-                  });
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Settings & Preferences</span>
@@ -1174,14 +866,6 @@ export default function SettingsPage() {
               fullWidth 
               icon={<Download size={16} />}
               onClick={() => {
-                  text: 'User started data export',
-                  custom_action: 'start_data_export',
-                  data: {
-                    from_modal: 'export_data',
-                    export_types_selected: ['account_information', 'transaction_history', 'messages', 'settings_preferences'],
-                    user_id: user?.id
-                  }
-                });
               }}
             >
               Start Export
@@ -1191,12 +875,6 @@ export default function SettingsPage() {
               fullWidth 
               onClick={() => {
                 setShowExportModal(false);
-                  text: 'User cancelled data export',
-                  custom_action: 'cancel_data_export',
-                  data: {
-                    from_modal: 'export_data'
-                  }
-                });
               }}
             >
               Cancel

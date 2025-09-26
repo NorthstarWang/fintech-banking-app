@@ -159,14 +159,6 @@ export class PerformanceMonitor {
       this.metrics = this.metrics.slice(-500);
     }
 
-    // Log to analytics
-      text: `Performance metric: ${name}`,
-      custom_action: `performance_${name}`,
-      data: {
-        value,
-        ...metadata
-      }
-    });
   }
 
   /**

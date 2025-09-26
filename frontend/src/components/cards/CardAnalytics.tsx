@@ -108,16 +108,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
           <Card
             variant="default"
             className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onMouseEnter={() => {
-                'card-analytics-utilization',
-                `Hovered credit utilization card - ${analytics.utilization_rate}%`
-              );
-            }}
-            onClick={() => {
-                'card-analytics-utilization',
-                `Clicked credit utilization card - ${analytics.utilization_rate}%`
-              );
-            }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -163,16 +153,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
           <Card
             variant="default"
             className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onMouseEnter={() => {
-                'card-analytics-active-cards',
-                `Hovered active cards - ${analytics.active_cards} of ${analytics.total_cards}`
-              );
-            }}
-            onClick={() => {
-                'card-analytics-active-cards',
-                `Clicked active cards - ${analytics.active_cards} of ${analytics.total_cards}`
-              );
-            }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -197,16 +177,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
           <Card
             variant="default"
             className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onMouseEnter={() => {
-                'card-analytics-avg-transaction',
-                `Hovered average transaction - ${formatCurrency(analytics.average_transaction_size)}`
-              );
-            }}
-            onClick={() => {
-                'card-analytics-avg-transaction',
-                `Clicked average transaction - ${formatCurrency(analytics.average_transaction_size)}`
-              );
-            }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -231,16 +201,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
           <Card
             variant="default"
             className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onMouseEnter={() => {
-                'card-analytics-virtual-cards',
-                `Hovered virtual cards - ${analytics.cards_by_type.virtual} cards`
-              );
-            }}
-            onClick={() => {
-                'card-analytics-virtual-cards',
-                `Clicked virtual cards - ${analytics.cards_by_type.virtual} cards`
-              );
-            }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -285,16 +245,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
                   <div
                     key={type}
                     className="cursor-pointer"
-                    onMouseEnter={() => {
-                        `card-analytics-distribution-${type}`,
-                        `Hovered ${type} cards distribution - ${count} cards`
-                      );
-                    }}
-                    onClick={() => {
-                        `card-analytics-distribution-${type}`,
-                        `Clicked ${type} cards distribution - ${count} cards (${percentage.toFixed(0)}%)`
-                      );
-                    }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-[var(--text-1)] capitalize">{type} Cards</span>
@@ -336,16 +286,6 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
                   <div
                     key={`category-${category}-${index}`}
                     className="flex items-center justify-between cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.05)] p-2 -mx-2 rounded transition-colors"
-                    onMouseEnter={() => {
-                        `card-analytics-category-${category}`,
-                        `Hovered spending category ${category}`
-                      );
-                    }}
-                    onClick={() => {
-                        `card-analytics-category-${category}`,
-                        `Clicked spending category ${category} - ${formatCurrency(amount)}`
-                      );
-                    }}
                   >
                     <div className="flex items-center gap-3">
                       <div

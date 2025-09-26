@@ -90,12 +90,6 @@ export default function StockDetailPage() {
       
       setStock(processedStock);
       
-      // Track page view
-        text: `User viewed stock detail for ${symbol}`,
-        page_name: 'Stock Detail',
-        asset_symbol: symbol,
-        timestamp: new Date().toISOString()
-      });
     } catch (err) {
       console.error('Error fetching stock details:', err);
       setError('Failed to load stock details');

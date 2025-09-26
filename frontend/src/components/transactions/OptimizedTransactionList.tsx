@@ -95,11 +95,8 @@ const TransactionItem = memo(function TransactionItem({
   }, []);
 
   const handleClick = useCallback(() => {
-      `${analyticsId}-transaction-${transaction.id}`,
-      `${analyticsLabel} - Clicked ${transaction.description} - ${transaction.category}`
-    );
     onSelect(transaction);
-  }, [analyticsId, analyticsLabel, transaction, onSelect]);
+  }, [transaction, onSelect]);
 
   return (
     <motion.div

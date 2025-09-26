@@ -29,15 +29,6 @@ export const useHoverTracking = ({
     // Log hover after minimum duration
     hoverTimeoutRef.current = setTimeout(() => {
       if (!hasLoggedRef.current) {
-          text: `User ${user?.username || 'unknown'} hovered over ${elementName}`,
-          element_identifier: elementId,
-          data: {
-            user_id: user?.id,
-            hover_start: new Date(hoverStartTimeRef.current).toISOString(),
-            element_type: elementType,
-            timestamp: new Date().toISOString()
-          }
-        });
         hasLoggedRef.current = true;
       }
     }, minHoverDuration);
@@ -51,15 +42,6 @@ export const useHoverTracking = ({
     if (trackDuration && hasLoggedRef.current && hoverStartTimeRef.current > 0) {
       const hoverDuration = Date.now() - hoverStartTimeRef.current;
       
-        text: `User ${user?.username || 'unknown'} finished hovering over ${elementName} after ${(hoverDuration / 1000).toFixed(1)}s`,
-        element_identifier: `${elementId}-end`,
-        data: {
-          user_id: user?.id,
-          hover_duration_ms: hoverDuration,
-          hover_duration_seconds: parseFloat((hoverDuration / 1000).toFixed(1)),
-          timestamp: new Date().toISOString()
-        }
-      });
     }
 
     hoverStartTimeRef.current = 0;

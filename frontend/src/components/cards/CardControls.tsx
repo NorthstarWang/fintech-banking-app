@@ -44,9 +44,6 @@ export const CardControls: React.FC<CardControlsProps> = ({
 
   const handleToggleFeature = (feature: keyof typeof controls) => {
     const newControls = { ...controls, [feature]: !controls[feature] };
-      `${analyticsId}-toggle-${feature}`,
-      `${analyticsLabel} - ${feature} - ${newControls[feature] ? 'Enabled' : 'Disabled'}`
-    );
     setControls(newControls);
     onUpdate({
       features: { ...card.features, [feature]: newControls[feature] }
@@ -112,11 +109,6 @@ export const CardControls: React.FC<CardControlsProps> = ({
                     : 'bg-transparent border-[var(--border-1)]'
                   }
                 `}
-                onMouseEnter={() => {
-                    `${analyticsId}-control-${control.id}`,
-                    `${analyticsLabel} - Hovered ${control.label} - ${control.enabled ? 'Enabled' : 'Disabled'}`
-                  );
-                }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">

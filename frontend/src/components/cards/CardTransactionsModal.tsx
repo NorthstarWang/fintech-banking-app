@@ -54,10 +54,6 @@ export const CardTransactionsModal: React.FC<CardTransactionsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchTransactions();
-        text: 'Opened card transactions modal',
-        target_element_identifier: 'card-transactions-modal',
-        data: { card_id: cardId, card_name: cardName }
-      });
     }
   }, [isOpen, cardId]);
 
@@ -191,12 +187,7 @@ export const CardTransactionsModal: React.FC<CardTransactionsModalProps> = ({
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ delay: index * 0.02 }}
                   className="flex items-center justify-between p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.05)] hover:bg-[rgba(var(--glass-rgb),0.1)] transition-colors cursor-pointer"
-                  onClick={() => {
-                      'card-transaction-item',
-                      `Clicked transaction: ${transaction.description}`
-                    );
-                  }}
-                >
+                  onClick={() => {}}>
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${getCategoryColor(transaction.category)}`}>
                       {getCategoryIcon(transaction.category)}
@@ -253,9 +244,6 @@ export const CardTransactionsModal: React.FC<CardTransactionsModalProps> = ({
             size="sm"
             icon={<Download size={16} />}
             onClick={() => {
-                'download-transactions',
-                `Download transactions for card ${lastFour}`
-              );
               // Implement download functionality
             }}
           >

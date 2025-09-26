@@ -56,9 +56,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         streamRef.current = stream;
       }
       
-        text: 'QR scanner camera started',
-        custom_action: 'qr_scanner_camera_start'
-      });
     } catch (error) {
       console.error('Failed to start camera:', error);
       showError(
@@ -87,9 +84,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       const result = await p2pApi.scanQRCode({ qr_data: data });
       
       showSuccess('QR Code Scanned', 'Successfully processed the QR code');
-        text: 'QR code scanned successfully',
-        custom_action: 'qr_scan_success'
-      });
       
       if (onScanSuccess) {
         onScanSuccess(result);

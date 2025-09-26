@@ -78,12 +78,6 @@ export default function CryptoDetailPage() {
       
       setCrypto(processedCrypto);
       
-      // Track page view
-        text: `User viewed crypto detail for ${symbol}`,
-        page_name: 'Crypto Detail',
-        asset_symbol: symbol,
-        timestamp: new Date().toISOString()
-      });
     } catch (err) {
       console.error('Error fetching crypto details:', err);
       setError('Failed to load crypto details');

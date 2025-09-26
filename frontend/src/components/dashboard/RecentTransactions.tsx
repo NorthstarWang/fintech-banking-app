@@ -121,9 +121,6 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               transition={{ delay: index * 0.05 }}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-[rgba(var(--glass-rgb),0.1)] transition-colors cursor-pointer"
               onClick={() => {
-                  `${analyticsId}-transaction-${transaction.id}`, 
-                  `${analyticsLabel} - Clicked ${transaction.description}`
-                );
                 router.push('/transactions');
               }}
             >

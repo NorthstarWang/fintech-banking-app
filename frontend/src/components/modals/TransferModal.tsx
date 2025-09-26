@@ -149,15 +149,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
       await transfersService.transfer(transferData);
       
-        text: `Transfer completed: $${amount} from account ${sourceAccount}`,
-        custom_action: 'transfer_completed',
-        data: {
-          amount: parseFloat(amount),
-          source_account_id: parseInt(sourceAccount),
-          destination_account_id: isExternal ? null : parseInt(destinationAccount),
-          is_external: isExternal,
-        }
-      });
 
       // Emit events to update balances across the app
       eventBus.emit(EVENTS.TRANSFER_COMPLETED, {

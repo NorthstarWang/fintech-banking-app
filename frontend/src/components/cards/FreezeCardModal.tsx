@@ -47,11 +47,7 @@ export const FreezeCardModal: React.FC<FreezeCardModalProps> = ({
     const newStatus = !isFrozen;
     setIsFrozen(newStatus);
     setConfirming(false);
-    
-      `freeze-card-modal-${newStatus ? 'freeze' : 'unfreeze'}`,
-      `Card ${card.lastFour} ${newStatus ? 'frozen' : 'unfrozen'}`
-    );
-    
+
     onFreeze(newStatus);
     
     // Close modal after a short delay

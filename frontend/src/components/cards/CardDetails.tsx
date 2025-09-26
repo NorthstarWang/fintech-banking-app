@@ -42,9 +42,6 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
 
   const handleCopy = (field: string, value: string) => {
-      `${analyticsId}-copy-${field}`,
-      `${analyticsLabel} - Copy ${field}`
-    );
     navigator.clipboard.writeText(value);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
@@ -210,9 +207,6 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
                       className="mt-3" 
                       fullWidth
                       onClick={() => {
-                          `${analyticsId}-make-payment`,
-                          `${analyticsLabel} - Make Payment - ${card.lastFourDigits}`
-                        );
                         onAction('payment');
                       }}
                       analyticsId={`${analyticsId}-make-payment`}
@@ -249,9 +243,6 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
             size="sm"
             icon={card.status === 'frozen' ? <Unlock size={16} /> : <Snowflake size={16} />}
             onClick={() => {
-                `${analyticsId}-open-freeze-modal`,
-                `${analyticsLabel} - Open Freeze Modal - ${card.lastFourDigits}`
-              );
               setShowFreezeModal(true);
             }}
             fullWidth
@@ -267,9 +258,6 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
             size="sm"
             icon={<Activity size={16} />}
             onClick={() => {
-                `${analyticsId}-transactions`,
-                `${analyticsLabel} - View Transactions - ${card.lastFourDigits}`
-              );
               setShowTransactionsModal(true);
             }}
             fullWidth

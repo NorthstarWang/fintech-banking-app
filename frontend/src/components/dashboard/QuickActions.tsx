@@ -51,14 +51,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <Send size={20} />,
       color: 'from-[var(--primary-blue)] to-[var(--primary-indigo)]',
       onClick: () => {
-          text: 'User clicked Send Money quick action on dashboard',
-          custom_action: 'quick_action_send_money',
-          data: {
-            action_type: 'send_money',
-            from_component: 'quick_actions',
-            location: 'dashboard'
-          }
-        });
         setShowSendMoneyModal(true);
       },
     },
@@ -68,14 +60,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <Plus size={20} />,
       color: 'from-[var(--primary-emerald)] to-[var(--primary-teal)]',
       onClick: () => {
-          text: 'User clicked Add Money quick action on dashboard',
-          custom_action: 'quick_action_add_money',
-          data: {
-            action_type: 'add_money',
-            from_component: 'quick_actions',
-            location: 'dashboard'
-          }
-        });
         setShowDepositModal(true);
       },
     },
@@ -85,14 +69,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <ArrowRightLeft size={20} />,
       color: 'from-[var(--primary-indigo)] to-[var(--primary-navy)]',
       onClick: () => {
-          text: 'User clicked Transfer quick action on dashboard',
-          custom_action: 'quick_action_transfer',
-          data: {
-            action_type: 'transfer',
-            from_component: 'quick_actions',
-            location: 'dashboard'
-          }
-        });
         setShowTransferModal(true);
       },
     },
@@ -102,14 +78,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <QrCode size={20} />,
       color: 'from-[var(--primary-teal)] to-[var(--primary-blue)]',
       onClick: () => {
-          text: 'User clicked Scan QR quick action on dashboard',
-          custom_action: 'quick_action_scan_qr',
-          data: {
-            action_type: 'scan_qr',
-            from_component: 'quick_actions',
-            location: 'dashboard'
-          }
-        });
         setShowQRScannerModal(true);
       },
     },
@@ -119,14 +87,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <Receipt size={20} />,
       color: 'from-[var(--primary-blue)] to-[var(--primary-teal)]',
       onClick: () => {
-          text: 'User clicked Pay Bills quick action on dashboard',
-          custom_action: 'quick_action_pay_bills',
-          data: {
-            action_type: 'pay_bills',
-            from_component: 'quick_actions',
-            location: 'dashboard'
-          }
-        });
         setShowBillPaymentModal(true);
       },
     },

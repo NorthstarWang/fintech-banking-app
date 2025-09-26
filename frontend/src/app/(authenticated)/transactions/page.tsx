@@ -196,25 +196,12 @@ export default function TransactionsPage() {
           notes: transaction.notes,
           tags: transaction.tags && transaction.tags.length > 0 ? transaction.tags : tags.length > 0 ? tags : undefined,
           attachments: transaction.attachments ? transaction.attachments.length : 0,
-          // Store the actual attachment data in a separate field for TransactionDetail
-          attachmentData: transaction.attachments
         };
       });
 
       setTransactions(transformedTransactions);
       setFilteredTransactions(transformedTransactions);
 
-        text: `Loaded ${transformedTransactions.length} transactions from ${filtersToUse.dateRange.start} to ${filtersToUse.dateRange.end}`,
-        custom_action: 'transactions_data_loaded',
-        data: {
-          transactions_count: transformedTransactions.length,
-          date_range: filtersToUse.dateRange,
-          total_income: statsData?.total_income || 0,
-          total_expenses: statsData?.total_expenses || 0,
-          categories_represented: [...new Set(transformedTransactions.map(t => t.category))].length,
-          accounts_used: [...new Set(transformedTransactions.map(t => t.account))].length
-        }
-      });
       
       // Return the transformed transactions for immediate use
       return transformedTransactions;
@@ -229,12 +216,6 @@ export default function TransactionsPage() {
 
   // Initial load
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed transactions page`,
-      page_name: 'Transactions',
-      user_id: user?.id,
-      default_date_range: filters.dateRange,
-      timestamp: new Date().toISOString()
-    });
     loadTransactionsData();
   }, []);
 
@@ -320,23 +301,6 @@ export default function TransactionsPage() {
 
 
   const handleExport = async () => {
-      text: `User exporting ${filteredTransactions.length} transactions as CSV`,
-      element_identifier: 'export-transactions',
-      data: {
-        transactions_count: filteredTransactions.length,
-        date_range: filters.dateRange,
-        filters_applied: {
-          search: searchQuery.length > 0,
-          categories: filters.categories.length,
-          accounts: filters.accounts.length,
-          amount_range: filters.minAmount || filters.maxAmount ? true : false,
-          status: filters.status.length,
-          type: filters.type.length
-        },
-        sort_by: sortBy,
-        sort_order: sortOrder
-      }
-    });
     
     // Create CSV content
     const headers = ['Date', 'Description', 'Merchant', 'Category', 'Account', 'Amount', 'Status'];
@@ -367,19 +331,6 @@ export default function TransactionsPage() {
   };
 
   const handleRefresh = () => {
-      text: `User refreshed transactions page with ${filteredTransactions.length} filtered transactions`,
-      element_identifier: 'refresh-transactions',
-      data: {
-        current_transactions: transactions.length,
-        filtered_transactions: filteredTransactions.length,
-        filters_active: {
-          search: searchQuery.length > 0,
-          date_range: filters.dateRange,
-          categories: filters.categories.length > 0,
-          accounts: filters.accounts.length > 0
-        }
-      }
-    });
     loadTransactionsData();
   };
 
@@ -394,15 +345,6 @@ export default function TransactionsPage() {
     const [sort, order] = value.split('-') as ['date' | 'amount', 'asc' | 'desc'];
     setSortBy(sort);
     setSortOrder(order);
-      text: `User sorted transactions by ${sort} in ${order}ending order`,
-      sort_field: sort,
-      sort_order: order,
-      data: {
-        transactions_sorted: filteredTransactions.length,
-        previous_sort: `${sortBy}-${sortOrder}`,
-        new_sort: value
-      }
-    });
   };
 
   // Calculate summary statistics
@@ -459,9 +401,6 @@ export default function TransactionsPage() {
               onClick={handleRefresh}
               data-testid="refresh-transactions"
               onMouseEnter={() => {
-                  text: 'User hovered over Refresh Transactions Button',
-                  element_identifier: 'refresh-transactions'
-                });
               }}
             >
               Refresh
@@ -475,9 +414,6 @@ export default function TransactionsPage() {
               }}
               data-testid="add-transaction"
               onMouseEnter={() => {
-                  text: 'User hovered over Add Transaction Button',
-                  element_identifier: 'add-transaction'
-                });
               }}
             >
               Add Transaction
@@ -489,9 +425,6 @@ export default function TransactionsPage() {
               onClick={handleExport}
               data-testid="export-transactions"
               onMouseEnter={() => {
-                  text: 'User hovered over Export Transactions Button',
-                  element_identifier: 'export-transactions'
-                });
               }}
             >
               Export
@@ -506,12 +439,6 @@ export default function TransactionsPage() {
             className="p-4 cursor-pointer transition-all hover:border-[var(--border-2)]"
             data-testid="transaction-summary-total"
             onMouseEnter={() => {
-                text: `User hovered over Transaction Summary - Total Transactions: ${filteredTransactions.length}`,
-                element_identifier: 'transaction-summary-total',
-                data: {
-                  total_transactions: filteredTransactions.length
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -530,12 +457,6 @@ export default function TransactionsPage() {
             className="p-4 cursor-pointer transition-all hover:border-[var(--border-2)]"
             data-testid="transaction-summary-income"
             onMouseEnter={() => {
-                text: `User hovered over Transaction Summary - Income: $${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-                element_identifier: 'transaction-summary-income',
-                data: {
-                  total_income: totalIncome
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -554,12 +475,6 @@ export default function TransactionsPage() {
             className="p-4 cursor-pointer transition-all hover:border-[var(--border-2)]"
             data-testid="transaction-summary-expenses"
             onMouseEnter={() => {
-                text: `User hovered over Transaction Summary - Expenses: $${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-                element_identifier: 'transaction-summary-expenses',
-                data: {
-                  total_expenses: totalExpenses
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -578,12 +493,6 @@ export default function TransactionsPage() {
             className="p-4 cursor-pointer transition-all hover:border-[var(--border-2)]"
             data-testid="transaction-summary-net-flow"
             onMouseEnter={() => {
-                text: `User hovered over Transaction Summary - Net Cash Flow: ${netCashFlow >= 0 ? '+' : ''}$${Math.abs(netCashFlow).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-                element_identifier: 'transaction-summary-net-flow',
-                data: {
-                  net_cash_flow: netCashFlow
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -608,22 +517,6 @@ export default function TransactionsPage() {
               onChange={(e) => {
                 const query = e.target.value;
                 setSearchQuery(query);
-                  text: `User searching transactions with query "${query}"`,
-                  search_query: query,
-                  data: {
-                    total_transactions: transactions.length,
-                    filters_active: {
-                      categories: filters.categories.length,
-                      accounts: filters.accounts.length,
-                      date_range: filters.dateRange
-                    },
-                    matching_preview: query.length > 0 ? transactions.filter(t => 
-                      t.description.toLowerCase().includes(query.toLowerCase()) ||
-                      t.merchant.toLowerCase().includes(query.toLowerCase()) ||
-                      t.category.toLowerCase().includes(query.toLowerCase())
-                    ).length : transactions.length
-                  }
-                });
               }}
               icon={<Search size={18} />}
             />
@@ -643,20 +536,6 @@ export default function TransactionsPage() {
               onClick={() => {
                 const newShowFilters = !showFilters;
                 setShowFilters(newShowFilters);
-                  text: `User ${newShowFilters ? 'showed' : 'hid'} transaction filters panel`,
-                  element_identifier: 'toggle-filters',
-                  data: {
-                    filters_shown: newShowFilters,
-                    active_filters: {
-                      categories: filters.categories.length,
-                      accounts: filters.accounts.length,
-                      status: filters.status.length,
-                      type: filters.type.length,
-                      amount_range: filters.minAmount || filters.maxAmount ? true : false
-                    },
-                    total_active_filters: filters.categories.length + filters.accounts.length + filters.status.length + filters.type.length
-                  }
-                });
               }}
             >
               Filters {filters.categories.length + filters.accounts.length + filters.status.length + filters.type.length > 0 && 
@@ -701,17 +580,6 @@ export default function TransactionsPage() {
                 transaction={selectedTransaction}
                 onClose={() => setSelectedTransaction(null)}
                 onEdit={async (transaction) => {
-                    text: `User editing ${transaction.type} transaction "${transaction.description}" for $${Math.abs(transaction.amount).toFixed(2)}`,
-                    element_identifier: `edit-transaction-${transaction.id}`,
-                    data: {
-                      transaction_id: transaction.id,
-                      transaction_type: transaction.type,
-                      amount: transaction.amount,
-                      category: transaction.category,
-                      account: transaction.account,
-                      date: transaction.date
-                    }
-                  });
                   // Note: The edit functionality is already handled within TransactionDetail component
                   // We just need to reload the data to reflect changes
                   const freshTransactions = await loadTransactionsData();

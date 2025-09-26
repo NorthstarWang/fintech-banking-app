@@ -78,11 +78,6 @@ export default function CardsPage() {
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed cards page`,
-      page_name: 'Cards',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
 
     fetchCards();
     fetchAccounts();
@@ -166,22 +161,6 @@ export default function CardsPage() {
       if (transformedCards.length > 0) {
         setSelectedCard(transformedCards[0]);
       }
-      
-      // Log data loaded event
-        text: `Cards data loaded: ${transformedCards.length} cards, ${transformedCards.filter(c => c.type === 'credit').length} credit, ${transformedCards.filter(c => c.status === 'frozen').length} frozen`,
-        custom_action: 'cards_data_loaded',
-        data: {
-          total_cards: transformedCards.length,
-          credit_cards: transformedCards.filter(c => c.type === 'credit').length,
-          debit_cards: transformedCards.filter(c => c.type === 'debit').length,
-          active_cards: transformedCards.filter(c => c.status === 'active').length,
-          frozen_cards: transformedCards.filter(c => c.status === 'frozen').length,
-          total_balance: transformedCards.reduce((sum, c) => sum + (c.balance || 0), 0),
-          total_credit_limit: transformedCards.reduce((sum, c) => sum + (c.creditLimit || 0), 0),
-          total_available_credit: transformedCards.reduce((sum, c) => sum + (c.availableCredit || 0), 0),
-          total_rewards_points: transformedCards.reduce((sum, c) => sum + (c.rewards?.points || 0), 0)
-        }
-      });
     } catch (error) {
       console.error('Failed to fetch cards:', error);
       notificationService.error('Failed to load cards. Please try again.');
@@ -376,18 +355,6 @@ export default function CardsPage() {
 
   const handleCardAction = async (cardId: string, action: string) => {
     const card = cards.find(c => c.id === cardId);
-      text: `User ${action === 'freeze' ? 'freezing' : action === 'unfreeze' ? 'unfreezing' : action} card "${card?.name || 'Unknown'}"`,
-      custom_action: `card_${action}`,
-      data: { 
-        card_id: cardId,
-        card_name: card?.name,
-        card_type: card?.type,
-        current_status: card?.status,
-        action,
-        has_balance: (card?.balance || 0) > 0,
-        balance_amount: card?.balance || 0
-      }
-    });
 
     if (action === 'freeze' || action === 'unfreeze') {
       try {
@@ -421,13 +388,6 @@ export default function CardsPage() {
   };
 
   const handleCardAdded = async () => {
-      text: `User successfully added a new card`,
-      custom_action: 'card_added_success',
-      data: {
-        cards_count_before: cards.length,
-        accounts_count: accounts.length
-      }
-    });
     // Refresh cards list after successful addition
     await fetchCards();
     setAnalyticsRefreshKey(prev => prev + 1);
@@ -475,14 +435,6 @@ export default function CardsPage() {
               onClick={() => {
                 const newState = !showCardNumbers;
                 setShowCardNumbers(newState);
-                  text: `User ${newState ? 'showing' : 'hiding'} card numbers`,
-                  toggle_type: 'card_numbers_visibility',
-                  toggle_state: newState,
-                  data: {
-                    cards_count: cards.length,
-                    selected_card: selectedCard?.name
-                  }
-                });
               }}
             >
               {showCardNumbers ? 'Hide' : 'Show'} Numbers
@@ -492,15 +444,6 @@ export default function CardsPage() {
               icon={<Plus size={18} />}
               onClick={() => {
                 setShowAddCard(true);
-                  text: `User opening add card modal with ${cards.length} existing cards`,
-                  custom_action: 'open_add_card_modal',
-                  data: {
-                    existing_cards_count: cards.length,
-                    credit_cards_count: cards.filter(c => c.type === 'credit').length,
-                    debit_cards_count: cards.filter(c => c.type === 'debit').length,
-                    accounts_available: accounts.length
-                  }
-                });
               }}
             >
               Add Card
@@ -516,15 +459,6 @@ export default function CardsPage() {
           <button
             onClick={() => {
               setActiveTab('physical');
-                text: 'User switched to physical cards tab',
-                custom_action: 'switch_tab',
-                data: {
-                  from_tab: activeTab,
-                  to_tab: 'physical',
-                  physical_cards_count: cards.length,
-                  selected_card: selectedCard?.name
-                }
-              });
             }}
             className={`
               flex-1 px-4 py-2 rounded-md font-medium transition-all
@@ -539,14 +473,6 @@ export default function CardsPage() {
           <button
             onClick={() => {
               setActiveTab('virtual');
-                text: 'User switched to virtual cards tab',
-                custom_action: 'switch_tab',
-                data: {
-                  from_tab: activeTab,
-                  to_tab: 'virtual',
-                  physical_cards_count: cards.length
-                }
-              });
             }}
             className={`
               flex-1 px-4 py-2 rounded-md font-medium transition-all
@@ -573,22 +499,6 @@ export default function CardsPage() {
                   transition={{ delay: index * 0.1 }}
                   onClick={() => {
                     setSelectedCard(card);
-                      text: `User selected ${card.type} card "${card.name}" with ${card.status} status`,
-                      custom_action: 'select_card',
-                      data: {
-                        card_id: card.id,
-                        card_name: card.name,
-                        card_type: card.type,
-                        card_status: card.status,
-                        is_default: card.isDefault,
-                        balance: card.balance || 0,
-                        credit_limit: card.creditLimit || 0,
-                        available_credit: card.availableCredit || 0,
-                        rewards_points: card.rewards?.points || 0,
-                        spending_current: card.spending.current,
-                        last_four: card.lastFourDigits
-                      }
-                    });
                   }}
                   className="cursor-pointer"
                 >
@@ -659,14 +569,6 @@ export default function CardsPage() {
                   className="h-48 flex items-center justify-center cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.2)] transition-all"
                   onClick={() => {
                     setShowAddCard(true);
-                      text: `User clicked add new card from card list with ${cards.length} existing cards`,
-                      custom_action: 'open_add_card_modal_from_list',
-                      data: {
-                        existing_cards_count: cards.length,
-                        source: 'cards_list',
-                        selected_card_before: selectedCard?.name
-                      }
-                    });
                   }}
                 >
                   <div className="text-center">
@@ -723,12 +625,6 @@ export default function CardsPage() {
         isOpen={showAddCard}
         onClose={() => {
           setShowAddCard(false);
-            text: 'User closed add card modal',
-            custom_action: 'close_add_card_modal',
-            data: {
-              cards_count: cards.length
-            }
-          });
         }}
         onSuccess={handleCardAdded}
         accounts={accounts}

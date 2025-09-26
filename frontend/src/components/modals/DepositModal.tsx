@@ -175,14 +175,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
       await transfersService.deposit(depositData);
       
-        text: `Deposit completed: $${amount} via ${depositMethod}`,
-        custom_action: 'deposit_completed',
-        data: {
-          amount: parseFloat(amount),
-          account_id: parseInt(selectedAccount),
-          deposit_method: depositMethod,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {

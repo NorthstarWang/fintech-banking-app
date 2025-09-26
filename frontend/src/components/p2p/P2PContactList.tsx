@@ -102,9 +102,6 @@ export const P2PContactList: React.FC<P2PContactListProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                  `${analyticsId}-toggle-favorites`,
-                  `${analyticsLabel} - Toggle Favorites - ${!showFavoritesOnly ? 'On' : 'Off'}`
-                );
                 setShowFavoritesOnly(!showFavoritesOnly);
               }}
               className={`
@@ -153,9 +150,6 @@ export const P2PContactList: React.FC<P2PContactListProps> = ({
                 <div 
                   className="p-3 rounded-lg hover:bg-[rgba(var(--glass-rgb),0.05)] transition-all cursor-pointer"
                   onClick={() => {
-                      `${analyticsId}-contact-${contact.id}`,
-                      `${analyticsLabel} - Select ${contact.name}`
-                    );
                     onSelectContact(contact);
                   }}
                 >
@@ -188,9 +182,6 @@ export const P2PContactList: React.FC<P2PContactListProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                              `${analyticsId}-send-${contact.id}`,
-                              `${analyticsLabel} - Quick Send to ${contact.name}`
-                            );
                             onSelectContact(contact);
                           }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-[var(--primary-blue)] text-white hover:bg-[var(--primary-blue)]/90"

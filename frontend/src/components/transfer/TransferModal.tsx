@@ -102,14 +102,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     }
     
     // Log significant input events
-    if (field === 'amount' && value) {
-        action_type: 'form_field_interaction',
-        page_url: '/transfer-modal',
-        target_element_identifier: `transfer-modal-${field}`,
-        interaction_detail: 'amount_entered',
-        custom_fields: { amount_range: getAmountRange(parseFloat(value)) },
-      });
-    }
   };
 
   const validateForm = () => {
@@ -140,11 +132,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
   const handleNext = () => {
     if (!validateForm()) return;
-    
-      amount: formData.amount,
-      type: formData.transferType,
-    });
-    
+
     setCurrentStep('confirm');
   };
 
@@ -155,11 +143,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     setCurrentStep('success');
-    
-      amount: formData.amount,
-      authMethod,
-    });
-
     // Call onSuccess if provided
     if (onSuccess) {
       onSuccess({

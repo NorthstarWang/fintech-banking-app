@@ -198,15 +198,6 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
 
       await transfersService.payBill(billData);
       
-        text: `Bill payment completed: $${amount} to ${billerName}`,
-        custom_action: 'bill_payment_completed',
-        data: {
-          amount: parseFloat(amount),
-          account_id: parseInt(selectedAccount),
-          biller_name: billerName,
-          category: billCategory,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {

@@ -61,9 +61,6 @@ export const P2PQuickSend: React.FC<P2PQuickSendProps> = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                  `${analyticsId}-contact-${contact.id}`,
-                  `${analyticsLabel} - Quick Send to ${contact.name}`
-                );
                 onSelectContact(contact);
               }}
               className="flex flex-col items-center gap-2 min-w-[80px] group"

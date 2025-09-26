@@ -97,9 +97,6 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => {
-          `${analyticsId}-${goal.id}`,
-          `${analyticsLabel} - ${goal.name} - ${goal.status} - ${goal.progress}%`
-        );
         onClick();
       }}
       className="cursor-pointer h-full"

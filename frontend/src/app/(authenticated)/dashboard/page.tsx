@@ -68,12 +68,6 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
-    // Log page view with user context
-      text: `User ${user?.username || 'unknown'} viewed dashboard`,
-      page_name: 'Dashboard',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadDashboardData();
   }, [user]);
 
@@ -217,18 +211,6 @@ export default function DashboardPage() {
         totalIncome: transactionStatsData?.total_income || 0,
         transactionCount: transactionStatsData?.transaction_count || 0
       });
-
-        text: `Dashboard loaded with ${accountsData.length} accounts, ${transactionsData.length} recent transactions, ${goalsData.length} active goals`,
-        custom_action: 'dashboard_data_loaded',
-        data: {
-          accounts_count: accountsData.length,
-          transactions_count: transactionsData.length,
-          goals_count: goalsData.length,
-          total_balance: accountSummaryData?.net_worth || 0,
-          budget_status: budgetSummaryData?.over_budget_count || 0,
-          time_range: timeRange
-        }
-      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
       setError(errorMessage);
@@ -240,27 +222,10 @@ export default function DashboardPage() {
   };
 
   const handleRefresh = () => {
-      text: 'User manually refreshed dashboard',
-      custom_action: 'manual_refresh',
-      data: {
-        current_time_range: currentTimeRange,
-        current_balance: totalBalance,
-        timestamp: new Date().toISOString()
-      }
-    });
     loadDashboardData('month', true);
   };
 
   const handleTimeRangeChange = async (timeRange: string) => {
-      text: `User changed dashboard time range from ${currentTimeRange} to ${timeRange}`,
-      custom_action: 'time_range_change',
-      data: {
-        old_range: currentTimeRange,
-        new_range: timeRange,
-        current_spending: monthlySpending,
-        current_income: monthlyIncome
-      }
-    });
     setIsLoadingStats(true);
     
     // Clear the old stats to prevent showing stale data
@@ -437,14 +402,6 @@ export default function DashboardPage() {
                   size="sm" 
                   icon={<Plus size={16} />}
                   onClick={() => {
-                      text: `User navigating to add account from dashboard with ${accounts.length} existing accounts`,
-                      custom_action: 'navigate_add_account',
-                      data: {
-                        from_page: 'dashboard',
-                        current_accounts_count: accounts.length,
-                        total_balance: totalBalance
-                      }
-                    });
                     router.push('/accounts');
                   }}
                 >

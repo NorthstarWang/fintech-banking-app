@@ -46,11 +46,6 @@ const Switch: React.FC<SwitchProps> = ({
       disabled={disabled}
       onClick={() => {
         if (!disabled && onCheckedChange) {
-          const switchLabel = analyticsLabel || 'switch';
-          const switchId = analyticsId || 'switch';
-            switchId,
-            `${switchLabel}: ${!checked ? 'on' : 'off'}`
-          );
           onCheckedChange(!checked);
         }
       }}
