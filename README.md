@@ -16,8 +16,40 @@ For comprehensive documentation about the platform, please refer to:
 ### Prerequisites
 
 - Docker and Docker Compose installed
-- Node.js 18+ (for local development)
-- Python 3.10+ (for local development)
+- Node.js 20+ (for local development)
+- Python 3.12+ (for local development)
+
+### Environment Setup
+
+Before running the application, configure your environment variables:
+
+#### Frontend Environment Variables
+
+Create a `.env` file in the `frontend` directory (or copy from `.env.example`):
+
+```bash
+# Frontend .env
+NODE_ENV=development
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+#### Backend Environment Variables
+
+Create a `.env` file in the `backend` directory (or copy from `.env.example`):
+
+```bash
+# Backend .env
+ENVIRONMENT=development
+API_HOST=0.0.0.0
+API_PORT=8000
+USE_MOCK_DB=true
+
+# For production, set these:
+# SECRET_KEY=your-production-secret-key
+# JWT_SECRET=your-production-jwt-secret
+```
+
+**Note**: Never commit `.env` files to version control. Use `.env.example` as a template.
 
 ### Quick Start
 
@@ -26,6 +58,10 @@ For comprehensive documentation about the platform, please refer to:
 git clone <repository-url>
 cd bankflow
 
+# Copy environment files
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+
 # Start the application
 docker-compose up --build
 
@@ -33,6 +69,50 @@ docker-compose up --build
 # Frontend: http://localhost:3000
 # Backend API: http://localhost:8000
 # API Documentation: http://localhost:8000/docs
+```
+
+### Local Development Setup
+
+#### Frontend Development
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run linter
+npm run lint
+
+# Run type check
+npx tsc --noEmit
+
+# Run tests
+npm test
+
+# Start development server
+npm run dev
+```
+
+#### Backend Development
+
+```bash
+cd backend
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run linter
+python -m ruff check .
+
+# Run type check
+python -m mypy . --ignore-missing-imports
+
+# Run tests (when available)
+python -m pytest
+
+# Start development server
+uvicorn app.main:app --reload
 ```
 
 ### Docker Deployment
@@ -395,6 +475,35 @@ The application comes pre-populated with comprehensive, realistic mock data:
 - Extensive component library
 - Responsive design system
 - Performance monitoring
+
+## Production Readiness
+
+### Code Quality
+- ✅ ESLint and TypeScript strict mode enabled
+- ✅ Ruff + Mypy for Python linting and type checking
+- ✅ All debug code removed (console.log, print statements)
+- ✅ Pre-commit hooks for automated quality checks
+- ✅ CI/CD pipeline with GitHub Actions
+
+### Security
+- ✅ No hardcoded secrets or credentials
+- ✅ Environment variable validation
+- ✅ Docker security best practices (non-root users, health checks)
+- ✅ NPM security vulnerabilities resolved
+
+### Testing & CI/CD
+- Pre-commit hooks for linting and type checking (Husky)
+- GitHub Actions workflow for automated testing
+- Docker build verification in CI pipeline
+- Frontend: ESLint, TypeScript, Jest tests
+- Backend: Ruff, Mypy, Pytest (when configured)
+
+### Deployment
+- Multi-stage Docker builds for production
+- Environment-specific configurations
+- Health check endpoints
+- Graceful shutdown handling
+- Optimized container sizes
 
 ## License
 
