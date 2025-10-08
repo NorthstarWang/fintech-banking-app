@@ -26,10 +26,7 @@ async def send_sms(phone_number: str, message: str) -> bool:
                 "phone_number": phone_number[:3] + "****" + phone_number[-4:],
                 "message_length": len(message),
                 "timestamp": datetime.utcnow().isoformat()
-            }
-        )
-        
-        
+
         return True
     except Exception as e:
         return False
@@ -49,10 +46,7 @@ async def send_email(email: str, subject: str, body: str, html_body: Optional[st
                 "email": email.split('@')[0][:3] + "****@" + email.split('@')[1],
                 "subject": subject,
                 "timestamp": datetime.utcnow().isoformat()
-            }
-        )
-        
-        
+
         return True
     except Exception as e:
         return False
@@ -64,7 +58,6 @@ def store_verification_code(user_id: int, method: str, code: str, expiry_minutes
         "code": code,
         "expires_at": datetime.utcnow() + timedelta(minutes=expiry_minutes),
         "attempts": 0
-    }
 
 def verify_code(user_id: int, method: str, code: str) -> tuple[bool, str]:
     """Verify a code and return (success, error_message)"""

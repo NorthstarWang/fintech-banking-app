@@ -56,23 +56,20 @@ async def get_notes(
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
-            (Note.title.ilike(search_pattern)) | 
+            (Note.title.ilike(search_pattern)) |
             (Note.content.ilike(search_pattern))
         )
-    
+
     # Apply tag filter if provided
     if tag:
         query = query.filter(Note.tags.contains([tag]))
-    
+
     # Get total count before pagination
     total = query.count()
-    
+
     # Apply pagination and get results
     notes = query.offset(skip).limit(limit).all()
-    
-        human_readable=f"Retrieved {len(notes)} notes for user {current_user.username}"
-    )
-    
+
     return notes
 
 @router.get("/{note_id}", response_model=NoteResponse)
@@ -94,8 +91,7 @@ async def get_note(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Note not found"
         )
-    
-    
+
     return note
 
 @router.post("/", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)
@@ -115,7 +111,7 @@ async def create_note(
         tags=note_data.tags,
         is_encrypted=note_data.is_encrypted
     )
-    
+
     db_session.add(new_note)
     db_session.commit()
     db_session.refresh(new_note)
@@ -148,7 +144,7 @@ async def update_note(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Note not found"
         )
-    
+
     # Update fields if provided
     update_data = note_data.dict(exclude_unset=True)
     for field, value in update_data.items():
@@ -158,10 +154,7 @@ async def update_note(
     
     db_session.commit()
     db_session.refresh(note)
-    
-        }
-    )
-    
+
     return note
 
 @router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -184,15 +177,14 @@ async def delete_note(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Note not found"
         )
-    
+
     # Store note info for logging
     note_title = note.title
-    
+
     # Delete the note
     db_session.delete(note)
     db_session.commit()
-    
-    
+
     return None
 
 @router.get("/tags/all", response_model=List[str])
@@ -211,8 +203,5 @@ async def get_all_tags(
     for note in notes:
         if note.tags:
             all_tags.update(note.tags)
-    
-        human_readable=f"Retrieved {len(all_tags)} unique tags for user {current_user.username}"
-    )
-    
+
     return sorted(list(all_tags))

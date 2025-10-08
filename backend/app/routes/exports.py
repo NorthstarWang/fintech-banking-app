@@ -64,15 +64,7 @@ async def export_transactions(
         content_type = "application/json"
     else:
         raise ValidationError(f"Export format {export_data.format} not yet implemented")
-    
-    # Log the export
-            "page_url": "/exports",
-            "export_id": export_id,
-            "format": export_data.format.value,
-            "transaction_count": len(transactions)
-        }
-    )
-    
+
     # Return export info
     return ExportResponse(
         export_id=export_id,

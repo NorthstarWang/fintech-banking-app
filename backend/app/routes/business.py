@@ -208,13 +208,15 @@ async def send_invoice(
     # Update status
     invoice.status = InvoiceStatus.SENT
     invoice.sent_at = datetime.utcnow()
-    
+
     db_session.commit()
-    
+
     log_business_action(
-        }
+        action="send_invoice",
+        user_id=current_user['user_id'],
+        details={"invoice_id": invoice.id}
     )
-    
+
     # In production, send actual email here
     return {"message": f"Invoice #{invoice.invoice_number} sent successfully"}
 
@@ -259,9 +261,13 @@ async def mark_invoice_paid(
         invoice.status = InvoiceStatus.PENDING
     
     db_session.commit()
-    
+
     log_business_action(
-    
+        action="mark_invoice_paid",
+        user_id=current_user['user_id'],
+        details={"invoice_id": invoice.id, "amount_paid": invoice.amount_paid}
+    )
+
     return {"message": f"Invoice #{invoice.invoice_number} updated successfully", "status": invoice.status}
 
 @router.post("/invoices/{invoice_id}/duplicate", response_model=InvoiceResponse)
@@ -309,9 +315,13 @@ async def duplicate_invoice(
     db_session.add(duplicate)
     db_session.commit()
     db_session.refresh(duplicate)
-    
+
     log_business_action(
-    
+        action="duplicate_invoice",
+        user_id=current_user['user_id'],
+        details={"original_id": original.id, "duplicate_id": duplicate.id}
+    )
+
     return InvoiceResponse(
         id=duplicate.id,
         user_id=duplicate.user_id,
@@ -420,12 +430,17 @@ async def generate_expense_report(
     
     db_session.commit()
     db_session.refresh(expense_report)
-    
+
     log_business_action(
+        action="create_expense_report",
+        user_id=current_user['user_id'],
+        details={
+            "report_id": expense_report.id,
+            "total_amount": total_amount,
             "created_at": datetime.utcnow().isoformat()
         }
     )
-    
+
     return ExpenseReportResponse(
         id=expense_report.id,
         user_id=expense_report.user_id,
@@ -597,9 +612,13 @@ async def upload_receipt(
     db_session.add(receipt)
     db_session.commit()
     db_session.refresh(receipt)
-    
+
     log_business_action(
-    
+        action="upload_receipt",
+        user_id=current_user['user_id'],
+        details={"receipt_id": receipt.id, "amount": receipt.amount}
+    )
+
     return ReceiptResponse.from_orm(receipt)
 
 @router.get("/tax/estimate", response_model=TaxEstimateResponse)
@@ -893,7 +912,9 @@ async def apply_for_credit_line(
     db_session.commit()
     
     log_business_action(
-        }
+        action="business_action",
+        user_id=current_user['user_id'],
+        details={}
     )
     
     return CreditLineResponse(
@@ -1098,7 +1119,9 @@ async def create_invoice(
     db_session.refresh(invoice)
     
     log_business_action(
-        }
+        action="business_action",
+        user_id=current_user['user_id'],
+        details={}
     )
     
     # Prepare response with line items
@@ -1315,7 +1338,9 @@ async def create_vendor(
     db_session.commit()
     
     log_business_action(
-        }
+        action="business_action",
+        user_id=current_user['user_id'],
+        details={}
     )
     
     return VendorResponse(
@@ -1486,7 +1511,9 @@ async def add_authorized_user(
     db_session.commit()
     
     log_business_action(
-        }
+        action="business_action",
+        user_id=current_user['user_id'],
+        details={}
     )
     
     return AuthorizedUserResponse(
@@ -1549,11 +1576,15 @@ async def setup_recurring_payment(
     
     recurring_payments.append(new_payment)
     account.extra_data["recurring_payments"] = recurring_payments
-    
+
     db_session.commit()
-    
+
     log_business_action(
-    
+        action="setup_recurring_payment",
+        user_id=current_user['user_id'],
+        details={"payment_id": payment_id, "amount": payment_data.amount}
+    )
+
     return RecurringPaymentResponse(
         id=payment_id,
         business_account_id=payment_data.business_account_id,
@@ -1628,11 +1659,15 @@ async def apply_for_business_loan(
     
     loan_applications.append(new_application)
     account.extra_data["loan_applications"] = loan_applications
-    
+
     db_session.commit()
-    
+
     log_business_action(
-    
+        action="apply_for_business_loan",
+        user_id=current_user['user_id'],
+        details={"application_id": application_id, "loan_amount": loan_data.loan_amount}
+    )
+
     return BusinessLoanResponse(
         application_id=application_id,
         business_account_id=loan_data.business_account_id,
@@ -1690,11 +1725,15 @@ async def generate_api_key(
     
     api_keys.append(new_key)
     account.extra_data["api_keys"] = api_keys
-    
+
     db_session.commit()
-    
+
     log_business_action(
-    
+        action="generate_api_key",
+        user_id=current_user['user_id'],
+        details={"key_id": key_id, "key_name": api_key_data.key_name}
+    )
+
     return APIKeyResponse(
         key_id=key_id,
         api_key=api_key,

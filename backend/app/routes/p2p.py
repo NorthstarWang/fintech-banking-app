@@ -108,12 +108,10 @@ async def create_p2p_transfer(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid account ID"
-        )
-    
+
     source_account = Validators.validate_account_ownership(
         db_session, account_id, current_user['user_id']
-    )
-    
+
     # Convert balance to Decimal for comparison
     account_balance = Decimal(str(source_account.balance))
     
@@ -122,8 +120,7 @@ async def create_p2p_transfer(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient balance"
-        )
-    
+
     # Calculate fee for instant transfers
     fee = Decimal('0')
     if transfer_data.method == "instant":
@@ -135,8 +132,7 @@ async def create_p2p_transfer(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient balance including fees"
-        )
-    
+
     # Create transaction
     transaction = Transaction(
         user_id=current_user['user_id'],
@@ -149,9 +145,7 @@ async def create_p2p_transfer(
             "recipient_id": transfer_data.recipient_id,
             "method": transfer_data.method,
             "fee": str(fee)
-        }
-    )
-    
+
     # Update account balance (convert to float for SQLAlchemy)
     source_account.balance = float(account_balance - total_amount)
     
@@ -172,7 +166,6 @@ async def create_p2p_transfer(
         "total": total_amount,
         "status": transaction.status,
         "method": transfer_data.method
-    }
 
 @router.post("/split-payment")
 async def create_split_payment(
@@ -190,12 +183,10 @@ async def create_split_payment(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid account ID"
-        )
-    
+
     source_account = Validators.validate_account_ownership(
         db_session, account_id, current_user['user_id']
-    )
-    
+
     # Calculate individual amounts
     participant_amounts = {}
     
@@ -213,15 +204,13 @@ async def create_split_payment(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Split details required for percentage split"
-            )
-        
+
         total_percentage = sum(split_data.split_details.values())
         if total_percentage > 100:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Total percentage cannot exceed 100%"
-            )
-        
+
         for participant_id, percentage in split_data.split_details.items():
             participant_amounts[participant_id] = (split_data.total_amount * percentage) / 100
             
@@ -232,16 +221,16 @@ async def create_split_payment(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Split details required for amount split"
             )
-        
+
         total_assigned = sum(split_data.split_details.values())
         if total_assigned > split_data.total_amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Total assigned amount exceeds bill amount"
             )
-        
+
         participant_amounts = split_data.split_details
-    
+
     # Create payment requests for each participant
     payment_requests = []
     for participant_id, amount in participant_amounts.items():
@@ -256,13 +245,7 @@ async def create_split_payment(
             "created_at": datetime.now()
         }
         payment_requests.append(payment_request)
-    
-        "user_id": current_user['user_id'],
-        "total_amount": str(split_data.total_amount),
-        "participants": len(split_data.participants),
-        "split_type": split_data.split_type
-    })
-    
+
     return {
         "split_id": f"split_{datetime.now().timestamp()}",
         "total_amount": split_data.total_amount,
@@ -291,12 +274,7 @@ async def create_payment_request(
         "status": "pending",
         "created_at": datetime.now()
     }
-    
-        "user_id": current_user['user_id'],
-        "amount": str(payment_request.amount),
-        "requester_id": payment_request.requester_id
-    })
-    
+
     return request_data
 
 @router.get("/qr-code")
@@ -316,7 +294,7 @@ async def generate_qr_code(
         "description": description,
         "timestamp": datetime.now().isoformat()
     }
-    
+
     # Generate QR code
     qr = qrcode.QRCode(
         version=1,
@@ -324,25 +302,25 @@ async def generate_qr_code(
         box_size=10,
         border=4,
     )
-    
+
     # In a real app, this would be a deep link to the app
     payment_link = f"bankflow://p2p/pay?recipient={current_user['user_id']}"
     if amount:
         payment_link += f"&amount={amount}"
     if description:
         payment_link += f"&description={description}"
-    
+
     qr.add_data(payment_link)
     qr.make(fit=True)
-    
+
     # Create QR code image
     img = qr.make_image(fill_color="black", back_color="white")
-    
+
     # Convert to base64
     buffer = io.BytesIO()
     img.save(buffer, format='PNG')
     qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-    
+
     return P2PQRCodeResponse(
         qr_code=f"data:image/png;base64,{qr_base64}",
         payment_link=payment_link,

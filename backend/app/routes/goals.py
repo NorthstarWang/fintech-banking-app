@@ -97,26 +97,15 @@ async def create_goal(
         target_amount = float(target_amount_val) if target_amount_val is not None else 0.0
         target_date = getattr(new_goal, 'target_date', None)
         target_date_str = target_date.isoformat() if target_date else "No target date"
-        
-            goal_id,
-            str(current_user['user_id']),
-            goal_name,
-            target_amount,
-            target_date_str
-        )
-        
+
         # Create response
         response = GoalResponse.from_orm(new_goal)
         response.progress_percentage = calculate_goal_progress(new_goal)
-        
+
         return response
     except ValidationError as e:
-            }
-        )
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
-            }
-        )
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[GoalResponse])
@@ -245,15 +234,7 @@ async def update_goal(
         goal.updated_at = datetime.utcnow()
         db_session.commit()
         db_session.refresh(goal)
-        
-        # Log successful update
-            "goals",
-            str(goal.id),
-            "update",
-            f"Goal '{goal.name}' updated successfully",
-            update_dict
-        )
-        
+
         response = GoalResponse.from_orm(goal)
         response.progress_percentage = calculate_goal_progress(goal)
         
@@ -261,8 +242,6 @@ async def update_goal(
     except HTTPException:
         raise
     except Exception as e:
-            }
-        )
         raise HTTPException(status_code=500, detail="Failed to update goal. Please try again.")
 
 @router.post("/{goal_id}/contribute", response_model=GoalResponse)
@@ -308,14 +287,7 @@ async def contribute_to_goal(
     db_session.add(new_contribution)
     db_session.commit()
     db_session.refresh(goal)
-    
-    # Log contribution
-        str(goal_id),
-        contribution.amount,
-        goal.current_amount,
-        goal.target_amount
-    )
-    
+
     response = GoalResponse.from_orm(goal)
     response.progress_percentage = calculate_goal_progress(goal)
     
@@ -347,9 +319,7 @@ async def get_goal_contributions(
     return {
         "goal_id": goal_id,
         "goal_name": goal.name,
-        "contributions": [
-            for c in contributions
-        ]
+        "contributions": [c.dict() for c in contributions]
     }
 
 @router.delete("/{goal_id}")
@@ -376,15 +346,7 @@ async def delete_goal(
     goal.status = GoalStatus.CANCELLED.value
     goal.updated_at = datetime.utcnow()
     db_session.commit()
-    
-    # Log deletion
-        "goals",
-        str(goal_id),
-        "update",
-        f"Goal '{goal.name}' cancelled",
-        {"status": "CANCELLED"}
-    )
-    
+
     return {"message": "Goal cancelled successfully"}
 
 @router.get("/allocation-summary/{account_id}")

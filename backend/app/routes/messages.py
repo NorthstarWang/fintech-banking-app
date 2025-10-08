@@ -102,22 +102,15 @@ async def send_message(
             message_data.subject
         )
         db_session.commit()
-    
-    # Save message to database
-    
-        }
-    )
-    
+
     # Prepare response
     response = DirectMessageResponse.from_orm(message)
     response.sender_username = current_user['username']
     response.recipient_username = recipient.username
-    
+
     # Load attachments properly
     if message.attachments:
-        response.attachments = [
-            for att in message.attachments
-        ]
+        response.attachments = [att for att in message.attachments]
     elif message_data.attachments:
         response.attachments = message_data.attachments
     
@@ -148,9 +141,7 @@ async def get_inbox(
         response.sender_username = msg.sender.username
         response.recipient_username = current_user['username']
         if msg.attachments:
-            response.attachments = [
-                for att in msg.attachments
-            ]
+            response.attachments = [att for att in msg.attachments]
         results.append(response)
     
     return results
@@ -178,9 +169,7 @@ async def get_sent_messages(
         response.sender_username = current_user['username']
         response.recipient_username = msg.recipient.username
         if msg.attachments:
-            response.attachments = [
-                for att in msg.attachments
-            ]
+            response.attachments = [att for att in msg.attachments]
         results.append(response)
     
     return results
@@ -544,9 +533,7 @@ async def get_message(
     ).all()
     
     if attachments:
-        response.attachments = [
-            for att in attachments
-        ]
+        response.attachments = [att for att in attachments]
     
     return response
 

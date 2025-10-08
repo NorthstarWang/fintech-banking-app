@@ -98,8 +98,7 @@ class GoalUpdateService:
                     auto_fixed,
                     remaining_amount,
                     target - current
-                )
-                
+
             if contribution_amount > 0:
                 # Create contribution
                 contribution = GoalContribution(
@@ -109,8 +108,7 @@ class GoalUpdateService:
                     notes=f"Automatic contribution from {trans_data.get('description') or 'deposit'}",
                     is_automatic=True,
                     source_transaction_id=trans_data.get('id')
-                )
-                
+
                 # Update goal amount
                 goal_data['current_amount'] = safe_add_money(current, contribution_amount)
                 
@@ -130,9 +128,7 @@ class GoalUpdateService:
                                 "target_amount": target,
                                 "final_amount": goal_data['current_amount']
                             }
-                        }
-                    )
-                
+
                 goal_data['updated_at'] = datetime.utcnow()
                 
                 db_session.add(contribution)
@@ -153,9 +149,7 @@ class GoalUpdateService:
                             "new_current_amount": goal_data['current_amount'],
                             "progress_percentage": (goal_data['current_amount'] / target) * 100 if target > 0 else 0
                         }
-                    }
-                )
-        
+
         # Commit all changes
         if contributions_created:
             db_session.commit()
@@ -211,8 +205,7 @@ class GoalUpdateService:
                 }
                 for goal in linked_goals
             ]
-        }
-    
+
     @staticmethod
     def validate_allocation_rules(
         db_session: Any,
@@ -235,8 +228,7 @@ class GoalUpdateService:
         query = db_session.query(Goal).filter(
             Goal.account_id == account_id,
             Goal.status == 'active'
-        )
-        
+
         if goal_id:
             query = query.filter(Goal.id != goal_id)
             

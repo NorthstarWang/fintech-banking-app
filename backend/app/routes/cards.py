@@ -269,10 +269,7 @@ async def create_card(
     db_session.add(card)
     db_session.commit()
     db_session.refresh(card)
-    
-        }
-    )
-    
+
     # Return response
     response_data = {
         "id": card.id,
@@ -544,10 +541,7 @@ async def update_card(
     
     db_session.commit()
     db_session.refresh(card)
-    
-        }
-    )
-    
+
     # Return updated card
     return await get_card(card_id, current_user, db_session)
 
@@ -573,10 +567,7 @@ async def deactivate_card(
     
     card.status = CardStatus.FROZEN
     db_session.commit()
-    
-        }
-    )
-    
+
     return {
         "id": card.id,
         "is_active": False,
@@ -862,10 +853,7 @@ async def make_card_payment(
     db_session.add(debit_transaction)
     db_session.add(credit_transaction)
     db_session.commit()
-    
-        }
-    )
-    
+
     return CardPaymentResponse(
         payment_id=credit_transaction.id,
         amount=payment_data.amount,
@@ -1033,10 +1021,7 @@ async def set_spending_limits(
         "category_limits": {l.merchant_categories[0]: l.limit_amount for l in active_limits if l.merchant_categories},
         "updated_at": datetime.utcnow().isoformat()
     }
-    
-        }
-    )
-    
+
     return response
 
 @router.get("/{card_id}/spending-limit", response_model=Dict[str, Any])
@@ -1146,8 +1131,6 @@ async def configure_card_alerts(
         "updated_at": datetime.utcnow().isoformat()
     }
     
-        }
-    )
     
     return response
 
@@ -1192,8 +1175,6 @@ async def report_card_fraud(
     db_session.add(notification)
     db_session.commit()
     
-        }
-    )
     
     return FraudReportResponse(
         case_number=case_number,
@@ -1267,8 +1248,6 @@ async def create_virtual_card_from_parent(
     db_session.commit()
     db_session.refresh(virtual_card)
     
-        }
-    )
     
     # Return CardResponse format
     return CardResponse(
@@ -1338,8 +1317,6 @@ async def create_virtual_card(
     db_session.commit()
     db_session.refresh(virtual_card)
     
-        }
-    )
     
     # Return CardResponse with proper fields
     try:
@@ -1362,8 +1339,6 @@ async def create_virtual_card(
         }
         return VirtualCardResponse(**response_data)
     except Exception as e:
-            }
-        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating virtual card response: {str(e)}"
@@ -1414,8 +1389,6 @@ async def freeze_unfreeze_card(
     db_session.commit()
     db_session.refresh(card)
     
-        }
-    )
     
     # Return CardResponse with proper fields
     return CardResponse(
@@ -1506,9 +1479,7 @@ async def set_card_limit(
     db_session.add(card_limit)
     db_session.commit()
     db_session.refresh(card_limit)
-    
-    )
-    
+
     # Return CardLimitResponse with proper fields
     return CardLimitResponse(
         id=card_limit.id,

@@ -237,8 +237,6 @@ def _create_subscription_response(
         is_trial=is_trial,
         regular_price=regular_price,
         days_until_billing=days_until_billing
-    )
-
 
 @router.get("", response_model=List[SubscriptionResponse])
 async def list_subscriptions(
@@ -253,8 +251,7 @@ async def list_subscriptions(
     # Get existing subscriptions
     query = db_session.query(Subscription).filter(
         Subscription.user_id == current_user['user_id']
-    )
-    
+
     if status:
         query = query.filter(Subscription.status == status)
     
@@ -293,8 +290,7 @@ async def list_subscriptions(
                 next_billing = calculate_next_billing_date(
                     last_tx.transaction_date.date(),
                     detection["billing_cycle"]
-                )
-                
+
                 subscription = Subscription(
                     user_id=current_user['user_id'],
                     name=f"{detection['merchant_name']} Subscription",
@@ -308,8 +304,7 @@ async def list_subscriptions(
                     start_date=last_tx.transaction_date.date() - timedelta(days=90),  # Estimate
                     detected_automatically=True,
                     confidence_score=detection["confidence"]
-                )
-                
+
                 db_session.add(subscription)
         
         db_session.commit()
@@ -351,8 +346,7 @@ async def update_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Update fields
     if update_data.name is not None:
         subscription.name = update_data.name
@@ -384,10 +378,7 @@ async def update_subscription(
     
     db_session.commit()
     db_session.refresh(subscription)
-    
-        }
-    )
-    
+
     # Return with transaction links
     linked_txs = db_session.query(Transaction).join(
         Account
@@ -416,7 +407,6 @@ async def update_subscription(
         confidence_score=subscription.confidence_score,
         created_at=subscription.created_at,
         updated_at=subscription.updated_at
-    )
 
 @router.get("/analysis", response_model=SubscriptionAnalysisResponse)
 async def analyze_subscriptions(
@@ -524,7 +514,6 @@ async def analyze_subscriptions(
         upcoming_renewals=upcoming_renewals,
         savings_opportunities=round(savings_opportunities, 2),
         average_subscription_cost=round(total_monthly_cost / active_subscriptions, 2) if active_subscriptions > 0 else 0
-    )
 
 @router.post("/{subscription_id}/reminder", response_model=CancellationReminderResponse, status_code=status.HTTP_201_CREATED)
 async def set_cancellation_reminder(
@@ -546,8 +535,7 @@ async def set_cancellation_reminder(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Calculate reminder date
     if reminder_data.target_date:
         reminder_date = reminder_data.target_date
@@ -572,13 +560,11 @@ async def set_cancellation_reminder(
         user_id=current_user['user_id'],
         reminder_date=reminder_date,
         reason=reminder_data.reason
-    )
-    
+
     db_session.add(reminder)
     db_session.commit()
     db_session.refresh(reminder)
     
-    )
     
     return CancellationReminderResponse.from_orm(reminder)
 
@@ -735,7 +721,6 @@ async def get_optimization_suggestions(
         duplicate_services=duplicate_services,
         optimization_score=round(optimization_score, 1),
         generated_at=datetime.utcnow()
-    )
 
 @router.post("", response_model=SubscriptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_subscription(
@@ -769,8 +754,7 @@ async def create_subscription(
         detected_automatically=False,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
-    )
-    
+
     # Add trial info if applicable
     if subscription_data.is_trial:
         subscription.free_trial_end_date = subscription_data.trial_end_date
@@ -796,7 +780,6 @@ async def create_subscription(
         is_trial=subscription_data.is_trial,
         regular_price=subscription_data.regular_price,
         days_until_billing=days_until_billing
-    )
 
 @router.get("/summary", response_model=SubscriptionSummaryResponse)
 async def get_subscription_summary(
@@ -848,7 +831,6 @@ async def get_subscription_summary(
         paused_subscriptions=paused_count,
         cancelled_subscriptions=cancelled_count,
         by_category=dict(by_category)
-    )
 
 @router.get("/{subscription_id}", response_model=SubscriptionDetailResponse)
 async def get_subscription(
@@ -867,8 +849,7 @@ async def get_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Get payment history (linked transactions)
     payment_history = []
     linked_txs = []
@@ -887,8 +868,7 @@ async def get_subscription(
         subscription,
         transaction_ids=[tx.id for tx in linked_txs],
         days_until_billing=days_until_billing
-    )
-    
+
     # Convert to dict and add detail fields
     response_dict = base_response.model_dump()
     response_dict['payment_history'] = payment_history
@@ -917,8 +897,7 @@ async def cancel_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Cancel subscription
     if cancel_data.cancel_at_period_end:
         # Keep subscription active but set end date to next billing date
@@ -936,14 +915,12 @@ async def cancel_subscription(
     
     db_session.commit()
     
-    )
     
     return SubscriptionCancelResponse(
         id=subscription.id,
         status=subscription.status,
         cancellation_date=cancellation_date,
         message=message
-    )
 
 @router.post("/{subscription_id}/pause", response_model=SubscriptionPauseResponse)
 async def pause_subscription(
@@ -965,8 +942,7 @@ async def pause_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Pause subscription
     subscription.status = SubscriptionStatus.PAUSED
     subscription.next_billing_date = pause_data.pause_until
@@ -977,14 +953,12 @@ async def pause_subscription(
     
     db_session.commit()
     
-    )
     
     return SubscriptionPauseResponse(
         id=subscription.id,
         status=subscription.status,
         resume_date=pause_data.pause_until,
         message=f"Subscription paused until {pause_data.pause_until}"
-    )
 
 @router.get("/{subscription_id}/payments", response_model=List[PaymentHistoryResponse])
 async def get_subscription_payments(
@@ -1003,8 +977,7 @@ async def get_subscription_payments(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Get linked transactions
     linked_txs = db_session.query(Transaction).join(
         Account
@@ -1047,8 +1020,7 @@ async def set_subscription_reminders(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # In a real system, these would be stored in a separate table
     # For now, we'll store in the notes field as JSON
     reminder_settings = {
@@ -1056,8 +1028,7 @@ async def set_subscription_reminders(
         "reminder_days_before": reminder_data.reminder_days_before,
         "cancellation_reminder": reminder_data.cancellation_reminder,
         "price_increase_alert": reminder_data.price_increase_alert
-    }
-    
+
     # Update notes to include reminder settings
     import json
     notes_data = {"reminders": reminder_settings}
@@ -1074,7 +1045,6 @@ async def set_subscription_reminders(
     
     db_session.commit()
     
-    )
     
     return SubscriptionReminderResponse(
         subscription_id=subscription.id,
@@ -1083,7 +1053,6 @@ async def set_subscription_reminders(
         cancellation_reminder=reminder_data.cancellation_reminder,
         price_increase_alert=reminder_data.price_increase_alert,
         message="Reminder preferences updated successfully"
-    )
 
 @router.post("/{subscription_id}/usage", response_model=SubscriptionUsageResponse)
 async def track_subscription_usage(
@@ -1105,14 +1074,11 @@ async def track_subscription_usage(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # In a real system, usage would be stored in a separate table
-    )
-    
+
     return SubscriptionUsageResponse(
         message="Usage tracked successfully"
-    )
 
 @router.get("/analysis/recommendations", response_model=SubscriptionRecommendationsResponse)
 async def get_subscription_recommendations(
@@ -1191,7 +1157,6 @@ async def get_subscription_recommendations(
         duplicate_services=duplicate_services,
         savings_opportunities=savings_opportunities,
         total_potential_savings=round(total_potential_savings, 2)
-    )
 
 @router.post("/{subscription_id}/share", response_model=SubscriptionShareResponse)
 async def share_subscription(
@@ -1213,8 +1178,7 @@ async def share_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Subscription not found"
-        )
-    
+
     # Find the user to share with
     share_user = db_session.query(User).filter(
         User.username == share_data.share_with_username
@@ -1224,8 +1188,7 @@ async def share_subscription(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # In a real system, sharing would be tracked in a separate table
     # For now, we'll update the notes
     import json
@@ -1233,8 +1196,7 @@ async def share_subscription(
         "shared_with": share_user.username,
         "user_id": share_user.id,
         "cost_split": share_data.cost_split_percentage
-    }
-    
+
     notes_data = {"shared_users": [shared_info]}
     if subscription.notes:
         try:
@@ -1252,7 +1214,6 @@ async def share_subscription(
     
     db_session.commit()
     
-    )
     
     return SubscriptionShareResponse(
         id=subscription.id,
@@ -1261,7 +1222,6 @@ async def share_subscription(
             "cost_split_percentage": share_data.cost_split_percentage
         }],
         message=f"Subscription shared with {share_user.username}"
-    )
 
 @router.post("/import", response_model=BulkImportResponse)
 async def bulk_import_subscriptions(
@@ -1307,8 +1267,7 @@ async def bulk_import_subscriptions(
                 detected_automatically=False,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
-            )
-            
+
             db_session.add(subscription)
             db_session.flush()  # Get the ID
             
@@ -1320,7 +1279,6 @@ async def bulk_import_subscriptions(
     
     db_session.commit()
     
-    )
     
     return BulkImportResponse(
         imported=imported_count,

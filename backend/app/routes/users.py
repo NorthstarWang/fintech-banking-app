@@ -24,8 +24,7 @@ async def get_current_user_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     return UserResponse.from_orm(user)
 
 @router.put("/me", response_model=UserResponse)
@@ -43,8 +42,7 @@ async def update_user_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Update allowed fields
     if update_data.email and update_data.email != user.email:
         # Check if email already exists
@@ -78,9 +76,7 @@ async def update_user_profile(
     db_session.refresh(user)
     
     # Log update
-        }
-    )
-    
+
     return UserResponse.from_orm(user)
 
 @router.post("/me/change-password")
@@ -102,8 +98,7 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Verify current password
     if not auth_handler.verify_password(current_password, user.password_hash):
         raise ValidationError("Current password is incorrect")
@@ -114,8 +109,7 @@ async def change_password(
     db_session.commit()
     
     # Log password change
-    )
-    
+
     return {"message": "Password changed successfully"}
 
 @router.get("/me/stats")
@@ -191,7 +185,6 @@ async def get_user_statistics(
             "completed": completed_goals
         },
         "contacts": contacts
-    }
 
 @router.delete("/me")
 async def delete_user_account(
@@ -208,8 +201,7 @@ async def delete_user_account(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Verify password
     if not auth_handler.verify_password(password, user.password_hash):
         raise ValidationError("Password is incorrect")
@@ -229,8 +221,7 @@ async def delete_user_account(
         "users",
         user.id,
         "User account deactivated"
-    )
-    
+
     return {"message": "Account deactivated successfully"}
 
 @router.get("/preferences")
@@ -245,8 +236,7 @@ async def get_user_preferences(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Return current preferences
     return {
         "currency": user.currency,
@@ -261,7 +251,6 @@ async def get_user_preferences(
             "two_factor_enabled": user.two_factor_enabled,
             "biometric_enabled": False    # Placeholder
         }
-    }
 
 @router.put("/preferences")
 async def update_user_preferences(
@@ -278,8 +267,7 @@ async def update_user_preferences(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Update basic preferences
     if "currency" in preferences:
         user.currency = preferences["currency"]
@@ -297,15 +285,12 @@ async def update_user_preferences(
     db_session.commit()
     
     # Log preference update
-        }
-    )
-    
+
     # Return updated preferences
     return {
         "message": "Preferences updated successfully",
         "currency": user.currency,
         "timezone": user.timezone
-    }
 
 @router.get("/{user_id}/profile")
 async def get_user_profile(
@@ -323,8 +308,7 @@ async def get_user_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
-        )
-    
+
     # Check if users are contacts
     is_contact = False
     if user_id != current_user['user_id']:
@@ -349,8 +333,7 @@ async def get_user_profile(
         'show_profile_stats': True,
         'show_email': False,
         'show_full_name': True
-    }
-    
+
     # Basic profile info
     profile = {
         "id": user.id,
@@ -358,8 +341,7 @@ async def get_user_profile(
         "created_at": user.created_at,
         "is_contact": is_contact,
         "is_self": user_id == current_user['user_id']
-    }
-    
+
     # Add info based on privacy settings
     if privacy_settings.get('show_full_name', True) or is_contact:
         profile["first_name"] = user.first_name
@@ -395,8 +377,7 @@ async def get_user_profile(
                 Contact.user_id == user_id,
                 Contact.status == ContactStatus.ACCEPTED
             ).count()
-        }
-    
+
     return profile
 
 @router.get("/search")

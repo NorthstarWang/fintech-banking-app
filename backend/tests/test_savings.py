@@ -262,9 +262,7 @@ class TestSavingsGoals:
                 "target_amount": 1000.00,
                 "current_amount": 0.00,
                 "category": "emergency"
-            }
-        )
-        
+
         response = client.get("/api/savings?category=emergency", headers=auth_headers)
         assert response.status_code == 200
         goals = response.json()
