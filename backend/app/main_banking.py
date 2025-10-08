@@ -10,6 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from .core.logging import setup_logging
 from .middleware.error_handler import error_handler_middleware, register_exception_handlers
 from .middleware.request_id import request_id_middleware
+from .middleware.rate_limiter import rate_limit_middleware
+from .middleware.input_sanitizer import input_sanitization_middleware
+from .middleware.csrf_protection import csrf_protection_middleware
+from .middleware.security_headers import security_headers_middleware
 from .storage.memory_adapter import db
 
 # Setup logging
@@ -83,9 +87,26 @@ app = FastAPI(
 register_exception_handlers(app)
 
 # Add middleware (order matters - first added = last executed)
+# Security middleware chain - order is important
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    return await security_headers_middleware(request, call_next)
+
 @app.middleware("http")
 async def add_error_handling(request: Request, call_next):
     return await error_handler_middleware(request, call_next)
+
+@app.middleware("http")
+async def add_csrf_protection(request: Request, call_next):
+    return await csrf_protection_middleware(request, call_next)
+
+@app.middleware("http")
+async def add_input_sanitization(request: Request, call_next):
+    return await input_sanitization_middleware(request, call_next)
+
+@app.middleware("http")
+async def add_rate_limiting(request: Request, call_next):
+    return await rate_limit_middleware(request, call_next)
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):

@@ -16,13 +16,13 @@ from ..services.health_service import (
     SystemMetricsAdapter,
     HealthStatus
 )
-from ..storage.memory_adapter import memory_storage
+from ..storage.memory_adapter import db
 
 router = APIRouter()
 
 # Initialize health monitor with adapters
 _health_monitor = HealthMonitor()
-_health_monitor.register_adapter(DatabaseHealthAdapter(memory_storage))
+_health_monitor.register_adapter(DatabaseHealthAdapter(db))
 _health_monitor.register_adapter(AuthenticationHealthAdapter())
 _health_monitor.register_adapter(CacheHealthAdapter())
 _health_monitor.register_adapter(SystemMetricsAdapter())

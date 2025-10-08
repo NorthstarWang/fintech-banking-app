@@ -56,6 +56,7 @@ async def create_asset_bridge(
             to_asset_class=bridge_request.to_asset_class,
             to_asset_id=bridge_request.to_asset_id,
             to_asset_type=bridge_request.to_asset_type
+        )
 
         # Log the bridge creation
 
@@ -65,6 +66,7 @@ async def create_asset_bridge(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
 
 @router.get("/bridges", response_model=List[AssetBridgeResponse])
 async def get_asset_bridges(
@@ -76,7 +78,7 @@ async def get_asset_bridges(
     """Get asset bridge history for the current user"""
     query = db_session.query(AssetBridge).filter(
         AssetBridge.user_id == current_user['user_id']
-
+    )
     if status:
         query = query.filter(AssetBridge.status == status)
     
@@ -102,12 +104,12 @@ async def create_smart_transfer(
         recipient_identifier=transfer_request.recipient_identifier,
         amount_usd=transfer_request.amount_usd,
         preferred_method=transfer_request.preferred_method
-
+    )
     if "error" in route_info:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=route_info["error"]
-
+        )
     # Create unified transaction
     recommended_route = route_info["recommended_route"]
     source_asset = recommended_route["source_asset"]
@@ -128,7 +130,8 @@ async def create_smart_transfer(
         reference_ids={
             'recipient': transfer_request.recipient_identifier,
             'route_id': f"route_{datetime.utcnow().timestamp()}"
-
+        }
+    )
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
@@ -151,7 +154,7 @@ async def create_smart_transfer(
         estimated_arrival=datetime.utcnow(),
         status=transaction.status,
         initiated_at=transaction.initiated_at
-
+    )
     return response
 
 @router.get("/collateral/positions", response_model=List[CollateralPositionResponse])
@@ -163,7 +166,7 @@ async def get_collateral_positions(
     """Get collateral positions for the current user"""
     query = db_session.query(CollateralPosition).filter(
         CollateralPosition.user_id == current_user['user_id']
-
+    )
     if active_only:
         query = query.filter(CollateralPosition.is_active == True)
     
@@ -191,7 +194,7 @@ async def create_collateral_position(
             collateral_assets=collateral_assets,
             borrow_amount=borrow_amount,
             currency=currency
-
+        )
         # Log the creation
         
         return CollateralPositionResponse.from_orm(position)
@@ -200,6 +203,7 @@ async def create_collateral_position(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
 
 @router.get("/opportunities", response_model=List[CrossAssetOpportunity])
 async def get_cross_asset_opportunities(
@@ -249,7 +253,7 @@ async def optimize_portfolio(
         AssetClass.CRYPTO.value: (balance.total_crypto_usd / total * 100) if total > 0 else 0,
         AssetClass.NFT.value: (balance.nft_collection_value / total * 100) if total > 0 else 0,
         AssetClass.CREDIT.value: (balance.total_credit_available / total * 100) if total > 0 else 0,
-
+    }
     # Generate recommendations based on goal
     if optimization_request.optimization_goal == "maximize_yield":
         recommended_allocation = {
@@ -302,6 +306,7 @@ async def optimize_portfolio(
             {"step": 3, "action": "Monitor performance", "estimated_time": "ongoing"}
         ],
         estimated_fees=50.0  # Mock fee estimate
+    )
 
 @router.get("/conversion-rates", response_model=Dict[str, Any])
 async def get_conversion_rates(
@@ -324,7 +329,7 @@ async def get_conversion_rates(
         
         rate, valid_until = converter.get_conversion_rate(
             from_asset, to_asset, from_class, to_class
-
+        )
         return {
             "from": from_asset,
             "to": to_asset,
@@ -353,7 +358,7 @@ async def get_unified_transactions(
     transactions = unified_manager.get_unified_transaction_history(
         current_user['user_id'],
         limit=limit
-
+    )
     return transactions
 
 @router.post("/search", response_model=UnifiedSearchResponse)

@@ -98,6 +98,7 @@ class GoalUpdateService:
                     auto_fixed,
                     remaining_amount,
                     target - current
+                )
 
             if contribution_amount > 0:
                 # Create contribution
@@ -108,6 +109,7 @@ class GoalUpdateService:
                     notes=f"Automatic contribution from {trans_data.get('description') or 'deposit'}",
                     is_automatic=True,
                     source_transaction_id=trans_data.get('id')
+                )
 
                 # Update goal amount
                 goal_data['current_amount'] = safe_add_money(current, contribution_amount)
@@ -118,16 +120,7 @@ class GoalUpdateService:
                     goal_data['completed_at'] = datetime.utcnow()
                     
                     # Log goal completion
-                        session_id,
-                        {
-                            "text": f"Goal '{goal_data.get('name')}' completed automatically",
-                            "custom_action": "goal_auto_completed",
-                            "data": {
-                                "goal_id": goal_data.get('id'),
-                                "goal_name": goal_data.get('name'),
-                                "target_amount": target,
-                                "final_amount": goal_data['current_amount']
-                            }
+                    print(f"Goal '{goal_data.get('name')}' completed automatically")
 
                 goal_data['updated_at'] = datetime.utcnow()
                 
@@ -137,18 +130,7 @@ class GoalUpdateService:
                 remaining_amount -= contribution_amount
                 
                 # Log automatic contribution
-                    session_id,
-                    {
-                        "text": f"Automatic goal contribution created",
-                        "custom_action": "goal_auto_contribution",
-                        "data": {
-                            "goal_id": goal_data.get('id'),
-                            "goal_name": goal_data.get('name'),
-                            "contribution_amount": contribution_amount,
-                            "transaction_id": trans_data.get('id'),
-                            "new_current_amount": goal_data['current_amount'],
-                            "progress_percentage": (goal_data['current_amount'] / target) * 100 if target > 0 else 0
-                        }
+                print(f"Automatic goal contribution created: ${contribution_amount} for goal '{goal_data.get('name')}')")
 
         # Commit all changes
         if contributions_created:
@@ -199,12 +181,13 @@ class GoalUpdateService:
                     "current_amount": float((goal._data if hasattr(goal, '_data') else goal).get('current_amount', 0)),
                     "target_amount": float((goal._data if hasattr(goal, '_data') else goal).get('target_amount', 0)),
                     "progress_percentage": (
-                        float((goal._data if hasattr(goal, '_data') else goal).get('current_amount', 0)) / 
+                        float((goal._data if hasattr(goal, '_data') else goal).get('current_amount', 0)) /
                         float((goal._data if hasattr(goal, '_data') else goal).get('target_amount', 1)) * 100
                     ) if float((goal._data if hasattr(goal, '_data') else goal).get('target_amount', 0)) > 0 else 0
                 }
                 for goal in linked_goals
             ]
+        }
 
     @staticmethod
     def validate_allocation_rules(
@@ -228,6 +211,7 @@ class GoalUpdateService:
         query = db_session.query(Goal).filter(
             Goal.account_id == account_id,
             Goal.status == 'active'
+        )
 
         if goal_id:
             query = query.filter(Goal.id != goal_id)

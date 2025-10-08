@@ -24,10 +24,10 @@ RUN adduser --disabled-password --no-create-home --gecos "" appuser
 RUN echo '#!/bin/bash\n\
 if [ "$ENV" = "development" ]; then\n\
     echo "Starting in development mode..."\n\
-    exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload\n\
+    exec python -m uvicorn app.main_banking:app --host 0.0.0.0 --port ${PORT:-8000} --reload\n\
 else\n\
     echo "Starting in production mode..."\n\
-    exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WORKERS:-4}\n\
+    exec python -m uvicorn app.main_banking:app --host 0.0.0.0 --port ${PORT:-8000} --workers ${WORKERS:-4}\n\
 fi' > /app/start.sh \
     && chmod +x /app/start.sh
 

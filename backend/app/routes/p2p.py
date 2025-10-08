@@ -108,9 +108,11 @@ async def create_p2p_transfer(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid account ID"
+        )
 
     source_account = Validators.validate_account_ownership(
         db_session, account_id, current_user['user_id']
+    )
 
     # Convert balance to Decimal for comparison
     account_balance = Decimal(str(source_account.balance))
@@ -120,6 +122,7 @@ async def create_p2p_transfer(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient balance"
+        )
 
     # Calculate fee for instant transfers
     fee = Decimal('0')
@@ -131,7 +134,7 @@ async def create_p2p_transfer(
     if account_balance < total_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance including fees"
+            detail="Insufficient balance including fees")
 
     # Create transaction
     transaction = Transaction(
@@ -145,20 +148,15 @@ async def create_p2p_transfer(
             "recipient_id": transfer_data.recipient_id,
             "method": transfer_data.method,
             "fee": str(fee)
+        }
+    )
 
     # Update account balance (convert to float for SQLAlchemy)
     source_account.balance = float(account_balance - total_amount)
-    
+
     db_session.add(transaction)
     db_session.commit()
-    
-        "user_id": current_user['user_id'],
-        "amount": str(transfer_data.amount),
-        "recipient_id": transfer_data.recipient_id,
-        "method": transfer_data.method,
-        "fee": str(fee)
-    })
-    
+
     return {
         "transaction_id": transaction.id,
         "amount": transfer_data.amount,
@@ -166,6 +164,7 @@ async def create_p2p_transfer(
         "total": total_amount,
         "status": transaction.status,
         "method": transfer_data.method
+    }
 
 @router.post("/split-payment")
 async def create_split_payment(
@@ -183,9 +182,11 @@ async def create_split_payment(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid account ID"
+        )
 
     source_account = Validators.validate_account_ownership(
         db_session, account_id, current_user['user_id']
+    )
 
     # Calculate individual amounts
     participant_amounts = {}
@@ -204,12 +205,14 @@ async def create_split_payment(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Split details required for percentage split"
+            )
 
         total_percentage = sum(split_data.split_details.values())
         if total_percentage > 100:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Total percentage cannot exceed 100%"
+            )
 
         for participant_id, percentage in split_data.split_details.items():
             participant_amounts[participant_id] = (split_data.total_amount * percentage) / 100
