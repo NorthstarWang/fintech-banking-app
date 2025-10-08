@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import PortfolioSummary from '@/components/investments/PortfolioSummary';
 
 interface InvestmentAccount {
   id: number;
@@ -168,7 +169,10 @@ export default function InvestmentsPage() {
         <p className="text-gray-600">Manage your ETF, stock, and crypto investments</p>
       </div>
 
-      {/* Portfolio Summary */}
+      {/* New Portfolio Summary Component */}
+      {accounts.length > 0 && <PortfolioSummary />}
+
+      {/* Legacy Portfolio Summary (keeping for backward compatibility) */}
       {accounts.length > 0 && (
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 lg:p-8 mb-8 text-white shadow-xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

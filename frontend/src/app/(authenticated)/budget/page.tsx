@@ -132,10 +132,6 @@ export default function BudgetPage() {
     'Gifts': 'from-[var(--cat-amber)] to-[var(--cat-yellow)]/80',
   };
 
-  useEffect(() => {
-    loadBudgetData();
-  }, [selectedPeriod]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const loadBudgetData = async () => {
     try {
       setIsLoading(true);
@@ -258,6 +254,10 @@ export default function BudgetPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadBudgetData();
+  }, [selectedPeriod, budgetsService, goalsService, categoriesService, transactionsService]);
 
   const handleRefresh = () => {
     loadBudgetData();
@@ -433,7 +433,8 @@ export default function BudgetPage() {
   const totalBudget = Number(budgetSummary?.total_budget) || 0;
   const totalSpent = Number(budgetSummary?.total_spent) || 0;
   const totalRemaining = Number(budgetSummary?.total_remaining) || 0;
-  const overBudgetCount = Number(budgetSummary?.over_budget_count) || 0;
+  // Count budgets with overspending (spent > allocated)
+  const overBudgetCount = budgetCategories.filter(b => b.spent > b.allocated).length || 0;
 
   const periodOptions = [
     { value: 'quarter', label: 'All Budgets' },

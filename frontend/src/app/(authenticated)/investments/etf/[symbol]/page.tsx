@@ -57,13 +57,6 @@ export default function ETFDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  useEffect(() => {
-    if (symbol) {
-      fetchETFDetail();
-      checkWatchlist();
-    }
-  }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchETFDetail = async () => {
     try {
       setLoading(true);
@@ -107,13 +100,20 @@ export default function ETFDetailPage() {
   const checkWatchlist = async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) => 
+      const isInWatchlist = watchlists.some((w: any) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
   };
+
+  useEffect(() => {
+    if (symbol) {
+      fetchETFDetail();
+      checkWatchlist();
+    }
+  }, [symbol, fetchETFDetail, checkWatchlist]);
 
   const toggleWatchlist = async () => {
     try {

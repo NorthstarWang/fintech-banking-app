@@ -46,13 +46,6 @@ export default function CryptoDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  useEffect(() => {
-    if (symbol) {
-      fetchCryptoDetail();
-      checkWatchlist();
-    }
-  }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchCryptoDetail = async () => {
     try {
       setLoading(true);
@@ -84,13 +77,20 @@ export default function CryptoDetailPage() {
   const checkWatchlist = async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) => 
+      const isInWatchlist = watchlists.some((w: any) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
   };
+
+  useEffect(() => {
+    if (symbol) {
+      fetchCryptoDetail();
+      checkWatchlist();
+    }
+  }, [symbol, fetchCryptoDetail, checkWatchlist]);
 
   const toggleWatchlist = async () => {
     try {

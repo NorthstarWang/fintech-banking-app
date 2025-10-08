@@ -238,6 +238,16 @@ async def get_investment_summary(
     """Get comprehensive investment summary for the current user."""
     return investment_manager.get_investment_summary(current_user["user_id"])
 
+@router.get("/portfolio-summary")
+async def get_portfolio_summary(
+    current_user = Depends(get_current_user)
+) -> dict:
+    """
+    Get comprehensive portfolio summary across all accounts.
+    Includes total portfolio value, asset allocation, top gainers/losers, and performance history.
+    """
+    return investment_manager.get_portfolio_summary(current_user["user_id"])
+
 # Market overview endpoints
 @router.get("/market-summary")
 async def get_market_summary(

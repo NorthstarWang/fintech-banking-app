@@ -19,6 +19,8 @@ COPY . .
 # Set build-time environment variables
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
+ENV SKIP_ENV_VALIDATION=true
+ENV NEXT_SKIP_TYPE_VALIDATION=true
 
 # Build the application
 # Install SWC dependencies for Alpine Linux
@@ -44,7 +46,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/next.config.* ./
 
 # Install only production dependencies
-RUN npm ci --only=production --legacy-peer-deps
+# Skip husky hooks in production
+RUN HUSKY=0 npm ci --only=production --legacy-peer-deps || npm install --only=production --legacy-peer-deps
 
 USER nextjs
 

@@ -145,12 +145,6 @@ export default function CurrencyConverterPage() {
     
   }, []);
 
-  useEffect(() => {
-    if (fromCurrency && toCurrency) {
-      fetchExchangeRate();
-    }
-  }, [fromCurrency, toCurrency]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchInitialData = async () => {
     try {
       setLoading(true);
@@ -179,6 +173,12 @@ export default function CurrencyConverterPage() {
     } catch {
     }
   };
+
+  useEffect(() => {
+    if (fromCurrency && toCurrency) {
+      fetchExchangeRate();
+    }
+  }, [fromCurrency, toCurrency]);
 
   const handleCreateQuote = async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) return;

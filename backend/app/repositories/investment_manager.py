@@ -1079,3 +1079,129 @@ class InvestmentManager:
             week_52_high=Decimal(str(float(market_data.last_price) * random.uniform(1.5, 3.0))),
             week_52_low=Decimal(str(float(market_data.last_price) * random.uniform(0.3, 0.7)))
         )
+
+    def get_portfolio_summary(self, user_id: int) -> dict:
+        """
+        Get comprehensive portfolio summary for dashboard display.
+        Includes portfolio value changes, asset allocation, top performers, and performance history.
+        """
+        accounts = self.get_user_accounts(user_id)
+
+        if not accounts:
+            return {
+                "total_value": 0,
+                "day_change": 0,
+                "day_change_percent": 0,
+                "week_change": 0,
+                "week_change_percent": 0,
+                "month_change": 0,
+                "month_change_percent": 0,
+                "year_change": 0,
+                "year_change_percent": 0,
+                "asset_allocation": {"stocks": 0, "etfs": 0, "crypto": 0, "cash": 0},
+                "top_gainers": [],
+                "top_losers": [],
+                "performance_history": []
+            }
+
+        # Calculate total portfolio value
+        total_value = sum(float(a.portfolio_value) for a in accounts)
+        total_cost_basis = sum(float(a.portfolio_value) - float(a.total_return) for a in accounts)
+
+        # Get all positions across accounts for analysis
+        all_positions = []
+        for account in accounts:
+            portfolio = next((p for p in self.data_manager.investment_portfolios
+                            if p['account_id'] == account.id), None)
+            if portfolio:
+                positions = [p for p in self.data_manager.investment_positions
+                           if p['portfolio_id'] == portfolio['id']]
+                all_positions.extend(positions)
+
+        # Calculate asset allocation breakdown
+        asset_allocation = {"stocks": 0.0, "etfs": 0.0, "crypto": 0.0, "cash": 0.0}
+        for position in all_positions:
+            asset_type = position.get('asset_type', 'stock').lower()
+            if asset_type == 'etf':
+                asset_allocation['etfs'] += float(position.get('current_value', 0))
+            elif asset_type == 'crypto':
+                asset_allocation['crypto'] += float(position.get('current_value', 0))
+            else:  # stocks and others
+                asset_allocation['stocks'] += float(position.get('current_value', 0))
+
+        # Add cash (buying power) from accounts
+        total_cash = sum(float(a.buying_power) for a in accounts)
+        asset_allocation['cash'] = total_cash
+
+        # Convert to percentages
+        if total_value > 0:
+            asset_allocation = {
+                k: round((v / total_value) * 100, 2) for k, v in asset_allocation.items()
+            }
+
+        # Get top gainers and losers
+        performers = []
+        for position in all_positions:
+            current_value = float(position.get('current_value', 0))
+            cost_basis = float(position.get('cost_basis', 0))
+            gain_loss = current_value - cost_basis
+            gain_loss_percent = (gain_loss / cost_basis * 100) if cost_basis > 0 else 0
+
+            performers.append({
+                "symbol": position.get('symbol', 'N/A'),
+                "name": position.get('name', position.get('symbol', 'N/A')),
+                "asset_type": position.get('asset_type', 'stock'),
+                "current_value": round(current_value, 2),
+                "gain_loss": round(gain_loss, 2),
+                "gain_loss_percent": round(gain_loss_percent, 2)
+            })
+
+        # Sort and get top 5 gainers and losers
+        performers.sort(key=lambda x: x['gain_loss_percent'], reverse=True)
+        top_gainers = performers[:5] if len(performers) > 5 else performers
+        top_losers = list(reversed(performers[-5:])) if len(performers) > 5 else []
+
+        # Calculate period changes (using overall return data)
+        total_return = sum(float(a.total_return) for a in accounts)
+        total_return_percent = (total_return / total_cost_basis * 100) if total_cost_basis > 0 else 0
+
+        # Simulate period-based changes (in real scenario, would use historical data)
+        day_change = round(total_return * 0.01, 2)  # Approximate 1% daily volatility
+        day_change_percent = round(total_return_percent * 0.01, 2)
+
+        week_change = round(total_return * 0.05, 2)
+        week_change_percent = round(total_return_percent * 0.05, 2)
+
+        month_change = round(total_return * 0.15, 2)
+        month_change_percent = round(total_return_percent * 0.15, 2)
+
+        year_change = total_return
+        year_change_percent = total_return_percent
+
+        # Generate performance history (simulated)
+        performance_history = []
+        base_value = total_value - total_return
+        for i in range(12):  # Last 12 months
+            month_offset = i - 11
+            months_from_start = (11 - i) if i < 11 else 0
+            simulated_value = base_value + (total_return * (months_from_start / 12))
+            performance_history.append({
+                "month": (datetime.now() + timedelta(days=30*month_offset)).strftime("%b %Y"),
+                "value": round(simulated_value, 2)
+            })
+
+        return {
+            "total_value": round(total_value, 2),
+            "day_change": day_change,
+            "day_change_percent": day_change_percent,
+            "week_change": week_change,
+            "week_change_percent": week_change_percent,
+            "month_change": month_change,
+            "month_change_percent": month_change_percent,
+            "year_change": year_change,
+            "year_change_percent": year_change_percent,
+            "asset_allocation": asset_allocation,
+            "top_gainers": top_gainers,
+            "top_losers": top_losers,
+            "performance_history": performance_history
+        }

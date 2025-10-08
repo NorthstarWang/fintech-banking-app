@@ -32,6 +32,7 @@ venv.bak/
 node_modules/
 /build
 .DS_Store
+._*
 .env.local
 .env.development.local
 .env.test.local

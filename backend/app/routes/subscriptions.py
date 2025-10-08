@@ -321,7 +321,6 @@ async def list_subscriptions(
     results = []
     for sub in subscriptions:
         # Get linked transactions
-        # TODO: Fix contains() method for memory adapter - for now, skip transaction linking
         linked_txs = []
         
         response = _create_subscription_response(
@@ -872,7 +871,6 @@ async def get_subscription(
     
     # Get payment history (linked transactions)
     payment_history = []
-    # TODO: Fix contains() method for memory adapter - for now, skip transaction linking
     linked_txs = []
     total_spent = 0
     

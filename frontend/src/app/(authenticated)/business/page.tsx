@@ -136,7 +136,7 @@ export default function BusinessPage() {
       if (formattedAccounts.length > 0) {
         const accountIds = formattedAccounts.map(acc => parseInt(acc.id));
         const allTransactions = await Promise.all(
-          accountIds.map(id => transactionsService.getTransactions(id))
+          accountIds.map(id => transactionsService.getTransactions({ account_id: id }))
         );
         
         // Flatten and format as expenses
@@ -144,14 +144,14 @@ export default function BusinessPage() {
           .flat()
           .filter(tx => tx.transaction_type === 'DEBIT' && tx.amount > 0)
           .slice(0, 20) // Limit to recent 20 expenses
-          .map((tx, index) => ({
+          .map((tx, _index) => ({
             id: tx.id.toString(),
             description: tx.description,
             amount: tx.amount,
             category: tx.category?.name || 'Other',
             date: tx.transaction_date,
-            paidBy: mockTeamMembers[index % mockTeamMembers.length],
-            status: tx.status === 'completed' ? 'approved' : 'pending' as 'pending' | 'approved' | 'rejected' | 'reimbursed',
+            paidBy: teamMembers[0] || { name: "Unknown", role: "member" },
+            status: tx.status === 'COMPLETED' ? 'approved' : 'pending' as 'pending' | 'approved' | 'rejected' | 'reimbursed',
             notes: tx.notes,
             tags: tx.tags || []
           }));
@@ -417,7 +417,6 @@ export default function BusinessPage() {
       setShowAddExpense(false);
       
     } catch {
-      showNotification('error', 'Failed to add expense. Please try again.');
     }
   };
 
@@ -701,12 +700,10 @@ export default function BusinessPage() {
                     icon={<PieChart size={18} />}
                     onClick={async () => {
                       try {
-                        const estimate = await businessApi.getTaxEstimate();
+                        const _estimate = await businessApi.getTaxEstimate();
 
                         // TODO: Show tax estimate in a modal
-                        showNotification('success', `Tax Estimate: ${estimate.formatted}`);
                       } catch {
-                        showNotification('error', 'Unable to calculate tax estimate at this time.');
                       }
                     }}
                   >

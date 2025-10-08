@@ -54,13 +54,6 @@ export default function StockDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  useEffect(() => {
-    if (symbol) {
-      fetchStockDetail();
-      checkWatchlist();
-    }
-  }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const fetchStockDetail = async () => {
     try {
       setLoading(true);
@@ -96,13 +89,20 @@ export default function StockDetailPage() {
   const checkWatchlist = async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) => 
+      const isInWatchlist = watchlists.some((w: any) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
   };
+
+  useEffect(() => {
+    if (symbol) {
+      fetchStockDetail();
+      checkWatchlist();
+    }
+  }, [symbol, fetchStockDetail, checkWatchlist]);
 
   const toggleWatchlist = async () => {
     try {
