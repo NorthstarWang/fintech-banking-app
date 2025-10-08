@@ -66,18 +66,17 @@ const VirtualCardModal = memo(({
         return;
       }
 
-      let response;
+      let _response;
       if (parentCardId) {
-        response = await cardsApi.createVirtualCardFromParent(parentCardId, formData);
+        _response = await cardsApi.createVirtualCardFromParent(parentCardId, formData);
       } else {
-        response = await cardsApi.createVirtualCard(formData);
+        _response = await cardsApi.createVirtualCard(formData);
       }
 
       onSuccess?.();
       handleClose();
-    } catch (err) {
+    } catch {
       setError('Failed to create virtual card');
-      console.error(err);
     } finally {
       setIsCreating(false);
     }

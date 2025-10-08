@@ -39,8 +39,7 @@ export default function TransactionDetailPage() {
       setIsLoading(true);
       const data = await transactionsService.getTransaction(Number(params.id));
       setTransaction(data);
-    } catch (error) {
-      console.error('Failed to load transaction:', error);
+    } catch {
       router.push('/transactions');
     } finally {
       setIsLoading(false);

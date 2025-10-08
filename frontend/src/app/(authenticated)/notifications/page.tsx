@@ -11,7 +11,7 @@ import {
   Repeat,
   Check,
   CheckCircle,
-  Filter,
+  
   AlertCircle,
   TrendingUp,
   Clock
@@ -39,7 +39,6 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     loadNotifications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, user]);
 
   const loadNotifications = async () => {
@@ -67,8 +66,7 @@ export default function NotificationsPage() {
       }
       
       // Log data loaded
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -76,25 +74,23 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (notificationId: number) => {
     try {
-      const notification = notifications.find(n => n.id === notificationId);
+      const _notification = notifications.find(n => n.id === notificationId);
       await notificationsService.markAsRead(notificationId);
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+    } catch {
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      const unreadBefore = notifications.filter(n => !n.is_read).length;
+      const _unreadBefore = notifications.filter(n => !n.is_read).length;
       await notificationsService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
+    } catch {
     }
   };
 
@@ -175,7 +171,7 @@ export default function NotificationsPage() {
             items={filterOptions}
             value={filter}
             onChange={(value) => {
-              const oldFilter = filter;
+              const _oldFilter = filter;
               setFilter(value as 'all' | 'unread' | 'read');
             }}
             placeholder="Filter"
@@ -185,7 +181,7 @@ export default function NotificationsPage() {
             items={typeOptions}
             value={selectedType}
             onChange={(value) => {
-              const oldType = selectedType;
+              const _oldType = selectedType;
               setSelectedType(value);
             }}
             placeholder="Type"

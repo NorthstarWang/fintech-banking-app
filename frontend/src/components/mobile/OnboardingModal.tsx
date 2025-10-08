@@ -7,7 +7,6 @@ import {
   CreditCard, 
   Users, 
   ChevronRight,
-  X,
   Smartphone,
   Bell,
   Target

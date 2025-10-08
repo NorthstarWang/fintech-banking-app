@@ -1,25 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CreditCard,
   Calendar,
   DollarSign,
-  AlertCircle,
   Plus,
   Search,
-  Filter,
-  TrendingUp,
-  TrendingDown,
-  Clock,
+  
   RefreshCw,
-  Pause,
-  Play,
-  Trash2,
-  Edit2,
-  Bell,
-  BellOff,
   Music,
   Video,
   Cloud,
@@ -125,7 +114,7 @@ export default function SubscriptionsPage() {
       const apiSubscriptions = await subscriptionsService.getSubscriptions();
       
       // Get subscription analysis for additional data
-      const analysis = await subscriptionsService.getSubscriptionAnalysis();
+      const _analysis = await subscriptionsService.getSubscriptionAnalysis();
       
       // Convert API subscriptions to frontend format
       const formattedSubscriptions: Subscription[] = apiSubscriptions.map(sub => {
@@ -157,8 +146,7 @@ export default function SubscriptionsPage() {
       setIsLoading(false);
       
       // Log data loaded event
-    } catch (error) {
-      console.error('Failed to load subscriptions:', error);
+    } catch {
       // Fall back to mock data
       loadMockData();
     }
@@ -399,8 +387,6 @@ export default function SubscriptionsPage() {
   const handleSubscriptionAction = (id: string, action: string) => {
     const subscription = subscriptions.find(s => s.id === id);
     if (!subscription) return;
-
-
     setSubscriptions(subscriptions.map(sub => {
       if (sub.id === id) {
         switch (action) {
@@ -558,7 +544,7 @@ export default function SubscriptionsPage() {
           {/* Subscriptions List */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredSubscriptions.map((subscription, index) => (
+              {filteredSubscriptions.map((subscription, _index) => (
                 <SubscriptionCard
                   key={subscription.id}
                   subscription={subscription}

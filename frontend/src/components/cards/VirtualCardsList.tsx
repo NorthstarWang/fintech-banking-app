@@ -10,10 +10,8 @@ import {
   Copy,
   Snowflake,
   Unlock,
-  Trash2,
   ShieldCheck,
   Clock,
-  DollarSign,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
@@ -43,8 +41,7 @@ export default function VirtualCardsList({ accounts = [] }: VirtualCardsListProp
       setIsLoading(true);
       const cards = await cardsApi.getVirtualCards();
       setVirtualCards(cards);
-    } catch (error) {
-      console.error('Failed to fetch virtual cards:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -54,8 +51,7 @@ export default function VirtualCardsList({ accounts = [] }: VirtualCardsListProp
     try {
       await cardsApi.freezeCard(cardId, freeze);
       await fetchVirtualCards();
-    } catch (error) {
-      console.error('Failed to update card status:', error);
+    } catch {
     }
   };
 

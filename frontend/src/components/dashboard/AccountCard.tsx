@@ -6,8 +6,7 @@ import {
   Wallet, 
   PiggyBank, 
   TrendingUp,
-  TrendingDown,
-  ArrowRightLeft
+  TrendingDown
 } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -31,11 +30,11 @@ interface AccountCardProps {
 
 export const AccountCard: React.FC<AccountCardProps> = ({ 
   account,
-  analyticsId = 'account-card',
-  analyticsLabel = 'Account Card',
+  analyticsId: _analyticsId = 'account-card',
+  analyticsLabel: _analyticsLabel = 'Account Card',
 }) => {
   const router = useRouter();
-  const { showError, showSuccess } = useAlert();
+  const { _showError, _showSuccess } = useAlert();
   const [showTransferModal, setShowTransferModal] = useState(false);
   const getAccountIcon = () => {
     switch (account.type) {

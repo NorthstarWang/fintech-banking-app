@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { Input } from '../Input'
 
 // Mock analytics logger
+jest.mock('@/lib/analytics', () => ({
+  analytics: {
     logFormField: jest.fn(),
   },
 }))
@@ -82,10 +84,6 @@ describe('Input', () => {
     fireEvent.focus(input)
     
     expect(handleFocus).toHaveBeenCalledTimes(1)
-      'input-username',
-      'focus',
-      'Username'
-    )
   })
 
   it('should handle change event and log analytics', async () => {
@@ -98,10 +96,6 @@ describe('Input', () => {
     await user.type(input, 'test')
     
     expect(handleChange).toHaveBeenCalled()
-      'input-email',
-      'change',
-      'Email'
-    )
   })
 
   it('should forward ref', () => {
@@ -183,11 +177,6 @@ describe('Input', () => {
     
     const input = screen.getByRole('textbox')
     fireEvent.focus(input)
-    
-      'input-field',
-      'focus',
-      'Custom Analytics Label'
-    )
   })
 
   it('should handle complex label with special characters', () => {

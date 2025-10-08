@@ -20,8 +20,8 @@ export const P2PQuickSend: React.FC<P2PQuickSendProps> = ({
   contacts,
   onSelectContact,
   onAddContact,
-  analyticsId = 'p2p-quick-send',
-  analyticsLabel = 'P2P Quick Send',
+  analyticsId: _analyticsId = 'p2p-quick-send',
+  analyticsLabel: _analyticsLabel = 'P2P Quick Send',
 }) => {
   return (
     <Card variant="subtle" className="mb-8">

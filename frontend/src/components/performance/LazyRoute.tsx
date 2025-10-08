@@ -33,11 +33,14 @@ export function createLazyComponent<T extends ComponentType<any>>(
 ): React.FC<React.ComponentProps<T>> {
   const LazyComponent = lazy(loader);
   
-  return (props: React.ComponentProps<T>) => (
+  const LazyRouteComponent = (props: React.ComponentProps<T>) => (
     <Suspense fallback={options?.loadingComponent || <LoadingSkeleton type="component" />}>
       <LazyComponent {...props} />
     </Suspense>
   );
+
+  LazyRouteComponent.displayName = 'LazyRouteComponent';
+  return LazyRouteComponent;
 }
 
 // Route configuration for lazy loading

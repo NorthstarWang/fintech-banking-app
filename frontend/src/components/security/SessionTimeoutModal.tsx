@@ -16,7 +16,7 @@ export default function SessionTimeoutModal() {
     setIsVisible(showWarning && isActive);
   }, [showWarning, isActive]);
 
-  const handleExtend = () => {
+  const _handleExtend = () => {
     extend(config.sessionTimeout * 60 * 1000); // Extend by full session time
     setIsVisible(false);
   };

@@ -2,18 +2,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Receipt,
-  Filter,
+  
   Download,
   Upload,
   CheckCircle,
   XCircle,
   Clock,
   DollarSign,
-  Calendar,
   Tag,
   FileText,
   TrendingUp,
-  AlertCircle,
   Plus,
   Search
 } from 'lucide-react';
@@ -325,7 +323,7 @@ export const ExpenseAnalytics: React.FC<ExpenseAnalyticsProps> = ({
                       {/* Notes */}
                       {expense.notes && (
                         <p className="text-sm text-[var(--text-2)] mt-2 italic">
-                          "{expense.notes}"
+                          &quot;{expense.notes}&quot;
                         </p>
                       )}
 

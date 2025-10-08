@@ -125,7 +125,7 @@ class NotificationsService {
             });
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore goal fetch errors
       }
       
@@ -142,8 +142,7 @@ class NotificationsService {
         });
       }
       
-    } catch (error) {
-      console.error('Failed to generate notifications:', error);
+    } catch {
     }
     
     return notifications.slice(0, 5); // Return max 5 notifications

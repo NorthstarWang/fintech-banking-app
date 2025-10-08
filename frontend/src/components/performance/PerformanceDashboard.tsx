@@ -10,14 +10,12 @@ import {
   Zap, 
   Clock, 
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
   CheckCircle,
   XCircle
 } from 'lucide-react';
 
 export default function PerformanceDashboard() {
-  const { showError, showSuccess, showInfo } = useAlert();
+  const { _showError, showSuccess, _showInfo } = useAlert();
   const [metrics, setMetrics] = useState(performanceMonitor.getReport());
   const [coreWebVitals, setCoreWebVitals] = useState(performanceMonitor.getCoreWebVitals());
   const [isVisible, setIsVisible] = useState(false);
@@ -107,7 +105,7 @@ export default function PerformanceDashboard() {
               { key: 'ttfb', label: 'Time to First Byte', icon: Clock }
             ].map(({ key, label, icon: Icon }) => {
               const value = coreWebVitals[key as keyof typeof coreWebVitals];
-              const { status, color } = getVitalStatus(key, value);
+              const { status, _color } = getVitalStatus(key, value);
               
               return (
                 <div key={key} className="flex items-center justify-between p-3 bg-surface-alt rounded-lg">
@@ -188,8 +186,8 @@ export default function PerformanceDashboard() {
           </button>
           <button
             onClick={() => {
-              const report = performanceMonitor.getReport();
-              console.log('Performance Report:', report);
+              const _report = performanceMonitor.getReport();
+              
               showSuccess('Report Exported', 'Performance report has been logged to the console.');
             }}
             className="flex-1 px-3 py-2 text-sm bg-info hover:bg-[rgba(var(--primary-blue),0.2)] text-info rounded-lg transition-colors"

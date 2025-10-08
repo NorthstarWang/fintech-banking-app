@@ -5,11 +5,9 @@ import { motion } from 'framer-motion';
 import {
   TrendingUp,
   CreditCard,
-  DollarSign,
   ShoppingBag,
   Activity,
   PieChart,
-  Calendar,
   AlertCircle
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -34,9 +32,8 @@ export default function CardAnalytics({ refreshTrigger }: CardAnalyticsProps) {
       setIsLoading(true);
       const data = await cardsApi.getAnalytics();
       setAnalytics(data);
-    } catch (err) {
+    } catch {
       setError('Failed to load analytics');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }

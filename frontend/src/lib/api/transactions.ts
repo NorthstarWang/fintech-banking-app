@@ -130,7 +130,7 @@ class TransactionsService {
     // Add timestamp to prevent caching
     params.append('_t', Date.now().toString());
     
-    console.log('[TransactionService] Getting stats with params:', params.toString());
+    
     
     return apiClient.get<TransactionStats>(`/api/transactions/stats?${params.toString()}`);
   }

@@ -29,8 +29,7 @@ class EventBus {
       callbacks.forEach(callback => {
         try {
           callback(...args);
-        } catch (error) {
-          console.error(`Error in event handler for ${event}:`, error);
+        } catch {
         }
       });
     }

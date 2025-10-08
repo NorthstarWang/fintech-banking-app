@@ -208,7 +208,7 @@ export const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal }) => {
               </h4>
             </div>
             <p className="text-xs text-[var(--text-2)]">
-              At your current savings rate, you'll reach the next milestone in approximately{' '}
+              At your current savings rate, you&apos;ll reach the next milestone in approximately{' '}
               <span className="font-medium text-[var(--text-1)]">
                 {calculateDaysToMilestone(nextMilestone.amount) || 0} days
               </span>
@@ -223,7 +223,7 @@ export const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal }) => {
               </h4>
             </div>
             <p className="text-xs text-[var(--text-2)]">
-              You've achieved{' '}
+              You&apos;ve achieved{' '}
               <span className="font-medium text-[var(--primary-emerald)]">
                 {completedMilestones} milestones
               </span>{' '}
@@ -245,7 +245,7 @@ export const GoalMilestones: React.FC<GoalMilestonesProps> = ({ goal }) => {
             All Milestones Completed! 🎉
           </h3>
           <p className="text-sm text-[var(--text-2)]">
-            You've successfully achieved all {totalMilestones} milestones and reached your goal of{' '}
+            You&apos;ve successfully achieved all {totalMilestones} milestones and reached your goal of{' '}
             {formatCurrency(goal.targetAmount)}
           </p>
         </Card>

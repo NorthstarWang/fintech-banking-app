@@ -6,7 +6,6 @@ import {
   Star,
   Mail,
   Phone,
-  DollarSign,
   Send,
   ArrowUpRight,
   ArrowDownLeft,
@@ -30,7 +29,7 @@ export const P2PContactList: React.FC<P2PContactListProps> = ({
   onSelectContact,
   onAddContact,
   analyticsId = 'p2p-contact-list',
-  analyticsLabel = 'P2P Contact List',
+  analyticsLabel: _analyticsLabel = 'P2P Contact List',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);

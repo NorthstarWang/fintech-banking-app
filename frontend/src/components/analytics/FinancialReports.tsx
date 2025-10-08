@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   FileText,
   Download,
-  Calendar,
   TrendingUp,
   DollarSign,
   PieChart,
@@ -54,8 +53,7 @@ export default function FinancialReports({ onGenerateReport }: FinancialReportsP
       
       setBudgetPerformance(budget);
       setGoalsProgress(goals);
-    } catch (error) {
-      console.error('Failed to load report data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }

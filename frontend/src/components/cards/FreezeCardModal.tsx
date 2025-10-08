@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Shield, AlertCircle, Snowflake, CreditCard } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';

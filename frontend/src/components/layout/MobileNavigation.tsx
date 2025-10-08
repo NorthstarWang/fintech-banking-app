@@ -13,8 +13,6 @@ import {
   TrendingUp,
   Building2,
   Shield,
-  Users as UsersIcon,
-  User,
   Settings,
   HelpCircle,
   LogOut,
@@ -24,7 +22,6 @@ import {
   RefreshCcw,
   Send,
   CalendarDays,
-  BarChart3,
   LineChart,
   FileText,
   MessageSquare,
@@ -48,7 +45,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   isOpen,
   onClose,
   notifications,
-  unreadCount = 0,
+  _unreadCount = 0,
 }) => {
   const { user, logout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -74,8 +71,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
           // Load unread messages count
           const messageCount = await messagesService.getTotalUnreadCount();
           setUnreadMessagesCount(messageCount.unread_count);
-        } catch (error) {
-          console.error('Failed to load balance:', error);
+        } catch {
         } finally {
           setLoadingBalance(false);
         }
@@ -140,7 +136,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     { href: '/security', label: 'Security', icon: <Shield size={20} /> },
   ];
 
-  const handleNavClick = (href: string, label: string) => {
+  const handleNavClick = (_href: string, _label: string) => {
     onClose();
   };
 

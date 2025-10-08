@@ -9,7 +9,6 @@ import {
   Music,
   DollarSign,
   ArrowUpRight,
-  ArrowDownLeft,
   Clock
 } from 'lucide-react';
 import Card from '../ui/Card';
@@ -176,7 +175,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             size="sm" 
             fullWidth
             onClick={() => {
-              console.log('Loading more transactions...');
+              
             }}
             analyticsId={`${analyticsId}-load-more`}
             analyticsLabel={`${analyticsLabel} Load More`}

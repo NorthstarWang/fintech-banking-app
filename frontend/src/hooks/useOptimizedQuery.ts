@@ -141,17 +141,17 @@ export function useOptimizedQuery<T>(options: QueryOptions<T>): QueryResult<T> {
       if (onSuccess) {
         onSuccess(result);
       }
-    } catch (err) {
+    } catch (_err) {
       const duration = performance.now() - startTime;
       performanceMonitor.trackAPIRequest(cacheKey, duration, false);
 
-      if ((err as any).name === 'AbortError') {
+      if ((_err as any).name === 'AbortError') {
         return;
       }
 
-      const error = err as Error;
+      const error = _err as Error;
       setError(error);
-      
+
       // Retry logic
       if (retryCountRef.current < retry) {
         retryCountRef.current++;
@@ -310,7 +310,7 @@ export function useOptimizedMutation<TData = unknown, TVariables = void>(
       }
 
       return result;
-    } catch (err) {
+    } catch {
       const duration = performance.now() - startTime;
       performanceMonitor.trackAPIRequest('mutation', duration, false);
 

@@ -73,7 +73,7 @@ export const SwipeableListItem: React.FC<SwipeableListItemProps> = ({
     }
   };
 
-  const getBackgroundGradient = (x: number) => {
+  const _getBackgroundGradient = (x: number) => {
     if (x > 0 && leftActions.length > 0) {
       const progress = Math.min(x / threshold, 1);
       return `linear-gradient(to right, ${leftActions[0].color}${Math.floor(progress * 255).toString(16).padStart(2, '0')}, transparent)`;

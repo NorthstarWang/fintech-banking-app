@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, DollarSign, CreditCard, Zap, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, DollarSign, CreditCard, Zap, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -18,7 +18,6 @@ import { accountsService } from '@/lib/api';
 import { UserSearchResult } from '@/lib/api/users';
 import { notificationService } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
-import { notificationsService } from '@/lib/notifications';
 
 type TransferStep = 'details' | 'confirm' | 'auth' | 'success';
 type AuthMethod = 'biometric' | '2fa';
@@ -64,8 +63,8 @@ export default function TransferPage() {
       if (data.length > 0) {
         setFormData(prev => ({ ...prev, fromAccount: data[0].id.toString() }));
       }
-    } catch (error) {
-      console.error('Failed to load accounts:', error);
+    } catch {
+      // Failed to load accounts
     }
   };
 
@@ -110,15 +109,14 @@ export default function TransferPage() {
   const handleNext = () => {
     if (!validateForm()) return;
     
-    const selectedAccount = accounts.find(acc => acc.id.toString() === formData.fromAccount);
-    const fee = formData.transferType === 'instant' ? 0.75 : 0;
+    const _selectedAccount = accounts.find(acc => acc.id.toString() === formData.fromAccount);
+    const _fee = formData.transferType === 'instant' ? 0.75 : 0;
     
     
     setCurrentStep('confirm');
   };
 
   const handleConfirm = () => {
-    console.log('[Transfer] handleConfirm called, showing auth modal');
     setIsTransferConfirmed(true);
     // Small delay to ensure slider animation completes
     setTimeout(() => {
@@ -127,7 +125,6 @@ export default function TransferPage() {
   };
 
   const handleAuthSuccess = async () => {
-    console.log('[Transfer] handleAuthSuccess called');
     setShowAuthModal(false);
     setIsLoading(true);
     
@@ -148,7 +145,6 @@ export default function TransferPage() {
           description: formData.note || `Transfer to ${selectedRecipient.full_name}`,
           transfer_fee: fee, // Send fee separately
         };
-        console.log('[Transfer] Sending money to user with data:', sendMoneyData);
         response = await transfersService.sendMoney(sendMoneyData);
       } else {
         // For external transfers without a selected recipient
@@ -161,7 +157,6 @@ export default function TransferPage() {
           transfer_fee: fee, // Send fee info in metadata
           transfer_type: formData.transferType,
         };
-        console.log('[Transfer] External transfer with data:', requestData);
         response = await transfersService.transfer(requestData);
       }
       
@@ -175,7 +170,6 @@ export default function TransferPage() {
         sessionStorage.setItem('lastTransferTimestamp', Date.now().toString());
       }
       
-      console.log('[Transfer] Setting step to success');
       // Important: Set loading to false BEFORE changing step
       setIsLoading(false);
       setCurrentStep('success');
@@ -193,7 +187,6 @@ export default function TransferPage() {
         window.dispatchEvent(new CustomEvent('refreshNotifications'));
       }, 2000);
     } catch (error: any) {
-      console.error('Transfer failed:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Transfer failed. Please try again.';
       notificationService.error(errorMessage);
       setShowAuthModal(false);
@@ -238,8 +231,6 @@ export default function TransferPage() {
             Back to Dashboard
           </Button>
 
-          {console.log('[Transfer] Current step:', currentStep, 'Amount:', formData.amount, 'IsLoading:', isLoading)}
-          
           {/* Step 1: Transfer Details */}
           {currentStep === 'details' && (
             <div>
@@ -259,8 +250,8 @@ export default function TransferPage() {
                       }))}
                       value={formData.fromAccount}
                       onChange={(value) => {
-                        const previousAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
-                        const newAccount = accounts.find(a => a.id.toString() === value);
+                        const _previousAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
+                        const _newAccount = accounts.find(a => a.id.toString() === value);
                         setFormData({ ...formData, fromAccount: value });
                         setErrors({ ...errors, fromAccount: '' });
                       }}
@@ -295,9 +286,9 @@ export default function TransferPage() {
                         setErrors({ ...errors, amount: '' });
                         
                         if (amount && parseFloat(amount) > 0) {
-                          const selectedAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
+                          const _selectedAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
                           const fee = formData.transferType === 'instant' ? 0.75 : 0;
-                          const total = parseFloat(amount) + fee;
+                          const _total = parseFloat(amount) + fee;
                           
                         }
                       }}
@@ -311,8 +302,8 @@ export default function TransferPage() {
                       items={transferTypes}
                       value={formData.transferType}
                       onChange={(value) => {
-                        const oldFee = formData.transferType === 'instant' ? 0.75 : 0;
-                        const newFee = value === 'instant' ? 0.75 : 0;
+                        const _oldFee = formData.transferType === 'instant' ? 0.75 : 0;
+                        const _newFee = value === 'instant' ? 0.75 : 0;
                         setFormData({ ...formData, transferType: value });
                       }}
                       placeholder="Select transfer type"
@@ -582,12 +573,11 @@ export default function TransferPage() {
                 />
               ) : (
                 <TwoFactorInput
-                  onComplete={(code) => {
-                    console.log('2FA code:', code);
+                  onComplete={(_code) => {
                     handleAuthSuccess();
                   }}
                   onResend={() => {
-                    console.log('Resend code');
+                    // Resend 2FA code
                   }}
                   title="Enter Security Code"
                   subtitle="We sent a code to your phone ending in ****1234"

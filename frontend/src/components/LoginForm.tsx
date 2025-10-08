@@ -13,9 +13,9 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ 
-  sessionId = 'default',
-  analyticsId = 'login-form',
-  analyticsLabel = 'Authentication Form'
+  _sessionId = 'default',
+  analyticsId: _analyticsId = 'login-form',
+  analyticsLabel: _analyticsLabel = 'Authentication Form'
 }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,8 +33,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
-
     try {
       if (isRegister) {
         // Validate registration fields
@@ -95,8 +93,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setPassword(password);
     setError(null);
     setIsLoading(true);
-
-
     try {
       await login(username, password);
     } catch (error) {

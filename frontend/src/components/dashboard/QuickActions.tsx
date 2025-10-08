@@ -11,7 +11,6 @@ import {
   Target,
   FileText
 } from 'lucide-react';
-import Card from '../ui/Card';
 import TransferModal from '../modals/TransferModal';
 import DepositModal from '../modals/DepositModal';
 import BillPaymentModal from '../modals/BillPaymentModal';
@@ -33,8 +32,8 @@ interface QuickActionsProps {
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
-  analyticsId = 'quick-actions',
-  analyticsLabel = 'Quick Actions',
+  analyticsId: _analyticsId = 'quick-actions',
+  analyticsLabel: _analyticsLabel = 'Quick Actions',
   onActionComplete,
 }) => {
   const router = useRouter();
@@ -251,7 +250,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
               onActionComplete();
             }
           }}
-          onScanSuccess={(data) => {
+          onScanSuccess={(_data) => {
             showSuccess('Payment Processed', 'QR code payment has been processed successfully');
             // Handle the scanned data as needed
           }}

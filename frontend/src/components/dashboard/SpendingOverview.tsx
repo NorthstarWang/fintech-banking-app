@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Calendar, Filter } from 'lucide-react';
+import { TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Dropdown from '../ui/Dropdown';
@@ -164,7 +164,7 @@ export const SpendingOverview: React.FC<SpendingOverviewProps> = ({ stats, budge
                     <div
                       className="w-full h-full rounded-t-lg opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
                       style={{ backgroundColor: category.color }}
-                      onMouseEnter={(e) => {
+                      onMouseEnter={() => {
                       }}
                     />
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-[var(--text-2)] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-color)] px-2 py-1 rounded shadow-lg z-10">

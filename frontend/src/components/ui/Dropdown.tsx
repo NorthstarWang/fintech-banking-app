@@ -70,7 +70,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     if (!item.disabled) {
       // Log analytics event
       const dropdownLabel = label || analyticsLabel || placeholder;
-      const dropdownId = analyticsId || `dropdown-${dropdownLabel}`;
+      const _dropdownId = analyticsId || `dropdown-${dropdownLabel}`;
       
       onChange?.(item.value);
       setIsOpen(false);
@@ -122,7 +122,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
             
             // Log analytics event
             const dropdownLabel = label || analyticsLabel || placeholder;
-            const dropdownId = analyticsId || `dropdown-${dropdownLabel}`;
+            const _dropdownId = analyticsId || `dropdown-${dropdownLabel}`;
           }
         }}
         disabled={disabled}

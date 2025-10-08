@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   DollarSign,
   Percent,
   Hash,
   Plus,
-  Minus,
   Calculator,
-  Check,
   X,
   AlertCircle
 } from 'lucide-react';
@@ -174,8 +171,7 @@ export default function SplitPaymentModal({
 
       onSuccess?.();
       handleClose();
-    } catch (error) {
-      console.error('Failed to create split payment:', error);
+    } catch {
       setErrors({ submit: 'Failed to create split payment' });
     } finally {
       setIsSubmitting(false);

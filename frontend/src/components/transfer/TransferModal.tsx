@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, DollarSign, CreditCard, Zap, CheckCircle, ArrowLeft } from 'lucide-react';
+import { User, DollarSign, CreditCard, Zap, CheckCircle } from 'lucide-react';
 import Modal from '../ui/Modal';
-import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Dropdown from '../ui/Dropdown';
@@ -87,7 +86,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   ];
 
   // Analytics helper
-  const getAmountRange = (amount: number): string => {
+  const _getAmountRange = (amount: number): string => {
     if (amount <= 100) return '0-100';
     if (amount <= 500) return '101-500';
     if (amount <= 1000) return '501-1000';
@@ -434,11 +433,11 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             />
           ) : (
             <TwoFactorInput
-              onComplete={(code) => {
-                console.log('2FA code:', code);
+              onComplete={(_code) => {
+                
                 handleAuthSuccess();
               }}
-              onResend={() => console.log('Resend code')}
+              onResend={() => {}}
               title="Enter Security Code"
               subtitle="We sent a code to your phone ending in ****1234"
             />

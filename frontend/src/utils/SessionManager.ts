@@ -238,7 +238,7 @@ export function getSessionManager(config?: Partial<SessionConfig>): SessionManag
 }
 
 // React hook for session management
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export function useSessionManager(config?: Partial<SessionConfig>) {
   const [state, setState] = useState<SessionState>({

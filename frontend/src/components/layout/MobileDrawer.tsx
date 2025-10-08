@@ -6,12 +6,10 @@ import {
   X,
   Home,
   Wallet,
-  DollarSign,
   Receipt,
   Target,
   CreditCard,
   TrendingUp,
-  Users,
   Building2,
   Shield,
   Settings,
@@ -78,7 +76,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
     { href: '/security', label: 'Security', icon: <Shield size={20} /> },
   ];
 
-  const handleNavClick = (href: string, label: string) => {
+  const handleNavClick = (_href: string, _label: string) => {
     onClose();
   };
 

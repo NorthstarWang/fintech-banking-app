@@ -178,8 +178,7 @@ export default function BusinessPage() {
       }
       
       setIsLoading(false);
-    } catch (error) {
-      console.error('Failed to load business data:', error);
+    } catch {
       // Fall back to mock data on error
       loadMockData();
     }
@@ -417,8 +416,8 @@ export default function BusinessPage() {
       setExpenses([mockExpense, ...expenses]);
       setShowAddExpense(false);
       
-    } catch (error) {
-      console.error('Failed to create expense:', error);
+    } catch {
+      showNotification('error', 'Failed to add expense. Please try again.');
     }
   };
 
@@ -582,7 +581,7 @@ export default function BusinessPage() {
             <button
               key={tab}
               onClick={() => {
-                const oldTab = selectedTab;
+                const _oldTab = selectedTab;
                 setSelectedTab(tab);
               }}
               className={`
@@ -630,7 +629,9 @@ export default function BusinessPage() {
                 onAddMember={() => {
                   setShowAddMember(true);
                 }}
-                onUpdateMember={(member) => console.log('Update member:', member)}
+                onUpdateMember={(_member) => {
+                  // Handle member update
+                }}
               />
             </motion.div>
           )}
@@ -676,7 +677,7 @@ export default function BusinessPage() {
                     variant="primary" 
                     icon={<Download size={18} />}
                     onClick={() => {
-                      console.log('Generate expense report');
+                      
                     }}
                   >
                     Generate Report
@@ -701,10 +702,11 @@ export default function BusinessPage() {
                     onClick={async () => {
                       try {
                         const estimate = await businessApi.getTaxEstimate();
-                        console.log('Tax estimate:', estimate);
+
                         // TODO: Show tax estimate in a modal
-                      } catch (error) {
-                        console.error('Failed to get tax estimate:', error);
+                        showNotification('success', `Tax Estimate: ${estimate.formatted}`);
+                      } catch {
+                        showNotification('error', 'Unable to calculate tax estimate at this time.');
                       }
                     }}
                   >
@@ -728,7 +730,7 @@ export default function BusinessPage() {
                     variant="primary" 
                     icon={<BarChart3 size={18} />}
                     onClick={() => {
-                      console.log('View cash flow analysis');
+                      
                     }}
                   >
                     View Analysis

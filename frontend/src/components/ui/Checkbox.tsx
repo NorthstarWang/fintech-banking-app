@@ -65,8 +65,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
           checked={checked}
           onChange={(e) => {
             if (!disabled) {
-              const checkboxLabel = label || analyticsLabel || name || 'checkbox';
-              const checkboxId = analyticsId || id || name || 'checkbox';
+              const _checkboxLabel = label || analyticsLabel || name || 'checkbox';
+              const _checkboxId = analyticsId || id || name || 'checkbox';
               onChange(e.target.checked);
             }
           }}

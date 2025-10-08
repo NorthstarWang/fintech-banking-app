@@ -24,7 +24,7 @@ export const useHoverTracking = ({
     hasLoggedRef.current = false;
 
     // Capture element type before setTimeout (event object gets recycled)
-    const elementType = event?.currentTarget?.tagName?.toLowerCase() || 'unknown';
+    const _elementType = event?.currentTarget?.tagName?.toLowerCase() || 'unknown';
 
     // Log hover after minimum duration
     hoverTimeoutRef.current = setTimeout(() => {
@@ -40,7 +40,7 @@ export const useHoverTracking = ({
     }
 
     if (trackDuration && hasLoggedRef.current && hoverStartTimeRef.current > 0) {
-      const hoverDuration = Date.now() - hoverStartTimeRef.current;
+      const _hoverDuration = Date.now() - hoverStartTimeRef.current;
       
     }
 

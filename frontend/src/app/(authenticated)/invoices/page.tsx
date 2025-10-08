@@ -1,22 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   FileText,
   Plus,
   Search,
-  Filter,
+  
   Download,
   Send,
-  DollarSign,
-  Calendar,
   CheckCircle,
   Clock,
   XCircle,
   AlertCircle,
   Edit,
-  Trash2,
   Eye,
   Copy
 } from 'lucide-react';
@@ -42,7 +39,7 @@ export default function InvoicesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'due'>('date');
   const [selectedInvoices, setSelectedInvoices] = useState<Set<number>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [_showBulkActions, _setShowBulkActions] = useState(false);
 
   useEffect(() => {
     loadInvoices();
@@ -58,8 +55,7 @@ export default function InvoicesPage() {
       setInvoices(data);
       
       // Log data loaded event
-    } catch (error) {
-      console.error('Failed to load invoices:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +100,7 @@ export default function InvoicesPage() {
       setInvoices([newInvoice, ...invoices]);
       setShowCreateModal(false);
       
-    } catch (error) {
-      console.error('Failed to create invoice:', error);
+    } catch {
       
     }
   };
@@ -347,8 +342,7 @@ export default function InvoicesPage() {
                       for (const id of selectedDrafts) {
                         try {
                           await businessApi.sendInvoice(id);
-                        } catch (error) {
-                          console.error(`Failed to send invoice ${id}:`, error);
+                        } catch {
                         }
                       }
                       await loadInvoices();
@@ -491,8 +485,7 @@ export default function InvoicesPage() {
                               try {
                                 await businessApi.duplicateInvoice(invoice.id);
                                 await loadInvoices();
-                              } catch (error) {
-                                console.error('Failed to duplicate invoice:', error);
+                              } catch {
                               }
                             }}
                           />
@@ -505,8 +498,7 @@ export default function InvoicesPage() {
                                 try {
                                   await businessApi.sendInvoice(invoice.id);
                                   await loadInvoices();
-                                } catch (error) {
-                                  console.error('Failed to send invoice:', error);
+                                } catch {
                                 }
                               }}
                             />

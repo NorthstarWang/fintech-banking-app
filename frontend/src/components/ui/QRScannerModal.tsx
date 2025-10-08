@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   QrCode, 
-  Camera, 
-  X,
+  Camera,
   Upload,
   Loader2
 } from 'lucide-react';
@@ -56,8 +55,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         streamRef.current = stream;
       }
       
-    } catch (error) {
-      console.error('Failed to start camera:', error);
+    } catch {
       showError(
         'Camera Access Denied',
         'Please allow camera access to scan QR codes. You can also upload an image or enter the code manually.'
@@ -90,8 +88,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       }
       
       handleClose();
-    } catch (error) {
-      console.error('Failed to process QR code:', error);
+    } catch {
       showError(
         'Invalid QR Code',
         'The QR code could not be processed. Please try again.'
@@ -123,7 +120,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         );
         setIsProcessing(false);
       }, 1500);
-    } catch (error) {
+    } catch {
       showError('Upload Failed', 'Failed to process the uploaded image');
       setIsProcessing(false);
     }

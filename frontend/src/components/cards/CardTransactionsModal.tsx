@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X,
+import {
   Search,
-  Filter,
-  Calendar,
+  
   Download,
-  TrendingUp,
-  TrendingDown,
   CreditCard,
   ShoppingBag,
   Coffee,
@@ -62,8 +58,7 @@ export const CardTransactionsModal: React.FC<CardTransactionsModalProps> = ({
       setIsLoading(true);
       const data = await cardsApi.getCardTransactions(parseInt(cardId));
       setTransactions(data);
-    } catch (error) {
-      console.error('Failed to fetch transactions:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }

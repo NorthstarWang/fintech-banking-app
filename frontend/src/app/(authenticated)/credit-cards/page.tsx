@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  CreditCard, 
+import {
+  CreditCard,
   Star, 
   TrendingUp, 
   Shield, 
@@ -14,10 +14,6 @@ import {
   AlertCircle,
   Search
 } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Dropdown from '@/components/ui/Dropdown';
-import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 
@@ -134,8 +130,7 @@ export default function CreditCardsPage() {
       // Fetch applications
       const appsRes = await fetchApi.get('/api/credit-cards/applications');
       setApplications(appsRes);
-    } catch (error) {
-      console.error('Error fetching credit data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -144,7 +139,7 @@ export default function CreditCardsPage() {
   const handleCardApplication = async (cardId: number) => {
     try {
       // Track application submission
-      const card = allOffers.find(c => c.id === cardId);
+      const _card = allOffers.find(c => c.id === cardId);
       const result = await fetchApi.post('/api/credit-cards/apply', { card_offer_id: cardId });
       
       if (result.status === 'approved') {
@@ -159,8 +154,7 @@ export default function CreditCardsPage() {
       
       // Refresh applications
       await fetchCreditData();
-    } catch (error) {
-      console.error('Error applying for card:', error);
+    } catch {
       alert('Failed to submit application. Please try again.');
     }
   };

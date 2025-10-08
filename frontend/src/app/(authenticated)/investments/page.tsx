@@ -3,13 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  TrendingUp, 
   BarChart3, 
   Bitcoin,
   Building2,
-  DollarSign,
-  Activity,
-  PieChart,
   ArrowUpRight,
   ArrowDownRight,
   Info,
@@ -106,8 +102,7 @@ export default function InvestmentsPage() {
         setPositions(portfolioRes.positions || []);
         setAllocation(portfolioRes.allocation || []);
       }
-    } catch (error) {
-      console.error('Error fetching investment data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -124,8 +119,7 @@ export default function InvestmentsPage() {
       
       // Refresh data
       await fetchInvestmentData();
-    } catch (error) {
-      console.error('Error creating account:', error);
+    } catch {
     }
   };
 

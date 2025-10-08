@@ -9,8 +9,7 @@ import {
   Copy,
   Check,
   DollarSign,
-  MessageSquare,
-  Loader2
+  MessageSquare
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -28,7 +27,7 @@ export default function QRCodeModal({
   isOpen,
   onClose,
   mode,
-  onScanSuccess
+  _onScanSuccess
 }: QRCodeModalProps) {
   const [qrData, setQrData] = useState<any>(null);
   const [amount, setAmount] = useState('');
@@ -45,7 +44,7 @@ export default function QRCodeModal({
   }, [mode, isOpen, qrData]);
 
   const generateQRCode = async () => {
-    console.log('Generating QR code with:', { amount, description });
+    
     setIsGenerating(true);
     setError('');
 
@@ -54,10 +53,9 @@ export default function QRCodeModal({
         amount ? parseFloat(amount) : undefined,
         description || undefined
       );
-      console.log('QR code response:', response);
+      
       setQrData(response);
-    } catch (error) {
-      console.error('Failed to generate QR code:', error);
+    } catch {
       setError('Failed to generate QR code');
     } finally {
       setIsGenerating(false);

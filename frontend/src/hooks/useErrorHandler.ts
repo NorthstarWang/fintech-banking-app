@@ -14,12 +14,11 @@ export const useErrorHandler = () => {
       showNotification = true,
       customMessage,
       logToAnalytics = true,
-      context = 'Unknown',
+      _context = 'Unknown',
     } = options;
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error(`[${context}]`, error);
     }
 
     // Log to analytics

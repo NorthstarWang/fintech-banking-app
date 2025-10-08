@@ -6,7 +6,6 @@ import {
   Coffee,
   Plane,
   DollarSign,
-  Calendar,
   BarChart3,
   PieChart,
   Activity
@@ -245,7 +244,7 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
           </div>
           {isNearLimit && (
             <p className="text-xs text-[var(--primary-amber)] mt-2">
-              You've used {spendingPercentage.toFixed(0)}% of your spending limit
+              You&apos;ve used {spendingPercentage.toFixed(0)}% of your spending limit
             </p>
           )}
         </div>

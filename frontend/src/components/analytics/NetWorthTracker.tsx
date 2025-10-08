@@ -8,10 +8,7 @@ import {
   DollarSign,
   PiggyBank,
   CreditCard,
-  Home,
-  Car,
-  LineChart,
-  Calendar
+  Home
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -45,8 +42,7 @@ export default function NetWorthTracker({ onExport }: NetWorthTrackerProps) {
       setNetWorthHistory(netWorthData.history);
       setCurrentNetWorth(netWorthData.current_net_worth);
       setAccounts(accountsData);
-    } catch (error) {
-      console.error('Failed to load net worth data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }

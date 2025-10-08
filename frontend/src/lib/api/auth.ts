@@ -59,8 +59,6 @@ class AuthService {
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
       }
-
-
       return response;
     } catch (error) {
       throw error;
@@ -75,8 +73,6 @@ class AuthService {
         data,
         { skipAuth: true }
       );
-
-
       return response;
     } catch (error) {
       throw error;
@@ -87,9 +83,8 @@ class AuthService {
     try {
       // Call logout endpoint
       await apiClient.post('/api/auth/logout');
-    } catch (error) {
+    } catch {
       // Continue with local logout even if API call fails
-      console.error('Logout API call failed:', error);
     } finally {
       // Clear local state
       apiClient.setAuthToken(null);
@@ -125,7 +120,7 @@ class AuthService {
           localStorage.setItem('currentUser', JSON.stringify(response));
         }
         return response;
-      } catch (error) {
+      } catch {
         // Token might be invalid, clear it
         this.logout();
         return null;

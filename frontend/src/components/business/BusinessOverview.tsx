@@ -1,15 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  CreditCard,
+import {
   Building2,
-  BarChart3,
   ArrowUpRight,
-  ArrowDownLeft,
-  Activity
+  ArrowDownLeft
 } from 'lucide-react';
 import Card, { CardHeader, CardBody } from '../ui/Card';
 import Button from '../ui/Button';

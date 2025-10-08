@@ -6,13 +6,8 @@ import {
   ArrowLeft,
   TrendingUp,
   TrendingDown,
-  DollarSign,
   PieChart,
-  Activity,
-  Info,
   Star,
-  Plus,
-  ShoppingCart,
   BarChart
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -102,8 +97,7 @@ export default function ETFDetailPage() {
       
       setEtf(processedETF);
       
-    } catch (err) {
-      console.error('Error fetching ETF details:', err);
+    } catch {
       setError('Failed to load ETF details');
     } finally {
       setLoading(false);
@@ -117,8 +111,7 @@ export default function ETFDetailPage() {
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
-    } catch (err) {
-      console.error('Error checking watchlist:', err);
+    } catch {
     }
   };
 
@@ -148,8 +141,7 @@ export default function ETFDetailPage() {
         }
       }
       setInWatchlist(!inWatchlist);
-    } catch (err) {
-      console.error('Error updating watchlist:', err);
+    } catch {
     }
   };
 
@@ -181,8 +173,7 @@ export default function ETFDetailPage() {
       alert(`${tradeType === 'buy' ? 'Buy' : 'Sell'} order placed successfully!`);
       setShowTradeModal(false);
       setQuantity('');
-    } catch (err) {
-      console.error('Error placing trade:', err);
+    } catch {
       alert('Failed to place trade. Please try again.');
     }
   };

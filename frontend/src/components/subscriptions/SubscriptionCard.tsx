@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar,
-  DollarSign,
   Bell,
   BellOff,
   MoreVertical,
@@ -11,7 +10,6 @@ import {
   Trash2,
   AlertCircle,
   Clock,
-  TrendingUp,
   Activity
 } from 'lucide-react';
 import Card from '../ui/Card';
@@ -32,7 +30,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
   onAction,
   onClick,
   analyticsId = 'subscription-card',
-  analyticsLabel = 'Subscription Card',
+  analyticsLabel: _analyticsLabel = 'Subscription Card',
 }) => {
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString('en-US', {

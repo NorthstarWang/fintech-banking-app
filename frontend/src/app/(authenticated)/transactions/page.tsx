@@ -1,18 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useScrollTracking } from '@/hooks/useScrollTracking';
+import { _useScrollTracking } from '@/hooks/useScrollTracking';
 import { 
   Search,
   Filter,
   Download,
-  Calendar,
   DollarSign,
   Tag,
   Clock,
-  ChevronDown,
-  FileText,
   TrendingUp,
   TrendingDown,
   AlertCircle,
@@ -27,13 +24,12 @@ import TransactionList from '@/components/transactions/TransactionList';
 import TransactionFilters from '@/components/transactions/TransactionFilters';
 import TransactionDetail from '@/components/transactions/TransactionDetail';
 import AddTransactionModal from '@/components/modals/AddTransactionModal';
-import PullToRefresh from '@/components/mobile/PullToRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   transactionsService,
   accountsService,
   categoriesService,
-  Transaction as APITransaction,
+  _Transaction,
   TransactionStats,
   Category,
   Account
@@ -76,7 +72,7 @@ interface FilterState {
 }
 
 export default function TransactionsPage() {
-  const { user } = useAuth();
+  const { _user } = useAuth();
   const [transactions, setTransactions] = useState<UITransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<UITransaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<UITransaction | null>(null);
@@ -88,7 +84,7 @@ export default function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<TransactionStats | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [_accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   
   // Get local date string for user interface
@@ -205,7 +201,7 @@ export default function TransactionsPage() {
       
       // Return the transformed transactions for immediate use
       return transformedTransactions;
-    } catch (err) {
+    } catch {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load transactions';
       setError(errorMessage);
       return [];
@@ -224,7 +220,7 @@ export default function TransactionsPage() {
     // Skip initial render
     if (!transactions.length && isLoading) return;
     
-    console.log('[Transactions] Filters changed, reloading data:', filters);
+    
     loadTransactionsData(filters);
   }, [filters.dateRange.start, filters.dateRange.end]);
 
@@ -298,8 +294,6 @@ export default function TransactionsPage() {
 
     setFilteredTransactions(filtered);
   }, [transactions, searchQuery, filters, sortBy, sortOrder]);
-
-
   const handleExport = async () => {
     
     // Create CSV content
@@ -609,9 +603,9 @@ export default function TransactionsPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={async () => {
-          console.log('Transaction added successfully, refreshing data...');
+          
           await loadTransactionsData();
-          console.log('Data refresh complete');
+          
         }}
       />
     </div>

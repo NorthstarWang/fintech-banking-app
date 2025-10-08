@@ -116,10 +116,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         setAccounts(data.filter(acc => acc.is_active));
       } else {
         setAccounts([]);
-        console.error('Invalid accounts data received:', data);
       }
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
+    } catch {
       setAccounts([]);
     }
   };

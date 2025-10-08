@@ -2,37 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Settings,
+import {
   User,
   Bell,
   Shield,
-  CreditCard,
-  Globe,
   Smartphone,
-  Moon,
-  Sun,
   Mail,
   Key,
   Eye,
-  EyeOff,
-  Check,
-  X,
-  ChevronRight,
-  Wifi,
   HelpCircle,
   LogOut,
   Trash2,
-  Download,
-  Upload
+  Download
 } from 'lucide-react';
-import Card, { CardHeader, CardBody } from '@/components/ui/Card';
+import Card, { CardBody } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Switch from '@/components/ui/Switch';
 import Modal from '@/components/ui/Modal';
 import { TabGroup, TabList, Tab, TabPanel } from '@/components/ui/Tabs';
-import DatePicker from '@/components/ui/DatePicker';
 import Dropdown from '@/components/ui/Dropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -118,8 +106,8 @@ export default function SettingsPage() {
   });
   
   // Theme settings
-  const [theme, setTheme] = useState('dark');
-  const [autoTheme, setAutoTheme] = useState(false);
+  const [_theme, _setTheme] = useState('dark');
+  const [_autoTheme, _setAutoTheme] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
@@ -138,8 +126,7 @@ export default function SettingsPage() {
       });
       setIsLoading(false);
       
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
+    } catch {
       showError('Error', 'Failed to load profile data');
       setIsLoading(false);
     }
@@ -211,7 +198,6 @@ export default function SettingsPage() {
       showSuccess('Profile Updated', 'Your profile information has been saved successfully.');
       
     } catch (error: any) {
-      console.error('Failed to update profile:', error);
       showError('Update Failed', error.message || 'Failed to update profile. Please try again.');
     }
   };
@@ -444,7 +430,7 @@ export default function SettingsPage() {
                   </div>
                   <Switch 
                     checked={true} 
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(_checked) => {
                     }}
                   />
                 </div>
@@ -462,7 +448,7 @@ export default function SettingsPage() {
                   </div>
                   <Switch 
                     checked={false} 
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(_checked) => {
                     }}
                   />
                 </div>
@@ -518,7 +504,7 @@ export default function SettingsPage() {
                     <Dropdown
                       value={privacySettings.profileVisibility}
                       onChange={(value) => {
-                        const oldValue = privacySettings.profileVisibility;
+                        const _oldValue = privacySettings.profileVisibility;
                         setPrivacySettings({ ...privacySettings, profileVisibility: value });
                       }}
                       items={[
@@ -713,7 +699,7 @@ export default function SettingsPage() {
               type="password"
               placeholder="Enter current password"
               icon={<Key size={18} />}
-              onChange={(e) => {
+              onChange={() => {
               }}
             />
           </div>
@@ -725,7 +711,7 @@ export default function SettingsPage() {
               type="password"
               placeholder="Enter new password"
               icon={<Key size={18} />}
-              onChange={(e) => {
+              onChange={() => {
               }}
             />
           </div>
@@ -737,7 +723,7 @@ export default function SettingsPage() {
               type="password"
               placeholder="Confirm new password"
               icon={<Key size={18} />}
-              onChange={(e) => {
+              onChange={() => {
               }}
             />
           </div>
@@ -777,12 +763,12 @@ export default function SettingsPage() {
             </p>
           </div>
           <p className="text-[var(--text-2)]">
-            Are you sure you want to delete your account? Type "DELETE" to confirm.
+            Are you sure you want to delete your account? Type &quot;DELETE&quot; to confirm.
           </p>
           <Input
             type="text"
             placeholder="Type DELETE to confirm"
-            onChange={(e) => {
+            onChange={() => {
             }}
           />
           <div className="flex gap-3">
@@ -816,7 +802,7 @@ export default function SettingsPage() {
       >
         <div className="space-y-4">
           <p className="text-[var(--text-2)]">
-            We'll prepare a download of all your data. This may take a few minutes.
+            We&apos;ll prepare a download of all your data. This may take a few minutes.
           </p>
           <div className="space-y-2">
             <label className="flex items-center gap-2">
@@ -824,7 +810,7 @@ export default function SettingsPage() {
                 type="checkbox" 
                 defaultChecked 
                 className="rounded" 
-                onChange={(e) => {
+                onChange={() => {
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Account Information</span>
@@ -834,7 +820,7 @@ export default function SettingsPage() {
                 type="checkbox" 
                 defaultChecked 
                 className="rounded" 
-                onChange={(e) => {
+                onChange={() => {
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Transaction History</span>
@@ -844,7 +830,7 @@ export default function SettingsPage() {
                 type="checkbox" 
                 defaultChecked 
                 className="rounded" 
-                onChange={(e) => {
+                onChange={() => {
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Messages</span>
@@ -854,7 +840,7 @@ export default function SettingsPage() {
                 type="checkbox" 
                 defaultChecked 
                 className="rounded" 
-                onChange={(e) => {
+                onChange={() => {
                 }}
               />
               <span className="text-sm text-[var(--text-1)]">Settings & Preferences</span>

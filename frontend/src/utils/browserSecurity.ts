@@ -215,7 +215,6 @@ export class SecureStorage {
       
       // Verify integrity
       if (currentHash !== data.hash) {
-        console.error('Data integrity check failed for key:', key);
         this.removeItem(key);
         return null;
       }

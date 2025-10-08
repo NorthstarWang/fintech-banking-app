@@ -64,14 +64,14 @@ class APIClient {
     }
 
     // Get session ID from cookie or generate one
-    const sessionId = this.getSessionId();
+    const _sessionId = this.getSessionId();
     
     const url = `${this.baseURL}${endpoint}`;
     
     try {
       // Log request body for POST/PUT requests (for debugging)
       if ((options.method === 'POST' || options.method === 'PUT') && restOptions.body) {
-        console.log(`[APIClient] ${options.method} ${endpoint} with body:`, JSON.parse(restOptions.body as string));
+        
       }
 
       const response = await fetch(url, {

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings,
+import {
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -86,15 +85,13 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
       };
 
       await accountsService.updateAccount(parseInt(account.id), updateData);
-
-
       setSuccess(true);
       setTimeout(() => {
         handleClose();
         onAccountUpdated?.();
       }, 1500);
 
-    } catch (err) {
+    } catch {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update account';
       setError(errorMessage);
     } finally {
@@ -108,12 +105,10 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
       setError(null);
 
       await accountsService.deleteAccount(parseInt(account.id));
-
-
       handleClose();
       onAccountDeleted?.();
 
-    } catch (err) {
+    } catch {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete account';
       setError(errorMessage);
       setShowDeleteConfirm(false);
@@ -163,7 +158,7 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
                     Delete Account?
                   </h3>
                   <p className="text-[var(--text-2)] mb-1">
-                    Are you sure you want to delete "{account.name}"?
+                    Are you sure you want to delete &quot;{account.name}&quot;?
                   </p>
                   <p className="text-sm text-[var(--text-2)]">
                     This action cannot be undone. The account must have a zero balance to be deleted.
@@ -272,8 +267,6 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
                 step="0.01"
               />
             )}
-
-
             <div className="border-t border-[var(--border-1)] pt-4">
               <h3 className="text-sm font-medium text-[var(--text-1)] mb-3">
                 Danger Zone

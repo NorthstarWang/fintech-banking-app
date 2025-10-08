@@ -8,12 +8,9 @@ import {
   TrendingDown,
   Plus,
   Minus,
-  BarChart3,
-  Clock,
   AlertCircle,
-  ChevronDown,
   Star,
-  Filter,
+  
   X
 } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
@@ -81,7 +78,7 @@ export default function TradingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [accounts, setAccounts] = useState<InvestmentAccount[]>([]);
+  const [_accounts, setAccounts] = useState<InvestmentAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<InvestmentAccount | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [currentPosition, setCurrentPosition] = useState<Position | null>(null);
@@ -140,8 +137,7 @@ export default function TradingPage() {
       if (savedWatchlist) {
         setWatchlist(JSON.parse(savedWatchlist));
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -151,8 +147,7 @@ export default function TradingPage() {
     try {
       const response = await fetchApi.get(`/api/investments/assets/search?query=${query}&type=${assetType}`);
       setAssets(response);
-    } catch (error) {
-      console.error('Error searching assets:', error);
+    } catch {
     }
   };
 
@@ -207,8 +202,7 @@ export default function TradingPage() {
       
       // Show success message
       alert('Order placed successfully!');
-    } catch (error) {
-      console.error('Error placing order:', error);
+    } catch {
       alert('Failed to place order. Please try again.');
     }
   };

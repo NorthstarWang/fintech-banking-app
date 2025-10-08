@@ -44,8 +44,7 @@ export const UserSearchInput: React.FC<UserSearchInputProps> = ({
       try {
         const results = await usersService.searchUsers(debouncedSearchQuery);
         setSearchResults(results);
-      } catch (error) {
-        console.error('Error searching users:', error);
+      } catch {
         setSearchResults([]);
       } finally {
         setIsLoading(false);

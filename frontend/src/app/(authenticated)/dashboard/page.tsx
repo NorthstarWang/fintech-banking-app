@@ -3,18 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  Plus, 
+import {
+  Plus,
   TrendingUp,
   Bell,
   AlertCircle,
-  RefreshCw,
-  Target
+  RefreshCw
 } from 'lucide-react';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import AccountCard from '@/components/dashboard/AccountCard';
 import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import SpendingOverview from '@/components/dashboard/SpendingOverview';
@@ -94,7 +91,7 @@ export default function DashboardPage() {
       
       let startDate = new Date();
       
-      console.log(`[Dashboard] Loading data for timeRange: ${timeRange}`);
+      
       
       switch (timeRange) {
         case 'week':
@@ -185,7 +182,7 @@ export default function DashboardPage() {
               balanceChange,
               changePercent
             };
-          } catch (error) {
+          } catch {
             // If we can't get transaction history, return account without changes
             return {
               ...account,
@@ -203,14 +200,6 @@ export default function DashboardPage() {
       setBudgetSummary(budgetSummaryData);
       setGoals(goalsData.filter(g => !g.is_achieved));
       setCategories(categoriesData);
-      
-      console.log(`[Dashboard] Stats loaded for ${timeRange}:`, {
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-        totalExpenses: transactionStatsData?.total_expenses || 0,
-        totalIncome: transactionStatsData?.total_income || 0,
-        transactionCount: transactionStatsData?.transaction_count || 0
-      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
       setError(errorMessage);
@@ -238,7 +227,7 @@ export default function DashboardPage() {
   // Calculate stats
   const totalBalance = accountSummary?.net_worth || 0;
   const monthlySpending = transactionStats?.total_expenses || 0;
-  const monthlyIncome = transactionStats?.total_income || 0;
+  const _monthlyIncome = transactionStats?.total_income || 0;
   const savingsGoalProgress = goals.length > 0 
     ? Math.round(goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goals.length)
     : 0;
@@ -351,7 +340,7 @@ export default function DashboardPage() {
                 Welcome back, {user?.first_name || user?.username || 'User'}!
               </h1>
               <p className="text-sm md:text-base text-[var(--text-2)] mt-2">
-                Here's your financial overview for {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                Here&apos;s your financial overview for {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
             <Button 
@@ -506,7 +495,7 @@ export default function DashboardPage() {
                           Credit Limit Warning
                         </p>
                         <p className="text-xs text-[var(--text-2)]">
-                          You're approaching your credit limit on one or more cards
+                          You&apos;re approaching your credit limit on one or more cards
                         </p>
                       </div>
                     </div>

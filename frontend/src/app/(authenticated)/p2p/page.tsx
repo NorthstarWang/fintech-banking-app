@@ -1,27 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Send,
-  UserPlus,
   Search,
   QrCode,
   DollarSign,
   Clock,
   CheckCircle,
-  AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
   Users,
-  Smartphone,
-  Mail,
   MessageSquare,
-  History,
-  Filter,
-  Plus,
   Star,
-  User,
   Zap
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -227,8 +218,7 @@ export default function P2PPage() {
       setTransactions(mockTransactions);
       
       // Log data loaded event
-    } catch (error) {
-      console.error('Failed to load P2P data:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -262,8 +252,6 @@ export default function P2PPage() {
       alert(`Insufficient balance. Your ${account.name} has $${account.balance.toFixed(2)}, but you need $${totalAmount.toFixed(2)} (including ${sendMethod === 'instant' ? '$' + fee.toFixed(2) + ' fee' : 'no fee'}).`);
       return;
     }
-
-
     setShowConfirmation(true);
   };
 
@@ -272,17 +260,15 @@ export default function P2PPage() {
 
     try {
       const transferAmount = parseFloat(amount);
-      const fee = sendMethod === 'instant' ? transferAmount * 0.01 : 0;
+      const _fee = sendMethod === 'instant' ? transferAmount * 0.01 : 0;
       
-      const result = await p2pApi.createTransfer({
+      const _result = await p2pApi.createTransfer({
         recipient_id: selectedContact.id,
         amount: transferAmount,
         description: description || undefined,
         method: sendMethod,
         source_account_id: selectedAccount
       });
-
-
       // Refresh data
       loadData();
       
@@ -290,8 +276,7 @@ export default function P2PPage() {
       setShowSendMoney(false);
       setAmount('');
       setDescription('');
-    } catch (error) {
-      console.error('Failed to send money:', error);
+    } catch {
     }
   };
 
@@ -435,9 +420,9 @@ export default function P2PPage() {
           <div className="lg:col-span-2">
             <P2PTransactionHistory
               transactions={transactions}
-              onSelectTransaction={(transaction) => {
+              onSelectTransaction={(_transaction) => {
                 // Handle transaction selection
-                console.log('Selected transaction:', transaction);
+                
               }}
             />
           </div>
@@ -484,7 +469,7 @@ export default function P2PPage() {
                 setSearchQuery(query);
                 
                 if (query.length > 0) {
-                  const filteredCount = contacts.filter(contact => 
+                  const _filteredCount = contacts.filter(contact => 
                     contact.name.toLowerCase().includes(query.toLowerCase()) ||
                     contact.username.toLowerCase().includes(query.toLowerCase()) ||
                     contact.email.toLowerCase().includes(query.toLowerCase())
@@ -584,7 +569,7 @@ export default function P2PPage() {
                   
                   if (newAmount && parseFloat(newAmount) > 0) {
                     const amountNum = parseFloat(newAmount);
-                    const fee = sendMethod === 'instant' ? amountNum * 0.01 : 0;
+                    const _fee = sendMethod === 'instant' ? amountNum * 0.01 : 0;
                     
                   }
                 }}
@@ -622,7 +607,7 @@ export default function P2PPage() {
               <Dropdown
                 value={selectedAccount}
                 onChange={(value) => {
-                  const previousAccount = accounts.find(a => a.id.toString() === selectedAccount);
+                  const _previousAccount = accounts.find(a => a.id.toString() === selectedAccount);
                   const newAccount = accounts.find(a => a.id.toString() === value);
                   setSelectedAccount(value);
                   
@@ -650,7 +635,7 @@ export default function P2PPage() {
                       setSendMethod('instant');
                       
                       const amountNum = amount ? parseFloat(amount) : 0;
-                      const newFee = amountNum * 0.01;
+                      const _newFee = amountNum * 0.01;
                       
                     }
                   }}
@@ -673,7 +658,7 @@ export default function P2PPage() {
                       setSendMethod('standard');
                       
                       const amountNum = amount ? parseFloat(amount) : 0;
-                      const oldFee = amountNum * 0.01;
+                      const _oldFee = amountNum * 0.01;
                       
                     }
                   }}
@@ -835,8 +820,8 @@ export default function P2PPage() {
         isOpen={showQRScanner}
         onClose={() => setShowQRScanner(false)}
         mode="scan"
-        onScanSuccess={(data) => {
-          console.log('Scanned data:', data);
+        onScanSuccess={(_data) => {
+          
           setShowQRScanner(false);
         }}
       />

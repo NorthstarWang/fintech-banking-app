@@ -5,7 +5,7 @@ import {
   CheckCircle, 
   Info, 
   XCircle,
-  X
+  _X
 } from 'lucide-react';
 import Button from './Button';
 import Portal from './Portal';

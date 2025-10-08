@@ -8,7 +8,6 @@ import {
   ShoppingBag,
   AlertCircle,
   Check,
-  X,
   TrendingUp,
   Edit2
 } from 'lucide-react';
@@ -22,7 +21,7 @@ interface SpendingLimitsProps {
   cardId: number;
 }
 
-interface CategoryLimit {
+interface _CategoryLimit {
   name: string;
   limit: number;
   usage: number;
@@ -78,9 +77,8 @@ export default function SpendingLimits({ cardId }: SpendingLimitsProps) {
         });
       }
       setCategoryLimits(catLimits);
-    } catch (err) {
+    } catch {
       setError('Failed to load spending limits');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +113,8 @@ export default function SpendingLimits({ cardId }: SpendingLimitsProps) {
       await cardsApi.setSpendingLimits(cardId, request);
       await fetchLimits();
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setError('Failed to update spending limits');
-      console.error(err);
     } finally {
       setIsSaving(false);
     }

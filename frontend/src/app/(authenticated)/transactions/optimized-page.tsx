@@ -69,7 +69,6 @@ export default function OptimizedTransactionsPage() {
         performanceMonitor.measure('fetch-transactions', 'fetch-transactions-start');
         return response.data;
       } catch (error) {
-        console.error('Failed to fetch transactions:', error);
         throw error;
       }
     },

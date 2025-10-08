@@ -7,13 +7,9 @@ import {
   Plus,
   Trophy,
   TrendingUp,
-  Calendar,
   DollarSign,
-  Filter,
-  CheckCircle,
   Clock,
   AlertCircle,
-  Zap,
   Home,
   Car,
   GraduationCap,
@@ -63,7 +59,7 @@ export interface Goal {
 
 export default function GoalsPage() {
   const { user } = useAuth();
-  const { showError, showSuccess, showInfo } = useAlert();
+  const { showError, _showSuccess, _showInfo } = useAlert();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -176,13 +172,13 @@ export default function GoalsPage() {
       setGoals(transformedGoals);
       
       // Calculate summary statistics
-      const totalTargetAmount = transformedGoals.reduce((sum, g) => sum + g.targetAmount, 0);
-      const totalCurrentAmount = transformedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
-      const activeGoals = transformedGoals.filter(g => g.status === 'active');
-      const completedGoals = transformedGoals.filter(g => g.status === 'completed');
-      const goalsAtRisk = transformedGoals.filter(g => g.riskLevel === 'at-risk');
+      const _totalTargetAmount = transformedGoals.reduce((sum, g) => sum + g.targetAmount, 0);
+      const _totalCurrentAmount = transformedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
+      const _activeGoals = transformedGoals.filter(g => g.status === 'active');
+      const _completedGoals = transformedGoals.filter(g => g.status === 'completed');
+      const _goalsAtRisk = transformedGoals.filter(g => g.riskLevel === 'at-risk');
       
-    } catch (err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setIsLoading(false);
@@ -220,8 +216,7 @@ export default function GoalsPage() {
         priority: 'MEDIUM'
       });
       await loadGoals();
-    } catch (err) {
-      console.error('Failed to create goal:', err);
+    } catch {
       showError('Goal Creation Failed', 'Unable to create the goal. Please try again.');
     }
   };
@@ -246,8 +241,7 @@ export default function GoalsPage() {
       setShowGoalDetails(false);
       setSelectedGoal(null);
       await loadGoals();
-    } catch (err) {
-      console.error('Failed to update goal:', err);
+    } catch {
       showError('Goal Update Failed', 'Unable to update the goal. Please try again.');
     }
   };
@@ -414,7 +408,7 @@ export default function GoalsPage() {
             }))}
             value={filterCategory}
             onChange={(value) => {
-              const oldCategory = filterCategory;
+              const _oldCategory = filterCategory;
               setFilterCategory(value);
             }}
             placeholder="Category"
@@ -427,7 +421,7 @@ export default function GoalsPage() {
             }))}
             value={filterStatus}
             onChange={(value) => {
-              const oldStatus = filterStatus;
+              const _oldStatus = filterStatus;
               setFilterStatus(value);
             }}
             placeholder="Status"
@@ -441,7 +435,7 @@ export default function GoalsPage() {
             ]}
             value={sortBy}
             onChange={(value) => {
-              const oldSort = sortBy;
+              const _oldSort = sortBy;
               setSortBy(value as 'deadline' | 'progress' | 'amount');
             }}
             placeholder="Sort by"
@@ -544,7 +538,7 @@ export default function GoalsPage() {
             value={goalForm.targetDate}
             onChange={(value) => {
               setGoalForm({ ...goalForm, targetDate: value });
-              const daysToTarget = Math.floor((new Date(value).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+              const _daysToTarget = Math.floor((new Date(value).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
             }}
             minDate={new Date().toISOString().split('T')[0]}
             required
@@ -727,7 +721,7 @@ export default function GoalsPage() {
                     variant="secondary" 
                     fullWidth
                     onClick={() => {
-                      const newState = !selectedGoal.automatedSaving;
+                      const _newState = !selectedGoal.automatedSaving;
                       // Note: Actual implementation would update the goal here
                     }}
                   >

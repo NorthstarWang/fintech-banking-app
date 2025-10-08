@@ -47,8 +47,7 @@ export default function LoansPage() {
         setPaymentSchedule(schedule);
         setSelectedLoan(loansData[0]);
       }
-    } catch (error) {
-      console.error('Error fetching loan data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -61,8 +60,7 @@ export default function LoansPage() {
       const schedule = await loansApi.getPaymentSchedule(loan.id);
       setPaymentSchedule(schedule);
       setActiveTab('schedule');
-    } catch (error) {
-      console.error('Error fetching payment schedule:', error);
+    } catch {
     }
   };
 
@@ -342,7 +340,7 @@ export default function LoansPage() {
       >
         <div className="space-y-4">
           <p className="text-[var(--text-2)]">
-            Choose the type of loan you'd like to apply for:
+            Choose the type of loan you&apos;d like to apply for:
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Button variant="secondary" fullWidth>

@@ -34,7 +34,7 @@ export const Modal: React.FC<ModalProps> = ({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         const modalLabel = title || analyticsLabel || 'modal';
-        const modalId = analyticsId || `modal-${modalLabel}`;
+        const _modalId = analyticsId || `modal-${modalLabel}`;
         onClose();
       }
     };
@@ -49,7 +49,7 @@ export const Modal: React.FC<ModalProps> = ({
       document.body.style.overflow = 'hidden';
       // Log modal open event
       const modalLabel = title || analyticsLabel || 'modal';
-      const modalId = analyticsId || `modal-${modalLabel}`;
+      const _modalId = analyticsId || `modal-${modalLabel}`;
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -111,7 +111,7 @@ export const Modal: React.FC<ModalProps> = ({
               exit="hidden"
               onClick={closeOnBackdrop ? () => {
                 const modalLabel = title || analyticsLabel || 'modal';
-                const modalId = analyticsId || `modal-${modalLabel}`;
+                const _modalId = analyticsId || `modal-${modalLabel}`;
                 onClose();
               } : undefined}
             />

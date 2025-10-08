@@ -245,7 +245,7 @@ export const TwoFactorInput: React.FC<TwoFactorInputProps> = ({
           className="text-center"
         >
           <p className="text-sm text-[var(--text-2)] mb-3">
-            Didn't receive the code?
+            Didn&apos;t receive the code?
           </p>
           <Button
             variant="secondary"

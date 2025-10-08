@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Shield,
+import {
   Lock,
   Smartphone,
   Key,
@@ -17,14 +16,10 @@ import {
   Globe,
   Clock,
   MapPin,
-  Activity,
   Settings,
   Download,
-  RefreshCw,
   LogOut,
-  Zap,
   ShieldCheck,
-  UserX,
   AlertCircle,
   ChevronRight
 } from 'lucide-react';
@@ -75,7 +70,7 @@ export default function SecurityPage() {
   const [selectedTwoFactorMethod, setSelectedTwoFactorMethod] = useState<'authenticator' | 'sms' | 'email' | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [setupStartTime, setSetupStartTime] = useState<number>(0);
+  const [_setupStartTime, setSetupStartTime] = useState<number>(0);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -226,18 +221,17 @@ export default function SecurityPage() {
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const _data = await response.json();
         setSelectedTwoFactorMethod(method);
         
         if (method === 'authenticator') {
           // Show QR code for authenticator
         } else {
           // Code has been sent via SMS/Email
-          console.log(data.message);
         }
       }
-    } catch (error) {
-      console.error('Error setting up 2FA:', error);
+    } catch {
+      // Error setting up 2FA
     }
   };
 
@@ -257,14 +251,13 @@ export default function SecurityPage() {
       if (response.ok) {
         setTwoFactorEnabled(true);
         setShowEnableTwoFactorModal(false);
-        const method = selectedTwoFactorMethod;
+        const _method = selectedTwoFactorMethod;
         setSelectedTwoFactorMethod(null);
       } else {
         // Handle invalid code
-        console.error('Invalid 2FA code');
       }
-    } catch (error) {
-      console.error('Error verifying 2FA:', error);
+    } catch {
+      // Error verifying 2FA
     }
   };
 
@@ -274,8 +267,8 @@ export default function SecurityPage() {
   };
 
   const handleEndSession = (sessionId: string) => {
-    const session = loginSessions.find(s => s.id === sessionId);
-    console.log('Ending session:', sessionId);
+    const _session = loginSessions.find(s => s.id === sessionId);
+    // Handle end session logic here
   };
 
   if (isLoading) {
@@ -371,8 +364,8 @@ export default function SecurityPage() {
                       a.click();
                       document.body.removeChild(a);
                       window.URL.revokeObjectURL(url);
-                    } catch (error) {
-                      console.error('Failed to download security report:', error);
+                    } catch {
+                      // Failed to download security report
                       notificationService.error('Failed to generate security report. Please try again.');
                     }
                   }}
@@ -444,7 +437,11 @@ export default function SecurityPage() {
                       size="sm"
                       fullWidth
                       onClick={() => {
-                        twoFactorEnabled ? setShowDisableTwoFactorModal(true) : setShowEnableTwoFactorModal(true);
+                        if (twoFactorEnabled) {
+                          setShowDisableTwoFactorModal(true);
+                        } else {
+                          setShowEnableTwoFactorModal(true);
+                        }
                       }}
                     >
                       {twoFactorEnabled ? 'Manage 2FA' : 'Enable 2FA'}
@@ -477,7 +474,7 @@ export default function SecurityPage() {
                         setBiometricEnabled(newState);
                       }}
                       onCancel={() => {
-                        console.log('Biometric auth cancelled');
+                        // Biometric auth cancelled
                       }}
                       requireSlideConfirm={!biometricEnabled}
                       autoStart={false}
@@ -498,7 +495,7 @@ export default function SecurityPage() {
                     variant="ghost" 
                     size="sm"
                     onClick={() => {
-                      console.log('Navigate to activity history');
+                      // Navigate to activity history
                     }}
                   >
                     View All
@@ -558,7 +555,7 @@ export default function SecurityPage() {
                   size="sm"
                   icon={<LogOut size={16} />}
                   onClick={() => {
-                    console.log('Sign out all other sessions');
+                    // Sign out all other sessions
                   }}
                 >
                   Sign Out All Other Sessions
@@ -639,7 +636,7 @@ export default function SecurityPage() {
                 Trusted Devices
               </h3>
               <p className="text-sm text-[var(--text-2)] mt-1">
-                Devices that don't require two-factor authentication
+                Devices that don&apos;t require two-factor authentication
               </p>
             </CardHeader>
             <CardBody>
@@ -687,7 +684,7 @@ export default function SecurityPage() {
                 <div className="mt-4 p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.05)] border border-[var(--border-1)]">
                   <p className="text-sm text-[var(--text-2)]">
                     <AlertCircle className="inline w-4 h-4 mr-1" />
-                    Trusted devices won't need to enter a verification code when signing in. Only trust devices you own and use regularly.
+                    Trusted devices won&apos;t need to enter a verification code when signing in. Only trust devices you own and use regularly.
                   </p>
                 </div>
               </div>
@@ -715,7 +712,7 @@ export default function SecurityPage() {
                       type="checkbox" 
                       className="sr-only peer" 
                       defaultChecked 
-                      onChange={(e) => {
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -734,7 +731,7 @@ export default function SecurityPage() {
                       type="checkbox" 
                       className="sr-only peer" 
                       defaultChecked 
-                      onChange={(e) => {
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -752,7 +749,7 @@ export default function SecurityPage() {
                     <input 
                       type="checkbox" 
                       className="sr-only peer"
-                      onChange={(e) => {
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -779,7 +776,7 @@ export default function SecurityPage() {
                         duration: 5000,
                         action: {
                           label: 'Contact Support',
-                          onClick: () => console.log('Contact support')
+                          onClick: () => {}
                         }
                       });
                     }}
@@ -1070,7 +1067,7 @@ export default function SecurityPage() {
               
               <TwoFactorInput
                 onComplete={handleEnableTwoFactor}
-                onResend={() => console.log('Resend code')}
+                onResend={() => {}}
               />
             </>
           )}
@@ -1206,8 +1203,8 @@ export default function SecurityPage() {
               
               setShowChangePasswordModal(false);
               setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } catch (error) {
-              console.error('Password change error:', error);
+            } catch {
+              // Password change error
             }
           }}
         >

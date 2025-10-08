@@ -45,7 +45,7 @@ export const useScrollTracking = ({
     }
 
     scrollTimeoutRef.current = setTimeout(() => {
-      const scrollDirection = scrollTop > lastScrollPositionRef.current ? 'down' : 'up';
+      const _scrollDirection = scrollTop > lastScrollPositionRef.current ? 'down' : 'up';
       const scrollDistance = Math.abs(scrollTop - lastScrollPositionRef.current);
       
       // Only log significant scrolls

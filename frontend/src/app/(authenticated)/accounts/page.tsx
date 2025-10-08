@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   Plus,
   Search,
-  Filter,
-  Download,
   TrendingUp,
   Eye,
   EyeOff,
@@ -27,13 +25,10 @@ import DeleteAccountModal from '@/components/modals/DeleteAccountModal';
 import ActionDropdown from '@/components/ui/ActionDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { eventBus, EVENTS } from '@/services/eventBus';
-import { 
-  accountsService, 
+import {
+  accountsService,
   transactionsService,
-  Account as APIAccount,
-  AccountSummary,
-  Transaction,
-  TransactionStats
+  AccountSummary
 } from '@/lib/api';
 
 interface UIAccount {
@@ -170,8 +165,7 @@ export default function AccountsPage() {
                 fees: 0 // Backend doesn't track fees separately yet
               }
             };
-          } catch (err) {
-            console.error(`Failed to load data for account ${account.id}:`, err);
+          } catch {
             // Return account with minimal data if stats fail
             return {
               id: account.id.toString(),

@@ -61,8 +61,7 @@ export const RecipientSearch: React.FC<RecipientSearchProps> = ({
       const results = await usersService.searchUsers(debouncedSearch);
       setSearchResults(results);
       setShowDropdown(results.length > 0);
-    } catch (error) {
-      console.error('Failed to search users:', error);
+    } catch {
       setSearchResults([]);
     } finally {
       setIsSearching(false);

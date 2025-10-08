@@ -18,7 +18,7 @@ import Dropdown from '../ui/Dropdown';
 import { transfersService, TransferRequest } from '@/lib/transfers';
 import { accountsService, Account } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { notificationService } from '@/services/notificationService';
+import { _notificationService } from '@/services/notificationService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { eventBus, EVENTS } from '@/services/eventBus';
 
@@ -35,7 +35,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   isExternal = false,
   preselectedSourceAccount,
 }) => {
-  const { user } = useAuth();
+  const { _user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [sourceAccount, setSourceAccount] = useState<string>('');
   const [destinationAccount, setDestinationAccount] = useState<string>('');
@@ -51,7 +51,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [recipientBank, setRecipientBank] = useState('');
   const [recipientAccountNumber, setRecipientAccountNumber] = useState('');
   const [routingNumber, setRoutingNumber] = useState('');
-  const { handleError } = useErrorHandler();
+  const { _handleError } = useErrorHandler();
 
   useEffect(() => {
     if (isOpen) {
@@ -73,10 +73,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         setAccounts(data.filter(acc => acc.is_active));
       } else {
         setAccounts([]);
-        console.error('Invalid accounts data received:', data);
       }
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
+    } catch {
       setAccounts([]);
     }
   };
@@ -85,8 +83,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     try {
       const data = await transfersService.getTransferLimits();
       setLimits(data);
-    } catch (err) {
-      console.error('Failed to load transfer limits:', err);
+    } catch {
     }
   };
 

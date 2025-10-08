@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Trash2,
-  Calendar,
   DollarSign,
   Percent,
   FileText,
@@ -87,8 +86,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       if (accounts.length > 0 && !selectedBusinessAccountId) {
         setSelectedBusinessAccountId(accounts[0].id);
       }
-    } catch (error) {
-      console.error('Failed to load business accounts:', error);
+    } catch {
     }
   };
 
@@ -362,7 +360,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         
         <div className="space-y-4">
           <AnimatePresence>
-            {lineItems.map((item, index) => (
+            {lineItems.map((item, _index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, height: 0 }}

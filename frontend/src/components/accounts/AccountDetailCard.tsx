@@ -6,7 +6,6 @@ import {
   Settings,
   Shield,
   Activity,
-  Calendar,
   AlertCircle,
   Copy,
   Check

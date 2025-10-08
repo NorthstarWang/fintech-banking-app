@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  CreditCard,
+import {
   Calendar,
   DollarSign,
   Shield,
@@ -35,7 +33,7 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
   showNumbers,
   onAction,
   analyticsId = 'card-details',
-  analyticsLabel = 'Card Details',
+  analyticsLabel: _analyticsLabel = 'Card Details',
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showFreezeModal, setShowFreezeModal] = useState(false);
@@ -69,8 +67,6 @@ export const CardDetails: React.FC<CardDetailsProps> = ({
       case 'blocked': return <Lock className="w-4 h-4" />;
     }
   };
-
-
   return (
     <>
       <Card variant="prominent">

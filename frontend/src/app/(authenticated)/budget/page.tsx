@@ -69,7 +69,7 @@ export interface BudgetGoal {
 }
 
 export default function BudgetPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { showError, showSuccess } = useAlert();
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
@@ -133,9 +133,6 @@ export default function BudgetPage() {
   };
 
   useEffect(() => {
-  }, [user]);
-
-  useEffect(() => {
     loadBudgetData();
   }, [selectedPeriod]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -197,8 +194,7 @@ export default function BudgetPage() {
                 end_date: currentDate.toISOString()
               });
               transactionCount = stats.transaction_count;
-            } catch (err) {
-              console.error(`Failed to get transaction stats for budget ${budget.id}:`, err);
+            } catch {
               transactionCount = 0;
             }
             
@@ -300,8 +296,7 @@ export default function BudgetPage() {
       setShowDeleteConfirm(false);
       setDeletingBudget(null);
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to delete budget:', err);
+    } catch {
       showError('Delete Failed', 'Unable to delete the budget. Please try again.');
     }
   };
@@ -355,8 +350,7 @@ export default function BudgetPage() {
       setEditingGoal(null);
       setGoalForm({ name: '', targetAmount: '', currentAmount: '', targetDate: '', category: '' });
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to save goal:', err);
+    } catch {
       showError(
         editingGoal ? 'Goal Update Failed' : 'Goal Creation Failed', 
         'Unable to save the goal. Please try again.'
@@ -378,8 +372,7 @@ export default function BudgetPage() {
       setShowDeleteGoalConfirm(false);
       setDeletingGoal(null);
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to delete goal:', err);
+    } catch {
       showError('Delete Failed', 'Unable to delete the goal. Please try again.');
     }
   };
@@ -424,8 +417,7 @@ export default function BudgetPage() {
       setEditingCategory(null);
       setBudgetForm({ categoryId: '', amount: '', period: 'monthly' });
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to save budget:', err);
+    } catch {
       showError(
         editingCategory ? 'Budget Update Failed' : 'Budget Creation Failed', 
         'Unable to save the budget. Please try again.'
@@ -508,7 +500,7 @@ export default function BudgetPage() {
                   items={periodOptions}
                   value={selectedPeriod}
                   onChange={(value) => {
-                    const oldPeriod = selectedPeriod;
+                    const _oldPeriod = selectedPeriod;
                     setSelectedPeriod(value as typeof selectedPeriod);
                   }}
                   placeholder="Select period"
@@ -516,7 +508,7 @@ export default function BudgetPage() {
                   analyticsLabel="Budget Period"
                 />
                 <div className="absolute top-full mt-2 right-0 w-64 p-2 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-2)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  Filters which budgets to display. Each budget's spending is calculated based on its own period (current month for monthly, current year for yearly).
+                  Filters which budgets to display. Each budget&apos;s spending is calculated based on its own period (current month for monthly, current year for yearly).
                 </div>
               </div>
               <Button
@@ -902,7 +894,7 @@ export default function BudgetPage() {
                 </p>
                 {deletingGoal && (
                   <p className="text-sm text-[var(--text-2)] mt-2">
-                    This will permanently delete the goal <span className="font-medium">"{deletingGoal.name}"</span> 
+                    This will permanently delete the goal <span className="font-medium">&quot;{deletingGoal.name}&quot;</span> 
                     {deletingGoal.currentAmount > 0 && ` with ${formatCurrency(deletingGoal.currentAmount)} already saved`}.
                   </p>
                 )}

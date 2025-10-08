@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService, UserResponse } from '@/lib/api/auth';
-import { apiClient } from '@/lib/api/client';
 
 interface AuthContextValue {
   user: UserResponse | null;
@@ -44,7 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
-    } catch (error) {
+    } catch {
       // Not authenticated
       setUser(null);
     } finally {
@@ -67,7 +66,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = async (data: any) => {
     try {
-      const newUser = await authService.register(data);
+      const _newUser = await authService.register(data);
       // After registration, log them in automatically
       await login(data.username, data.password);
     } catch (error) {
@@ -81,8 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       // Redirect to login page
       router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       // Even if logout fails, clear local state
       setUser(null);
       router.push('/');
@@ -93,7 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const currentUser = await authService.getCurrentUser(true); // Force refresh
       setUser(currentUser);
-    } catch (error) {
+    } catch {
       setUser(null);
     }
   };

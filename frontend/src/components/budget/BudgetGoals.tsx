@@ -234,7 +234,7 @@ export const BudgetGoals: React.FC<BudgetGoalsProps> = ({
                 <div className="mt-4 text-sm">
                   {goal.status === 'on-track' && (
                     <p className="text-[var(--primary-emerald)]">
-                      You're on track! Keep up the good work.
+                      You&apos;re on track! Keep up the good work.
                     </p>
                   )}
                   {goal.status === 'at-risk' && (
@@ -255,7 +255,7 @@ export const BudgetGoals: React.FC<BudgetGoalsProps> = ({
                   )}
                   {goal.status === 'completed' && (
                     <p className="text-[var(--primary-blue)]">
-                      Congratulations! You've achieved your goal!
+                      Congratulations! You&apos;ve achieved your goal!
                     </p>
                   )}
                 </div>

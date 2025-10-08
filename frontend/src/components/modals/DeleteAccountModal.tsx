@@ -58,7 +58,7 @@ export default function DeleteAccountModal({
               Are you sure?
             </h3>
             <p className="text-[var(--text-2)] mb-4">
-              You're about to delete the account <span className="font-semibold">"{account.name}"</span>.
+              You&apos;re about to delete the account <span className="font-semibold">&quot;{account.name}&quot;</span>.
               This action cannot be undone.
             </p>
             {account.balance !== 0 && (

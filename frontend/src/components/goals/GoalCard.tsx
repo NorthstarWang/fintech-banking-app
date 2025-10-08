@@ -22,8 +22,8 @@ interface GoalCardProps {
 export const GoalCard: React.FC<GoalCardProps> = ({ 
   goal, 
   onClick,
-  analyticsId = 'goal-card',
-  analyticsLabel = 'Goal Card',
+  analyticsId: _analyticsId = 'goal-card',
+  analyticsLabel: _analyticsLabel = 'Goal Card',
 }) => {
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString('en-US', {

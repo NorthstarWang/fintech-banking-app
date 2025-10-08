@@ -149,11 +149,7 @@ class AnalyticsService {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const url = `${baseUrl}/api${endpoint}?${queryParams.toString()}`;
 
-      console.log(`Fetching export from: ${url}`);
-      console.log('Export request headers:', {
-        'Authorization': `Bearer ${token.substring(0, 20)}...`,
-        'Accept': format === 'pdf' ? 'application/pdf' : 'text/csv',
-      });
+      // Fetching export data
       
       // Create AbortController for timeout
       const controller = new AbortController();
@@ -175,12 +171,7 @@ class AnalyticsService {
         clearTimeout(timeoutId);
       } catch (fetchError) {
         clearTimeout(timeoutId);
-        console.error('Fetch error details:', {
-          error: fetchError,
-          errorType: fetchError instanceof Error ? fetchError.constructor.name : typeof fetchError,
-          errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
-          errorStack: fetchError instanceof Error ? fetchError.stack : undefined
-        });
+        // Fetch error occurred
         
         if (fetchError instanceof Error) {
           if (fetchError.name === 'AbortError') {
@@ -213,10 +204,7 @@ class AnalyticsService {
       }
 
       // Get the blob from response
-      console.log('Response headers:', response.headers);
-      console.log('Response type:', response.type);
       const blob = await response.blob();
-      console.log('Blob size:', blob.size, 'Blob type:', blob.type);
       
       // Get filename from Content-Disposition header if available
       const contentDisposition = response.headers.get('Content-Disposition');
@@ -243,21 +231,14 @@ class AnalyticsService {
         document.body.removeChild(a);
       }, 100);
     } catch (error) {
-      console.error('Export error:', error);
+      // Export error occurred
       
       // If it's a network error, provide helpful guidance
       if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-        // Log the specific error for debugging
-        console.error('Network error details:', {
-          url,
-          error: error.message,
-          stack: error.stack
-        });
-        
+        // Network error handling
+
         // Check if it might be a CORS issue
-        if (window.location.port !== '3000') {
-          console.warn('Frontend is not running on port 3000. This might cause CORS issues.');
-        }
+        const _isCorsIssue = window.location.port !== '3000';
         
         throw new Error(
           'Network error: Unable to download the file. This might be caused by:\n' +

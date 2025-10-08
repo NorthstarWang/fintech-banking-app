@@ -23,8 +23,8 @@ export const BudgetCategoryCard: React.FC<BudgetCategoryCardProps> = ({
   category,
   onEdit,
   onDelete,
-  analyticsId = 'budget-category-card',
-  analyticsLabel = 'Budget Category Card',
+  analyticsId: _analyticsId = 'budget-category-card',
+  analyticsLabel: _analyticsLabel = 'Budget Category Card',
 }) => {
   const isOverBudget = category.remaining < 0;
   const warningThreshold = 90;

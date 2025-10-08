@@ -36,15 +36,11 @@ interface TransactionListProps {
 const TransactionItem = memo(function TransactionItem({
   transaction,
   isSelected,
-  onSelect,
-  analyticsId,
-  analyticsLabel
+  onSelect
 }: {
   transaction: Transaction;
   isSelected: boolean;
   onSelect: (transaction: Transaction) => void;
-  analyticsId: string;
-  analyticsLabel: string;
 }) {
   const getCategoryIcon = useCallback((category: string) => {
     const iconMap: { [key: string]: React.ReactNode } = {
@@ -199,8 +195,8 @@ export const OptimizedTransactionList: React.FC<TransactionListProps> = memo(({
   transactions,
   selectedTransaction,
   onSelectTransaction,
-  analyticsId = 'transaction-list',
-  analyticsLabel = 'Transaction List',
+  _analyticsId = 'transaction-list',
+  _analyticsLabel = 'Transaction List',
 }) => {
   // Track component performance
   React.useEffect(() => {
@@ -251,7 +247,7 @@ export const OptimizedTransactionList: React.FC<TransactionListProps> = memo(({
     return items;
   }, [transactions]);
 
-  const renderItem = useCallback((item: { type: 'header' | 'transaction'; data: any }, index: number) => {
+  const renderItem = useCallback((item: { type: 'header' | 'transaction'; data: any }, _index: number) => {
     if (item.type === 'header') {
       return (
         <div className="px-6 py-3 bg-[var(--bg-1)]">
@@ -272,11 +268,9 @@ export const OptimizedTransactionList: React.FC<TransactionListProps> = memo(({
         transaction={item.data}
         isSelected={selectedTransaction?.id === item.data.id}
         onSelect={onSelectTransaction}
-        analyticsId={analyticsId}
-        analyticsLabel={analyticsLabel}
       />
     );
-  }, [selectedTransaction, onSelectTransaction, analyticsId, analyticsLabel]);
+  }, [selectedTransaction, onSelectTransaction]);
 
   return (
     <Card variant="default" className="h-full">

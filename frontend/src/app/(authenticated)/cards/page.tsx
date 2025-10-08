@@ -67,7 +67,7 @@ export interface CreditCard {
 }
 
 export default function CardsPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
   const [showCardNumbers, setShowCardNumbers] = useState(false);
@@ -78,10 +78,9 @@ export default function CardsPage() {
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
   useEffect(() => {
-
     fetchCards();
     fetchAccounts();
-  }, [user]);
+  }, []);
 
   const fetchCards = async () => {
     try {
@@ -107,8 +106,7 @@ export default function CardsPage() {
               percentage: total > 0 ? (amount / total) * 100 : 0,
             }));
           }
-        } catch (error) {
-          console.error('Failed to fetch card analytics:', error);
+        } catch {
           // If no analytics, generate some demo data
           if (card.card_type === 'credit' && card.current_balance) {
             totalSpent = card.current_balance;
@@ -161,8 +159,7 @@ export default function CardsPage() {
       if (transformedCards.length > 0) {
         setSelectedCard(transformedCards[0]);
       }
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
+    } catch {
       notificationService.error('Failed to load cards. Please try again.');
     } finally {
       setIsLoading(false);
@@ -194,7 +191,7 @@ export default function CardsPage() {
 
   // Remove mock cards definition
   if (false) {
-    const mockCards: CreditCard[] = [
+    const _mockCards: CreditCard[] = [
       {
         id: '1',
         name: 'Platinum Rewards',
@@ -330,31 +327,30 @@ export default function CardsPage() {
     try {
       const data = await accountsService.getAccounts();
       setAccounts(data);
-    } catch (error) {
-      console.error('Failed to fetch accounts:', error);
+    } catch {
     }
   };
 
-  const totalBalance = cards.reduce((sum, card) => {
+  const _totalBalance = cards.reduce((sum, card) => {
     if (card.type === 'credit') {
       return sum + (card.balance || 0);
     }
     return sum;
   }, 0);
 
-  const totalAvailableCredit = cards.reduce((sum, card) => {
+  const _totalAvailableCredit = cards.reduce((sum, card) => {
     if (card.type === 'credit') {
       return sum + (card.availableCredit || 0);
     }
     return sum;
   }, 0);
 
-  const totalRewards = cards.reduce((sum, card) => {
+  const _totalRewards = cards.reduce((sum, card) => {
     return sum + (card.rewards?.points || 0);
   }, 0);
 
   const handleCardAction = async (cardId: string, action: string) => {
-    const card = cards.find(c => c.id === cardId);
+    const _card = cards.find(c => c.id === cardId);
 
     if (action === 'freeze' || action === 'unfreeze') {
       try {
@@ -380,8 +376,7 @@ export default function CardsPage() {
         setAnalyticsRefreshKey(prev => prev + 1);
 
         notificationService.success(`Card ${freeze ? 'frozen' : 'unfrozen'} successfully`);
-      } catch (error) {
-        console.error('Failed to update card status:', error);
+      } catch {
         notificationService.error(`Failed to ${action} card. Please try again.`);
       }
     }
