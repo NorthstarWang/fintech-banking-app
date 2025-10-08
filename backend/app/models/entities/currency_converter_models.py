@@ -1,11 +1,13 @@
 """
 Virtual currency converter models (Airtm-like system).
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
 
 # Currency converter specific enums
 class CurrencyType(str, Enum):
@@ -63,7 +65,7 @@ class ExchangeRateResponse(BaseModel):
         from_attributes=True,
         json_encoders={Decimal: float}
     )
-    
+
     currency_pair: CurrencyPair
     rate: Decimal
     spread: Decimal
@@ -79,11 +81,11 @@ class ConversionQuoteRequest(BaseModel):
     from_currency: str
     to_currency: str
     amount: float
-    transfer_method: Optional[TransferMethod] = None
+    transfer_method: TransferMethod | None = None
 
 class ConversionQuoteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     quote_id: str
     from_currency: str
     to_currency: str
@@ -94,20 +96,20 @@ class ConversionQuoteResponse(BaseModel):
     fee_percentage: Decimal
     total_cost: Decimal
     you_receive: Decimal
-    transfer_method: Optional[TransferMethod]
+    transfer_method: TransferMethod | None
     estimated_completion: str
     expires_at: datetime
-    breakdown: Dict[str, Any]
+    breakdown: dict[str, Any]
 
 class ConversionOrderCreate(BaseModel):
     quote_id: str
-    recipient_details: Dict[str, Any]  # Bank account, wallet address, etc.
-    purpose: Optional[str] = None
-    reference: Optional[str] = None
+    recipient_details: dict[str, Any]  # Bank account, wallet address, etc.
+    purpose: str | None = None
+    reference: str | None = None
 
 class ConversionOrderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     order_number: str
     user_id: int
@@ -119,28 +121,28 @@ class ConversionOrderResponse(BaseModel):
     exchange_rate: Decimal
     fee_amount: Decimal
     transfer_method: TransferMethod
-    recipient_details: Dict[str, Any]
-    purpose: Optional[str]
-    reference: Optional[str]
-    peer_id: Optional[int]  # If P2P transfer
+    recipient_details: dict[str, Any]
+    purpose: str | None
+    reference: str | None
+    peer_id: int | None  # If P2P transfer
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime]
-    tracking_updates: List[Dict[str, Any]]
+    completed_at: datetime | None
+    tracking_updates: list[dict[str, Any]]
 
 class PeerOfferCreate(BaseModel):
     currency: str
     currency_type: CurrencyType
     amount_available: float
     rate_adjustment: float  # Percentage above/below market rate
-    transfer_methods: List[TransferMethod]
+    transfer_methods: list[TransferMethod]
     min_transaction: float
     max_transaction: float
-    availability_hours: Dict[str, str]  # {"monday": "9:00-17:00", ...}
+    availability_hours: dict[str, str]  # {"monday": "9:00-17:00", ...}
 
 class PeerOfferResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     peer_id: int
     peer_username: str
@@ -152,7 +154,7 @@ class PeerOfferResponse(BaseModel):
     amount_available: Decimal
     amount_remaining: Decimal
     rate: Decimal
-    transfer_methods: List[TransferMethod]
+    transfer_methods: list[TransferMethod]
     min_transaction: Decimal
     max_transaction: Decimal
     response_time_minutes: int
@@ -164,11 +166,11 @@ class P2PTradeRequest(BaseModel):
     offer_id: int
     amount: float
     transfer_method: TransferMethod
-    payment_details: Dict[str, Any]
+    payment_details: dict[str, Any]
 
 class P2PTradeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     trade_number: str
     buyer_id: int
@@ -181,32 +183,32 @@ class P2PTradeResponse(BaseModel):
     total_cost: Decimal
     fee_amount: Decimal
     transfer_method: TransferMethod
-    payment_details: Dict[str, Any]
+    payment_details: dict[str, Any]
     chat_enabled: bool
     escrow_released: bool
-    dispute_id: Optional[int]
+    dispute_id: int | None
     created_at: datetime
     expires_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
 
 class CurrencyBalanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     currency: str
     currency_type: CurrencyType
     balance: Decimal
     available_balance: Decimal
     pending_balance: Decimal
     total_converted: Decimal
-    last_activity: Optional[datetime]
+    last_activity: datetime | None
 
 class ConversionHistoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     total_conversions: int
     total_volume: Decimal
-    currencies_used: List[str]
-    favorite_pairs: List[CurrencyPair]
+    currencies_used: list[str]
+    favorite_pairs: list[CurrencyPair]
     average_fee_percentage: Decimal
     total_fees_paid: Decimal
     member_since: date
@@ -221,9 +223,9 @@ class CurrencySupportedResponse(BaseModel):
     min_amount: Decimal
     max_amount: Decimal
     is_active: bool
-    supported_methods: List[TransferMethod]
-    countries: List[str]
-    
+    supported_methods: list[TransferMethod]
+    countries: list[str]
+
 class TransferLimitResponse(BaseModel):
     verification_level: VerificationLevel
     daily_limit: Decimal
@@ -233,11 +235,11 @@ class TransferLimitResponse(BaseModel):
     monthly_remaining: Decimal
     next_limit_reset: datetime
     upgrade_available: bool
-    
+
 class ComplianceCheckResponse(BaseModel):
     transaction_allowed: bool
     requires_additional_info: bool
-    required_documents: List[str]
+    required_documents: list[str]
     aml_score: float
     risk_level: str
-    notes: Optional[str]
+    notes: str | None

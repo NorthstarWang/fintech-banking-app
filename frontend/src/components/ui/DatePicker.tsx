@@ -36,7 +36,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const [currentMonth, setCurrentMonth] = useState<Date>(
     selectedDate || new Date()
   );
-  const calendarRef = useRef<HTMLDivElement>(null);
+  const _calendarRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const floatingRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

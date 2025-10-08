@@ -116,10 +116,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         setAccounts(data.filter(acc => acc.is_active));
       } else {
         setAccounts([]);
-        console.error('Invalid accounts data received:', data);
       }
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
+    } catch {
       setAccounts([]);
     }
   };
@@ -175,14 +173,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
       await transfersService.deposit(depositData);
       
-        text: `Deposit completed: $${amount} via ${depositMethod}`,
-        custom_action: 'deposit_completed',
-        data: {
-          amount: parseFloat(amount),
-          account_id: parseInt(selectedAccount),
-          deposit_method: depositMethod,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {

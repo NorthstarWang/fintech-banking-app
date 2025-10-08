@@ -28,7 +28,6 @@ async def export_transactions(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Export transactions in various formats"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Query transactions with filters
     query = db_session.query(Transaction).filter(
@@ -67,10 +66,6 @@ async def export_transactions(
         raise ValidationError(f"Export format {export_data.format} not yet implemented")
     
     # Log the export
-        session_id,
-        "EXPORT_CREATED",
-        {
-            "text": f"Exported {len(transactions)} transactions as {export_data.format.value}",
             "page_url": "/exports",
             "export_id": export_id,
             "format": export_data.format.value,

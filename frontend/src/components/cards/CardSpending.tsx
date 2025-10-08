@@ -6,7 +6,6 @@ import {
   Coffee,
   Plane,
   DollarSign,
-  Calendar,
   BarChart3,
   PieChart,
   Activity
@@ -189,9 +188,6 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                 size="sm"
                 icon={<BarChart3 size={16} />}
                 onClick={() => {
-                    'card-spending-view-chart',
-                    'Switched to chart view'
-                  );
                   setViewMode('chart');
                 }}
                 className="!px-2 !py-1"
@@ -201,9 +197,6 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                 size="sm"
                 icon={<PieChart size={16} />}
                 onClick={() => {
-                    'card-spending-view-pie',
-                    'Switched to pie chart view'
-                  );
                   setViewMode('list');
                 }}
                 className="!px-2 !py-1"
@@ -212,9 +205,6 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
             <Dropdown
               value={timeRange}
               onChange={(value) => {
-                  'card-spending-time-range',
-                  `Changed time range to ${value}`
-                );
                 setTimeRange(value as 'week' | 'month' | 'year');
               }}
               items={[
@@ -254,7 +244,7 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
           </div>
           {isNearLimit && (
             <p className="text-xs text-[var(--primary-amber)] mt-2">
-              You've used {spendingPercentage.toFixed(0)}% of your spending limit
+              You&apos;ve used {spendingPercentage.toFixed(0)}% of your spending limit
             </p>
           )}
         </div>
@@ -282,14 +272,8 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                           className="w-full bg-gradient-to-t from-[var(--primary-blue)] to-[var(--primary-indigo)] rounded-t hover:opacity-80 transition-opacity cursor-pointer relative group"
                           style={{ height: `${height}%` }}
                           onMouseEnter={() => {
-                              `card-spending-daily-bar-${day.day}`,
-                              `Hovered daily spending bar for ${day.day}`
-                            );
                           }}
                           onClick={() => {
-                              `card-spending-daily-bar-${day.day}`,
-                              `Clicked daily spending bar for ${day.day} - ${formatCurrency(day.amount)}`
-                            );
                           }}
                         >
                           <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--bg-color)] border border-[var(--border-1)] rounded px-2 py-1 text-xs whitespace-nowrap">
@@ -318,14 +302,8 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                     transition={{ delay: index * 0.05 }}
                     className="cursor-pointer"
                     onMouseEnter={() => {
-                        `card-spending-category-${category.name}`,
-                        `Hovered spending category ${category.name}`
-                      );
                     }}
                     onClick={() => {
-                        `card-spending-category-${category.name}`,
-                        `Clicked spending category ${category.name} - ${formatCurrency(category.amount)}`
-                      );
                     }}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -403,14 +381,8 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                         transition={{ delay: index * 0.1 }}
                         className="hover:opacity-80 transition-opacity cursor-pointer"
                         onMouseEnter={() => {
-                            `card-spending-pie-${category.name}`,
-                            `Hovered pie chart segment for ${category.name}`
-                          );
                         }}
                         onClick={() => {
-                            `card-spending-pie-${category.name}`,
-                            `Clicked pie chart segment for ${category.name} - ${category.percentage.toFixed(2)}%`
-                          );
                         }}
                       />
                     );
@@ -450,14 +422,8 @@ export const CardSpending: React.FC<CardSpendingProps> = ({ card }) => {
                   transition={{ delay: index * 0.05 }}
                   className="flex items-center gap-2 p-3 rounded-lg bg-[rgba(var(--glass-rgb),0.05)] cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.1)] transition-colors"
                   onMouseEnter={() => {
-                      `card-spending-legend-${category.name}`,
-                      `Hovered pie chart legend for ${category.name}`
-                    );
                   }}
                   onClick={() => {
-                      `card-spending-legend-${category.name}`,
-                      `Clicked pie chart legend for ${category.name} - ${formatCurrency(category.amount)}`
-                    );
                   }}
                 >
                   <div className={`p-2 rounded bg-gradient-to-r ${getCategoryColor(category.name)}`}>

@@ -1,8 +1,9 @@
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
+from datetime import date, datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
 
 # Insurance-specific enums
 class InsuranceType(str, Enum):
@@ -63,12 +64,12 @@ class InsurancePolicyCreate(BaseModel):
     premium_frequency: PremiumFrequency
     start_date: date
     end_date: date
-    beneficiaries: Optional[List[Dict[str, str]]] = None
-    coverage_details: Optional[Dict[str, Any]] = None
+    beneficiaries: list[dict[str, str]] | None = None
+    coverage_details: dict[str, Any] | None = None
 
 class InsurancePolicyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     insurance_type: InsuranceType
@@ -77,16 +78,16 @@ class InsurancePolicyResponse(BaseModel):
     status: PolicyStatus
     coverage_amount: float
     deductible: float
-    out_of_pocket_max: Optional[float] = None
+    out_of_pocket_max: float | None = None
     premium_amount: float
     premium_frequency: PremiumFrequency
     next_premium_date: date
     start_date: date
     end_date: date
-    renewal_date: Optional[date] = None
-    beneficiaries: Optional[List[Dict[str, str]]] = None
-    coverage_details: Dict[str, Any]
-    documents: List[Dict[str, str]]
+    renewal_date: date | None = None
+    beneficiaries: list[dict[str, str]] | None = None
+    coverage_details: dict[str, Any]
+    documents: list[dict[str, str]]
     created_at: datetime
     updated_at: datetime
 
@@ -96,12 +97,12 @@ class InsuranceClaimCreate(BaseModel):
     incident_date: date
     amount_claimed: float
     description: str
-    supporting_documents: Optional[List[str]] = None
-    provider_details: Optional[Dict[str, str]] = None
+    supporting_documents: list[str] | None = None
+    provider_details: dict[str, str] | None = None
 
 class InsuranceClaimResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     policy_id: int
     claim_number: str
@@ -110,41 +111,41 @@ class InsuranceClaimResponse(BaseModel):
     incident_date: date
     filed_date: datetime
     amount_claimed: float
-    amount_approved: Optional[float] = None
-    amount_paid: Optional[float] = None
-    deductible_applied: Optional[float] = None
+    amount_approved: float | None = None
+    amount_paid: float | None = None
+    deductible_applied: float | None = None
     description: str
-    adjuster_name: Optional[str] = None
-    adjuster_notes: Optional[str] = None
-    denial_reason: Optional[str] = None
-    documents: List[Dict[str, str]]
-    status_history: List[Dict[str, Any]]
-    payment_date: Optional[datetime] = None
-    appeal_deadline: Optional[date] = None
+    adjuster_name: str | None = None
+    adjuster_notes: str | None = None
+    denial_reason: str | None = None
+    documents: list[dict[str, str]]
+    status_history: list[dict[str, Any]]
+    payment_date: datetime | None = None
+    appeal_deadline: date | None = None
     created_at: datetime
     updated_at: datetime
 
 class InsuranceProviderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     name: str
-    insurance_types: List[InsuranceType]
+    insurance_types: list[InsuranceType]
     rating: float
     customer_service_phone: str
-    customer_service_email: Optional[str] = None
+    customer_service_email: str | None = None
     website: str
     claim_phone: str
-    network_size: Optional[int] = None  # For health insurance
-    financial_strength_rating: Optional[str] = None
-    complaint_ratio: Optional[float] = None
+    network_size: int | None = None  # For health insurance
+    financial_strength_rating: str | None = None
+    complaint_ratio: float | None = None
 
 class InsuranceQuoteRequest(BaseModel):
     insurance_type: InsuranceType
     coverage_amount: float
     deductible: float
-    personal_info: Dict[str, Any]  # Age, location, etc.
-    coverage_options: Optional[List[str]] = None
+    personal_info: dict[str, Any]  # Age, location, etc.
+    coverage_options: list[str] | None = None
 
 class InsuranceQuoteResponse(BaseModel):
     provider_name: str
@@ -152,8 +153,8 @@ class InsuranceQuoteResponse(BaseModel):
     annual_premium: float
     coverage_amount: float
     deductible: float
-    coverage_details: Dict[str, Any]
-    discounts_applied: List[str]
+    coverage_details: dict[str, Any]
+    discounts_applied: list[str]
     quote_id: str
     valid_until: datetime
 
@@ -163,10 +164,10 @@ class InsuranceSummaryResponse(BaseModel):
     total_monthly_premiums: float
     total_annual_premiums: float
     total_coverage_amount: float
-    policies_by_type: Dict[str, int]
-    upcoming_renewals: List[Dict[str, Any]]
-    recent_claims: List[Dict[str, Any]]
-    coverage_gaps: List[str]
+    policies_by_type: dict[str, int]
+    upcoming_renewals: list[dict[str, Any]]
+    recent_claims: list[dict[str, Any]]
+    coverage_gaps: list[str]
 
 class HealthInsuranceDetails(BaseModel):
     in_network_deductible: float
@@ -176,7 +177,7 @@ class HealthInsuranceDetails(BaseModel):
     copay_primary: float
     copay_specialist: float
     copay_emergency: float
-    prescription_coverage: Dict[str, Any]
+    prescription_coverage: dict[str, Any]
     preventive_care_covered: bool
     hsafsa_eligible: bool
 
@@ -186,15 +187,15 @@ class AutoInsuranceDetails(BaseModel):
     vehicle_year: int
     vin: str
     liability_coverage: float
-    collision_coverage: Optional[float] = None
-    comprehensive_coverage: Optional[float] = None
-    uninsured_motorist: Optional[float] = None
-    rental_reimbursement: Optional[float] = None
+    collision_coverage: float | None = None
+    comprehensive_coverage: float | None = None
+    uninsured_motorist: float | None = None
+    rental_reimbursement: float | None = None
     roadside_assistance: bool
 
 class ClaimTimelineEvent(BaseModel):
     event_date: datetime
     event_type: str
     description: str
-    performed_by: Optional[str] = None
-    notes: Optional[str] = None
+    performed_by: str | None = None
+    notes: str | None = None

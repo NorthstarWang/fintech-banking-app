@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar,
-  DollarSign,
   Bell,
   BellOff,
   MoreVertical,
@@ -11,7 +10,6 @@ import {
   Trash2,
   AlertCircle,
   Clock,
-  TrendingUp,
   Activity
 } from 'lucide-react';
 import Card from '../ui/Card';
@@ -32,7 +30,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
   onAction,
   onClick,
   analyticsId = 'subscription-card',
-  analyticsLabel = 'Subscription Card',
+  analyticsLabel: _analyticsLabel = 'Subscription Card',
 }) => {
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString('en-US', {
@@ -107,9 +105,6 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
-            `${analyticsId}-${subscription.id}`,
-            `${analyticsLabel} - ${subscription.name} - ${subscription.status} - ${subscription.billing}`
-          );
           onClick();
         }}
         className="cursor-pointer h-full"
@@ -141,9 +136,6 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
                 <HeaderDropdown
                   items={menuOptions}
                   onChange={(value) => {
-                      `${analyticsId}-${subscription.id}-${value}`,
-                      `${analyticsLabel} - ${subscription.name} - ${value}`
-                    );
                     onAction(subscription.id, value);
                   }}
                   trigger={
@@ -153,9 +145,6 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
                       className="!p-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                          `${analyticsId}-${subscription.id}-menu`,
-                          `${analyticsLabel} - ${subscription.name} Menu`
-                        );
                       }}
                       analyticsId={`${analyticsId}-${subscription.id}-menu`}
                       analyticsLabel={`${subscription.name} Menu`}
@@ -272,9 +261,6 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                    `${analyticsId}-${subscription.id}-toggle-notifications`,
-                    `${analyticsLabel} - ${subscription.name} - Toggle Notifications - ${subscription.notifications ? 'Off' : 'On'}`
-                  );
                   onAction(subscription.id, 'toggle-notifications');
                 }}
                 className="text-[var(--text-2)] hover:text-[var(--text-1)] transition-colors"

@@ -19,13 +19,11 @@ import {
   HelpCircle,
   Building2,
   Shield,
-  Users as UsersIcon,
   MoreHorizontal,
   RefreshCcw,
   RefreshCw,
   Send,
   CalendarDays,
-  BarChart3,
   LineChart,
   FileText,
   MessageSquare,
@@ -46,9 +44,9 @@ interface HeaderProps {
   onMenuToggle?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
+export const Header: React.FC<HeaderProps> = ({ _onMenuToggle }) => {
   const { user, logout } = useAuth();
-  const pathname = usePathname();
+  const _pathname = usePathname();
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
@@ -96,8 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
         setTimeout(() => setHasNewNotifications(false), 3000);
       }
       previousCountRef.current = unread;
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+    } catch {
     } finally {
       if (showRefreshIndicator) {
         setTimeout(() => setIsRefreshing(false), 500);
@@ -111,8 +108,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
       const summary = await accountsService.getAccountSummary();
       // Use total_assets as the balance to display in header
       setTotalBalance(summary.total_assets);
-    } catch (error) {
-      console.error('Failed to reload balance:', error);
+    } catch {
     }
   };
 
@@ -128,8 +124,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
         
         // Load account balance
         await reloadBalance();
-      } catch (error) {
-        console.error('Failed to load header data:', error);
+      } catch {
       } finally {
         setLoadingBalance(false);
       }
@@ -182,8 +177,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
         cards: regularCards,
         businessCards: businessCards
       });
-    } catch (error) {
-      console.error('Failed to load accounts data:', error);
+    } catch {
     } finally {
       setLoadingAccountsData(false);
     }
@@ -197,8 +191,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
       const conversations = await messagesService.getConversations();
       const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
       setUnreadMessagesCount(totalUnread);
-    } catch (error) {
-      console.error('Failed to load unread messages count:', error);
+    } catch {
     }
   };
 

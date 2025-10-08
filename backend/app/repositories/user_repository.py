@@ -1,16 +1,18 @@
 """
 User repository for managing user and session data.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import hashlib
 import secrets
+from datetime import datetime, timedelta
+from typing import Any
+
 from app.repositories.base_repository import BaseRepository
+
 
 class UserRepository(BaseRepository):
     """Repository for user-related operations."""
-    
-    def __init__(self, users: List[Dict[str, Any]], sessions: List[Dict[str, Any]]):
+
+    def __init__(self, users: list[dict[str, Any]], sessions: list[dict[str, Any]]):
         """
         Initialize with users and sessions data stores.
         
@@ -20,8 +22,8 @@ class UserRepository(BaseRepository):
         """
         super().__init__(users)
         self.sessions = sessions
-        
-    def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+
+    def create_user(self, user_data: dict[str, Any]) -> dict[str, Any]:
         """
         Create a new user with hashed password.
         
@@ -35,30 +37,30 @@ class UserRepository(BaseRepository):
         if 'password' in user_data:
             user_data['password_hash'] = self._hash_password(user_data['password'])
             del user_data['password']
-            
+
         # Set default values
         user_data.setdefault('is_active', True)
         user_data.setdefault('is_admin', False)
         user_data.setdefault('created_at', datetime.utcnow().isoformat())
-        
+
         # Create user
         user = self.create(user_data)
-        
+
         # Remove password_hash from response
         user_response = user.copy()
         user_response.pop('password_hash', None)
-        
+
         return user_response
-        
-    def find_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+
+    def find_by_username(self, username: str) -> dict[str, Any] | None:
         """Find user by username."""
         return self.find_one_by_field('username', username)
-        
-    def find_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+
+    def find_by_email(self, email: str) -> dict[str, Any] | None:
         """Find user by email."""
         return self.find_one_by_field('email', email)
-        
-    def verify_password(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+
+    def verify_password(self, username: str, password: str) -> dict[str, Any] | None:
         """
         Verify user password.
         
@@ -72,7 +74,7 @@ class UserRepository(BaseRepository):
         user = self.find_by_username(username)
         if not user:
             return None
-            
+
         # Get the actual user with password_hash
         for u in self.data_store:
             if u.get('username') == username:
@@ -82,8 +84,8 @@ class UserRepository(BaseRepository):
                     user_response.pop('password_hash', None)
                     return user_response
         return None
-        
-    def create_session(self, user_id: str, device_info: Optional[Dict[str, Any]] = None) -> str:
+
+    def create_session(self, user_id: str, device_info: dict[str, Any] | None = None) -> str:
         """
         Create a new session for user.
         
@@ -103,14 +105,14 @@ class UserRepository(BaseRepository):
             'expires_at': (datetime.utcnow() + timedelta(days=30)).isoformat(),
             'is_active': True
         }
-        
+
         if device_info:
             session_data.update(device_info)
-            
+
         self.sessions.append(session_data)
         return token
-        
-    def get_user_by_session(self, token: str) -> Optional[Dict[str, Any]]:
+
+    def get_user_by_session(self, token: str) -> dict[str, Any] | None:
         """
         Get user by session token.
         
@@ -131,16 +133,16 @@ class UserRepository(BaseRepository):
                     # Update last accessed
                     s['last_accessed'] = datetime.utcnow().isoformat()
                     break
-                    
+
         if not session:
             return None
-            
+
         # Get user
         user = self.find_by_id(session['user_id'])
         if user:
             user.pop('password_hash', None)
         return user
-        
+
     def invalidate_session(self, token: str) -> bool:
         """
         Invalidate a session.
@@ -156,7 +158,7 @@ class UserRepository(BaseRepository):
                 session['is_active'] = False
                 return True
         return False
-        
+
     def invalidate_user_sessions(self, user_id: str) -> int:
         """
         Invalidate all sessions for a user.
@@ -173,8 +175,8 @@ class UserRepository(BaseRepository):
                 session['is_active'] = False
                 count += 1
         return count
-        
-    def get_active_sessions(self, user_id: str) -> List[Dict[str, Any]]:
+
+    def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """
         Get all active sessions for a user.
         
@@ -186,7 +188,7 @@ class UserRepository(BaseRepository):
         """
         active_sessions = []
         for session in self.sessions:
-            if (session.get('user_id') == user_id and 
+            if (session.get('user_id') == user_id and
                 session.get('is_active') and
                 datetime.fromisoformat(session['expires_at']) > datetime.utcnow()):
                 # Don't include the token in the response
@@ -194,7 +196,7 @@ class UserRepository(BaseRepository):
                 session_copy['id'] = session_copy['id'][:8] + '...'  # Partial token
                 active_sessions.append(session_copy)
         return active_sessions
-        
+
     def update_password(self, user_id: str, new_password: str) -> bool:
         """
         Update user password.
@@ -212,11 +214,11 @@ class UserRepository(BaseRepository):
                 user['password_changed_at'] = datetime.utcnow().isoformat()
                 return True
         return False
-        
+
     def _hash_password(self, password: str) -> str:
         """Hash a password using SHA256."""
         return hashlib.sha256(password.encode()).hexdigest()
-        
+
     def _verify_password(self, password: str, password_hash: str) -> bool:
         """Verify a password against its hash."""
         return self._hash_password(password) == password_hash

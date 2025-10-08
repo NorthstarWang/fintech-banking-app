@@ -40,7 +40,7 @@ export interface DemoGoal {
 }
 
 // Realistic spending patterns
-const SPENDING_PATTERNS = {
+const _SPENDING_PATTERNS = {
   morning: ['coffee', 'breakfast', 'gas', 'parking'],
   lunch: ['restaurant', 'fast-food', 'grocery'],
   evening: ['dinner', 'entertainment', 'shopping'],
@@ -65,7 +65,7 @@ export function generateRealisticTransactions(
 ): EnhancedTransaction[] {
   const transactions: EnhancedTransaction[] = [];
   const today = new Date();
-  let runningBalance = accountBalance;
+  let _runningBalance = accountBalance;
 
   for (let day = 0; day < days; day++) {
     const currentDate = new Date(today);
@@ -88,7 +88,7 @@ export function generateRealisticTransactions(
         location: 'Downtown',
         tags: ['coffee', 'morning-routine'],
       });
-      runningBalance -= coffeeAmount;
+      _runningBalance -= coffeeAmount;
     }
 
     // Lunch transactions
@@ -105,7 +105,7 @@ export function generateRealisticTransactions(
         merchant: MERCHANT_POOLS.restaurant[Math.floor(Math.random() * MERCHANT_POOLS.restaurant.length)],
         tags: ['lunch', 'food'],
       });
-      runningBalance -= lunchAmount;
+      _runningBalance -= lunchAmount;
     }
 
     // Random shopping (more likely on weekends)
@@ -122,7 +122,7 @@ export function generateRealisticTransactions(
         merchant: MERCHANT_POOLS.shopping[Math.floor(Math.random() * MERCHANT_POOLS.shopping.length)],
         tags: isWeekend ? ['weekend-shopping'] : ['shopping'],
       });
-      runningBalance -= shoppingAmount;
+      _runningBalance -= shoppingAmount;
     }
 
     // Salary/income (twice a month)
@@ -138,7 +138,7 @@ export function generateRealisticTransactions(
         merchant: 'Employer Inc.',
         tags: ['salary', 'income'],
       });
-      runningBalance += 2500;
+      _runningBalance += 2500;
     }
 
     // Recurring bills (specific days)
@@ -156,7 +156,7 @@ export function generateRealisticTransactions(
         recurring: true,
         tags: ['rent', 'recurring', 'housing'],
       });
-      runningBalance -= 1500;
+      _runningBalance -= 1500;
     }
 
     if (day === 5) {
@@ -174,7 +174,7 @@ export function generateRealisticTransactions(
         recurring: true,
         tags: ['utilities', 'recurring'],
       });
-      runningBalance -= utilityAmount;
+      _runningBalance -= utilityAmount;
     }
 
     // Add pending transaction occasionally

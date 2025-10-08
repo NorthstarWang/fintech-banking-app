@@ -76,8 +76,8 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
       setIsConfirmed(true);
       
       // Log analytics event
-      const sliderLabel = analyticsLabel || (amount && recipient ? `${amount} to ${recipient}` : text);
-      const sliderId = analyticsId || 'slide-to-confirm';
+      const _sliderLabel = analyticsLabel || (amount && recipient ? `${amount} to ${recipient}` : text);
+      const _sliderId = analyticsId || 'slide-to-confirm';
       
       // Haptic feedback simulation
       if (navigator.vibrate) {
@@ -92,8 +92,8 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
       x.set(0);
       
       // Log analytics event for failed attempt
-      const sliderLabel = analyticsLabel || text;
-      const sliderId = analyticsId || 'slide-to-confirm';
+      const _sliderLabel = analyticsLabel || text;
+      const _sliderId = analyticsId || 'slide-to-confirm';
     }
   };
   
@@ -102,8 +102,8 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
     setIsConfirmed(false);
     
     // Log analytics event
-    const sliderLabel = analyticsLabel || text;
-    const sliderId = analyticsId || 'slide-to-confirm';
+    const _sliderLabel = analyticsLabel || text;
+    const _sliderId = analyticsId || 'slide-to-confirm';
     
     onCancel?.();
   };
@@ -193,8 +193,8 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
             setIsDragging(true);
             
             // Log analytics event
-            const sliderLabel = analyticsLabel || text;
-            const sliderId = analyticsId || 'slide-to-confirm';
+            const _sliderLabel = analyticsLabel || text;
+            const _sliderId = analyticsId || 'slide-to-confirm';
           }}
           onDragEnd={handleDragEnd}
           whileTap={{ scale: 0.95 }}

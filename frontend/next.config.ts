@@ -3,15 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+    // ESLint errors will now fail the build - enforcing code quality
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    ignoreBuildErrors: true,
+    // TypeScript errors will now fail the build - enforcing type safety
+    ignoreBuildErrors: false,
   },
   async rewrites() {
     return [

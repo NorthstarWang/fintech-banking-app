@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Shield, AlertCircle, Snowflake, CreditCard } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -47,11 +46,7 @@ export const FreezeCardModal: React.FC<FreezeCardModalProps> = ({
     const newStatus = !isFrozen;
     setIsFrozen(newStatus);
     setConfirming(false);
-    
-      `freeze-card-modal-${newStatus ? 'freeze' : 'unfreeze'}`,
-      `Card ${card.lastFour} ${newStatus ? 'frozen' : 'unfrozen'}`
-    );
-    
+
     onFreeze(newStatus);
     
     // Close modal after a short delay

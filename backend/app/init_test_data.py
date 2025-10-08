@@ -1,10 +1,11 @@
 """
 Initialize proper test data for all tests.
 """
-from app.repositories.data_manager import data_manager
 import hashlib
 from datetime import datetime
-import uuid
+
+from app.repositories.data_manager import data_manager
+
 
 def initialize_test_data():
     """Initialize comprehensive test data."""
@@ -13,7 +14,7 @@ def initialize_test_data():
     data_manager.sessions = []
     data_manager.accounts = []
     data_manager.transactions = []
-    
+
     # Create test users
     test_users = [
         {
@@ -21,17 +22,17 @@ def initialize_test_data():
             "username": "john_doe",
             "email": "john@example.com",
             "full_name": "John Doe",
-            "hashed_password": hashlib.sha256("password123".encode()).hexdigest(),
+            "hashed_password": hashlib.sha256(b"password123").hexdigest(),
             "is_active": True,
             "is_admin": False,
             "created_at": datetime.utcnow().isoformat()
         },
         {
-            "id": "test-user-2", 
+            "id": "test-user-2",
             "username": "jane_smith",
             "email": "jane@example.com",
             "full_name": "Jane Smith",
-            "hashed_password": hashlib.sha256("password123".encode()).hexdigest(),
+            "hashed_password": hashlib.sha256(b"password123").hexdigest(),
             "is_active": True,
             "is_admin": False,
             "created_at": datetime.utcnow().isoformat()
@@ -39,17 +40,17 @@ def initialize_test_data():
         {
             "id": "admin-user",
             "username": "admin",
-            "email": "admin@example.com", 
+            "email": "admin@example.com",
             "full_name": "Admin User",
-            "hashed_password": hashlib.sha256("admin123".encode()).hexdigest(),
+            "hashed_password": hashlib.sha256(b"admin123").hexdigest(),
             "is_active": True,
             "is_admin": True,
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    
+
     data_manager.users.extend(test_users)
-    
+
     # Create test accounts
     test_accounts = [
         {
@@ -75,10 +76,9 @@ def initialize_test_data():
             "created_at": datetime.utcnow().isoformat()
         }
     ]
-    
+
     data_manager.accounts.extend(test_accounts)
-    
-    print(f"Initialized {len(data_manager.users)} users and {len(data_manager.accounts)} accounts")
+
 
 # Run initialization
 initialize_test_data()

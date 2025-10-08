@@ -1,17 +1,16 @@
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # Import shared enums from data_classes
-from ..dto import (
-    CreditScoreProvider, CreditScoreRange, CreditFactorType
-)
+from ..dto import CreditFactorType, CreditScoreProvider, CreditScoreRange
 
 
 # Request/Response Models
 class CreditScoreResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     score: int = Field(ge=300, le=850)
@@ -19,11 +18,11 @@ class CreditScoreResponse(BaseModel):
     score_range: CreditScoreRange
     last_updated: datetime
     next_update: datetime
-    factors: List[Dict[str, Any]]
+    factors: list[dict[str, Any]]
 
 
 class CreditHistoryResponse(BaseModel):
-    scores: List[Dict[str, Any]]  # List of score, date, provider
+    scores: list[dict[str, Any]]  # List of score, date, provider
     average_score: float
     trend: str  # "improving", "declining", "stable"
     change_last_month: int
@@ -32,8 +31,8 @@ class CreditHistoryResponse(BaseModel):
 
 class CreditSimulatorRequest(BaseModel):
     action_type: str  # "pay_off_debt", "open_new_card", "close_card", etc.
-    action_details: Dict[str, Any]
-    current_score: Optional[int] = None
+    action_details: dict[str, Any]
+    current_score: int | None = None
 
 
 class CreditSimulatorResponse(BaseModel):
@@ -41,8 +40,8 @@ class CreditSimulatorResponse(BaseModel):
     projected_score: int
     score_change: int
     time_to_change_months: int
-    impact_factors: List[Dict[str, Any]]
-    recommendations: List[str]
+    impact_factors: list[dict[str, Any]]
+    recommendations: list[str]
 
 
 class CreditTip(BaseModel):
@@ -56,7 +55,7 @@ class CreditTip(BaseModel):
 
 
 class CreditTipsResponse(BaseModel):
-    tips: List[CreditTip]
+    tips: list[CreditTip]
     personalized: bool
     generated_at: datetime
 
@@ -64,12 +63,12 @@ class CreditTipsResponse(BaseModel):
 class CreditReportResponse(BaseModel):
     report_id: str
     generated_at: datetime
-    user_info: Dict[str, Any]
+    user_info: dict[str, Any]
     credit_score: int
-    accounts: List[Dict[str, Any]]
-    payment_history: Dict[str, Any]
+    accounts: list[dict[str, Any]]
+    payment_history: dict[str, Any]
     credit_utilization: float
-    credit_inquiries: List[Dict[str, Any]]
-    public_records: List[Dict[str, Any]]
-    collections: List[Dict[str, Any]]
-    score_factors: List[Dict[str, Any]]
+    credit_inquiries: list[dict[str, Any]]
+    public_records: list[dict[str, Any]]
+    collections: list[dict[str, Any]]
+    score_factors: list[dict[str, Any]]

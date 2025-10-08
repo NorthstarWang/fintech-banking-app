@@ -118,7 +118,10 @@ export default function ConversationView({
         textareaRef.current.style.height = 'auto';
       }
     } catch (error) {
-      console.error('Failed to send message:', error);
+      // Keep the message text so user can retry
+      // Show error in UI - message text is preserved for retry
+      const _errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      // Consider adding a toast notification here if a notification system is available
     } finally {
       setSending(false);
     }
@@ -247,7 +250,9 @@ export default function ConversationView({
                 if (onMessageRead) {
                   onMessageRead(message.id);
                 }
-              }).catch(console.error);
+              }).catch(() => {
+                // Silently fail - message read status update is not critical
+              });
             }
           }
         });

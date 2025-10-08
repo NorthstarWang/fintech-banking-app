@@ -74,7 +74,7 @@ const SecureInput = forwardRef<HTMLInputElement, SecureInputProps>(
             sanitized = InputSanitizer.sanitizeText(input);
             break;
         }
-      } catch (e) {
+      } catch {
         error = 'Sanitization error';
         sanitized = '';
       }

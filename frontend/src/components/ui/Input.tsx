@@ -81,8 +81,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className={inputClasses}
             onFocus={(e) => {
               // Log analytics event for focus
-              const fieldLabel = label || analyticsLabel || props.name || 'input';
-              const fieldId = stableId;
+              const _fieldLabel = label || analyticsLabel || props.name || 'input';
+              const _fieldId = stableId;
               
               // Call original onFocus handler
               if (onFocus) {
@@ -91,8 +91,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             }}
             onChange={(e) => {
               // Log analytics event for change (debounced in real implementation)
-              const fieldLabel = label || analyticsLabel || props.name || 'input';
-              const fieldId = stableId;
+              const _fieldLabel = label || analyticsLabel || props.name || 'input';
+              const _fieldId = stableId;
               
               // Call original onChange handler
               if (onChange) {

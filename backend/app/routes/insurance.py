@@ -1,26 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import date
 
-from ..storage.memory_adapter import db
-from ..utils.auth import get_current_user
-from ..models.memory_models import User
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.repositories.insurance_manager_memory import InsuranceManager
+
 from ..models.entities.insurance_models import (
-    InsurancePolicyCreate,
-    InsurancePolicyResponse,
+    ClaimStatus,
+    ClaimTimelineEvent,
     InsuranceClaimCreate,
     InsuranceClaimResponse,
+    InsurancePolicyCreate,
+    InsurancePolicyResponse,
     InsuranceProviderResponse,
     InsuranceQuoteRequest,
     InsuranceQuoteResponse,
     InsuranceSummaryResponse,
     InsuranceType,
     PolicyStatus,
-    ClaimStatus,
-    ClaimTimelineEvent
 )
-from app.repositories.insurance_manager_memory import InsuranceManager
+from ..models.memory_models import User
+from ..storage.memory_adapter import db
+from ..utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/insurance", tags=["insurance"])
 
@@ -33,10 +33,10 @@ async def get_insurance_summary(
     manager = InsuranceManager(db_session)
     return manager.get_user_insurance_summary(current_user.id)
 
-@router.get("/policies", response_model=List[InsurancePolicyResponse])
+@router.get("/policies", response_model=list[InsurancePolicyResponse])
 async def get_insurance_policies(
-    insurance_type: Optional[InsuranceType] = None,
-    status: Optional[PolicyStatus] = None,
+    insurance_type: InsuranceType | None = None,
+    status: PolicyStatus | None = None,
     current_user: User = Depends(get_current_user),
     db_session = Depends(db.get_db_dependency)
 ):
@@ -106,10 +106,10 @@ async def delete_insurance_policy(
         )
     return {"message": "Policy deleted successfully"}
 
-@router.get("/claims", response_model=List[InsuranceClaimResponse])
+@router.get("/claims", response_model=list[InsuranceClaimResponse])
 async def get_insurance_claims(
-    policy_id: Optional[int] = None,
-    status: Optional[ClaimStatus] = None,
+    policy_id: int | None = None,
+    status: ClaimStatus | None = None,
     current_user: User = Depends(get_current_user),
     db_session = Depends(db.get_db_dependency)
 ):
@@ -158,7 +158,7 @@ async def create_insurance_claim(
 async def update_claim_status(
     claim_id: int,
     status: ClaimStatus,
-    notes: Optional[str] = None,
+    notes: str | None = None,
     current_user: User = Depends(get_current_user),
     db_session = Depends(db.get_db_dependency)
 ):
@@ -172,7 +172,7 @@ async def update_claim_status(
         )
     return claim
 
-@router.get("/claims/{claim_id}/timeline", response_model=List[ClaimTimelineEvent])
+@router.get("/claims/{claim_id}/timeline", response_model=list[ClaimTimelineEvent])
 async def get_claim_timeline(
     claim_id: int,
     current_user: User = Depends(get_current_user),
@@ -205,17 +205,17 @@ async def upload_claim_document(
         )
     return {"message": "Document uploaded successfully"}
 
-@router.get("/providers", response_model=List[InsuranceProviderResponse])
+@router.get("/providers", response_model=list[InsuranceProviderResponse])
 async def get_insurance_providers(
-    insurance_type: Optional[InsuranceType] = None,
-    min_rating: Optional[float] = None,
+    insurance_type: InsuranceType | None = None,
+    min_rating: float | None = None,
     db_session = Depends(db.get_db_dependency)
 ):
     """Get list of insurance providers."""
     manager = InsuranceManager(db_session)
     return manager.get_providers(insurance_type, min_rating)
 
-@router.post("/quotes", response_model=List[InsuranceQuoteResponse])
+@router.post("/quotes", response_model=list[InsuranceQuoteResponse])
 async def get_insurance_quotes(
     quote_request: InsuranceQuoteRequest,
     current_user: User = Depends(get_current_user),
@@ -269,8 +269,8 @@ async def cancel_insurance_policy(
 
 @router.get("/claims/analytics")
 async def get_claims_analytics(
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
     current_user: User = Depends(get_current_user),
     db_session = Depends(db.get_db_dependency)
 ):

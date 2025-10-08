@@ -1,153 +1,155 @@
 """
 Simplified data manager for mock testing system.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
-import uuid
 import hashlib
 import random
-from app.repositories.base_repository import BaseRepository
-from app.utils.auth import AuthHandler
-from app.services.auth_service import AuthService
+import uuid
+from datetime import datetime, timedelta
+from typing import Any
+
 from app.models import AssetClass
+from app.repositories.base_repository import BaseRepository
+from app.services.auth_service import AuthService
+from app.utils.auth import AuthHandler
+
 
 class DataManager:
     """Data manager for memory-based storage system."""
-    
+
     def __init__(self):
         # Core data stores
-        self.users: List[Dict[str, Any]] = []
-        self.sessions: List[Dict[str, Any]] = []
-        self.accounts: List[Dict[str, Any]] = []
-        self.transactions: List[Dict[str, Any]] = []
-        self.categories: List[Dict[str, Any]] = []
-        self.cards: List[Dict[str, Any]] = []
-        self.budgets: List[Dict[str, Any]] = []
-        self.goals: List[Dict[str, Any]] = []
-        self.notifications: List[Dict[str, Any]] = []
-        self.messages: List[Dict[str, Any]] = []
-        self.bills: List[Dict[str, Any]] = []
-        self.subscriptions: List[Dict[str, Any]] = []
-        self.merchants: List[Dict[str, Any]] = []
-        self.logs: List[Dict[str, Any]] = []  # Add logs store
-        
+        self.users: list[dict[str, Any]] = []
+        self.sessions: list[dict[str, Any]] = []
+        self.accounts: list[dict[str, Any]] = []
+        self.transactions: list[dict[str, Any]] = []
+        self.categories: list[dict[str, Any]] = []
+        self.cards: list[dict[str, Any]] = []
+        self.budgets: list[dict[str, Any]] = []
+        self.goals: list[dict[str, Any]] = []
+        self.notifications: list[dict[str, Any]] = []
+        self.messages: list[dict[str, Any]] = []
+        self.bills: list[dict[str, Any]] = []
+        self.subscriptions: list[dict[str, Any]] = []
+        self.merchants: list[dict[str, Any]] = []
+        self.logs: list[dict[str, Any]] = []  # Add logs store
+
         # Additional stores for compatibility
-        self.credit_scores: List[Dict[str, Any]] = []
-        self.social_connections: List[Dict[str, Any]] = []
-        self.p2p_transactions: List[Dict[str, Any]] = []
-        self.investment_accounts: List[Dict[str, Any]] = []
-        self.holdings: List[Dict[str, Any]] = []
-        self.support_tickets: List[Dict[str, Any]] = []
-        self.faq_items: List[Dict[str, Any]] = []
-        self.analytics_events: List[Dict[str, Any]] = []
-        
+        self.credit_scores: list[dict[str, Any]] = []
+        self.social_connections: list[dict[str, Any]] = []
+        self.p2p_transactions: list[dict[str, Any]] = []
+        self.investment_accounts: list[dict[str, Any]] = []
+        self.holdings: list[dict[str, Any]] = []
+        self.support_tickets: list[dict[str, Any]] = []
+        self.faq_items: list[dict[str, Any]] = []
+        self.analytics_events: list[dict[str, Any]] = []
+
         # Additional stores needed by routes
-        self.goal_contributions: List[Dict[str, Any]] = []
-        self.contacts: List[Dict[str, Any]] = []
-        self.conversations: List[Dict[str, Any]] = []
-        self.conversation_participants: List[Dict[str, Any]] = []
-        self.message_read_receipts: List[Dict[str, Any]] = []
-        self.recurring_rules: List[Dict[str, Any]] = []
-        self.notes: List[Dict[str, Any]] = []
-        self.security_events: List[Dict[str, Any]] = []
-        self.payment_methods: List[Dict[str, Any]] = []
-        self.alerts: List[Dict[str, Any]] = []
-        self.bank_links: List[Dict[str, Any]] = []
-        self.plaid_accounts: List[Dict[str, Any]] = []
-        self.transactions_sync_status: List[Dict[str, Any]] = []
-        self.linked_accounts: List[Dict[str, Any]] = []
-        self.credit_simulations: List[Dict[str, Any]] = []
-        self.two_factor_auth: List[Dict[str, Any]] = []
-        self.user_devices: List[Dict[str, Any]] = []
-        self.security_audit_logs: List[Dict[str, Any]] = []
-        self.spending_limits: List[Dict[str, Any]] = []
-        self.round_up_configs: List[Dict[str, Any]] = []
-        self.round_up_transactions: List[Dict[str, Any]] = []
-        self.savings_rules: List[Dict[str, Any]] = []
-        self.savings_challenges: List[Dict[str, Any]] = []
-        self.challenge_participants: List[Dict[str, Any]] = []
-        self.invoices: List[Dict[str, Any]] = []
-        self.expense_reports: List[Dict[str, Any]] = []
-        self.receipts: List[Dict[str, Any]] = []
-        self.cancellation_reminders: List[Dict[str, Any]] = []
-        self.direct_messages: List[Dict[str, Any]] = []
-        self.message_attachments: List[Dict[str, Any]] = []
-        self.message_folders: List[Dict[str, Any]] = []
-        self.blocked_users: List[Dict[str, Any]] = []
-        self.message_settings: List[Dict[str, Any]] = []
-        
+        self.goal_contributions: list[dict[str, Any]] = []
+        self.contacts: list[dict[str, Any]] = []
+        self.conversations: list[dict[str, Any]] = []
+        self.conversation_participants: list[dict[str, Any]] = []
+        self.message_read_receipts: list[dict[str, Any]] = []
+        self.recurring_rules: list[dict[str, Any]] = []
+        self.notes: list[dict[str, Any]] = []
+        self.security_events: list[dict[str, Any]] = []
+        self.payment_methods: list[dict[str, Any]] = []
+        self.alerts: list[dict[str, Any]] = []
+        self.bank_links: list[dict[str, Any]] = []
+        self.plaid_accounts: list[dict[str, Any]] = []
+        self.transactions_sync_status: list[dict[str, Any]] = []
+        self.linked_accounts: list[dict[str, Any]] = []
+        self.credit_simulations: list[dict[str, Any]] = []
+        self.two_factor_auth: list[dict[str, Any]] = []
+        self.user_devices: list[dict[str, Any]] = []
+        self.security_audit_logs: list[dict[str, Any]] = []
+        self.spending_limits: list[dict[str, Any]] = []
+        self.round_up_configs: list[dict[str, Any]] = []
+        self.round_up_transactions: list[dict[str, Any]] = []
+        self.savings_rules: list[dict[str, Any]] = []
+        self.savings_challenges: list[dict[str, Any]] = []
+        self.challenge_participants: list[dict[str, Any]] = []
+        self.invoices: list[dict[str, Any]] = []
+        self.expense_reports: list[dict[str, Any]] = []
+        self.receipts: list[dict[str, Any]] = []
+        self.cancellation_reminders: list[dict[str, Any]] = []
+        self.direct_messages: list[dict[str, Any]] = []
+        self.message_attachments: list[dict[str, Any]] = []
+        self.message_folders: list[dict[str, Any]] = []
+        self.blocked_users: list[dict[str, Any]] = []
+        self.message_settings: list[dict[str, Any]] = []
+
         # Crypto-related stores
-        self.crypto_wallets: List[Dict[str, Any]] = []
-        self.crypto_assets: List[Dict[str, Any]] = []
-        self.nft_assets: List[Dict[str, Any]] = []
-        self.crypto_transactions: List[Dict[str, Any]] = []
-        self.defi_positions: List[Dict[str, Any]] = []
-        
+        self.crypto_wallets: list[dict[str, Any]] = []
+        self.crypto_assets: list[dict[str, Any]] = []
+        self.nft_assets: list[dict[str, Any]] = []
+        self.crypto_transactions: list[dict[str, Any]] = []
+        self.defi_positions: list[dict[str, Any]] = []
+
         # Credit-related stores
-        self.credit_alerts: List[Dict[str, Any]] = []
-        self.credit_disputes: List[Dict[str, Any]] = []
-        self.credit_builder_accounts: List[Dict[str, Any]] = []
-        
+        self.credit_alerts: list[dict[str, Any]] = []
+        self.credit_disputes: list[dict[str, Any]] = []
+        self.credit_builder_accounts: list[dict[str, Any]] = []
+
         # Unified system stores
-        self.unified_balances: List[Dict[str, Any]] = []
-        self.asset_bridges: List[Dict[str, Any]] = []
-        self.conversion_rates: List[Dict[str, Any]] = []
-        self.collateral_positions: List[Dict[str, Any]] = []
-        self.unified_transactions: List[Dict[str, Any]] = []
-        
+        self.unified_balances: list[dict[str, Any]] = []
+        self.asset_bridges: list[dict[str, Any]] = []
+        self.conversion_rates: list[dict[str, Any]] = []
+        self.collateral_positions: list[dict[str, Any]] = []
+        self.unified_transactions: list[dict[str, Any]] = []
+
         # Loan-related stores
-        self.loans: List[Dict[str, Any]] = []
-        self.loan_applications: List[Dict[str, Any]] = []
-        self.loan_offers: List[Dict[str, Any]] = []
-        self.loan_payments: List[Dict[str, Any]] = []
-        self.loan_payment_schedules: List[Dict[str, Any]] = []
-        
+        self.loans: list[dict[str, Any]] = []
+        self.loan_applications: list[dict[str, Any]] = []
+        self.loan_offers: list[dict[str, Any]] = []
+        self.loan_payments: list[dict[str, Any]] = []
+        self.loan_payment_schedules: list[dict[str, Any]] = []
+
         # Insurance-related stores
-        self.insurance_policies: List[Dict[str, Any]] = []
-        self.insurance_claims: List[Dict[str, Any]] = []
-        self.insurance_providers: List[Dict[str, Any]] = []
-        self.insurance_quotes: List[Dict[str, Any]] = []
-        self.insurance_beneficiaries: List[Dict[str, Any]] = []
-        
+        self.insurance_policies: list[dict[str, Any]] = []
+        self.insurance_claims: list[dict[str, Any]] = []
+        self.insurance_providers: list[dict[str, Any]] = []
+        self.insurance_quotes: list[dict[str, Any]] = []
+        self.insurance_beneficiaries: list[dict[str, Any]] = []
+
         # Investment-related stores
-        self.investment_accounts: List[Dict[str, Any]] = []
-        self.investment_portfolios: List[Dict[str, Any]] = []
-        self.investment_positions: List[Dict[str, Any]] = []
-        self.investment_trades: List[Dict[str, Any]] = []
-        self.investment_watchlists: List[Dict[str, Any]] = []
-        self.etf_assets: List[Dict[str, Any]] = []
-        self.stock_assets: List[Dict[str, Any]] = []
-        self.market_data: List[Dict[str, Any]] = []
-        
+        self.investment_accounts: list[dict[str, Any]] = []
+        self.investment_portfolios: list[dict[str, Any]] = []
+        self.investment_positions: list[dict[str, Any]] = []
+        self.investment_trades: list[dict[str, Any]] = []
+        self.investment_watchlists: list[dict[str, Any]] = []
+        self.etf_assets: list[dict[str, Any]] = []
+        self.stock_assets: list[dict[str, Any]] = []
+        self.market_data: list[dict[str, Any]] = []
+
         # Credit card application stores
-        self.card_applications: List[Dict[str, Any]] = []
-        self.card_offers: List[Dict[str, Any]] = []
-        self.card_benefits: List[Dict[str, Any]] = []
-        self.card_recommendations: List[Dict[str, Any]] = []
-        
+        self.card_applications: list[dict[str, Any]] = []
+        self.card_offers: list[dict[str, Any]] = []
+        self.card_benefits: list[dict[str, Any]] = []
+        self.card_recommendations: list[dict[str, Any]] = []
+
         # Currency converter stores (Airtm-like)
-        self.supported_currencies: List[Dict[str, Any]] = []
-        self.exchange_rates: Dict[str, float] = {}
-        self.conversion_quotes: List[Dict[str, Any]] = []
-        self.conversion_orders: List[Dict[str, Any]] = []
-        self.peer_offers: List[Dict[str, Any]] = []
-        self.p2p_trades: List[Dict[str, Any]] = []
-        self.currency_balances: List[Dict[str, Any]] = []
-        
+        self.supported_currencies: list[dict[str, Any]] = []
+        self.exchange_rates: dict[str, float] = {}
+        self.conversion_quotes: list[dict[str, Any]] = []
+        self.conversion_orders: list[dict[str, Any]] = []
+        self.peer_offers: list[dict[str, Any]] = []
+        self.p2p_trades: list[dict[str, Any]] = []
+        self.currency_balances: list[dict[str, Any]] = []
+
         # Create simple repositories
         self.user_repository = BaseRepository(self.users)
-        self.account_repository = BaseRepository(self.accounts) 
+        self.account_repository = BaseRepository(self.accounts)
         self.transaction_repository = BaseRepository(self.transactions)
-        
+
         # Initialize auth service
         self.auth_service = AuthService(self)
-        
+
         # Initialize auth handler for password hashing
         self.auth_handler = AuthHandler()
-        
+
         # Generate initial data
         self.reset()
-        
+
     def reset(self, seed: int = 42, demo_mode: bool = True):
         """Reset all data and generate mock data.
         
@@ -159,13 +161,13 @@ class DataManager:
         for attr in dir(self):
             if isinstance(getattr(self, attr), list):
                 getattr(self, attr).clear()
-                
+
         # Generate data based on mode
         self._generate_test_users()
         self._generate_categories(demo_mode)
         self._generate_merchants(demo_mode)
         self._generate_accounts(demo_mode)
-        
+
         if demo_mode:
             # Generate rich demo data
             self._generate_transactions()
@@ -186,7 +188,7 @@ class DataManager:
             self._generate_investment_data()
             self._generate_card_application_data()
             self._generate_currency_data()
-        
+
     def _generate_test_users(self):
         """Generate test users."""
         test_users = [
@@ -205,16 +207,16 @@ class DataManager:
             # Admin user
             {'username': 'admin', 'email': 'admin@example.com', 'full_name': 'Admin User', 'is_admin': True}
         ]
-        
+
         for idx, user_data in enumerate(test_users, 1):
             # Split full_name into first and last
             name_parts = user_data['full_name'].split(None, 1)
             first_name = name_parts[0] if name_parts else ""
             last_name = name_parts[1] if len(name_parts) > 1 else ""
-            
+
             # Use proper password hashing
             password = 'admin123' if user_data['username'] == 'admin' else 'password123'
-            
+
             user = {
                 'id': idx,  # Use integer ID
                 'username': user_data['username'],
@@ -233,7 +235,7 @@ class DataManager:
                 'last_login': None
             }
             self.users.append(user)
-            
+
     def _generate_categories(self, demo_mode: bool = True):
         """Generate transaction categories."""
         if demo_mode:
@@ -273,12 +275,12 @@ class DataManager:
                 {'id': 5, 'name': 'Investment', 'is_income': True, 'is_system': True}
             ]
         self.categories.extend(categories)
-    
+
     def _generate_merchants(self, demo_mode: bool = True):
         """Generate merchants for transactions."""
         if not demo_mode:
             return
-            
+
         merchant_names = [
             "Walmart", "Amazon", "Starbucks", "Target", "Shell Gas",
             "Netflix", "Spotify", "Uber", "McDonald's", "CVS Pharmacy",
@@ -286,10 +288,10 @@ class DataManager:
             "Airbnb", "Apple Store", "Google Play", "Steam", "Nike",
             "Costco", "Trader Joe's"
         ]
-        
+
         import random
         expense_categories = [c for c in self.categories if not c.get('is_income', False)]
-        
+
         for name in merchant_names:
             merchant = {
                 'id': len(self.merchants) + 1,
@@ -298,16 +300,17 @@ class DataManager:
                 'created_at': datetime.utcnow()
             }
             self.merchants.append(merchant)
-    
+
     def _generate_accounts(self, demo_mode: bool = True):
         """Generate test accounts for users."""
         import random
+
         from app.utils.money import format_money
-        
+
         # Skip admin user
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
-        
+
+
         account_id_counter = 1
         for user in regular_users:
             # Checking account (everyone has one)
@@ -323,7 +326,7 @@ class DataManager:
             }
             self.accounts.append(checking)
             account_id_counter += 1
-            
+
             # Savings account (everyone has one)
             savings = {
                 'id': account_id_counter,
@@ -338,7 +341,7 @@ class DataManager:
             }
             self.accounts.append(savings)
             account_id_counter += 1
-            
+
             # Credit card (everyone has one in demo mode)
             if demo_mode:
                 credit_card = {
@@ -354,68 +357,68 @@ class DataManager:
                 }
                 self.accounts.append(credit_card)
                 account_id_counter += 1
-        
-    
+
+
     def _generate_transactions(self):
         """Generate transaction history for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         for user in regular_users:
             user_accounts = [a for a in self.accounts if a['user_id'] == user['id']]
             if not user_accounts:
                 continue
-                
+
             # Get user's accounts by type
             checking = next((a for a in user_accounts if a['account_type'] == 'checking'), None)
             savings = next((a for a in user_accounts if a['account_type'] == 'savings'), None)
             credit_card = next((a for a in user_accounts if a['account_type'] == 'credit_card'), None)
-            
+
             if not checking:
                 continue
-                
+
             # Generate transactions for current year and previous year to support yearly views
             # This ensures yearly budgets have full data
             # Create a map to track spending by category and month for consistent patterns
             monthly_spending = {}
-            
+
             # Calculate days to cover: from Jan 1 of last year to today
             today = datetime.utcnow()
             start_of_last_year = datetime(today.year - 1, 1, 1)
             days_to_generate = (today - start_of_last_year).days
-            
+
             for days_ago in range(days_to_generate):
                 date = datetime.utcnow() - timedelta(days=days_ago)
                 month_key = f"{date.year}-{date.month:02d}"
-                
+
                 if month_key not in monthly_spending:
                     monthly_spending[month_key] = {}
-                
+
                 # Different transaction patterns for different days
                 # Weekends have fewer transactions
                 is_weekend = date.weekday() >= 5
-                
+
                 if is_weekend:
                     base_transactions = 2
                 else:
                     base_transactions = 3
-                    
+
                 variation = random.randint(-1, 1)  # -1, 0, or 1
                 num_transactions = max(1, base_transactions + variation)
-                
+
                 # For dates more than a year ago, reduce frequency to save memory
                 if days_ago > 365:
                     # Only generate transactions for every 3rd day for very old data
                     if days_ago % 3 != 0:
                         continue
                     num_transactions = random.randint(1, 2)
-                    
+
                 for _ in range(num_transactions):
                     # 80% expenses, 20% income
                     is_income = random.random() < 0.2
-                    
+
                     if is_income:
                         # Income transaction
                         amount = random.uniform(50, 3000)
@@ -428,7 +431,7 @@ class DataManager:
                         # Expense transaction - ensure balanced category distribution
                         # Weight categories to ensure monthly spending patterns
                         expense_categories = [c for c in self.categories if not c.get('is_income', False)]
-                        
+
                         # Higher weight for essential categories
                         category_weights = {
                             'Groceries': 4,
@@ -439,24 +442,24 @@ class DataManager:
                             'Entertainment': 2,
                             'Healthcare': 1
                         }
-                        
+
                         # Select category based on weights
                         weighted_categories = []
                         for cat in expense_categories:
                             weight = category_weights.get(cat['name'], 1)
                             weighted_categories.extend([cat] * weight)
-                        
+
                         category = random.choice(weighted_categories)
                         merchant = random.choice(self.merchants) if self.merchants else None
-                        
+
                         # 60% chance to use credit card if available, otherwise checking
                         if credit_card and random.random() < 0.6:
                             account = credit_card
                         else:
                             account = checking
-                            
+
                         transaction_type = 'debit'
-                        
+
                         # Vary amounts based on category - with consistent monthly patterns
                         # These amounts are per transaction, designed so monthly totals are predictable
                         if category['name'] == 'Groceries':
@@ -482,7 +485,7 @@ class DataManager:
                             amount = random.uniform(30, 70)
                         else:
                             amount = random.uniform(10, 100)
-                            
+
                         # Create more descriptive transaction names
                         if merchant:
                             time_str = date.strftime('%I:%M %p')
@@ -490,7 +493,7 @@ class DataManager:
                         else:
                             description = f"{category['name']} Purchase"
                         merchant_id = merchant['id'] if merchant else None
-                    
+
                     # Generate notes (15% chance)
                     notes = None
                     if random.random() < 0.15:
@@ -507,7 +510,7 @@ class DataManager:
                             "Warranty included"
                         ]
                         notes = random.choice(note_templates)
-                    
+
                     # Generate tags (20% chance)
                     tags = []
                     if random.random() < 0.20:
@@ -518,13 +521,13 @@ class DataManager:
                         ]
                         num_tags = random.randint(1, 3)
                         tags = random.sample(available_tags, num_tags)
-                    
+
                     # Generate attachments (10% chance, higher for business expenses)
                     attachments = []
                     attachment_chance = 0.25 if "business" in tags else 0.10
                     if random.random() < attachment_chance:
                         attachment_types = [
-                            ("receipt", "pdf"), ("invoice", "pdf"), 
+                            ("receipt", "pdf"), ("invoice", "pdf"),
                             ("statement", "pdf"), ("contract", "pdf")
                         ]
                         attachment_type, ext = random.choice(attachment_types)
@@ -536,7 +539,7 @@ class DataManager:
                             'file_size': random.randint(50000, 500000),  # 50KB to 500KB
                             'uploaded_at': date
                         })
-                    
+
                     transaction = {
                         'id': len(self.transactions) + 1,
                         'account_id': account['id'],
@@ -554,7 +557,7 @@ class DataManager:
                         'reference_number': f"TXN{len(self.transactions) + 1:08d}"
                     }
                     self.transactions.append(transaction)
-            
+
             # Add some recurring monthly transactions
             recurring_transactions = [
                 {'name': 'Netflix Subscription', 'amount': 15.99, 'category': 'Entertainment', 'day': 5},
@@ -563,12 +566,12 @@ class DataManager:
                 {'name': 'Internet Service', 'amount': 69.99, 'category': 'Utilities', 'day': 20},
                 {'name': 'Phone Bill', 'amount': 45.00, 'category': 'Utilities', 'day': 25},
             ]
-            
+
             # Add recurring transactions for the last 3 months
             for month_offset in range(3):
                 current_date = datetime.utcnow() - timedelta(days=month_offset * 30)
                 month_start = current_date.replace(day=1)
-                
+
                 for recurring in recurring_transactions:
                     if random.random() < 0.9:  # 90% chance to have the recurring transaction
                         transaction_date = month_start.replace(day=recurring['day'])
@@ -592,24 +595,24 @@ class DataManager:
                                     'reference_number': f"TXN{len(self.transactions) + 1:08d}"
                                 }
                                 self.transactions.append(transaction)
-        
+
         # Sort all transactions by date (newest first)
         self.transactions.sort(key=lambda x: x['transaction_date'], reverse=True)
-        
-    
+
+
     def _generate_budgets(self):
         """Generate budgets for demo mode."""
         import random
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
         expense_categories = [c for c in self.categories if not c.get('is_income', False)]
-        
+
         budget_id_counter = 1
         for user in regular_users:
             # Create 3-5 budgets per user
             num_budgets = random.randint(3, 5)
             selected_categories = random.sample(expense_categories, min(num_budgets, len(expense_categories)))
-            
+
             for i, category in enumerate(selected_categories):
                 # Vary budget periods - 60% monthly, 30% yearly, 10% weekly
                 period_choice = random.random()
@@ -655,7 +658,7 @@ class DataManager:
                     }
                     base_amount = amount_map.get(category['name'], 100)
                     amount = base_amount * random.uniform(0.8, 1.2)
-                
+
                 # Set appropriate start dates based on period
                 if period == 'weekly':
                     # Start on Monday of current week
@@ -667,7 +670,7 @@ class DataManager:
                 else:  # yearly
                     # Start on Jan 1st of current year
                     start_date = datetime.utcnow().replace(month=1, day=1).date()
-                
+
                 budget = {
                     'id': budget_id_counter,
                     'user_id': user['id'],
@@ -681,14 +684,14 @@ class DataManager:
                 }
                 self.budgets.append(budget)
                 budget_id_counter += 1
-    
+
     def _generate_goals(self):
         """Generate savings goals for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         goal_templates = [
             ("Vacation Fund", 5000),
             ("Emergency Fund", 10000),
@@ -699,24 +702,24 @@ class DataManager:
             ("Education Fund", 15000),
             ("Retirement Boost", 30000)
         ]
-        
+
         for user in regular_users:
             # Get user's savings account
             savings_account = next((a for a in self.accounts if a['user_id'] == user['id'] and a['account_type'] == 'savings'), None)
             if not savings_account:
                 continue
-                
+
             # Create 1-3 goals per user
             num_goals = random.randint(1, 3)
             selected_goals = random.sample(goal_templates, num_goals)
-            
+
             for idx, (goal_name, target_amount) in enumerate(selected_goals):
                 # Use auto-incrementing integer ID
                 goal_id = len(self.goals) + idx + 1
-                
+
                 # Set up automatic allocation for some goals (60% chance)
                 has_auto_allocation = random.random() < 0.6
-                
+
                 # Vary allocation percentage based on goal priority
                 allocation_percentage = 0.0
                 allocation_priority = 1
@@ -730,9 +733,9 @@ class DataManager:
                     else:
                         allocation_percentage = random.uniform(5, 15)  # Lower priority
                         allocation_priority = 1
-                
+
                 from app.utils.money import format_money
-                
+
                 goal = {
                     'id': goal_id,
                     'user_id': user['id'],
@@ -752,14 +755,14 @@ class DataManager:
                     'priority': 'medium'
                 }
                 self.goals.append(goal)
-    
+
     def _generate_notifications(self):
         """Generate notifications for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         notification_templates = [
             ('budget_warning', 'Budget Alert', "You've used 85% of your {category} budget"),
             ('goal_milestone', 'Goal Progress', "You're 50% closer to your {goal} goal!"),
@@ -768,14 +771,14 @@ class DataManager:
             ('new_message', 'New Message', "You have a new message from {sender}"),
             ('contact_request', 'Contact Request', "New contact request from {user}")
         ]
-        
+
         for user in regular_users:
             # Create 3-8 notifications per user
             num_notifications = random.randint(3, 8)
-            
+
             for _ in range(num_notifications):
                 notif_type, title, message_template = random.choice(notification_templates)
-                
+
                 # Fill in template variables
                 message = message_template.format(
                     category="Groceries",
@@ -786,7 +789,7 @@ class DataManager:
                     sender="Jane Smith",
                     user="Mike Wilson"
                 )
-                
+
                 notification = {
                     'id': len(self.notifications) + 1,
                     'user_id': user['id'],
@@ -797,26 +800,26 @@ class DataManager:
                     'created_at': (datetime.utcnow() - timedelta(hours=random.randint(1, 72)))
                 }
                 self.notifications.append(notification)
-    
+
     def _generate_social_connections(self):
         """Generate social connections and messages for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
         # Only connect the main demo users (first 5)
         main_users = regular_users[:5]
-        
+
         # Create contacts between main users only
         for i, user in enumerate(main_users):
             other_users = [u for j, u in enumerate(main_users) if j != i]
             num_contacts = random.randint(1, min(3, len(other_users)))
             contacts = random.sample(other_users, num_contacts)
-            
+
             for contact_user in contacts:
                 # Check if contact already exists in reverse
                 existing = next((c for c in self.contacts if c['user_id'] == contact_user['id'] and c['contact_id'] == user['id']), None)
-                
+
                 if not existing:
                     contact = {
                         'id': len(self.contacts) + 1,
@@ -827,7 +830,7 @@ class DataManager:
                         'created_at': datetime.utcnow()
                     }
                     self.contacts.append(contact)
-                    
+
                     # Create conversation
                     conversation = {
                         'id': len(self.conversations) + 1,
@@ -836,7 +839,7 @@ class DataManager:
                         'created_at': datetime.utcnow()
                     }
                     self.conversations.append(conversation)
-                    
+
                     # Add participants
                     for participant_user in [user, contact_user]:
                         participant = {
@@ -847,7 +850,7 @@ class DataManager:
                             'joined_at': datetime.utcnow()
                         }
                         self.conversation_participants.append(participant)
-                    
+
                     # Create messages
                     message_templates = [
                         "Hey! Want to split the dinner bill from last night?",
@@ -856,7 +859,7 @@ class DataManager:
                         "Thanks for covering lunch!",
                         "Here's my share for the groceries"
                     ]
-                    
+
                     num_messages = random.randint(2, 8)
                     for j in range(num_messages):
                         sender = random.choice([user, contact_user])
@@ -870,15 +873,15 @@ class DataManager:
                             'created_at': (datetime.utcnow() - timedelta(hours=random.randint(1, 168)))
                         }
                         self.messages.append(message)
-    
+
     def _generate_payment_methods(self):
         """Generate payment methods for demo mode."""
         import random
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         card_brands = ['Visa', 'Mastercard', 'American Express', 'Discover']
-        
+
         for user in regular_users:
             # Everyone has at least one payment method
             payment_method = {
@@ -895,7 +898,7 @@ class DataManager:
                 'created_at': datetime.utcnow()
             }
             self.payment_methods.append(payment_method)
-            
+
             # 30% chance of having a second payment method
             if random.random() < 0.3:
                 payment_method2 = {
@@ -912,19 +915,19 @@ class DataManager:
                     'created_at': datetime.utcnow()
                 }
                 self.payment_methods.append(payment_method2)
-    
+
     def _generate_direct_messages(self):
         """Generate direct message conversations for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
         # Only create messages between main demo users (first 5)
         main_users = regular_users[:5]
-        
+
         # Message ID counter to ensure unique IDs
         message_id_counter = 1
-        
+
         # Message templates for realistic conversations
         message_templates = {
             'money_request': [
@@ -961,39 +964,38 @@ class DataManager:
                 "I'll pay you back tomorrow"
             ]
         }
-        
+
         # Create direct message conversations between connected users
         for contact in self.contacts:
             if contact['status'] != 'accepted':
                 continue
-                
+
             user1 = next((u for u in self.users if u['id'] == contact['user_id']), None)
             user2 = next((u for u in self.users if u['id'] == contact['contact_id']), None)
-            
+
             if not user1 or not user2:
                 continue
-                
+
             # Skip if not main users
             if user1 not in main_users or user2 not in main_users:
                 continue
-            
+
             # Generate 3-10 messages per conversation
             num_messages = random.randint(3, 10)
             base_time = datetime.utcnow() - timedelta(days=random.randint(1, 30))
-            
+
             for i in range(num_messages):
                 # Alternate senders for natural conversation flow
                 if i == 0:
                     sender = user1
                     recipient = user2
+                # 70% chance to alternate, 30% chance same sender sends multiple
+                elif random.random() < 0.7:
+                    sender = user2 if sender == user1 else user1
+                    recipient = user1 if sender == user2 else user2
                 else:
-                    # 70% chance to alternate, 30% chance same sender sends multiple
-                    if random.random() < 0.7:
-                        sender = user2 if sender == user1 else user1
-                        recipient = user1 if sender == user2 else user2
-                    else:
-                        recipient = user1 if sender == user2 else user2
-                
+                    recipient = user1 if sender == user2 else user2
+
                 # Choose message type
                 if i == 0 and random.random() < 0.5:
                     # Start with money request
@@ -1006,9 +1008,9 @@ class DataManager:
                 else:
                     message_type = random.choice(['general', 'transaction'])
                     has_transaction = random.random() < 0.3 and message_type == 'transaction'
-                
+
                 message_text = random.choice(message_templates[message_type])
-                
+
                 # Create the direct message
                 message = {
                     'id': message_id_counter,
@@ -1029,9 +1031,9 @@ class DataManager:
                     'updated_at': None
                 }
                 message_id_counter += 1
-                
+
                 self.direct_messages.append(message)
-                
+
                 # Add transaction details if it's a money-related message
                 if has_transaction and random.random() < 0.7:
                     amount = random.choice([15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 85, 100])
@@ -1045,25 +1047,26 @@ class DataManager:
                     }
                     # Store this in message for frontend to use
                     message['transaction_details'] = transaction_attachment
-                
+
                 # Increment time for next message
                 base_time = base_time + timedelta(hours=random.randint(1, 24))
-    
+
     def _generate_cards(self):
         """Generate both physical and virtual cards for demo mode."""
         import random
+
         from ..utils.money import format_money
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
         card_id = 1
-        
+
         # Card issuers for physical cards
         issuers = ['Chase', 'Bank of America', 'Capital One', 'Wells Fargo', 'Citi']
         card_names = ['Platinum', 'Gold', 'Silver', 'Rewards', 'Cash Back', 'Travel']
-        
+
         for user in regular_users:
             user_accounts = [a for a in self.accounts if a['user_id'] == user['id']]
-            
+
             # Generate physical cards for each account
             for account in user_accounts:
                 # Debit card for checking/savings accounts
@@ -1088,7 +1091,7 @@ class DataManager:
                     }
                     self.cards.append(card)
                     card_id += 1
-                
+
                 # Credit card for credit card accounts
                 elif account['account_type'] == 'credit_card':
                     credit_limit = account.get('credit_limit', 5000)
@@ -1120,7 +1123,7 @@ class DataManager:
                     }
                     self.cards.append(card)
                     card_id += 1
-            
+
             # Generate virtual cards (60% of users have at least one)
             if random.random() < 0.6:
                 # Link virtual cards to checking accounts
@@ -1150,14 +1153,14 @@ class DataManager:
                         }
                         self.cards.append(card)
                         card_id += 1
-    
+
     def _generate_subscriptions(self):
         """Generate subscriptions for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         subscription_data = [
             ("Netflix", 15.99, "entertainment", "monthly"),
             ("Spotify", 9.99, "entertainment", "monthly"),
@@ -1168,16 +1171,16 @@ class DataManager:
             ("Meal Kit Service", 79.99, "food_delivery", "weekly"),
             ("Software License", 299.00, "productivity", "yearly")
         ]
-        
+
         for user in regular_users:
             # Each user has 2-5 subscriptions
             num_subs = random.randint(2, 5)
             selected_subs = random.sample(subscription_data, num_subs)
-            
+
             for name, amount, category, cycle in selected_subs:
                 # Find a payment method for this user
                 payment_method = next((pm for pm in self.payment_methods if pm['user_id'] == user['id']), None)
-                
+
                 subscription = {
                     'id': len(self.subscriptions) + 1,
                     'user_id': user['id'],
@@ -1197,9 +1200,9 @@ class DataManager:
         """Generate invoices for demo mode."""
         import random
         from datetime import timedelta
-        
+
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         # Invoice templates with realistic client names and services
         invoice_templates = [
             {
@@ -1243,23 +1246,23 @@ class DataManager:
                 'hours_range': (30, 80)
             }
         ]
-        
+
         invoice_id_counter = 1
-        
+
         for user in regular_users:
             # Get user's business account (create one if doesn't exist)
             business_account = next((a for a in self.accounts if a['user_id'] == user['id'] and a.get('account_type') == 'business'), None)
-            
+
             # Generate 3-8 invoices per user
             num_invoices = random.randint(3, 8)
-            
+
             for i in range(num_invoices):
                 template = random.choice(invoice_templates)
-                
+
                 # Generate invoice date (within last 6 months)
                 days_ago = random.randint(0, 180)
                 issue_date = datetime.utcnow() - timedelta(days=days_ago)
-                
+
                 # Payment terms
                 payment_terms = random.choice(['due_on_receipt', 'net_15', 'net_30', 'net_45', 'net_60'])
                 days_due = {
@@ -1269,12 +1272,12 @@ class DataManager:
                     'net_45': 45,
                     'net_60': 60
                 }[payment_terms]
-                
+
                 due_date = issue_date + timedelta(days=days_due)
-                
+
                 # Generate invoice number
                 invoice_number = f"INV-{issue_date.strftime('%Y%m')}-{invoice_id_counter:04d}"
-                
+
                 # Determine status based on dates
                 now = datetime.utcnow()
                 if due_date > now:
@@ -1288,40 +1291,39 @@ class DataManager:
                     else:
                         status = 'draft'
                         amount_paid = 0.0
+                # Past due
+                elif random.random() < 0.6:
+                    status = 'paid'
+                    amount_paid = 0.0  # Will be set to full amount later
+                elif random.random() < 0.8:
+                    status = 'overdue'
+                    amount_paid = 0.0
                 else:
-                    # Past due
-                    if random.random() < 0.6:
-                        status = 'paid'
-                        amount_paid = 0.0  # Will be set to full amount later
-                    elif random.random() < 0.8:
-                        status = 'overdue'
-                        amount_paid = 0.0
-                    else:
-                        status = 'cancelled'
-                        amount_paid = 0.0
-                
+                    status = 'cancelled'
+                    amount_paid = 0.0
+
                 # Generate line items
                 num_items = random.randint(1, len(template['services']))
                 selected_services = random.sample(template['services'], num_items)
-                
+
                 line_items = []
                 total_amount = 0.0
-                
+
                 for service in selected_services:
                     hours = random.uniform(*template['hours_range'])
                     quantity = round(hours, 2)
                     unit_price = template['hourly_rate']
-                    
+
                     # Apply random tax and discount
                     tax_rate = random.choice([0, 5, 8.25, 10]) if random.random() < 0.5 else 0
                     discount_percentage = random.choice([0, 5, 10, 15]) if random.random() < 0.3 else 0
-                    
+
                     subtotal = quantity * unit_price
                     discount_amount = subtotal * (discount_percentage / 100)
                     subtotal_after_discount = subtotal - discount_amount
                     tax_amount = subtotal_after_discount * (tax_rate / 100)
                     item_total = subtotal_after_discount + tax_amount
-                    
+
                     line_items.append({
                         'description': f"{service} - Professional Services",
                         'quantity': quantity,
@@ -1333,17 +1335,17 @@ class DataManager:
                         'tax_amount': round(tax_amount, 2),
                         'total': round(item_total, 2)
                     })
-                    
+
                     total_amount += item_total
-                
+
                 # Apply invoice-level tax and discount
                 invoice_tax_rate = random.choice([0, 5, 8.25]) if random.random() < 0.3 else 0
                 invoice_discount_percentage = random.choice([0, 5, 10]) if random.random() < 0.2 else 0
-                
+
                 # If paid, set amount_paid to total
                 if status == 'paid':
                     amount_paid = round(total_amount, 2)
-                
+
                 # Generate notes
                 notes_options = [
                     "Thank you for your business!",
@@ -1352,7 +1354,7 @@ class DataManager:
                     "Wire transfer preferred for amounts over $10,000.",
                     "Contact us for any questions about this invoice."
                 ]
-                
+
                 invoice = {
                     'id': invoice_id_counter,
                     'user_id': user['id'],
@@ -1377,56 +1379,56 @@ class DataManager:
                     'created_at': issue_date,
                     'updated_at': issue_date if status == 'draft' else issue_date + timedelta(days=random.randint(1, 5))
                 }
-                
+
                 self.invoices.append(invoice)
                 invoice_id_counter += 1
-    
+
     def _generate_crypto_data(self):
         """Generate crypto data for demo users."""
         from .crypto_manager import CryptoManager
-        
+
         crypto_manager = CryptoManager(self)
-        
+
         # Generate crypto data for main demo users
         demo_users = ['john_doe', 'jane_smith', 'mike_wilson', 'sarah_jones', 'david_brown']
-        
+
         for username in demo_users:
             user = next((u for u in self.users if u['username'] == username), None)
             if user:
                 # Generate crypto data with different seeds for variety
                 crypto_manager.generate_crypto_data(user['id'], seed=42 + user['id'])
-    
+
     def _generate_credit_data(self):
         """Generate credit data for demo users."""
         from .credit_manager import CreditManager
-        
+
         credit_manager = CreditManager(self)
-        
+
         # Generate credit data for all non-admin users
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
-        
+
         for user in regular_users:
             # Generate credit data with different seeds for variety
             credit_manager.generate_credit_data(user['id'], seed=42 + user['id'])
-    
+
     def _generate_unified_data(self):
         """Generate unified financial data and cross-asset operations."""
         from .unified_manager import UnifiedManager
-        
+
         unified_manager = UnifiedManager(self)
-        
+
         # Generate conversion rates
         unified_manager.generate_conversion_rates()
-        
+
         # Create unified balances for main demo users
         demo_users = ['john_doe', 'jane_smith', 'mike_wilson', 'sarah_jones', 'david_brown']
-        
+
         for username in demo_users:
             user = next((u for u in self.users if u['username'] == username), None)
             if user:
                 # Calculate unified balance (this aggregates all assets)
                 unified_manager.calculate_unified_balance(user['id'])
-                
+
                 # Create some asset bridges (conversions)
                 if random.random() > 0.6:
                     # Fiat to crypto conversion
@@ -1441,7 +1443,7 @@ class DataManager:
                             to_asset_class=AssetClass.CRYPTO,
                             to_asset_type=random.choice(['ETH', 'BTC', 'USDC'])
                         )
-                
+
                 # Create collateral positions for users with crypto
                 wallets = [w for w in self.crypto_wallets if w['user_id'] == user['id']]
                 if wallets and random.random() > 0.7:
@@ -1455,7 +1457,7 @@ class DataManager:
                             'value_usd': random.uniform(5000, 20000)
                         }
                     ]
-                    
+
                     try:
                         unified_manager.create_collateral_position(
                             user_id=user['id'],
@@ -1467,7 +1469,7 @@ class DataManager:
                     except ValueError:
                         # Insufficient collateral, skip
                         pass
-    
+
     def _generate_loan_data(self):
         """Generate loan-related mock data."""
         # Generate loan providers
@@ -1478,7 +1480,7 @@ class DataManager:
             {'name': 'CryptoCredit', 'type': 'crypto_backed', 'min_amount': 500, 'max_amount': 100000},
             {'name': 'BizCapital', 'type': 'business', 'min_amount': 10000, 'max_amount': 500000},
         ]
-        
+
         # Generate loans for active users
         for user in self.users[:5]:  # First 5 users
             # Create 1-3 loan applications
@@ -1499,7 +1501,7 @@ class DataManager:
                     'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 90))
                 }
                 self.loan_applications.append(application)
-                
+
                 # If approved, create loan offers and possibly an active loan
                 if application['status'] == 'approved':
                     # Create 1-3 offers
@@ -1518,7 +1520,7 @@ class DataManager:
                             'expires_at': datetime.utcnow() + timedelta(days=7)
                         }
                         self.loan_offers.append(offer)
-                        
+
                         # Create active loan from first offer
                         if i == 0 and random.random() > 0.5:
                             loan_id = len(self.loans) + 1
@@ -1538,7 +1540,7 @@ class DataManager:
                                 'next_payment_date': datetime.utcnow() + timedelta(days=random.randint(1, 30))
                             }
                             self.loans.append(loan)
-                            
+
                             # Generate payment history
                             payments_made = random.randint(0, min(12, loan['term_months']))
                             for p in range(payments_made):
@@ -1552,7 +1554,7 @@ class DataManager:
                                 }
                                 self.loan_payments.append(payment)
                                 loan['remaining_balance'] -= loan['monthly_payment'] * 0.8  # Principal portion
-    
+
     def _generate_insurance_data(self):
         """Generate insurance-related mock data."""
         # Insurance providers
@@ -1563,7 +1565,7 @@ class DataManager:
             {'name': 'HomeProtect', 'types': ['home', 'renters']},
             {'name': 'LifeSecure', 'types': ['life', 'disability']},
         ]
-        
+
         # Add providers to data store
         for i, provider in enumerate(providers):
             self.insurance_providers.append({
@@ -1573,16 +1575,16 @@ class DataManager:
                 'rating': round(random.uniform(3.5, 5.0), 1),
                 'is_active': True
             })
-        
+
         # Generate policies for users
         policy_types = ['health', 'auto', 'home', 'life', 'dental', 'vision', 'renters']
-        
+
         for user in self.users[:5]:  # First 5 users
             # Create 2-4 insurance policies
             for _ in range(random.randint(2, 4)):
                 policy_type = random.choice(policy_types)
                 provider = random.choice([p for p in self.insurance_providers if policy_type in p['types']])
-                
+
                 policy_id = len(self.insurance_policies) + 1
                 policy = {
                     'id': policy_id,
@@ -1599,7 +1601,7 @@ class DataManager:
                     'end_date': datetime.utcnow() + timedelta(days=random.randint(30, 365))
                 }
                 self.insurance_policies.append(policy)
-                
+
                 # Add beneficiaries for life insurance
                 if policy_type == 'life':
                     self.insurance_beneficiaries.append({
@@ -1609,7 +1611,7 @@ class DataManager:
                         'relationship': random.choice(['spouse', 'child', 'parent', 'sibling']),
                         'percentage': 100
                     })
-                
+
                 # Generate claims for some policies
                 if policy['status'] == 'active' and random.random() > 0.7:
                     claim_id = len(self.insurance_claims) + 1
@@ -1627,7 +1629,7 @@ class DataManager:
                     if claim['status'] == 'approved':
                         claim['amount_approved'] = claim['amount_claimed'] * random.uniform(0.7, 1.0)
                     self.insurance_claims.append(claim)
-    
+
     def _generate_global_investment_assets(self):
         """Generate global investment assets available for trading."""
         # Generate ETF assets
@@ -1641,7 +1643,7 @@ class DataManager:
             {'symbol': 'AGG', 'name': 'iShares Core U.S. Aggregate Bond', 'category': 'bond', 'expense_ratio': 0.03, 'price': 102.35},
             {'symbol': 'GLD', 'name': 'SPDR Gold Shares', 'category': 'commodity', 'expense_ratio': 0.40, 'price': 178.95}
         ]
-        
+
         for i, etf in enumerate(etf_data):
             self.etf_assets.append({
                 'id': i + 1,
@@ -1652,7 +1654,7 @@ class DataManager:
                 'price': etf['price'],
                 'change_percent': random.uniform(-3, 3)
             })
-        
+
         # Generate stock assets
         stock_data = [
             {'symbol': 'AAPL', 'name': 'Apple Inc.', 'sector': 'technology', 'price': 185.50, 'market_cap': 2.9e12, 'pe_ratio': 30.5},
@@ -1664,7 +1666,7 @@ class DataManager:
             {'symbol': 'NVDA', 'name': 'NVIDIA Corporation', 'sector': 'technology', 'price': 486.20, 'market_cap': 1.2e12, 'pe_ratio': 68.5},
             {'symbol': 'JPM', 'name': 'JPMorgan Chase & Co.', 'sector': 'finance', 'price': 158.75, 'market_cap': 460e9, 'pe_ratio': 11.2}
         ]
-        
+
         for i, stock in enumerate(stock_data):
             self.stock_assets.append({
                 'id': i + 1,
@@ -1676,7 +1678,7 @@ class DataManager:
                 'market_cap': stock['market_cap'],
                 'pe_ratio': stock['pe_ratio']
             })
-        
+
         # Generate crypto assets for investment
         crypto_data = [
             {'symbol': 'BTC', 'name': 'Bitcoin', 'price': 42850.00},
@@ -1686,7 +1688,7 @@ class DataManager:
             {'symbol': 'ADA', 'name': 'Cardano', 'price': 0.58},
             {'symbol': 'DOT', 'name': 'Polkadot', 'price': 7.85}
         ]
-        
+
         for i, crypto in enumerate(crypto_data):
             self.crypto_assets.append({
                 'id': i + 1,
@@ -1696,15 +1698,15 @@ class DataManager:
                 'change_percent': random.uniform(-10, 10),
                 'market_cap': crypto['price'] * random.uniform(1e8, 1e11)
             })
-    
+
     def _generate_investment_data(self):
         """Generate investment-related mock data."""
         # First, create global investment assets (once, not per user)
         self._generate_global_investment_assets()
-        
+
         # Create investment accounts
         account_types = ['individual', 'ira', 'roth_ira', '401k']
-        
+
         for user in self.users[:5]:  # First 5 users
             # Create 1-2 investment accounts
             for _ in range(random.randint(1, 2)):
@@ -1728,7 +1730,7 @@ class DataManager:
                     'updated_at': datetime.utcnow()
                 }
                 self.investment_accounts.append(account)
-                
+
                 # Create portfolio
                 portfolio_id = len(self.investment_portfolios) + 1
                 portfolio = {
@@ -1741,9 +1743,9 @@ class DataManager:
                     'created_at': account['created_at']
                 }
                 self.investment_portfolios.append(portfolio)
-                
+
                 # No need to add assets here - they're already created globally
-                
+
                 # Create positions
                 # ETF positions (low risk)
                 etf_allocation = 0.5 if portfolio['risk_level'] == 'conservative' else 0.3
@@ -1762,7 +1764,7 @@ class DataManager:
                         'current_value': position_value,
                         'realized_gains': random.uniform(-100, 500)
                     })
-                
+
                 # Stock positions (medium risk)
                 stock_allocation = 0.3 if portfolio['risk_level'] == 'conservative' else 0.5
                 stock_value = portfolio['total_value'] * stock_allocation
@@ -1780,14 +1782,14 @@ class DataManager:
                         'current_value': position_value,
                         'realized_gains': random.uniform(-500, 2000)
                     })
-                
+
                 # Generate some trades
                 for _ in range(random.randint(5, 15)):
                     trade_type = random.choice(['buy', 'sell'])
                     asset_type = random.choice(['etf', 'stock'])
                     assets = self.etf_assets if asset_type == 'etf' else self.stock_assets
                     asset = random.choice(assets)
-                    
+
                     self.investment_trades.append({
                         'id': len(self.investment_trades) + 1,
                         'account_id': account_id,
@@ -1806,7 +1808,7 @@ class DataManager:
                         self.investment_trades[-1]['shares'] * self.investment_trades[-1]['price'] +
                         self.investment_trades[-1]['commission']
                     )
-    
+
     def _generate_card_application_data(self):
         """Generate credit card application and recommendation data."""
         # Credit card offers
@@ -1852,7 +1854,7 @@ class DataManager:
                 'benefits': ['3% cashback on business purchases', 'Expense tracking', 'Employee cards']
             }
         ]
-        
+
         # Add card offers to data store
         for i, offer in enumerate(card_offers):
             self.card_offers.append({
@@ -1861,12 +1863,12 @@ class DataManager:
                 'apr_range': f"{random.uniform(12, 18):.1f}-{random.uniform(20, 26):.1f}%",
                 'credit_limit_range': f"${offer['min_credit_score'] * 10}-${offer['min_credit_score'] * 50}"
             })
-        
+
         # Generate applications and recommendations for users
         for user in self.users[:5]:
             # Get user's credit score (mock)
             credit_score = random.randint(550, 850)
-            
+
             # Generate card recommendations based on credit score
             eligible_cards = [c for c in self.card_offers if c['min_credit_score'] <= credit_score]
             for card in eligible_cards:
@@ -1878,7 +1880,7 @@ class DataManager:
                     'reason': f"Based on your {credit_score} credit score",
                     'created_at': datetime.utcnow()
                 })
-            
+
             # Create 0-2 card applications
             for _ in range(random.randint(0, 2)):
                 card = random.choice(eligible_cards) if eligible_cards else None
@@ -1893,7 +1895,7 @@ class DataManager:
                         'approved_credit_limit': random.randint(1000, 10000) if random.random() > 0.3 else 0,
                         'application_date': datetime.utcnow() - timedelta(days=random.randint(1, 60))
                     })
-    
+
     def _generate_currency_data(self):
         """Generate currency converter and P2P trading data."""
         # Supported currencies
@@ -1910,7 +1912,7 @@ class DataManager:
             {'code': 'ETH', 'name': 'Ethereum', 'symbol': 'Ξ', 'type': 'crypto', 'icon': 'Ξ'},
             {'code': 'USDT', 'name': 'Tether', 'symbol': '₮', 'type': 'crypto', 'icon': '₮'}
         ]
-        
+
         for i, currency in enumerate(currencies):
             self.supported_currencies.append({
                 'id': i + 1,
@@ -1918,14 +1920,14 @@ class DataManager:
                 'is_active': True,
                 'decimal_places': 2 if currency['type'] == 'fiat' else 8
             })
-        
+
         # Generate exchange rates (USD as base)
         base_rates = {
             'EUR': 0.92, 'GBP': 0.79, 'JPY': 149.50, 'CAD': 1.36,
             'AUD': 1.52, 'MXN': 17.10, 'BRL': 4.95,
             'BTC': 0.000023, 'ETH': 0.00031, 'USDT': 1.0
         }
-        
+
         # Generate all currency pairs
         for from_curr in currencies:
             for to_curr in currencies:
@@ -1939,10 +1941,10 @@ class DataManager:
                         from_usd_rate = 1.0 / base_rates.get(from_curr['code'], 1.0)
                         to_usd_rate = base_rates.get(to_curr['code'], 1.0)
                         rate = from_usd_rate * to_usd_rate
-                    
+
                     key = f"{from_curr['code']}_{to_curr['code']}"
                     self.exchange_rates[key] = round(rate, 6)
-        
+
         # Generate user balances
         for user in self.users[:5]:
             # Give each user some currency balances
@@ -1958,24 +1960,24 @@ class DataManager:
                     'pending_balance': round(balance * 0.05, currency.get('decimal_places', 2)),
                     'currency_type': currency['type']
                 })
-        
+
         # Generate P2P offers
         offer_types = ['buy', 'sell']
         payment_methods = ['bank_transfer', 'paypal', 'cash_deposit', 'crypto_wallet']
-        
+
         for i in range(20):
             seller_user = random.choice(self.users[:5])
             from_currency = random.choice(['USD', 'EUR', 'MXN', 'BRL'])
             to_currency = random.choice(['USD', 'EUR', 'BTC', 'USDT'])
             if from_currency == to_currency:
                 continue
-                
+
             amount = random.uniform(100, 5000)
             base_rate = self.exchange_rates.get(f"{from_currency}_{to_currency}", 1.0)
             # P2P rates have spread
             spread = random.uniform(0.02, 0.05)  # 2-5% spread
             offer_rate = base_rate * (1 + spread if random.choice(offer_types) == 'sell' else 1 - spread)
-            
+
             self.peer_offers.append({
                 'id': i + 1,
                 'user_id': seller_user['id'],
@@ -1993,14 +1995,14 @@ class DataManager:
                 'completed_trades': random.randint(0, 100),
                 'user_rating': round(random.uniform(4.0, 5.0), 1)
             })
-        
+
         # Generate some completed P2P trades
         for i in range(10):
             offer = random.choice(self.peer_offers)
             buyer = random.choice([u for u in self.users[:5] if u['id'] != offer['user_id']])
-            
+
             trade_amount = random.uniform(offer['min_amount'], offer['max_amount'])
-            
+
             self.p2p_trades.append({
                 'id': i + 1,
                 'offer_id': offer['id'],
@@ -2018,7 +2020,7 @@ class DataManager:
                 'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 30)),
                 'completed_at': datetime.utcnow() - timedelta(days=random.randint(0, 29))
             })
-        
+
         # Generate conversion quotes for recent activity
         for i in range(5):
             user = random.choice(self.users[:5])
@@ -2026,11 +2028,11 @@ class DataManager:
             to_curr = random.choice(['EUR', 'GBP', 'MXN', 'BTC'])
             if from_curr == to_curr:
                 continue
-                
+
             amount = random.uniform(100, 2000)
             rate = self.exchange_rates.get(f"{from_curr}_{to_curr}", 1.0)
             fee_percent = 0.015  # 1.5% fee
-            
+
             self.conversion_quotes.append({
                 'id': i + 1,
                 'quote_id': f"QUOTE-{i+1:06d}",
@@ -2050,19 +2052,19 @@ class DataManager:
 
 class AuthService:
     """Simple auth service for testing."""
-    
+
     def __init__(self, data_manager):
         self.data_manager = data_manager
-        
-    def authenticate_user(self, username: str, password: str) -> Optional[Dict[str, Any]]:
+
+    def authenticate_user(self, username: str, password: str) -> dict[str, Any] | None:
         """Authenticate user."""
         password_hash = hashlib.sha256(password.encode()).hexdigest()
-        
+
         for user in self.data_manager.users:
             if user['username'] == username and user.get('password_hash', user.get('hashed_password')) == password_hash:
                 return user
         return None
-        
+
     def create_session(self, user_id: str) -> str:
         """Create user session."""
         token = str(uuid.uuid4())
@@ -2075,8 +2077,8 @@ class AuthService:
         }
         self.data_manager.sessions.append(session)
         return token
-        
-    def get_current_user(self, token: str) -> Optional[Dict[str, Any]]:
+
+    def get_current_user(self, token: str) -> dict[str, Any] | None:
         """Get user from token."""
         # Find session
         for session in self.data_manager.sessions:
@@ -2086,14 +2088,14 @@ class AuthService:
                     if user['id'] == session['user_id']:
                         return user
         return None
-        
-    def register_user(self, username: str, email: str, password: str, full_name: str) -> Dict[str, Any]:
+
+    def register_user(self, username: str, email: str, password: str, full_name: str) -> dict[str, Any]:
         """Register new user."""
         # Check if user exists
         for user in self.data_manager.users:
             if user['username'] == username or user['email'] == email:
                 raise ValueError("User already exists")
-                
+
         # Create new user
         user = {
             'id': len(self.data_manager.users) + 1,
@@ -2107,19 +2109,19 @@ class AuthService:
         }
         self.data_manager.users.append(user)
         return user
-    
-    def login(self, username: str, password: str, device_info: Dict[str, Any]) -> Dict[str, Any]:
+
+    def login(self, username: str, password: str, device_info: dict[str, Any]) -> dict[str, Any]:
         """Login user and create session."""
         user = self.authenticate_user(username, password)
         if not user:
             raise ValueError("Invalid username or password")
-        
+
         token = self.create_session(user['id'])
         return {
             "user": user,
             "token": token
         }
-    
+
     def logout(self, token: str) -> bool:
         """Logout user by removing session."""
         session = next((s for s in self.data_manager.sessions if s['token'] == token), None)
@@ -2127,30 +2129,30 @@ class AuthService:
             self.data_manager.sessions.remove(session)
             return True
         return False
-    
+
     def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:
         """Change user password."""
         user = next((u for u in self.data_manager.users if u['id'] == user_id), None)
         if not user:
             return False
-        
+
         # Verify old password
         old_hash = hashlib.sha256(old_password.encode()).hexdigest()
         if user.get('password_hash', user.get('hashed_password')) != old_hash:
             raise ValueError("Incorrect password")
-        
+
         # Validate new password length
         if len(new_password) < 8:
             raise ValueError("Password must be at least 8 characters")
-        
+
         # Update password
         user['password_hash'] = hashlib.sha256(new_password.encode()).hexdigest()
         return True
-    
-    def get_active_sessions(self, user_id: str) -> List[Dict[str, Any]]:
+
+    def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """Get all active sessions for a user."""
         return [s for s in self.data_manager.sessions if s['user_id'] == user_id]
-    
+
     def logout_all_sessions(self, user_id: str) -> int:
         """Logout all sessions for a user."""
         sessions = [s for s in self.data_manager.sessions if s['user_id'] == user_id]
@@ -2158,7 +2160,7 @@ class AuthService:
         for session in sessions:
             self.data_manager.sessions.remove(session)
         return count
-    
+
     def validate_session(self, token: str) -> bool:
         """Validate a session token."""
         session = next((s for s in self.data_manager.sessions if s['token'] == token), None)

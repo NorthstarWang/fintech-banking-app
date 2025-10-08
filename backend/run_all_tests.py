@@ -10,7 +10,7 @@ os.environ["USE_MOCK_DB"] = "true"
 # List of test files
 test_files = [
     "tests/test_auth.py",
-    "tests/test_accounts.py", 
+    "tests/test_accounts.py",
     "tests/test_transactions.py",
     "tests/test_budgets.py",
     "tests/test_cards.py",
@@ -30,10 +30,10 @@ print("Running all test suites...\n")
 
 for test_file in test_files:
     print(f"Running {test_file}...")
-    
+
     cmd = [sys.executable, "-m", "pytest", test_file, "-v", "--tb=no", "-q"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    
+    result = subprocess.run(cmd, check=False, capture_output=True, text=True)
+
     # Parse output to get pass/fail counts
     output_lines = result.stdout.strip().split('\n')
     for line in output_lines:
@@ -42,17 +42,17 @@ for test_file in test_files:
             parts = line.split()
             passed = 0
             failed = 0
-            
+
             for i, part in enumerate(parts):
                 if "passed" in part and i > 0:
                     passed = int(parts[i-1])
                 if "failed" in part and i > 0:
                     failed = int(parts[i-1])
-            
+
             results[test_file] = {"passed": passed, "failed": failed, "total": passed + failed}
             total_passed += passed
             total_failed += failed
-            
+
             status = "✓" if failed == 0 else "✗"
             print(f"  {status} {passed} passed, {failed} failed")
             break

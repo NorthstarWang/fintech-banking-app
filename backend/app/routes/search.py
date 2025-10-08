@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Depends, Query
-from typing import List, Optional, Any
 from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, and_, desc, or_
-from ..models import (
-    Transaction, Account, Category, Merchant, 
-    Budget, Goal, Contact, User, Message
-)
+from fastapi import APIRouter, Depends, Query
+
+from ..models import Account, Budget, Category, Contact, Goal, Merchant, Message, Transaction, User
+from ..storage.memory_adapter import db, or_
 from ..utils.auth import get_current_user
 
 router = APIRouter()
@@ -14,7 +12,7 @@ router = APIRouter()
 @router.get("/")
 async def global_search(
     q: str = Query(..., min_length=2, description="Search query"),
-    types: Optional[List[str]] = Query(None, description="Entity types to search"),
+    types: list[str] | None = Query(None, description="Entity types to search"),
     limit: int = Query(10, ge=1, le=50),
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -31,16 +29,16 @@ async def global_search(
         "contacts": [],
         "messages": []
     }
-    
+
     # If no types specified, search all
     if not types:
         types = list(results.keys())
-    
+
     # Get user's account IDs for transaction search
     user_accounts = [a.id for a in db_session.query(Account).filter(
         Account.user_id == current_user['user_id']
     ).all()]
-    
+
     # Search transactions
     if "transactions" in types:
         transactions = db_session.query(Transaction).filter(
@@ -51,11 +49,11 @@ async def global_search(
                 Transaction.reference_number.ilike(search_term)
             )
         ).order_by(Transaction.transaction_date.desc()).limit(limit).all()
-        
+
         for tx in transactions:
             account = db_session.query(Account).filter(Account.id == tx.account_id).first()
             category = db_session.query(Category).filter(Category.id == tx.category_id).first() if tx.category_id else None
-            
+
             results["transactions"].append({
                 "id": tx.id,
                 "type": "transaction",
@@ -65,7 +63,7 @@ async def global_search(
                 "url": f"/transactions/{tx.id}",
                 "match_field": "description" if tx.description and q.lower() in tx.description.lower() else "notes"
             })
-    
+
     # Search accounts
     if "accounts" in types:
         accounts = db_session.query(Account).filter(
@@ -76,7 +74,7 @@ async def global_search(
                 Account.institution_name.ilike(search_term)
             )
         ).limit(limit).all()
-        
+
         for acc in accounts:
             results["accounts"].append({
                 "id": acc.id,
@@ -87,7 +85,7 @@ async def global_search(
                 "url": f"/accounts/{acc.id}",
                 "match_field": "name" if q.lower() in acc.name.lower() else "institution"
             })
-    
+
     # Search categories
     if "categories" in types:
         categories = db_session.query(Category).filter(
@@ -97,7 +95,7 @@ async def global_search(
             ),
             Category.name.ilike(search_term)
         ).limit(limit).all()
-        
+
         for cat in categories:
             results["categories"].append({
                 "id": cat.id,
@@ -108,20 +106,20 @@ async def global_search(
                 "url": f"/categories/{cat.id}",
                 "match_field": "name"
             })
-    
+
     # Search merchants
     if "merchants" in types:
         merchants = db_session.query(Merchant).filter(
             Merchant.name.ilike(search_term)
         ).limit(limit).all()
-        
+
         for merch in merchants:
             # Count transactions for this merchant
             tx_count = db_session.query(Transaction).filter(
                 Transaction.merchant_id == merch.id,
                 Transaction.account_id.in_(user_accounts)
             ).count()
-            
+
             results["merchants"].append({
                 "id": merch.id,
                 "type": "merchant",
@@ -131,7 +129,7 @@ async def global_search(
                 "url": f"/merchants/{merch.id}",
                 "match_field": "name"
             })
-    
+
     # Search budgets
     if "budgets" in types:
         budgets = db_session.query(Budget).join(
@@ -140,10 +138,10 @@ async def global_search(
             Budget.user_id == current_user['user_id'],
             Category.name.ilike(search_term)
         ).limit(limit).all()
-        
+
         for budget in budgets:
             category = db_session.query(Category).filter(Category.id == budget.category_id).first()
-            
+
             results["budgets"].append({
                 "id": budget.id,
                 "type": "budget",
@@ -153,7 +151,7 @@ async def global_search(
                 "url": f"/budgets/{budget.id}",
                 "match_field": "category"
             })
-    
+
     # Search goals
     if "goals" in types:
         goals = db_session.query(Goal).filter(
@@ -163,10 +161,10 @@ async def global_search(
                 Goal.description.ilike(search_term)
             )
         ).limit(limit).all()
-        
+
         for goal in goals:
             progress = (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
-            
+
             results["goals"].append({
                 "id": goal.id,
                 "type": "goal",
@@ -176,7 +174,7 @@ async def global_search(
                 "url": f"/goals/{goal.id}",
                 "match_field": "name" if q.lower() in goal.name.lower() else "description"
             })
-    
+
     # Search contacts
     if "contacts" in types:
         contacts = db_session.query(Contact).join(
@@ -191,10 +189,10 @@ async def global_search(
                 Contact.nickname.ilike(search_term)
             )
         ).limit(limit).all()
-        
+
         for contact in contacts:
             contact_user = db_session.query(User).filter(User.id == contact.contact_id).first()
-            
+
             if contact_user:
                 results["contacts"].append({
                     "id": contact.id,
@@ -205,25 +203,25 @@ async def global_search(
                     "url": f"/contacts/{contact.id}",
                     "match_field": "nickname" if contact.nickname and q.lower() in contact.nickname.lower() else "username"
                 })
-    
+
     # Search messages
     if "messages" in types:
         # Get user's conversation IDs
         from ..models import ConversationParticipant
-        
+
         user_conversations = [p.conversation_id for p in db_session.query(ConversationParticipant).filter(
             ConversationParticipant.user_id == current_user['user_id']
         ).all()]
-        
+
         messages = db_session.query(Message).filter(
             Message.conversation_id.in_(user_conversations),
             Message.content.ilike(search_term),
             Message.is_deleted == False
         ).order_by(Message.created_at.desc()).limit(limit).all()
-        
+
         for msg in messages:
             sender = db_session.query(User).filter(User.id == msg.sender_id).first()
-            
+
             results["messages"].append({
                 "id": msg.id,
                 "type": "message",
@@ -233,10 +231,10 @@ async def global_search(
                 "url": f"/messages/{msg.conversation_id}#msg-{msg.id}",
                 "match_field": "content"
             })
-    
+
     # Calculate total results
     total_results = sum(len(items) for items in results.values())
-    
+
     return {
         "query": q,
         "total_results": total_results,
@@ -252,7 +250,7 @@ async def get_search_suggestions(
     """Get search suggestions as user types"""
     search_term = f"{q}%"
     suggestions = []
-    
+
     # Get user's categories
     categories = db_session.query(Category.name).filter(
         or_(
@@ -261,29 +259,29 @@ async def get_search_suggestions(
         ),
         Category.name.ilike(search_term)
     ).limit(3).all()
-    
+
     for cat in categories:
         suggestions.append({
             "text": cat.name,
             "type": "category"
         })
-    
+
     # Get merchants
     merchants = db_session.query(Merchant.name).filter(
         Merchant.name.ilike(search_term)
     ).limit(3).all()
-    
+
     for merch in merchants:
         suggestions.append({
             "text": merch.name,
             "type": "merchant"
         })
-    
+
     # Get recent transaction descriptions
     user_accounts = [a.id for a in db_session.query(Account).filter(
         Account.user_id == current_user['user_id']
     ).all()]
-    
+
     tx_descriptions = db_session.query(
         Transaction.description
     ).filter(
@@ -291,13 +289,13 @@ async def get_search_suggestions(
         Transaction.description.ilike(search_term),
         Transaction.description.isnot(None)
     ).distinct().limit(3).all()
-    
+
     for desc in tx_descriptions:
         suggestions.append({
             "text": desc.description,
             "type": "transaction"
         })
-    
+
     return suggestions[:10]  # Return top 10 suggestions
 
 @router.get("/recent")

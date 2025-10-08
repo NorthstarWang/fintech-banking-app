@@ -45,7 +45,6 @@ async def send_message(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Send a direct message to another user"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get recipient user
     recipient = db_session.query(User).filter(

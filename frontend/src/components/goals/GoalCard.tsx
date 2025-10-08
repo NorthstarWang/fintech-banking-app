@@ -22,8 +22,8 @@ interface GoalCardProps {
 export const GoalCard: React.FC<GoalCardProps> = ({ 
   goal, 
   onClick,
-  analyticsId = 'goal-card',
-  analyticsLabel = 'Goal Card',
+  analyticsId: _analyticsId = 'goal-card',
+  analyticsLabel: _analyticsLabel = 'Goal Card',
 }) => {
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString('en-US', {
@@ -97,9 +97,6 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => {
-          `${analyticsId}-${goal.id}`,
-          `${analyticsLabel} - ${goal.name} - ${goal.status} - ${goal.progress}%`
-        );
         onClick();
       }}
       className="cursor-pointer h-full"

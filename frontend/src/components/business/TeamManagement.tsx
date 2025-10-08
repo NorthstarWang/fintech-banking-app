@@ -10,13 +10,12 @@ import {
   Calendar,
   MoreVertical,
   Lock,
-  Unlock,
   TrendingUp,
   AlertCircle,
   Check,
   X
 } from 'lucide-react';
-import Card, { CardHeader, CardBody } from '../ui/Card';
+import Card, { CardBody } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Dropdown from '../ui/Dropdown';
@@ -32,7 +31,6 @@ interface TeamManagementProps {
 export const TeamManagement: React.FC<TeamManagementProps> = ({
   teamMembers,
   onAddMember,
-  onUpdateMember,
 }) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showMemberDetails, setShowMemberDetails] = useState(false);

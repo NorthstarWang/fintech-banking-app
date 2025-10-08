@@ -1,27 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Send,
-  UserPlus,
   Search,
   QrCode,
   DollarSign,
   Clock,
   CheckCircle,
-  AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
   Users,
-  Smartphone,
-  Mail,
   MessageSquare,
-  History,
-  Filter,
-  Plus,
   Star,
-  User,
   Zap
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -89,11 +80,6 @@ export default function P2PPage() {
   const [selectedAccount, setSelectedAccount] = useState<string>('');
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed P2P page`,
-      page_name: 'P2P',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadData();
   }, [user]);
 
@@ -232,19 +218,7 @@ export default function P2PPage() {
       setTransactions(mockTransactions);
       
       // Log data loaded event
-        text: `P2P data loaded with ${contactsData?.length || mockContacts.length} contacts and ${mockTransactions.length} transactions`,
-        custom_action: 'p2p_data_loaded',
-        data: {
-          contacts_count: contactsData?.length || mockContacts.length,
-          favorites_count: (contactsData || mockContacts).filter(c => c.isFavorite).length,
-          transactions_count: mockTransactions.length,
-          pending_transactions: mockTransactions.filter(t => t.status === 'pending').length,
-          accounts_count: accountsData?.length || 0,
-          primary_account: accountsData?.[0]?.name || 'None'
-        }
-      });
-    } catch (error) {
-      console.error('Failed to load P2P data:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -278,24 +252,6 @@ export default function P2PPage() {
       alert(`Insufficient balance. Your ${account.name} has $${account.balance.toFixed(2)}, but you need $${totalAmount.toFixed(2)} (including ${sendMethod === 'instant' ? '$' + fee.toFixed(2) + ' fee' : 'no fee'}).`);
       return;
     }
-
-      text: `User reviewing P2P payment of $${amount} to ${selectedContact.name} via ${sendMethod} method`,
-      custom_action: 'review_p2p_payment',
-      data: {
-        amount: parseFloat(amount),
-        fee: sendMethod === 'instant' ? parseFloat(amount) * 0.01 : 0,
-        total_amount: sendMethod === 'instant' ? parseFloat(amount) * 1.01 : parseFloat(amount),
-        recipient_name: selectedContact.name,
-        recipient_username: selectedContact.username,
-        recipient_id: selectedContact.id,
-        is_favorite: selectedContact.isFavorite,
-        send_method: sendMethod,
-        has_description: description.length > 0,
-        source_account: accounts.find(a => a.id.toString() === selectedAccount)?.name || 'Unknown',
-        source_account_balance: account.balance
-      }
-    });
-
     setShowConfirmation(true);
   };
 
@@ -304,33 +260,15 @@ export default function P2PPage() {
 
     try {
       const transferAmount = parseFloat(amount);
-      const fee = sendMethod === 'instant' ? transferAmount * 0.01 : 0;
+      const _fee = sendMethod === 'instant' ? transferAmount * 0.01 : 0;
       
-      const result = await p2pApi.createTransfer({
+      const _result = await p2pApi.createTransfer({
         recipient_id: selectedContact.id,
         amount: transferAmount,
         description: description || undefined,
         method: sendMethod,
         source_account_id: selectedAccount
       });
-
-        text: `User successfully sent $${amount} to ${selectedContact.name} via P2P`,
-        custom_action: 'p2p_payment_completed',
-        data: {
-          transaction_id: result?.id,
-          amount: transferAmount,
-          fee: fee,
-          total_amount: transferAmount + fee,
-          recipient_name: selectedContact.name,
-          recipient_username: selectedContact.username,
-          recipient_id: selectedContact.id,
-          is_favorite: selectedContact.isFavorite,
-          send_method: sendMethod,
-          description: description || 'No description',
-          source_account: accounts.find(a => a.id.toString() === selectedAccount)?.name || 'Unknown'
-        }
-      });
-
       // Refresh data
       loadData();
       
@@ -338,12 +276,7 @@ export default function P2PPage() {
       setShowSendMoney(false);
       setAmount('');
       setDescription('');
-    } catch (error) {
-      console.error('Failed to send money:', error);
-        error: error instanceof Error ? error.message : 'Unknown error',
-        amount: parseFloat(amount),
-        recipient: selectedContact.username
-      });
+    } catch {
     }
   };
 
@@ -383,15 +316,6 @@ export default function P2PPage() {
               size="sm"
               icon={<Users size={18} />}
               onClick={() => {
-                  text: `User opening split payment modal with ${contacts.length} contacts`,
-                  custom_action: 'open_split_payment',
-                  data: {
-                    contacts_count: contacts.length,
-                    favorites_count: favoriteContacts.length,
-                    accounts_count: accounts.length,
-                    from_page: 'p2p'
-                  }
-                });
                 setShowSplitPayment(true);
               }}
             >
@@ -402,14 +326,6 @@ export default function P2PPage() {
               size="sm"
               icon={<DollarSign size={18} />}
               onClick={() => {
-                  text: `User opening payment request modal`,
-                  custom_action: 'open_payment_request',
-                  data: {
-                    contacts_count: contacts.length,
-                    pending_requests: pendingCount,
-                    from_page: 'p2p'
-                  }
-                });
                 setShowRequestMoney(true);
               }}
             >
@@ -420,13 +336,6 @@ export default function P2PPage() {
               size="sm"
               icon={<QrCode size={18} />}
               onClick={() => {
-                  text: `User opening QR code generator`,
-                  custom_action: 'open_qr_generator',
-                  data: {
-                    from_page: 'p2p',
-                    user_has_transactions: transactions.length > 0
-                  }
-                });
                 setShowQRGenerator(true);
               }}
             >
@@ -436,16 +345,6 @@ export default function P2PPage() {
               variant="primary"
               icon={<Send size={18} />}
               onClick={() => {
-                  text: `User opening send money modal from P2P header`,
-                  custom_action: 'open_send_money',
-                  data: {
-                    contacts_count: contacts.length,
-                    favorites_count: favoriteContacts.length,
-                    accounts_count: accounts.length,
-                    default_account: accounts[0]?.name || 'None',
-                    from_component: 'p2p_header'
-                  }
-                });
                 setShowSendMoney(true);
               }}
             >
@@ -510,17 +409,6 @@ export default function P2PPage() {
           <P2PQuickSend
             contacts={favoriteContacts}
             onSelectContact={(contact) => {
-                text: `User selected favorite contact \"${contact.name}\" from quick send`,
-                custom_action: 'select_quick_send_contact',
-                data: {
-                  contact_id: contact.id,
-                  contact_name: contact.name,
-                  contact_username: contact.username,
-                  last_transaction_type: contact.lastTransaction?.type,
-                  last_transaction_amount: contact.lastTransaction?.amount,
-                  from_component: 'p2p_quick_send'
-                }
-              });
               setSelectedContact(contact);
               setShowSendMoney(true);
             }}
@@ -532,9 +420,9 @@ export default function P2PPage() {
           <div className="lg:col-span-2">
             <P2PTransactionHistory
               transactions={transactions}
-              onSelectTransaction={(transaction) => {
+              onSelectTransaction={(_transaction) => {
                 // Handle transaction selection
-                console.log('Selected transaction:', transaction);
+                
               }}
             />
           </div>
@@ -544,29 +432,10 @@ export default function P2PPage() {
             <P2PContactList
               contacts={contacts}
               onSelectContact={(contact) => {
-                  text: `User selected contact \"${contact.name}\" from contact list`,
-                  custom_action: 'select_contact_from_list',
-                  data: {
-                    contact_id: contact.id,
-                    contact_name: contact.name,
-                    contact_username: contact.username,
-                    is_favorite: contact.isFavorite,
-                    has_recent_transaction: !!contact.lastTransaction,
-                    from_component: 'p2p_contact_list'
-                  }
-                });
                 setSelectedContact(contact);
                 setShowSendMoney(true);
               }}
               onAddContact={() => {
-                  text: 'User opening add contact modal from P2P',
-                  custom_action: 'open_add_contact',
-                  data: {
-                    existing_contacts_count: contacts.length,
-                    favorites_count: favoriteContacts.length,
-                    from_page: 'p2p'
-                  }
-                });
                 setShowAddContact(true);
               }}
             />
@@ -600,20 +469,12 @@ export default function P2PPage() {
                 setSearchQuery(query);
                 
                 if (query.length > 0) {
-                  const filteredCount = contacts.filter(contact => 
+                  const _filteredCount = contacts.filter(contact => 
                     contact.name.toLowerCase().includes(query.toLowerCase()) ||
                     contact.username.toLowerCase().includes(query.toLowerCase()) ||
                     contact.email.toLowerCase().includes(query.toLowerCase())
                   ).length;
                   
-                    text: `User searching P2P contacts with query "${query}"`,
-                    search_query: query,
-                    data: {
-                      total_contacts: contacts.length,
-                      matching_contacts: filteredCount,
-                      search_context: 'send_money_modal'
-                    }
-                  });
                 }
               }}
               icon={<Search size={18} />}
@@ -632,18 +493,6 @@ export default function P2PPage() {
                   <button
                     key={contact.id}
                     onClick={() => {
-                        text: `User selected P2P contact "${contact.name}" (@${contact.username}) to send money`,
-                        custom_action: 'select_p2p_recipient',
-                        data: {
-                          contact_id: contact.id,
-                          contact_name: contact.name,
-                          contact_username: contact.username,
-                          is_favorite: contact.isFavorite,
-                          has_recent_transaction: !!contact.lastTransaction,
-                          last_transaction_type: contact.lastTransaction?.type,
-                          last_transaction_amount: contact.lastTransaction?.amount
-                        }
-                      });
                       setSelectedContact(contact);
                       setSearchQuery('');
                     }}
@@ -699,15 +548,6 @@ export default function P2PPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                    text: `User changing recipient from ${selectedContact.name}`,
-                    custom_action: 'change_p2p_recipient',
-                    data: {
-                      previous_contact: selectedContact.name,
-                      previous_username: selectedContact.username,
-                      had_entered_amount: amount.length > 0,
-                      had_entered_description: description.length > 0
-                    }
-                  });
                   setSelectedContact(null);
                 }}
               >
@@ -729,20 +569,8 @@ export default function P2PPage() {
                   
                   if (newAmount && parseFloat(newAmount) > 0) {
                     const amountNum = parseFloat(newAmount);
-                    const fee = sendMethod === 'instant' ? amountNum * 0.01 : 0;
+                    const _fee = sendMethod === 'instant' ? amountNum * 0.01 : 0;
                     
-                      text: `User entered P2P amount $${newAmount} to ${selectedContact.name}${fee > 0 ? ` (fee: $${fee.toFixed(2)})` : ''}`,
-                      field_name: 'p2p_amount',
-                      field_value: newAmount,
-                      data: {
-                        amount: amountNum,
-                        fee: fee,
-                        total_amount: amountNum + fee,
-                        recipient: selectedContact.username,
-                        send_method: sendMethod,
-                        selected_account: selectedAccount
-                      }
-                    });
                   }
                 }}
                 placeholder="0.00"
@@ -764,15 +592,6 @@ export default function P2PPage() {
                   setDescription(desc);
                   
                   if (desc.length > 0) {
-                      text: `User entered P2P description: "${desc.substring(0, 50)}${desc.length > 50 ? '...' : ''}"`,
-                      field_name: 'p2p_description',
-                      field_value: desc,
-                      data: {
-                        description_length: desc.length,
-                        recipient: selectedContact.username,
-                        amount: amount ? parseFloat(amount) : 0
-                      }
-                    });
                   }
                 }}
                 placeholder="What's this for?"
@@ -788,22 +607,11 @@ export default function P2PPage() {
               <Dropdown
                 value={selectedAccount}
                 onChange={(value) => {
-                  const previousAccount = accounts.find(a => a.id.toString() === selectedAccount);
+                  const _previousAccount = accounts.find(a => a.id.toString() === selectedAccount);
                   const newAccount = accounts.find(a => a.id.toString() === value);
                   setSelectedAccount(value);
                   
                   if (newAccount) {
-                      text: `User selected P2P source account "${newAccount.name}" with balance $${newAccount.balance.toFixed(2)}`,
-                      custom_action: 'select_p2p_source_account',
-                      data: {
-                        account_id: value,
-                        account_name: newAccount.name,
-                        account_balance: newAccount.balance,
-                        previous_account: previousAccount?.name,
-                        amount_to_send: amount ? parseFloat(amount) : 0,
-                        has_sufficient_balance: amount ? newAccount.balance >= parseFloat(amount) * (sendMethod === 'instant' ? 1.01 : 1) : true
-                      }
-                    });
                   }
                 }}
                 items={accounts.map(account => ({
@@ -827,20 +635,8 @@ export default function P2PPage() {
                       setSendMethod('instant');
                       
                       const amountNum = amount ? parseFloat(amount) : 0;
-                      const newFee = amountNum * 0.01;
+                      const _newFee = amountNum * 0.01;
                       
-                        text: `User switched to instant P2P transfer (1% fee: $${newFee.toFixed(2)})`,
-                        custom_action: 'change_p2p_send_method',
-                        data: {
-                          from_method: sendMethod,
-                          to_method: 'instant',
-                          amount: amountNum,
-                          old_fee: 0,
-                          new_fee: newFee,
-                          total_with_new_fee: amountNum + newFee,
-                          recipient: selectedContact.username
-                        }
-                      });
                     }
                   }}
                   className={`
@@ -862,20 +658,8 @@ export default function P2PPage() {
                       setSendMethod('standard');
                       
                       const amountNum = amount ? parseFloat(amount) : 0;
-                      const oldFee = amountNum * 0.01;
+                      const _oldFee = amountNum * 0.01;
                       
-                        text: `User switched to standard P2P transfer (free, 1-3 days)`,
-                        custom_action: 'change_p2p_send_method',
-                        data: {
-                          from_method: sendMethod,
-                          to_method: 'standard',
-                          amount: amountNum,
-                          old_fee: oldFee,
-                          new_fee: 0,
-                          total_with_new_fee: amountNum,
-                          recipient: selectedContact.username
-                        }
-                      });
                     }
                   }}
                   className={`
@@ -1036,8 +820,8 @@ export default function P2PPage() {
         isOpen={showQRScanner}
         onClose={() => setShowQRScanner(false)}
         mode="scan"
-        onScanSuccess={(data) => {
-          console.log('Scanned data:', data);
+        onScanSuccess={(_data) => {
+          
           setShowQRScanner(false);
         }}
       />

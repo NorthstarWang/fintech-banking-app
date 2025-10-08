@@ -3,41 +3,40 @@ Memory-based model classes that provide SQLAlchemy-compatible interface.
 These classes wrap dictionary data with attribute access.
 """
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
-import uuid
+from typing import Any
 
 
 class ModelAttribute:
     """Represents a model attribute for SQLAlchemy-style comparisons."""
     def __init__(self, key):
         self.key = key
-        
+
     def __eq__(self, other):
         return ComparisonClause(self, other, '__eq__')
-        
+
     def __ne__(self, other):
         return ComparisonClause(self, other, '__ne__')
-        
+
     def __lt__(self, other):
         return ComparisonClause(self, other, '__lt__')
-        
+
     def __le__(self, other):
         return ComparisonClause(self, other, '__le__')
-        
+
     def __gt__(self, other):
         return ComparisonClause(self, other, '__gt__')
-        
+
     def __ge__(self, other):
         return ComparisonClause(self, other, '__ge__')
-    
+
     def desc(self):
         """Return a descriptor for descending order."""
         return DescOrder(self)
-    
+
     def in_(self, values):
         """Create an IN clause for filtering."""
         return InClause(self, values)
-    
+
     def ilike(self, pattern):
         """Create an ILIKE clause for case-insensitive pattern matching."""
         return ComparisonClause(self, pattern, 'ilike')
@@ -68,7 +67,7 @@ class ComparisonClause:
         self.op = op  # Store the operator properly
         # Don't modify the class name - this is dangerous!
         # self.__class__.__name__ = op
-        
+
     def __or__(self, other):
         """Handle OR operations."""
         return BooleanClauseList('or', [self, other])
@@ -80,7 +79,7 @@ class BooleanClauseList:
         self.operator = operator
         self.clauses = clauses
         self.__class__.__name__ = 'BooleanClauseList'
-        
+
     def __or__(self, other):
         """Handle chained OR operations."""
         if isinstance(other, BooleanClauseList) and other.operator == 'or':
@@ -99,18 +98,18 @@ class ModelMeta(type):
 
 class BaseMemoryModel(metaclass=ModelMeta):
     """Base class for memory models that provides attribute access to dictionary data."""
-    
+
     _id_counter = {}  # Class variable to track ID counters per model
     _initialized = False  # Track if counters have been initialized
-    
+
     def __init__(self, **kwargs):
         self._data = kwargs
-        
+
         # Initialize counters from existing data on first use
         if not BaseMemoryModel._initialized:
             BaseMemoryModel._initialize_counters()
             BaseMemoryModel._initialized = True
-        
+
         # Set defaults
         if 'id' not in self._data:
             # Generate auto-incrementing integer ID per model class
@@ -121,13 +120,13 @@ class BaseMemoryModel(metaclass=ModelMeta):
             BaseMemoryModel._id_counter[class_name] += 1
         if 'created_at' not in self._data:
             self._data['created_at'] = datetime.utcnow()
-    
+
     @classmethod
     def _initialize_counters(cls):
         """Initialize ID counters based on existing data in data_manager."""
         try:
             from app.repositories.data_manager import data_manager
-            
+
             # Map model names to their data stores
             store_map = {
                 'Goal': data_manager.goals,
@@ -157,7 +156,7 @@ class BaseMemoryModel(metaclass=ModelMeta):
                 'UnifiedTransaction': data_manager.unified_transactions,
                 # Add more as needed
             }
-            
+
             # Initialize counters based on existing data
             for model_name, store in store_map.items():
                 if store:
@@ -166,13 +165,13 @@ class BaseMemoryModel(metaclass=ModelMeta):
         except ImportError:
             # If data_manager is not available yet, start from 1
             pass
-            
+
     def __getattr__(self, name):
         """Get attribute from internal data dictionary."""
         if name.startswith('_'):
             return object.__getattribute__(self, name)
         return self._data.get(name)
-        
+
     def __setattr__(self, name, value):
         """Set attribute in internal data dictionary."""
         if name.startswith('_'):
@@ -184,18 +183,18 @@ class BaseMemoryModel(metaclass=ModelMeta):
             if hasattr(value, 'value'):
                 value = value.value
             self._data[name] = value
-            
+
             # Mark object as dirty in session if tracked
             if hasattr(self, '_session') and self._session and hasattr(self._session, 'pending_updates'):
                 if self not in self._session.pending_updates:
                     self._session.pending_updates.append(self)
-            
+
     def to_dict(self):
         """Convert model to dictionary."""
         return self._data.copy()
-        
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]):
+    def from_dict(cls, data: dict[str, Any]):
         """Create model instance from dictionary."""
         return cls(**data)
 
@@ -204,7 +203,7 @@ class BaseMemoryModel(metaclass=ModelMeta):
 class User(BaseMemoryModel):
     """User model compatible with SQLAlchemy interface."""
     __tablename__ = "users"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Set defaults
@@ -221,7 +220,7 @@ class User(BaseMemoryModel):
             'show_full_name': True
         })
         self._data.setdefault('profile_stats', {})
-    
+
     @property
     def full_name(self):
         """Compute full name from first and last names."""
@@ -229,14 +228,13 @@ class User(BaseMemoryModel):
         last_name = self._data.get('last_name', '')
         if first_name and last_name:
             return f"{first_name} {last_name}"
-        elif first_name:
+        if first_name:
             return first_name
-        elif last_name:
+        if last_name:
             return last_name
-        else:
-            # Fallback to stored full_name or username
-            return self._data.get('full_name', self._data.get('username', ''))
-        
+        # Fallback to stored full_name or username
+        return self._data.get('full_name', self._data.get('username', ''))
+
 
 class UserRole:
     """User role enum."""
@@ -249,20 +247,20 @@ class UserRole:
 class Account(BaseMemoryModel):
     """Account model."""
     __tablename__ = "accounts"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('balance', 0.0)
         self._data.setdefault('available_balance', 0.0)
         self._data.setdefault('credit_limit', 0.0)
-        
+
         # Format all money fields
         self._data['balance'] = format_money(self._data.get('balance', 0.0))
         self._data['available_balance'] = format_money(self._data.get('available_balance', 0.0))
         self._data['credit_limit'] = format_money(self._data.get('credit_limit', 0.0))
-        
+
         self._data.setdefault('is_active', True)
         self._data.setdefault('currency', 'USD')
 
@@ -279,18 +277,18 @@ class AccountType:
 class Transaction(BaseMemoryModel):
     """Transaction model."""
     __tablename__ = "transactions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('amount', 0.0)
         self._data['amount'] = format_money(self._data.get('amount', 0.0))
-        
+
         self._data.setdefault('status', 'completed')
         if 'transaction_date' not in self._data:
             self._data['transaction_date'] = datetime.utcnow()
-        
+
         # Ensure user_id is set if not provided
         if 'user_id' not in self._data and 'account_id' in self._data:
             # Try to get user_id from account
@@ -299,11 +297,11 @@ class Transaction(BaseMemoryModel):
                 if acc.get('id') == self._data.get('account_id'):
                     self._data['user_id'] = acc.get('user_id')
                     break
-    
+
     @property
     def category(self):
         """Get the related category."""
-        if 'category_id' in self._data and self._data['category_id']:
+        if self._data.get('category_id'):
             from app.repositories.data_manager import data_manager
             for cat in data_manager.categories:
                 if cat.get('id') == self._data['category_id']:
@@ -330,7 +328,7 @@ class TransactionStatus:
 class Category(BaseMemoryModel):
     """Category model."""
     __tablename__ = "categories"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_income', False)
@@ -343,18 +341,18 @@ class Category(BaseMemoryModel):
 class Budget(BaseMemoryModel):
     """Budget model."""
     __tablename__ = "budgets"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('amount', 0.0)
         self._data.setdefault('spent_amount', 0.0)
-        
+
         # Format money fields
         self._data['amount'] = format_money(self._data.get('amount', 0.0))
         self._data['spent_amount'] = format_money(self._data.get('spent_amount', 0.0))
-        
+
         self._data.setdefault('is_active', True)
         self._data.setdefault('alert_threshold', 0.8)
         self._data.setdefault('alert_enabled', True)
@@ -373,29 +371,29 @@ class BudgetPeriod:
 class Goal(BaseMemoryModel):
     """Goal model."""
     __tablename__ = "goals"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         # Format all money fields to 2 decimal places
         self._data.setdefault('current_amount', 0.0)
         self._data.setdefault('target_amount', 0.0)
         self._data['current_amount'] = format_money(self._data.get('current_amount', 0.0))
         self._data['target_amount'] = format_money(self._data.get('target_amount', 0.0))
-        
+
         self._data.setdefault('status', 'active')
         self._data.setdefault('auto_transfer_enabled', False)
         self._data.setdefault('category', 'other')
         self._data.setdefault('priority', 'medium')
-        
+
         # Automatic allocation fields
         self._data.setdefault('auto_allocate_percentage', 0.0)
         self._data.setdefault('auto_allocate_fixed_amount', 0.0)
         self._data['auto_allocate_fixed_amount'] = format_money(self._data.get('auto_allocate_fixed_amount', 0.0))
         self._data.setdefault('allocation_priority', 1)
         self._data.setdefault('allocation_source_types', ['income', 'deposit'])  # Which transaction types trigger allocation
-    
+
     def __setattr__(self, name, value):
         """Override to ensure money fields are always formatted."""
         if name == '_data':
@@ -418,16 +416,16 @@ class GoalStatus:
 class GoalContribution(BaseMemoryModel):
     """Goal contribution model."""
     __tablename__ = "goal_contributions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         if 'contribution_date' not in self._data:
             self._data['contribution_date'] = datetime.utcnow()
         self._data.setdefault('is_automatic', False)
         self._data.setdefault('source_transaction_id', None)
-        
+
         # Format money fields
         self._data.setdefault('amount', 0.0)
         self._data['amount'] = format_money(self._data.get('amount', 0.0))
@@ -437,7 +435,7 @@ class GoalContribution(BaseMemoryModel):
 class Notification(BaseMemoryModel):
     """Notification model."""
     __tablename__ = "notifications"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_read', False)
@@ -459,7 +457,7 @@ class NotificationType:
 class Contact(BaseMemoryModel):
     """Contact model."""
     __tablename__ = "contacts"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('status', 'pending')
@@ -479,7 +477,7 @@ class ContactStatus:
 class Conversation(BaseMemoryModel):
     """Conversation model."""
     __tablename__ = "conversations"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_group', False)
@@ -488,7 +486,7 @@ class Conversation(BaseMemoryModel):
 class ConversationParticipant(BaseMemoryModel):
     """Conversation participant model."""
     __tablename__ = "conversation_participants"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_admin', False)
@@ -500,7 +498,7 @@ class ConversationParticipant(BaseMemoryModel):
 class Message(BaseMemoryModel):
     """Message model."""
     __tablename__ = "messages"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('message_type', 'text')
@@ -518,7 +516,7 @@ class MessageStatus:
 class MessageReadReceipt(BaseMemoryModel):
     """Message read receipt model."""
     __tablename__ = "message_read_receipts"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'read_at' not in self._data:
@@ -529,7 +527,7 @@ class MessageReadReceipt(BaseMemoryModel):
 class RecurringRule(BaseMemoryModel):
     """Recurring rule model."""
     __tablename__ = "recurring_rules"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_active', True)
@@ -545,7 +543,7 @@ class Merchant(BaseMemoryModel):
 class Note(BaseMemoryModel):
     """Note model."""
     __tablename__ = "notes"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_encrypted', False)
@@ -555,7 +553,7 @@ class Note(BaseMemoryModel):
 class Card(BaseMemoryModel):
     """Card model."""
     __tablename__ = "cards"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('status', 'active')
@@ -586,7 +584,7 @@ class CardStatus:
 class Subscription(BaseMemoryModel):
     """Subscription model."""
     __tablename__ = "subscriptions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('status', 'active')
@@ -628,7 +626,7 @@ class SubscriptionCategory:
 class SecurityEvent(BaseMemoryModel):
     """Security event model."""
     __tablename__ = "security_events"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('success', True)
@@ -650,7 +648,7 @@ class SecurityEventType:
 class PaymentMethod(BaseMemoryModel):
     """Payment method model."""
     __tablename__ = "payment_methods"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('status', 'active')
@@ -677,7 +675,7 @@ class PaymentMethodStatus:
 class Log(BaseMemoryModel):
     """Log model for analytics."""
     __tablename__ = "logs"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'timestamp' not in self._data:
@@ -688,7 +686,7 @@ class Log(BaseMemoryModel):
 class DirectMessage(BaseMemoryModel):
     """Direct message model."""
     __tablename__ = "direct_messages"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_read', False)
@@ -703,7 +701,7 @@ class DirectMessage(BaseMemoryModel):
 class Conversation(BaseMemoryModel):
     """Conversation model to group messages between users."""
     __tablename__ = "conversations"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('participant_ids', [])
@@ -716,7 +714,7 @@ class Conversation(BaseMemoryModel):
 class CryptoWallet(BaseMemoryModel):
     """Crypto wallet model."""
     __tablename__ = "crypto_wallets"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_primary', False)
@@ -732,20 +730,20 @@ class CryptoWallet(BaseMemoryModel):
 class CryptoAsset(BaseMemoryModel):
     """Crypto asset model."""
     __tablename__ = "crypto_assets"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('balance', '0.0')
         self._data.setdefault('usd_value', 0.0)
         self._data.setdefault('price_usd', 0.0)
         self._data.setdefault('change_24h', 0.0)
-        
+
         # Format USD values
         self._data['usd_value'] = format_money(self._data.get('usd_value', 0.0))
         self._data['price_usd'] = format_money(self._data.get('price_usd', 0.0))
-        
+
         if 'last_updated' not in self._data:
             self._data['last_updated'] = datetime.utcnow()
 
@@ -753,21 +751,21 @@ class CryptoAsset(BaseMemoryModel):
 class NFTAsset(BaseMemoryModel):
     """NFT asset model."""
     __tablename__ = "nft_assets"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('metadata', {})
         self._data.setdefault('floor_price_usd', None)
         self._data.setdefault('estimated_value_usd', None)
-        
+
         # Format USD values if present
         if self._data.get('floor_price_usd') is not None:
             self._data['floor_price_usd'] = format_money(self._data['floor_price_usd'])
         if self._data.get('estimated_value_usd') is not None:
             self._data['estimated_value_usd'] = format_money(self._data['estimated_value_usd'])
-        
+
         if 'acquired_at' not in self._data:
             self._data['acquired_at'] = datetime.utcnow()
         if 'last_updated' not in self._data:
@@ -777,21 +775,21 @@ class NFTAsset(BaseMemoryModel):
 class CryptoTransaction(BaseMemoryModel):
     """Crypto transaction model."""
     __tablename__ = "crypto_transactions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('status', 'pending')
         self._data.setdefault('confirmations', 0)
         self._data.setdefault('usd_value_at_time', 0.0)
         self._data.setdefault('gas_fee_usd', None)
-        
+
         # Format USD values
         self._data['usd_value_at_time'] = format_money(self._data.get('usd_value_at_time', 0.0))
         if self._data.get('gas_fee_usd') is not None:
             self._data['gas_fee_usd'] = format_money(self._data['gas_fee_usd'])
-        
+
         # Generate mock transaction hash if not provided
         if 'transaction_hash' not in self._data:
             import hashlib
@@ -803,21 +801,21 @@ class CryptoTransaction(BaseMemoryModel):
 class DeFiPosition(BaseMemoryModel):
     """DeFi position model."""
     __tablename__ = "defi_positions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('amount', '0.0')
         self._data.setdefault('usd_value', 0.0)
         self._data.setdefault('apy', 0.0)
         self._data.setdefault('rewards_earned', '0.0')
         self._data.setdefault('rewards_usd', 0.0)
-        
+
         # Format USD values
         self._data['usd_value'] = format_money(self._data.get('usd_value', 0.0))
         self._data['rewards_usd'] = format_money(self._data.get('rewards_usd', 0.0))
-        
+
         if 'started_at' not in self._data:
             self._data['started_at'] = datetime.utcnow()
         if 'last_updated' not in self._data:
@@ -870,7 +868,7 @@ class DeFiProtocolType:
 class CreditScore(BaseMemoryModel):
     """Credit score model."""
     __tablename__ = "credit_scores"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('score', 650)
@@ -887,7 +885,7 @@ class CreditScore(BaseMemoryModel):
 class CreditSimulation(BaseMemoryModel):
     """Credit simulation model."""
     __tablename__ = "credit_simulations"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('current_score', 650)
@@ -905,7 +903,7 @@ class CreditSimulation(BaseMemoryModel):
 class CreditAlert(BaseMemoryModel):
     """Credit alert model for monitoring credit changes."""
     __tablename__ = "credit_alerts"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('alert_type', 'score_change')  # score_change, inquiry, new_account, etc.
@@ -924,7 +922,7 @@ class CreditAlert(BaseMemoryModel):
 class CreditDispute(BaseMemoryModel):
     """Credit dispute model for managing credit report disputes."""
     __tablename__ = "credit_disputes"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('dispute_type', 'incorrect_info')  # incorrect_info, fraud, identity_theft, etc.
@@ -946,11 +944,11 @@ class CreditDispute(BaseMemoryModel):
 class CreditBuilderAccount(BaseMemoryModel):
     """Credit builder account model for secured credit building products."""
     __tablename__ = "credit_builder_accounts"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('account_type', 'secured_card')  # secured_card, credit_builder_loan, etc.
         self._data.setdefault('status', 'active')  # active, graduated, closed
         self._data.setdefault('secured_amount', 0.0)
@@ -962,13 +960,13 @@ class CreditBuilderAccount(BaseMemoryModel):
         self._data.setdefault('reports_to_bureaus', ['equifax', 'experian', 'transunion'])
         self._data.setdefault('auto_pay_enabled', False)
         self._data.setdefault('monthly_fee', 0.0)
-        
+
         # Format money fields
         self._data['secured_amount'] = format_money(self._data.get('secured_amount', 0.0))
         self._data['credit_limit'] = format_money(self._data.get('credit_limit', 0.0))
         self._data['current_balance'] = format_money(self._data.get('current_balance', 0.0))
         self._data['monthly_fee'] = format_money(self._data.get('monthly_fee', 0.0))
-        
+
         if 'opened_date' not in self._data:
             self._data['opened_date'] = datetime.utcnow()
         if 'last_payment_date' not in self._data:
@@ -1026,11 +1024,11 @@ class CreditBuilderType:
 class UnifiedBalance(BaseMemoryModel):
     """Unified balance model for aggregating assets across all systems."""
     __tablename__ = "unified_balances"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('total_net_worth_usd', 0.0)
         self._data.setdefault('fiat_assets', {})
         self._data.setdefault('total_fiat_usd', 0.0)
@@ -1048,7 +1046,7 @@ class UnifiedBalance(BaseMemoryModel):
         self._data.setdefault('debt_to_asset_ratio', 0.0)
         self._data.setdefault('liquid_assets', 0.0)
         self._data.setdefault('illiquid_assets', 0.0)
-        
+
         # Format money fields
         money_fields = [
             'total_net_worth_usd', 'total_fiat_usd', 'nft_collection_value',
@@ -1059,7 +1057,7 @@ class UnifiedBalance(BaseMemoryModel):
         ]
         for field in money_fields:
             self._data[field] = format_money(self._data.get(field, 0.0))
-        
+
         if 'last_updated' not in self._data:
             self._data['last_updated'] = datetime.utcnow()
 
@@ -1067,11 +1065,11 @@ class UnifiedBalance(BaseMemoryModel):
 class AssetBridge(BaseMemoryModel):
     """Asset bridge model for tracking cross-asset conversions and transfers."""
     __tablename__ = "asset_bridges"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('bridge_type', 'fiat_to_crypto')
         self._data.setdefault('from_asset_class', 'fiat')
         self._data.setdefault('to_asset_class', 'crypto')
@@ -1083,10 +1081,10 @@ class AssetBridge(BaseMemoryModel):
         self._data.setdefault('status', 'pending')
         self._data.setdefault('transaction_hash', None)
         self._data.setdefault('error_message', None)
-        
+
         # Format fee
         self._data['total_fees_usd'] = format_money(self._data.get('total_fees_usd', 0.0))
-        
+
         if 'initiated_at' not in self._data:
             self._data['initiated_at'] = datetime.utcnow()
         self._data.setdefault('completed_at', None)
@@ -1095,17 +1093,17 @@ class AssetBridge(BaseMemoryModel):
 class ConversionRate(BaseMemoryModel):
     """Conversion rate model for tracking exchange rates between assets."""
     __tablename__ = "conversion_rates"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+
         self._data.setdefault('from_asset', 'USD')
         self._data.setdefault('to_asset', 'EUR')
         self._data.setdefault('rate', 1.0)
         self._data.setdefault('inverse_rate', 1.0)
         self._data.setdefault('source', 'market')  # market, fixed, custom
         self._data.setdefault('is_active', True)
-        
+
         if 'last_updated' not in self._data:
             self._data['last_updated'] = datetime.utcnow()
         if 'valid_until' not in self._data:
@@ -1116,11 +1114,11 @@ class ConversionRate(BaseMemoryModel):
 class CollateralPosition(BaseMemoryModel):
     """Collateral position model for cross-asset collateralized lending."""
     __tablename__ = "collateral_positions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('position_type', 'loan')
         self._data.setdefault('collateral_assets', [])
         self._data.setdefault('total_collateral_value_usd', 0.0)
@@ -1132,13 +1130,13 @@ class CollateralPosition(BaseMemoryModel):
         self._data.setdefault('interest_rate', 0.0)
         self._data.setdefault('interest_type', 'variable')
         self._data.setdefault('is_active', True)
-        
+
         # Format money fields
         self._data['total_collateral_value_usd'] = format_money(
             self._data.get('total_collateral_value_usd', 0.0)
         )
         self._data['amount_borrowed'] = format_money(self._data.get('amount_borrowed', 0.0))
-        
+
         if 'last_updated' not in self._data:
             self._data['last_updated'] = datetime.utcnow()
 
@@ -1146,11 +1144,11 @@ class CollateralPosition(BaseMemoryModel):
 class UnifiedTransaction(BaseMemoryModel):
     """Unified transaction model for tracking cross-system transfers."""
     __tablename__ = "unified_transactions"
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         from ..utils.money import format_money
-        
+
         self._data.setdefault('transaction_type', 'transfer')
         self._data.setdefault('source_system', 'fiat')
         self._data.setdefault('destination_system', 'crypto')
@@ -1163,11 +1161,11 @@ class UnifiedTransaction(BaseMemoryModel):
         self._data.setdefault('total_fees_usd', 0.0)
         self._data.setdefault('status', 'pending')
         self._data.setdefault('reference_ids', {})  # System-specific IDs
-        
+
         # Format money fields
         self._data['amount_usd'] = format_money(self._data.get('amount_usd', 0.0))
         self._data['total_fees_usd'] = format_money(self._data.get('total_fees_usd', 0.0))
-        
+
         if 'initiated_at' not in self._data:
             self._data['initiated_at'] = datetime.utcnow()
         self._data.setdefault('completed_at', None)
@@ -1207,31 +1205,72 @@ class UnifiedTransferStatus:
 
 # Export all models and enums
 __all__ = [
+    'Account',
+    'AccountType',
+    'AssetBridge',
+    'AssetClass',
     'BaseMemoryModel',
-    'User', 'UserRole',
-    'Account', 'AccountType',
-    'Transaction', 'TransactionType', 'TransactionStatus',
+    'BillingCycle',
+    'BlockchainNetwork',
+    'Budget',
+    'BudgetPeriod',
+    'Card',
+    'CardStatus',
+    'CardType',
     'Category',
-    'Budget', 'BudgetPeriod',
-    'Goal', 'GoalStatus', 'GoalContribution',
-    'Notification', 'NotificationType',
-    'Contact', 'ContactStatus',
-    'Conversation', 'ConversationParticipant',
-    'Message', 'MessageStatus', 'MessageReadReceipt',
-    'RecurringRule',
-    'Merchant',
-    'Note',
-    'Card', 'CardType', 'CardStatus',
-    'Subscription', 'SubscriptionStatus', 'BillingCycle', 'SubscriptionCategory',
-    'SecurityEvent', 'SecurityEventType',
-    'PaymentMethod', 'PaymentMethodType', 'PaymentMethodStatus',
-    'Log',
+    'CollateralPosition',
+    'Contact',
+    'ContactStatus',
+    'Conversation',
+    'ConversationParticipant',
+    'ConversionRate',
+    'ConversionType',
+    'CreditAlert',
+    'CreditAlertSeverity',
+    'CreditAlertType',
+    'CreditBuilderAccount',
+    'CreditBuilderType',
+    'CreditDispute',
+    'CreditDisputeStatus',
+    'CreditDisputeType',
+    'CreditScore',
+    'CreditSimulation',
+    'CryptoAsset',
+    'CryptoAssetType',
+    'CryptoTransaction',
+    'CryptoTransactionStatus',
+    'CryptoWallet',
+    'DeFiPosition',
+    'DeFiProtocolType',
     'DirectMessage',
-    'CryptoWallet', 'CryptoAsset', 'NFTAsset', 'CryptoTransaction', 'DeFiPosition',
-    'CryptoAssetType', 'BlockchainNetwork', 'CryptoTransactionStatus', 
-    'TransactionDirection', 'DeFiProtocolType',
-    'CreditScore', 'CreditSimulation', 'CreditAlert', 'CreditDispute', 'CreditBuilderAccount',
-    'CreditAlertType', 'CreditAlertSeverity', 'CreditDisputeType', 'CreditDisputeStatus', 'CreditBuilderType',
-    'UnifiedBalance', 'AssetBridge', 'ConversionRate', 'CollateralPosition', 'UnifiedTransaction',
-    'AssetClass', 'ConversionType', 'UnifiedTransferStatus',
+    'Goal',
+    'GoalContribution',
+    'GoalStatus',
+    'Log',
+    'Merchant',
+    'Message',
+    'MessageReadReceipt',
+    'MessageStatus',
+    'NFTAsset',
+    'Note',
+    'Notification',
+    'NotificationType',
+    'PaymentMethod',
+    'PaymentMethodStatus',
+    'PaymentMethodType',
+    'RecurringRule',
+    'SecurityEvent',
+    'SecurityEventType',
+    'Subscription',
+    'SubscriptionCategory',
+    'SubscriptionStatus',
+    'Transaction',
+    'TransactionDirection',
+    'TransactionStatus',
+    'TransactionType',
+    'UnifiedBalance',
+    'UnifiedTransaction',
+    'UnifiedTransferStatus',
+    'User',
+    'UserRole',
 ]

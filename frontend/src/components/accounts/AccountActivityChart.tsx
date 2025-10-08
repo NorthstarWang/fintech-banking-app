@@ -138,14 +138,6 @@ export const AccountActivityChart: React.FC<AccountActivityChartProps> = ({
                         animate={{ scaleY: 1 }}
                         transition={{ delay: index * 0.01, duration: 0.5, ease: 'easeOut' }}
                         onMouseEnter={() => {
-                            text: `User hovered over Activity Chart Bar ${index + 1} - ${showBalances ? formatCurrency(data.balance) : 'Hidden'}`,
-                            element_identifier: `activity-chart-bar-${index}`,
-                            data: {
-                              bar_index: index,
-                              balance: showBalances ? data.balance : null,
-                              change: showBalances ? data.change : null
-                            }
-                          });
                         }}
                       >
                       
@@ -196,12 +188,6 @@ export const AccountActivityChart: React.FC<AccountActivityChartProps> = ({
             className="p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.1)] border border-[var(--border-1)] cursor-pointer transition-all hover:bg-[rgba(var(--glass-rgb),0.15)]"
             data-testid="stat-average-balance"
             onMouseEnter={() => {
-                text: `User hovered over Average Balance Stat - ${showBalances ? formatCurrency(averageBalance) : 'Hidden'}`,
-                element_identifier: 'stat-average-balance',
-                data: {
-                  average_balance: showBalances ? averageBalance : null
-                }
-              });
             }}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -217,12 +203,6 @@ export const AccountActivityChart: React.FC<AccountActivityChartProps> = ({
             className="p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.1)] border border-[var(--border-1)] cursor-pointer transition-all hover:bg-[rgba(var(--glass-rgb),0.15)]"
             data-testid="stat-total-inflow"
             onMouseEnter={() => {
-                text: `User hovered over Total Inflow Stat - ${showBalances ? formatCurrency(totalInflow) : 'Hidden'}`,
-                element_identifier: 'stat-total-inflow',
-                data: {
-                  total_inflow: showBalances ? totalInflow : null
-                }
-              });
             }}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -238,12 +218,6 @@ export const AccountActivityChart: React.FC<AccountActivityChartProps> = ({
             className="p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.1)] border border-[var(--border-1)] cursor-pointer transition-all hover:bg-[rgba(var(--glass-rgb),0.15)]"
             data-testid="stat-total-outflow"
             onMouseEnter={() => {
-                text: `User hovered over Total Outflow Stat - ${showBalances ? formatCurrency(totalOutflow) : 'Hidden'}`,
-                element_identifier: 'stat-total-outflow',
-                data: {
-                  total_outflow: showBalances ? totalOutflow : null
-                }
-              });
             }}
           >
             <div className="flex items-center gap-2 mb-2">

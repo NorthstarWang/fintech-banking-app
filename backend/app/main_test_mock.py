@@ -1,34 +1,33 @@
 """
 Simplified FastAPI app for testing with mock data.
 """
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.repositories.data_manager import data_manager
-from app.routes import auth_mock_flexible as auth
 from app.routes import accounts_mock as accounts
-from app.routes import transactions_mock as transactions
-from app.routes import users_mock as users
+from app.routes import auth_mock_flexible as auth
 from app.routes import budgets_mock as budgets
+from app.routes import business_mock as business
 from app.routes import cards_mock as cards
+from app.routes import categories_mock as categories
 from app.routes import messages_mock as messages
 from app.routes import notifications_mock as notifications
 from app.routes import savings_mock as savings
 from app.routes import subscriptions_mock as subscriptions
-from app.routes import business_mock as business
-from app.routes import categories_mock as categories
+from app.routes import transactions_mock as transactions
+from app.routes import users_mock as users
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
     # Startup
-    print("Starting Test Banking Application with Mock Data...")
     data_manager.reset(seed=42)
     yield
     # Shutdown
-    print("Shutting down Test Banking Application...")
 
 app = FastAPI(
     title="Test Banking API (Mock)",

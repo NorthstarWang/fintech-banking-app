@@ -83,8 +83,8 @@ export const Card: React.FC<CardProps> = ({
         whileHover: hoverable ? { scale: 1.02 } : {},
         whileTap: { scale: 0.98 },
         onClick: () => {
-          const cardLabel = analyticsLabel || 'card';
-          const cardId = analyticsId || `${variant}-card`;
+          const _cardLabel = analyticsLabel || 'card';
+          const _cardId = analyticsId || `${variant}-card`;
           onClick();
         },
         role: 'button',

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import PageTransitionLogger from '@/components/analytics/PageTransitionLogger';
 import ErrorBoundary from '@/components/analytics/ErrorBoundary';
 import { DemoModeProvider } from '@/contexts/DemoModeContext';
 import { SecurityProvider } from '@/contexts/SecurityContext';
@@ -48,7 +47,6 @@ export default function AuthenticatedLayout({
         <SecurityProvider>
           <DemoModeProvider>
             <ErrorBoundary>
-              <PageTransitionLogger />
             <div className="min-h-screen flex flex-col relative">
               <Header />
               <main className="min-h-screen flex-1 relative bg-[var(--bg-color-alpha)] backdrop-blur-sm">

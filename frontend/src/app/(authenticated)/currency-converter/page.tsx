@@ -15,7 +15,6 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { useSyntheticTracking } from '@/hooks/useSyntheticTracking';
 
 interface Currency {
   code: string;
@@ -120,7 +119,6 @@ const TRANSFER_METHOD_LABELS = {
 };
 
 export default function CurrencyConverterPage() {
-  const { trackCurrencyConversion } = useSyntheticTracking();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [balances, setBalances] = useState<CurrencyBalance[]>([]);
   const [activeTab, setActiveTab] = useState<'convert' | 'p2p' | 'history'>('convert');
@@ -145,11 +143,6 @@ export default function CurrencyConverterPage() {
   useEffect(() => {
     fetchInitialData();
     
-    // Track page view
-      text: 'User viewed currency converter page',
-      page_name: 'Currency Converter',
-      timestamp: new Date().toISOString()
-    });
   }, []);
 
   useEffect(() => {
@@ -173,8 +166,7 @@ export default function CurrencyConverterPage() {
       // Fetch user's P2P trades
       const tradesRes = await fetchApi.get('/api/currency-converter/p2p/trades');
       setMyTrades(tradesRes);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -184,8 +176,7 @@ export default function CurrencyConverterPage() {
     try {
       const rateRes = await fetchApi.get(`/api/currency-converter/exchange-rate/${fromCurrency}/${toCurrency}`);
       setExchangeRate(rateRes);
-    } catch (error) {
-      console.error('Error fetching exchange rate:', error);
+    } catch {
     }
   };
 
@@ -211,8 +202,7 @@ export default function CurrencyConverterPage() {
       
       setQuote(quoteRes);
       setShowQuoteModal(true);
-    } catch (error) {
-      console.error('Error creating quote:', error);
+    } catch {
       alert('Failed to create quote. Please try again.');
     }
   };
@@ -250,8 +240,7 @@ export default function CurrencyConverterPage() {
       // Refresh balances
       const balancesRes = await fetchApi.get('/api/currency-converter/balances');
       setBalances(balancesRes);
-    } catch (error) {
-      console.error('Error confirming conversion:', error);
+    } catch {
       alert('Failed to process conversion. Please try again.');
     }
   };
@@ -264,8 +253,7 @@ export default function CurrencyConverterPage() {
         `/api/currency-converter/p2p/offers/search?currency=${p2pSearchCurrency}&amount=${p2pSearchAmount}`
       );
       setPeerOffers(offersRes);
-    } catch (error) {
-      console.error('Error searching P2P offers:', error);
+    } catch {
     }
   };
 
@@ -284,8 +272,7 @@ export default function CurrencyConverterPage() {
       // Refresh trades
       const tradesRes = await fetchApi.get('/api/currency-converter/p2p/trades');
       setMyTrades(tradesRes);
-    } catch (error) {
-      console.error('Error creating P2P trade:', error);
+    } catch {
       alert('Failed to create trade. Please try again.');
     }
   };

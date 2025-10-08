@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   DollarSign,
   Calendar,
-  Tag,
-  FileText,
   Upload,
   Store,
   Car,
@@ -81,8 +78,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
       if (accounts.length > 0 && !selectedBusinessAccountId) {
         setSelectedBusinessAccountId(accounts[0].id);
       }
-    } catch (error) {
-      console.error('Failed to load business accounts:', error);
+    } catch {
     }
   };
 

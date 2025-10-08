@@ -1,8 +1,9 @@
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
+from datetime import date, datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
 
 # Loan-specific enums
 class LoanType(str, Enum):
@@ -44,12 +45,12 @@ class LoanApplicationCreate(BaseModel):
     employment_status: str
     annual_income: float
     monthly_expenses: float
-    collateral_description: Optional[str] = None
-    collateral_value: Optional[float] = None
+    collateral_description: str | None = None
+    collateral_value: float | None = None
 
 class LoanApplicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     loan_type: LoanType
@@ -62,12 +63,12 @@ class LoanApplicationResponse(BaseModel):
     debt_to_income_ratio: float
     created_at: datetime
     updated_at: datetime
-    decision_date: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
+    decision_date: datetime | None = None
+    rejection_reason: str | None = None
 
 class LoanOfferResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     application_id: int
     lender_name: str
@@ -80,13 +81,13 @@ class LoanOfferResponse(BaseModel):
     total_cost: float
     origination_fee: float
     apr: float  # Annual Percentage Rate
-    special_conditions: Optional[List[str]] = None
+    special_conditions: list[str] | None = None
     expires_at: datetime
     created_at: datetime
 
 class LoanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     account_id: int  # Links to Account with type LOAN
@@ -108,9 +109,9 @@ class LoanResponse(BaseModel):
     status: LoanStatus
     originated_date: date
     maturity_date: date
-    last_payment_date: Optional[date] = None
-    escrow_balance: Optional[float] = None  # For mortgages
-    collateral_description: Optional[str] = None
+    last_payment_date: date | None = None
+    escrow_balance: float | None = None  # For mortgages
+    collateral_description: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -120,7 +121,7 @@ class LoanPaymentScheduleResponse(BaseModel):
     payment_amount: float
     principal: float
     interest: float
-    escrow: Optional[float] = None
+    escrow: float | None = None
     remaining_balance: float
     cumulative_interest: float
     cumulative_principal: float
@@ -129,42 +130,42 @@ class LoanPaymentCreate(BaseModel):
     loan_id: int
     amount: float
     payment_type: str = "regular"  # regular, extra_principal, payoff
-    payment_date: Optional[date] = None
-    note: Optional[str] = None
+    payment_date: date | None = None
+    note: str | None = None
 
 class LoanPaymentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     loan_id: int
     payment_number: int
     amount: float
     principal_amount: float
     interest_amount: float
-    escrow_amount: Optional[float] = None
-    extra_principal: Optional[float] = None
+    escrow_amount: float | None = None
+    extra_principal: float | None = None
     payment_type: str
     payment_date: date
     posted_date: datetime
     remaining_balance: float
-    note: Optional[str] = None
+    note: str | None = None
 
 class LoanRefinanceAnalysis(BaseModel):
-    current_loan: Dict[str, Any]
-    refinance_options: List[Dict[str, Any]]
+    current_loan: dict[str, Any]
+    refinance_options: list[dict[str, Any]]
     break_even_months: int
     total_savings: float
     monthly_savings: float
     recommendation: str
-    factors_considered: List[str]
+    factors_considered: list[str]
 
 class LoanAmortizationRequest(BaseModel):
     principal: float
     interest_rate: float
     term_months: int
-    extra_payment: Optional[float] = None
-    extra_payment_frequency: Optional[str] = None
-    start_date: Optional[date] = None
+    extra_payment: float | None = None
+    extra_payment_frequency: str | None = None
+    start_date: date | None = None
 
 class LoanSummaryStats(BaseModel):
     total_loans: int
@@ -173,9 +174,9 @@ class LoanSummaryStats(BaseModel):
     total_monthly_payments: float
     average_interest_rate: float
     total_interest_paid: float
-    loans_by_type: Dict[str, int]
+    loans_by_type: dict[str, int]
     next_payment_total: float
-    next_payment_date: Optional[date] = None
+    next_payment_date: date | None = None
 
 class CryptoLoanCreate(BaseModel):
     requested_amount_usd: float

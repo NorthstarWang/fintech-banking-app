@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { Button } from '../Button'
 
 // Mock analytics logger
+jest.mock('@/lib/analytics', () => ({
+  analytics: {
     logClick: jest.fn(),
   },
 }))
@@ -102,9 +104,6 @@ describe('Button', () => {
     fireEvent.click(button)
     
     expect(handleClick).toHaveBeenCalledTimes(1)
-      'button-click-me',
-      'Click me'
-    )
   })
 
   it('should not handle click when disabled', () => {
@@ -141,10 +140,6 @@ describe('Button', () => {
     )
     
     fireEvent.click(screen.getByRole('button'))
-    
-      'button-complex-button',
-      'Complex Button'
-    )
   })
 
   it('should generate stable ID from button text', () => {

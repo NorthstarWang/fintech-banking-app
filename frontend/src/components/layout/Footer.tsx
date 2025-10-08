@@ -30,7 +30,7 @@ export const Footer: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const currentYear = new Date().getFullYear();
 
-  const handleLinkClick = (section: string, link: string) => {
+  const handleLinkClick = (_section: string, _link: string) => {
   };
 
   const footerSections = {

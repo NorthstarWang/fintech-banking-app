@@ -9,16 +9,9 @@ import {
   Smartphone,
   CreditCard,
   AlertCircle,
-  Check,
-  X,
-  Info,
-  DollarSign
+  Check
 } from 'lucide-react';
 import Card, { CardHeader, CardBody } from '../ui/Card';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Modal from '../ui/Modal';
-import Checkbox from '../ui/Checkbox';
 import SpendingLimits from './SpendingLimits';
 import { CreditCard as CreditCardType } from '@/app/cards/page';
 
@@ -32,8 +25,8 @@ interface CardControlsProps {
 export const CardControls: React.FC<CardControlsProps> = ({ 
   card, 
   onUpdate,
-  analyticsId = 'card-controls',
-  analyticsLabel = 'Card Controls',
+  analyticsId: _analyticsId = 'card-controls',
+  analyticsLabel: _analyticsLabel = 'Card Controls',
 }) => {
   const [controls, setControls] = useState({
     contactless: card.features.contactless,
@@ -44,16 +37,11 @@ export const CardControls: React.FC<CardControlsProps> = ({
 
   const handleToggleFeature = (feature: keyof typeof controls) => {
     const newControls = { ...controls, [feature]: !controls[feature] };
-      `${analyticsId}-toggle-${feature}`,
-      `${analyticsLabel} - ${feature} - ${newControls[feature] ? 'Enabled' : 'Disabled'}`
-    );
     setControls(newControls);
     onUpdate({
       features: { ...card.features, [feature]: newControls[feature] }
     });
   };
-
-
   const controlItems = [
     {
       id: 'contactless',
@@ -84,8 +72,6 @@ export const CardControls: React.FC<CardControlsProps> = ({
       enabled: controls.atm,
     },
   ];
-
-
   return (
     <>
       <div className="space-y-6">
@@ -112,11 +98,6 @@ export const CardControls: React.FC<CardControlsProps> = ({
                     : 'bg-transparent border-[var(--border-1)]'
                   }
                 `}
-                onMouseEnter={() => {
-                    `${analyticsId}-control-${control.id}`,
-                    `${analyticsLabel} - Hovered ${control.label} - ${control.enabled ? 'Enabled' : 'Disabled'}`
-                  );
-                }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">

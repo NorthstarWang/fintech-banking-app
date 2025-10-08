@@ -241,8 +241,8 @@ describe('SessionManager', () => {
       sessionManager.start()
       
       // Count initial listeners
-      const initialTimeoutListeners = sessionManager.listenerCount('timeout')
-      const initialWarningListeners = sessionManager.listenerCount('warning')
+      const _initialTimeoutListeners = sessionManager.listenerCount('timeout')
+      const _initialWarningListeners = sessionManager.listenerCount('warning')
       
       sessionManager.stop()
 

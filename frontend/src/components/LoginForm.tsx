@@ -13,9 +13,9 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ 
-  sessionId = 'default',
-  analyticsId = 'login-form',
-  analyticsLabel = 'Authentication Form'
+  _sessionId = 'default',
+  analyticsId: _analyticsId = 'login-form',
+  analyticsLabel: _analyticsLabel = 'Authentication Form'
 }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,13 +33,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
-      text: `User clicked on the ${isRegister ? "register" : "login"} button`,
-      page_url: window.location.href,
-      element_identifier: isRegister ? "register-submit-btn" : "login-submit-btn",
-      coordinates: { x: 0, y: 0 }
-    });
-
     try {
       if (isRegister) {
         // Validate registration fields
@@ -62,10 +55,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       const errorMessage = handleApiError(error);
       setError(errorMessage);
       
-        text: `${isRegister ? "Registration" : "Login"} failed: ${errorMessage}`,
-        page_url: window.location.href,
-        error: errorMessage
-      });
     } finally {
       setIsLoading(false);
     }
@@ -73,20 +62,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   const handleTypeUsername = (value: string) => {
     setUsername(value);
-      text: `User typed into the username field`,
-      page_url: window.location.href,
-      element_identifier: "login-username",
-      key: "***" // Don't log actual username
-    });
   };
 
   const handleTypePassword = (value: string) => {
     setPassword(value);
-      text: `User typed into the password field`,
-      page_url: window.location.href,
-      element_identifier: "login-password",
-      key: "***" // Don't log actual password
-    });
   };
 
   const toggleMode = () => {
@@ -100,11 +79,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setLastName("");
     setPhone("");
     
-      text: `User clicked on the toggle button to switch to ${isRegister ? "login" : "register"} mode`,
-      page_url: window.location.href,
-      element_identifier: "toggle-auth-mode",
-      coordinates: { x: 0, y: 0 }
-    });
   };
 
   // Demo credentials
@@ -119,13 +93,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setPassword(password);
     setError(null);
     setIsLoading(true);
-
-      text: `User clicked demo login for ${username}`,
-      page_url: window.location.href,
-      element_identifier: `demo-login-${username}`,
-      coordinates: { x: 0, y: 0 }
-    });
-
     try {
       await login(username, password);
     } catch (error) {

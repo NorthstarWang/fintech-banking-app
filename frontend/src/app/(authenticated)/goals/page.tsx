@@ -7,13 +7,9 @@ import {
   Plus,
   Trophy,
   TrendingUp,
-  Calendar,
   DollarSign,
-  Filter,
-  CheckCircle,
   Clock,
   AlertCircle,
-  Zap,
   Home,
   Car,
   GraduationCap,
@@ -63,7 +59,7 @@ export interface Goal {
 
 export default function GoalsPage() {
   const { user } = useAuth();
-  const { showError, showSuccess, showInfo } = useAlert();
+  const { showError, _showSuccess, _showInfo } = useAlert();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -112,11 +108,6 @@ export default function GoalsPage() {
   };
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed goals page`,
-      page_name: 'Goals',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadGoals();
   }, [user]);
 
@@ -181,31 +172,13 @@ export default function GoalsPage() {
       setGoals(transformedGoals);
       
       // Calculate summary statistics
-      const totalTargetAmount = transformedGoals.reduce((sum, g) => sum + g.targetAmount, 0);
-      const totalCurrentAmount = transformedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
-      const activeGoals = transformedGoals.filter(g => g.status === 'active');
-      const completedGoals = transformedGoals.filter(g => g.status === 'completed');
-      const goalsAtRisk = transformedGoals.filter(g => g.riskLevel === 'at-risk');
+      const _totalTargetAmount = transformedGoals.reduce((sum, g) => sum + g.targetAmount, 0);
+      const _totalCurrentAmount = transformedGoals.reduce((sum, g) => sum + g.currentAmount, 0);
+      const _activeGoals = transformedGoals.filter(g => g.status === 'active');
+      const _completedGoals = transformedGoals.filter(g => g.status === 'completed');
+      const _goalsAtRisk = transformedGoals.filter(g => g.riskLevel === 'at-risk');
       
-        text: `Goals data loaded: ${transformedGoals.length} total goals, ${activeGoals.length} active, ${completedGoals.length} completed`,
-        custom_action: 'goals_data_loaded',
-        data: {
-          total_goals: transformedGoals.length,
-          active_goals: activeGoals.length,
-          completed_goals: completedGoals.length,
-          goals_at_risk: goalsAtRisk.length,
-          total_target_amount: totalTargetAmount,
-          total_current_amount: totalCurrentAmount,
-          overall_progress: totalTargetAmount > 0 ? (totalCurrentAmount / totalTargetAmount * 100).toFixed(1) : 0,
-          categories_used: [...new Set(transformedGoals.map(g => g.category))],
-          priorities: {
-            high: transformedGoals.filter(g => g.priority === 'HIGH').length,
-            medium: transformedGoals.filter(g => g.priority === 'MEDIUM').length,
-            low: transformedGoals.filter(g => g.priority === 'LOW').length
-          }
-        }
-      });
-    } catch (err) {
+    } catch {
       setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setIsLoading(false);
@@ -231,20 +204,6 @@ export default function GoalsPage() {
       
       await goalsService.createGoal(newGoal);
       
-        text: `User created new ${goalForm.category} goal "${goalForm.name}" with target $${goalForm.targetAmount}`,
-        custom_action: 'create_goal',
-        data: {
-          goal_name: goalForm.name,
-          goal_category: goalForm.category,
-          target_amount: parseFloat(goalForm.targetAmount),
-          initial_amount: parseFloat(goalForm.initialAmount) || 0,
-          target_date: goalForm.targetDate,
-          priority: goalForm.priority,
-          days_to_target: Math.floor((new Date(goalForm.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-          existing_goals: goals.length,
-          has_description: !!goalForm.description
-        }
-      });
       
       setShowCreateGoal(false);
       setGoalForm({
@@ -257,8 +216,7 @@ export default function GoalsPage() {
         priority: 'MEDIUM'
       });
       await loadGoals();
-    } catch (err) {
-      console.error('Failed to create goal:', err);
+    } catch {
       showError('Goal Creation Failed', 'Unable to create the goal. Please try again.');
     }
   };
@@ -278,49 +236,18 @@ export default function GoalsPage() {
       
       await goalsService.updateGoal(parseInt(selectedGoal.id), updates);
       
-        text: `User updated goal "${selectedGoal.name}" -> "${goalForm.name}"`,
-        custom_action: 'update_goal',
-        data: {
-          goal_id: selectedGoal.id,
-          old_name: selectedGoal.name,
-          new_name: goalForm.name,
-          old_target: selectedGoal.targetAmount,
-          new_target: goalForm.targetAmount ? parseFloat(goalForm.targetAmount) : selectedGoal.targetAmount,
-          old_date: selectedGoal.deadline,
-          new_date: goalForm.targetDate || selectedGoal.deadline,
-          old_category: selectedGoal.category,
-          new_category: goalForm.category,
-          old_priority: selectedGoal.priority,
-          new_priority: goalForm.priority,
-          progress_before_update: selectedGoal.progress,
-          current_amount: selectedGoal.currentAmount
-        }
-      });
       
       setIsEditMode(false);
       setShowGoalDetails(false);
       setSelectedGoal(null);
       await loadGoals();
-    } catch (err) {
-      console.error('Failed to update goal:', err);
+    } catch {
       showError('Goal Update Failed', 'Unable to update the goal. Please try again.');
     }
   };
   
   const handleEditClick = () => {
     if (selectedGoal) {
-        text: `User editing goal "${selectedGoal.name}"`,
-        custom_action: 'edit_goal_initiated',
-        data: {
-          goal_id: selectedGoal.id,
-          goal_name: selectedGoal.name,
-          current_progress: selectedGoal.progress,
-          current_amount: selectedGoal.currentAmount,
-          target_amount: selectedGoal.targetAmount,
-          risk_level: selectedGoal.riskLevel,
-          days_to_deadline: Math.floor((new Date(selectedGoal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-        }
-      });
       setGoalForm({
         name: selectedGoal.name,
         description: selectedGoal.description || '',
@@ -360,21 +287,6 @@ export default function GoalsPage() {
   const completedGoals = goals.filter(g => g.status === 'completed').length;
 
   const handleGoalClick = (goal: Goal) => {
-      text: `User selected goal "${goal.name}" with ${goal.progress.toFixed(0)}% progress`,
-      custom_action: 'select_goal',
-      data: {
-        goal_id: goal.id,
-        goal_name: goal.name,
-        goal_category: goal.category,
-        target_amount: goal.targetAmount,
-        current_amount: goal.currentAmount,
-        progress_percentage: goal.progress,
-        days_remaining: Math.floor((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-        risk_level: goal.riskLevel,
-        status: goal.status,
-        priority: goal.priority
-      }
-    });
     setSelectedGoal(goal);
     setShowGoalDetails(true);
   };
@@ -423,16 +335,6 @@ export default function GoalsPage() {
             variant="primary"
             icon={<Plus size={18} />}
             onClick={() => {
-                text: `User opening create goal modal with ${goals.filter(g => g.status === 'active').length} active goals`,
-                custom_action: 'open_create_goal_modal',
-                data: {
-                  existing_goals_count: goals.length,
-                  active_goals_count: goals.filter(g => g.status === 'active').length,
-                  completed_goals_count: goals.filter(g => g.status === 'completed').length,
-                  total_target_amount: goals.reduce((sum, g) => sum + g.targetAmount, 0),
-                  total_current_amount: goals.reduce((sum, g) => sum + g.currentAmount, 0)
-                }
-              });
               setShowCreateGoal(true);
             }}
             className="mt-4 md:mt-0"
@@ -506,18 +408,8 @@ export default function GoalsPage() {
             }))}
             value={filterCategory}
             onChange={(value) => {
-              const oldCategory = filterCategory;
+              const _oldCategory = filterCategory;
               setFilterCategory(value);
-                text: `User filtered goals by category: ${value === 'all' ? 'All Categories' : value}`,
-                filter_type: 'category',
-                filter_value: value,
-                data: {
-                  old_category: oldCategory,
-                  new_category: value,
-                  goals_before_filter: goals.length,
-                  goals_after_filter: goals.filter(g => value === 'all' || g.category === value).length
-                }
-              });
             }}
             placeholder="Category"
           />
@@ -529,18 +421,8 @@ export default function GoalsPage() {
             }))}
             value={filterStatus}
             onChange={(value) => {
-              const oldStatus = filterStatus;
+              const _oldStatus = filterStatus;
               setFilterStatus(value);
-                text: `User filtered goals by status: ${value === 'all' ? 'All Status' : value}`,
-                filter_type: 'status',
-                filter_value: value,
-                data: {
-                  old_status: oldStatus,
-                  new_status: value,
-                  goals_before_filter: goals.length,
-                  goals_after_filter: goals.filter(g => value === 'all' || g.status === value).length
-                }
-              });
             }}
             placeholder="Status"
           />
@@ -553,17 +435,8 @@ export default function GoalsPage() {
             ]}
             value={sortBy}
             onChange={(value) => {
-              const oldSort = sortBy;
+              const _oldSort = sortBy;
               setSortBy(value as 'deadline' | 'progress' | 'amount');
-                text: `User sorted goals by ${value}`,
-                sort_field: value,
-                sort_order: 'asc',
-                data: {
-                  old_sort: oldSort,
-                  new_sort: value,
-                  goals_count: filteredGoals.length
-                }
-              });
             }}
             placeholder="Sort by"
           />
@@ -621,11 +494,6 @@ export default function GoalsPage() {
             value={goalForm.name}
             onChange={(e) => {
               setGoalForm({ ...goalForm, name: e.target.value });
-                text: `User entered goal name: "${e.target.value}"`,
-                field_name: 'goal_name',
-                field_value: e.target.value,
-                form_type: 'create_goal'
-              });
             }}
             required
           />
@@ -637,11 +505,6 @@ export default function GoalsPage() {
             value={goalForm.description}
             onChange={(e) => {
               setGoalForm({ ...goalForm, description: e.target.value });
-                text: `User entered goal description: "${e.target.value}"`,
-                field_name: 'goal_description',
-                field_value: e.target.value,
-                form_type: 'create_goal'
-              });
             }}
           />
           
@@ -653,15 +516,6 @@ export default function GoalsPage() {
               value={goalForm.targetAmount}
               onChange={(e) => {
                 setGoalForm({ ...goalForm, targetAmount: e.target.value });
-                  text: `User set target amount: $${e.target.value}`,
-                  field_name: 'target_amount',
-                  field_value: e.target.value,
-                  form_type: 'create_goal',
-                  data: {
-                    amount: parseFloat(e.target.value) || 0,
-                    is_valid: !isNaN(parseFloat(e.target.value)) && parseFloat(e.target.value) > 0
-                  }
-                });
               }}
               icon={<DollarSign size={18} />}
               required
@@ -674,15 +528,6 @@ export default function GoalsPage() {
               value={goalForm.initialAmount}
               onChange={(e) => {
                 setGoalForm({ ...goalForm, initialAmount: e.target.value });
-                  text: `User set initial amount: $${e.target.value}`,
-                  field_name: 'initial_amount',
-                  field_value: e.target.value,
-                  form_type: 'create_goal',
-                  data: {
-                    amount: parseFloat(e.target.value) || 0,
-                    percentage_of_target: goalForm.targetAmount ? ((parseFloat(e.target.value) || 0) / parseFloat(goalForm.targetAmount) * 100).toFixed(1) : 0
-                  }
-                });
               }}
               icon={<DollarSign size={18} />}
             />
@@ -693,17 +538,7 @@ export default function GoalsPage() {
             value={goalForm.targetDate}
             onChange={(value) => {
               setGoalForm({ ...goalForm, targetDate: value });
-              const daysToTarget = Math.floor((new Date(value).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                text: `User selected target date: ${value} (${daysToTarget} days from now)`,
-                field_name: 'target_date',
-                field_value: value,
-                form_type: 'create_goal',
-                data: {
-                  date: value,
-                  days_to_target: daysToTarget,
-                  months_to_target: Math.floor(daysToTarget / 30)
-                }
-              });
+              const _daysToTarget = Math.floor((new Date(value).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
             }}
             minDate={new Date().toISOString().split('T')[0]}
             required
@@ -722,11 +557,6 @@ export default function GoalsPage() {
               value={goalForm.category}
               onChange={(value) => {
                 setGoalForm({ ...goalForm, category: value as GoalCreate['category'] });
-                  text: `User selected goal category: ${value}`,
-                  field_name: 'goal_category',
-                  field_value: value,
-                  form_type: 'create_goal'
-                });
               }}
               placeholder="Select category"
             />
@@ -741,11 +571,6 @@ export default function GoalsPage() {
               value={goalForm.priority || 'MEDIUM'}
               onChange={(value) => {
                 setGoalForm({ ...goalForm, priority: value as GoalCreate['priority'] });
-                  text: `User selected goal priority: ${value}`,
-                  field_name: 'goal_priority',  
-                  field_value: value,
-                  form_type: 'create_goal'
-                });
               }}
               placeholder="Select priority"
             />
@@ -756,23 +581,6 @@ export default function GoalsPage() {
               variant="secondary"
               fullWidth
               onClick={() => {
-                  text: `User cancelled goal creation with form data: name="${goalForm.name}", amount=$${goalForm.targetAmount || '0'}`,
-                  custom_action: 'cancel_create_goal',
-                  data: {
-                    had_name: !!goalForm.name,
-                    had_amount: !!goalForm.targetAmount,
-                    had_date: !!goalForm.targetDate,
-                    form_completion: {
-                      name: !!goalForm.name,
-                      description: !!goalForm.description,
-                      target_amount: !!goalForm.targetAmount,
-                      initial_amount: goalForm.initialAmount !== '0',
-                      target_date: !!goalForm.targetDate,
-                      category_changed: goalForm.category !== 'SAVINGS',
-                      priority_changed: goalForm.priority !== 'MEDIUM'
-                    }
-                  }
-                });
                 setShowCreateGoal(false);
                 setGoalForm({
                   name: '',
@@ -791,19 +599,6 @@ export default function GoalsPage() {
               variant="primary" 
               fullWidth
               onClick={() => {
-                  text: `User clicked create goal with "${goalForm.name}" target $${goalForm.targetAmount}`,
-                  custom_action: 'submit_create_goal',
-                  data: {
-                    goal_name: goalForm.name,
-                    target_amount: parseFloat(goalForm.targetAmount) || 0,
-                    initial_amount: parseFloat(goalForm.initialAmount) || 0,
-                    category: goalForm.category,
-                    priority: goalForm.priority,
-                    target_date: goalForm.targetDate,
-                    has_description: !!goalForm.description,
-                    days_to_target: goalForm.targetDate ? Math.floor((new Date(goalForm.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0
-                  }
-                });
                 handleCreateGoal();
               }}
             >
@@ -818,16 +613,6 @@ export default function GoalsPage() {
         <Modal
           isOpen={showGoalDetails}
           onClose={() => {
-              text: `User closed goal details modal for "${selectedGoal.name}"`,
-              custom_action: 'close_goal_details',
-              data: {
-                goal_id: selectedGoal.id,
-                goal_name: selectedGoal.name,
-                was_editing: isEditMode,
-                goal_progress: selectedGoal.progress,
-                goal_status: selectedGoal.status
-              }
-            });
             setShowGoalDetails(false);
             setSelectedGoal(null);
             setIsEditMode(false);
@@ -902,18 +687,6 @@ export default function GoalsPage() {
                     variant="secondary"
                     fullWidth
                     onClick={() => {
-                        text: `User cancelled editing goal "${selectedGoal.name}"`,
-                        custom_action: 'cancel_edit_goal',
-                        data: {
-                          goal_id: selectedGoal.id,
-                          goal_name: selectedGoal.name,
-                          had_changes: goalForm.name !== selectedGoal.name || 
-                                      goalForm.targetAmount !== selectedGoal.targetAmount.toString() ||
-                                      goalForm.targetDate !== selectedGoal.deadline ||
-                                      goalForm.category !== selectedGoal.category ||
-                                      goalForm.priority !== selectedGoal.priority
-                        }
-                      });
                       setIsEditMode(false);
                     }}
                   >
@@ -923,26 +696,6 @@ export default function GoalsPage() {
                     variant="primary" 
                     fullWidth
                     onClick={() => {
-                        text: `User clicked update goal for "${selectedGoal.name}"`,
-                        custom_action: 'submit_update_goal',
-                        data: {
-                          goal_id: selectedGoal.id,
-                          old_values: {
-                            name: selectedGoal.name,
-                            target_amount: selectedGoal.targetAmount,
-                            target_date: selectedGoal.deadline,
-                            category: selectedGoal.category,
-                            priority: selectedGoal.priority
-                          },
-                          new_values: {
-                            name: goalForm.name,
-                            target_amount: parseFloat(goalForm.targetAmount) || selectedGoal.targetAmount,
-                            target_date: goalForm.targetDate,
-                            category: goalForm.category,
-                            priority: goalForm.priority
-                          }
-                        }
-                      });
                       handleUpdateGoal();
                     }}
                   >
@@ -968,18 +721,7 @@ export default function GoalsPage() {
                     variant="secondary" 
                     fullWidth
                     onClick={() => {
-                      const newState = !selectedGoal.automatedSaving;
-                        text: `User ${newState ? 'enabled' : 'paused'} auto-save for goal "${selectedGoal.name}"`,
-                        toggle_type: 'auto_save',
-                        toggle_state: newState,
-                        data: {
-                          goal_id: selectedGoal.id,
-                          goal_name: selectedGoal.name,
-                          goal_progress: selectedGoal.progress,
-                          monthly_contribution: selectedGoal.monthlyContribution,
-                          days_to_deadline: Math.floor((new Date(selectedGoal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                        }
-                      });
+                      const _newState = !selectedGoal.automatedSaving;
                       // Note: Actual implementation would update the goal here
                     }}
                   >

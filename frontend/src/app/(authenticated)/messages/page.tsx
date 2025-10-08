@@ -7,8 +7,7 @@ import {
   Search, 
   Plus, 
   MoreVertical,
-  User,
-  DollarSign
+  User
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -48,8 +47,8 @@ export default function MessagesPage() {
   // Handle navigation from contacts page
   useEffect(() => {
     if (targetUsername && conversations.length >= 0) {
-      console.log('Looking for conversation with:', targetUsername);
-      console.log('Available conversations:', conversations);
+      
+      
       
       // Find if conversation already exists
       const existingConversation = conversations.find(
@@ -57,15 +56,15 @@ export default function MessagesPage() {
       );
       
       if (existingConversation) {
-        console.log('Found existing conversation:', existingConversation);
+        
         setSelectedConversation(existingConversation);
       } else {
-        console.log('No existing conversation, checking contacts...');
+        
         // Look for the contact
         const contact = contacts.find(c => c.contact_username === targetUsername);
         
         if (contact) {
-          console.log('Found contact:', contact);
+          
           // Create a conversation-like object for new chat
           const newConversation: Conversation = {
             id: 0, // Temporary ID
@@ -85,7 +84,7 @@ export default function MessagesPage() {
             setConversations([newConversation, ...conversations]);
           }
         } else {
-          console.log('Contact not found, need to fetch user info for:', targetUsername);
+          
           // If no contact exists, we still need to create a conversation placeholder
           // This happens when clicking "Message" from a non-contact user
           // For now, create a basic conversation object
@@ -132,8 +131,8 @@ export default function MessagesPage() {
       const data = await messagesService.getConversations();
       setConversations(data);
       setLoading(false);
-    } catch (error) {
-      console.error('Failed to load conversations', error);
+    } catch {
+      
       setLoading(false);
     }
   };
@@ -142,8 +141,8 @@ export default function MessagesPage() {
     try {
       const data = await contactsService.getContacts('accepted', false);
       setContacts(data);
-    } catch (error) {
-      console.error('Failed to load contacts:', error);
+    } catch {
+      
     }
   };
 
@@ -161,8 +160,8 @@ export default function MessagesPage() {
           await messagesService.markConversationAsRead(userId);
         }
       }
-    } catch (error) {
-      console.error('Failed to load messages:', error);
+    } catch {
+      
     }
   };
 
@@ -191,7 +190,7 @@ export default function MessagesPage() {
     
     // Can't send messages to users without a username
     if (!selectedConversation.other_user.username) {
-      console.error('Cannot send message: recipient username is missing');
+      
       return;
     }
 
@@ -208,8 +207,8 @@ export default function MessagesPage() {
             file_size: file.file_size,
             url: file.url
           }));
-        } catch (uploadError) {
-          console.error('Failed to upload attachments:', uploadError);
+        } catch {
+          
           // Continue sending message without attachments
         }
       }
@@ -238,8 +237,8 @@ export default function MessagesPage() {
       } else {
         await loadMessages(selectedConversation.other_user.id);
       }
-    } catch (error) {
-      console.error('Failed to send message', error);
+    } catch {
+      
     } finally {
       setSendingMessage(false);
     }

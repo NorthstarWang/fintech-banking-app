@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, AlertCircle, Info, DollarSign } from 'lucide-react';
+import { X, Check, AlertCircle, Info } from 'lucide-react';
 import { generateDemoNotifications, DemoNotification } from '@/utils/mockDataEnhancer';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 
@@ -164,11 +164,11 @@ export const DemoNotifications: React.FC = () => {
 // Toast notification for quick feedback
 export const showToast = (
   message: string,
-  type: 'success' | 'error' | 'info' = 'info',
-  duration: number = 3000
+  _type: 'success' | 'error' | 'info' = 'info',
+  _duration: number = 3000
 ) => {
   // Implementation would integrate with a toast library or custom solution
-  console.log(`Toast: ${type} - ${message}`);
+  
 };
 
 export default DemoNotifications;

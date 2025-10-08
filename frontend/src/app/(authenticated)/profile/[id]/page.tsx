@@ -8,13 +8,10 @@ import {
   Phone, 
   Calendar,
   Shield,
-  DollarSign,
-  TrendingUp,
   ArrowLeft,
   MessageSquare,
   UserPlus,
   Settings,
-  Eye,
   EyeOff
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
@@ -53,7 +50,7 @@ export default function ProfilePage() {
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isContact, setIsContact] = useState(false);
+  const [isContact, _setIsContact] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -89,8 +86,7 @@ export default function ProfilePage() {
       
       setProfile(mockProfile);
       setLoading(false);
-    } catch (error) {
-      console.error('Failed to load profile:', error);
+    } catch {
       setLoading(false);
     }
   };
@@ -113,7 +109,7 @@ export default function ProfilePage() {
         <Card className="text-center py-12">
           <User className="w-16 h-16 text-[var(--text-tertiary)] mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Profile Not Found</h2>
-          <p className="text-[var(--text-secondary)] mb-4">The user profile you're looking for doesn't exist.</p>
+          <p className="text-[var(--text-secondary)] mb-4">The user profile you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back

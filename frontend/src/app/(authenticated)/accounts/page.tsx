@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   Plus,
   Search,
-  Filter,
-  Download,
   TrendingUp,
   Eye,
   EyeOff,
@@ -27,13 +25,10 @@ import DeleteAccountModal from '@/components/modals/DeleteAccountModal';
 import ActionDropdown from '@/components/ui/ActionDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { eventBus, EVENTS } from '@/services/eventBus';
-import { 
-  accountsService, 
+import {
+  accountsService,
   transactionsService,
-  Account as APIAccount,
-  AccountSummary,
-  Transaction,
-  TransactionStats
+  AccountSummary
 } from '@/lib/api';
 
 interface UIAccount {
@@ -77,12 +72,6 @@ export default function AccountsPage() {
   const [deletingAccount, setDeletingAccount] = useState<UIAccount | null>(null);
 
   useEffect(() => {
-    // Log page view with user context
-      text: `User ${user?.username || 'unknown'} viewed accounts page`,
-      page_name: 'Accounts',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadAccountsData();
   }, [user]);
 
@@ -176,8 +165,7 @@ export default function AccountsPage() {
                 fees: 0 // Backend doesn't track fees separately yet
               }
             };
-          } catch (err) {
-            console.error(`Failed to load data for account ${account.id}:`, err);
+          } catch {
             // Return account with minimal data if stats fail
             return {
               id: account.id.toString(),
@@ -210,21 +198,6 @@ export default function AccountsPage() {
       if (transformedAccounts.length > 0) {
         setSelectedAccount(transformedAccounts[0]);
       }
-
-        text: `Loaded ${transformedAccounts.length} accounts with net worth $${summaryData.net_worth.toFixed(2)}`,
-        custom_action: 'accounts_data_loaded',
-        data: {
-          accounts_count: transformedAccounts.length,
-          active_accounts: transformedAccounts.filter(a => a.status === 'active').length,
-          total_assets: summaryData.total_assets,
-          total_liabilities: summaryData.total_liabilities,
-          net_worth: summaryData.net_worth,
-          account_types: transformedAccounts.reduce((acc, a) => {
-            acc[a.type] = (acc[a.type] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>)
-        }
-      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load accounts';
       setError(errorMessage);
@@ -275,15 +248,6 @@ export default function AccountsPage() {
   ];
 
   const handleRefresh = () => {
-      text: `User refreshed accounts page with ${accounts.length} accounts`,
-      custom_action: 'refresh_accounts',
-      data: {
-        current_accounts_count: accounts.length,
-        current_net_worth: getNetWorth(),
-        filter_type: filterType,
-        search_active: searchQuery.length > 0
-      }
-    });
     loadAccountsData();
   };
 
@@ -345,14 +309,6 @@ export default function AccountsPage() {
               onClick={() => {
                 const newShowBalances = !showBalances;
                 setShowBalances(newShowBalances);
-                  text: `User ${newShowBalances ? 'showed' : 'hid'} account balances`,
-                  element_identifier: 'toggle-balances',
-                  data: {
-                    show_balances: newShowBalances,
-                    total_balance_shown: newShowBalances ? getTotalBalance() : 0,
-                    accounts_affected: accounts.length
-                  }
-                });
               }}
               analyticsId="toggle-balances"
               analyticsLabel="Toggle Balances"
@@ -364,14 +320,6 @@ export default function AccountsPage() {
               size="sm"
               icon={<Plus size={18} />}
               onClick={() => {
-                  text: `User opening add account modal with ${accounts.length} existing accounts`,
-                  custom_action: 'open_add_account_modal',
-                  data: {
-                    existing_accounts_count: accounts.length,
-                    current_net_worth: getNetWorth(),
-                    account_types_owned: [...new Set(accounts.map(a => a.type))]
-                  }
-                });
                 setShowAddAccountModal(true);
               }}
               analyticsId="add-account"
@@ -503,17 +451,6 @@ export default function AccountsPage() {
                     }`}
                     onClick={() => {
                       setSelectedAccount(account);
-                        text: `User selected ${account.type} account "${account.name}" with balance $${account.balance.toFixed(2)}`,
-                        custom_action: 'select_account',
-                        data: {
-                          account_id: account.id,
-                          account_name: account.name,
-                          account_type: account.type,
-                          balance: account.balance,
-                          status: account.status,
-                          last_transaction: account.lastTransaction
-                        }
-                      });
                     }}
                   >
                     <div className="flex items-center justify-between">
@@ -543,15 +480,6 @@ export default function AccountsPage() {
                             icon: <Settings size={14} />,
                             onClick: () => {
                               setEditingAccount(account);
-                                text: `User editing ${account.type} account "${account.name}"`,
-                                custom_action: 'edit_account_initiated',
-                                data: {
-                                  account_id: account.id,
-                                  account_name: account.name,
-                                  account_type: account.type,
-                                  current_balance: account.balance
-                                }
-                              });
                             }
                           },
                           {
@@ -559,16 +487,6 @@ export default function AccountsPage() {
                             icon: <Trash2 size={14} />,
                             onClick: () => {
                               setDeletingAccount(account);
-                                text: `User initiating deletion of ${account.type} account "${account.name}" with balance $${account.balance.toFixed(2)}`,
-                                custom_action: 'delete_account_initiated',
-                                data: {
-                                  account_id: account.id,
-                                  account_name: account.name,
-                                  account_type: account.type,
-                                  balance: account.balance,
-                                  status: account.status
-                                }
-                              });
                             },
                             variant: 'danger' as const
                           }

@@ -39,10 +39,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   const types = ['credit', 'debit'];
 
   const handleDateChange = (field: 'start' | 'end', value: string) => {
-      `${analyticsId}-date-${field}`,
-      'change',
-      `${analyticsLabel} - Date ${field}`
-    );
     onFiltersChange({
       ...filters,
       dateRange: {
@@ -54,9 +50,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 
   const handleCategoryToggle = (category: string) => {
     const isRemoving = filters.categories.includes(category);
-      `${analyticsId}-category-${category}`,
-      `${analyticsLabel} - ${isRemoving ? 'Removed' : 'Added'} ${category}`
-    );
     const newCategories = isRemoving
       ? filters.categories.filter(c => c !== category)
       : [...filters.categories, category];
@@ -65,9 +58,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 
   const handleAccountToggle = (account: string) => {
     const isRemoving = filters.accounts.includes(account);
-      `${analyticsId}-account-${account}`,
-      `${analyticsLabel} - ${isRemoving ? 'Removed' : 'Added'} ${account}`
-    );
     const newAccounts = isRemoving
       ? filters.accounts.filter(a => a !== account)
       : [...filters.accounts, account];
@@ -76,9 +66,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 
   const handleStatusToggle = (status: string) => {
     const isRemoving = filters.status.includes(status);
-      `${analyticsId}-status-${status}`,
-      `${analyticsLabel} - ${isRemoving ? 'Removed' : 'Added'} ${status}`
-    );
     const newStatuses = isRemoving
       ? filters.status.filter(s => s !== status)
       : [...filters.status, status];
@@ -87,9 +74,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 
   const handleTypeToggle = (type: string) => {
     const isRemoving = filters.type.includes(type);
-      `${analyticsId}-type-${type}`,
-      `${analyticsLabel} - ${isRemoving ? 'Removed' : 'Added'} ${type}`
-    );
     const newTypes = isRemoving
       ? filters.type.filter(t => t !== type)
       : [...filters.type, type];
@@ -97,9 +81,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   };
 
   const clearFilters = () => {
-      `${analyticsId}-clear-all`,
-      `${analyticsLabel} - Clear All Filters`
-    );
     // Reset to default 30-day range instead of empty strings
     const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const defaultEnd = new Date().toISOString().split('T')[0];
@@ -184,10 +165,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                 type="number"
                 value={filters.minAmount}
                 onChange={(e) => {
-                    `${analyticsId}-min-amount`,
-                    'change',
-                    `${analyticsLabel} - Min Amount`
-                  );
                   onFiltersChange({ ...filters, minAmount: e.target.value });
                 }}
                 placeholder="Min amount"
@@ -199,10 +176,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
                 type="number"
                 value={filters.maxAmount}
                 onChange={(e) => {
-                    `${analyticsId}-max-amount`,
-                    'change',
-                    `${analyticsLabel} - Max Amount`
-                  );
                   onFiltersChange({ ...filters, maxAmount: e.target.value });
                 }}
                 placeholder="Max amount"

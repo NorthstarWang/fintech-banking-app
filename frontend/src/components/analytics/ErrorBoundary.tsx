@@ -35,16 +35,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to analytics
-      text: `Error caught: ${error.message}`,
-      custom_action: 'error_boundary_catch',
-      data: {
-        error_name: error.name,
-        error_stack: error.stack,
-        component_stack: errorInfo.componentStack,
-        error_timestamp: new Date().toISOString(),
-      },
-    });
 
     this.setState({
       error,
@@ -53,7 +43,6 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by boundary:', error, errorInfo);
     }
   }
 
@@ -88,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </h2>
               
               <p className="text-[var(--text-2)] mb-6">
-                We're sorry for the inconvenience. The application encountered an unexpected error.
+                We&apos;re sorry for the inconvenience. The application encountered an unexpected error.
               </p>
 
               {process.env.NODE_ENV === 'development' && this.state.error && (

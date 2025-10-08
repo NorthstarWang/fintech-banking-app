@@ -2,12 +2,10 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus,
+import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Building2,
   CreditCard,
   Wallet,
   PiggyBank,
@@ -19,7 +17,6 @@ import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import Dropdown from '../ui/Dropdown';
 import UserSearchInput from '../ui/UserSearchInput';
 import { accountsService, AccountCreate, JointAccountCreate } from '@/lib/api/accounts';
 import { UserSearchResult } from '@/lib/api/users';
@@ -137,24 +134,15 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
           ...accountData,
           joint_owner_username: jointOwner.username,
         };
-        console.log('[AddAccountModal] Creating joint account with data:', jointAccountData);
+        
         await accountsService.createJointAccount(jointAccountData);
       } else if (isJointAccount && !jointOwner) {
         setError('Please select a joint owner for the account');
         return;
       } else {
-        console.log('[AddAccountModal] Creating regular account with data:', accountData);
+        
         await accountsService.createAccount(accountData);
       }
-
-        text: 'Account created successfully',
-        custom_action: 'account_created',
-        data: {
-          account_type: accountType,
-          is_joint: isJointAccount,
-        }
-      });
-
       setSuccess(true);
       setTimeout(() => {
         handleClose();

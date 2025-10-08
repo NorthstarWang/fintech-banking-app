@@ -46,12 +46,12 @@ export const ResponsiveChart: React.FC<ResponsiveChartProps> = ({
     };
   }, [aspectRatio, minHeight, maxHeight]);
 
-  const handlePinch = (e: TouchEvent) => {
+  const _handlePinch = (e: TouchEvent) => {
     if (!enablePinchZoom || e.touches.length !== 2) return;
 
     const touch1 = e.touches[0];
     const touch2 = e.touches[1];
-    const distance = Math.sqrt(
+    const _distance = Math.sqrt(
       Math.pow(touch2.clientX - touch1.clientX, 2) +
       Math.pow(touch2.clientY - touch1.clientY, 2)
     );

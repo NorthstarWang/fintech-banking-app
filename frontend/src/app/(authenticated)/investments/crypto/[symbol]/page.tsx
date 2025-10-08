@@ -6,14 +6,10 @@ import {
   ArrowLeft,
   TrendingUp,
   TrendingDown,
-  DollarSign,
   BarChart,
   Activity,
   Info,
-  Star,
-  ShoppingCart,
-  Coins,
-  Globe
+  Star
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
@@ -78,14 +74,7 @@ export default function CryptoDetailPage() {
       
       setCrypto(processedCrypto);
       
-      // Track page view
-        text: `User viewed crypto detail for ${symbol}`,
-        page_name: 'Crypto Detail',
-        asset_symbol: symbol,
-        timestamp: new Date().toISOString()
-      });
-    } catch (err) {
-      console.error('Error fetching crypto details:', err);
+    } catch {
       setError('Failed to load crypto details');
     } finally {
       setLoading(false);
@@ -99,8 +88,7 @@ export default function CryptoDetailPage() {
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
-    } catch (err) {
-      console.error('Error checking watchlist:', err);
+    } catch {
     }
   };
 
@@ -130,8 +118,7 @@ export default function CryptoDetailPage() {
         }
       }
       setInWatchlist(!inWatchlist);
-    } catch (err) {
-      console.error('Error updating watchlist:', err);
+    } catch {
     }
   };
 
@@ -163,8 +150,7 @@ export default function CryptoDetailPage() {
       alert(`${tradeType === 'buy' ? 'Buy' : 'Sell'} order placed successfully!`);
       setShowTradeModal(false);
       setQuantity('');
-    } catch (err) {
-      console.error('Error placing trade:', err);
+    } catch {
       alert('Failed to place trade. Please try again.');
     }
   };

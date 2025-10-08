@@ -3,24 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
+import {
   ArrowLeft,
   Download,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Filter,
   Search,
   CreditCard,
   DollarSign,
   ArrowUpRight,
-  ArrowDownLeft,
-  MoreVertical
+  ArrowDownLeft
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import DatePicker from '@/components/ui/DatePicker';
 import Dropdown from '@/components/ui/Dropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -34,14 +28,14 @@ import {
 export default function AccountDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { showError, showSuccess } = useAlert();
   
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, _setDateRange] = useState({
     start: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     end: new Date()
   });
@@ -71,9 +65,8 @@ export default function AccountDetailPage() {
       setAccount(accountData);
       setTransactions(transactionsData);
       
-    } catch (err) {
+    } catch {
       showError('Failed to load account details', 'Please try again later or contact support.');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -105,11 +98,9 @@ export default function AccountDetailPage() {
         window.URL.revokeObjectURL(url);
         showSuccess('Statement exported successfully!', 'Your statement has been downloaded.');
       } else {
-        console.error('Export failed with status:', response.status);
         showError('Failed to export statement', 'Please try again later.');
       }
     } catch (error) {
-      console.error('Error exporting statement:', error);
       showError('Failed to export statement', error instanceof Error ? error.message : 'An unexpected error occurred.');
     }
   };
@@ -164,7 +155,7 @@ export default function AccountDetailPage() {
             Account not found
           </h2>
           <p className="text-[var(--text-2)] mb-6">
-            The account you're looking for doesn't exist or you don't have access to it.
+            The account you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
           </p>
           <Button onClick={() => router.push('/dashboard')} variant="primary">
             Back to Dashboard

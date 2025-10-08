@@ -1,29 +1,30 @@
-import hashlib
+import os
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+
 from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+
 from .password_utils import password_hasher
 
-# Configuration
-SECRET_KEY = "your-secret-key-here-change-in-production"  # In production, use environment variable
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
+# Configuration from environment variables
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", secrets.token_urlsafe(32)))
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 class AuthHandler:
     security = HTTPBearer()
     secret = SECRET_KEY
-    
+
     def get_password_hash(self, password: str) -> str:
         """Hash a password"""
         return password_hasher.hash_password(password)
-    
+
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
         return password_hasher.verify_password(plain_password, hashed_password)
-    
+
     def encode_token(self, user_id: int, username: str) -> str:
         """Generate JWT token"""
         payload = {
@@ -33,8 +34,8 @@ class AuthHandler:
             'username': username
         }
         return jwt.encode(payload, self.secret, algorithm=ALGORITHM)
-    
-    def decode_token(self, token: str) -> Dict:
+
+    def decode_token(self, token: str) -> dict:
         """Decode and validate JWT token"""
         try:
             payload = jwt.decode(token, self.secret, algorithms=[ALGORITHM])
@@ -49,11 +50,11 @@ class AuthHandler:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Invalid token'
             )
-    
-    def auth_wrapper(self, auth: HTTPAuthorizationCredentials = security) -> Dict:
+
+    def auth_wrapper(self, auth: HTTPAuthorizationCredentials = security) -> dict:
         """Dependency for protected routes"""
         return self.decode_token(auth.credentials)
-    
+
     def get_current_user_id(self, auth: HTTPAuthorizationCredentials = security) -> int:
         """Extract user ID from token"""
         payload = self.decode_token(auth.credentials)
@@ -74,8 +75,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Optional: Session-based authentication for simpler testing
 class SessionAuth:
     def __init__(self):
-        self.sessions: Dict[str, Dict] = {}
-    
+        self.sessions: dict[str, dict] = {}
+
     def create_session(self, user_id: int, username: str) -> str:
         """Create a new session"""
         session_id = secrets.token_urlsafe(32)
@@ -86,27 +87,27 @@ class SessionAuth:
             'last_accessed': datetime.utcnow()
         }
         return session_id
-    
-    def get_session(self, session_id: str) -> Optional[Dict]:
+
+    def get_session(self, session_id: str) -> dict | None:
         """Get session data"""
         if session_id in self.sessions:
             # Update last accessed time
             self.sessions[session_id]['last_accessed'] = datetime.utcnow()
             return self.sessions[session_id]
         return None
-    
+
     def delete_session(self, session_id: str):
         """Delete a session"""
         if session_id in self.sessions:
             del self.sessions[session_id]
-    
-    def get_user_from_request(self, request: Request) -> Optional[Dict]:
+
+    def get_user_from_request(self, request: Request) -> dict | None:
         """Get user from session cookie"""
         session_id = request.cookies.get('session_id')
         if session_id:
             return self.get_session(session_id)
         return None
-    
+
     def cleanup_old_sessions(self, max_age_hours: int = 24):
         """Remove sessions older than max_age_hours"""
         cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
@@ -121,7 +122,7 @@ class SessionAuth:
 session_auth = SessionAuth()
 
 # Dependency for getting current user (supports both JWT and session)
-async def get_current_user(request: Request, token: Optional[str] = None):
+async def get_current_user(request: Request, token: str | None = None):
     """Get current user from JWT token or session"""
     # First try JWT token (prefer explicit auth header)
     auth_header = request.headers.get('Authorization')
@@ -135,29 +136,29 @@ async def get_current_user(request: Request, token: Optional[str] = None):
             }
         except HTTPException:
             pass
-    
+
     # Then try session
     session_user = session_auth.get_user_from_request(request)
     if session_user:
         return session_user
-    
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated"
     )
 
 # Optional dependency for admin-only endpoints
-async def require_admin(current_user: Dict = get_current_user):
+async def require_admin(current_user: dict = get_current_user):
     """Require admin role"""
-    from ..storage.memory_adapter import memory_storage
     from ..models import UserRole
-    
+    from ..storage.memory_adapter import memory_storage
+
     user = memory_storage.get_user_by_id(current_user['user_id'])
-    
+
     if not user or user.get('role') != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
-    
+
     return current_user

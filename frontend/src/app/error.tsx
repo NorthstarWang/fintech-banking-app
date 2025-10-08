@@ -19,7 +19,6 @@ export default function Error({
   useEffect(() => {
     // Log the error to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error boundary caught:', error);
     }
   }, [error]);
 
@@ -56,7 +55,7 @@ export default function Error({
 
             {/* Error Description */}
             <p className="text-[var(--text-2)] mb-6">
-              We encountered an unexpected error. Don't worry, your data is safe.
+              We encountered an unexpected error. Don&apos;t worry, your data is safe.
             </p>
 
             {/* Error Details (Development Only) */}

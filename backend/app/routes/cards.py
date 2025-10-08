@@ -176,7 +176,6 @@ async def create_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new credit or debit card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Cards are physical by default (virtual cards use different endpoint)
     card_type = CardType.PHYSICAL
@@ -512,7 +511,6 @@ async def update_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update card information"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     card = db_session.query(Card).filter(
         Card.id == card_id,
@@ -561,7 +559,6 @@ async def deactivate_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Deactivate a card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     card = db_session.query(Card).filter(
         Card.id == card_id,
@@ -796,7 +793,6 @@ async def make_card_payment(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Make a payment on a credit card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify card ownership and type
     card = db_session.query(Card).filter(
@@ -922,7 +918,6 @@ async def set_spending_limits(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set spending limits for a card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify card ownership
     card = db_session.query(Card).filter(
@@ -1127,7 +1122,6 @@ async def configure_card_alerts(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Configure alert settings for a card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify card ownership
     card = db_session.query(Card).filter(
@@ -1166,7 +1160,6 @@ async def report_card_fraud(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Report fraudulent transactions on a card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify card ownership
     card = db_session.query(Card).filter(
@@ -1220,7 +1213,6 @@ async def create_virtual_card_from_parent(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a virtual card linked to a parent physical card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify parent card ownership
     parent_card = db_session.query(Card).filter(
@@ -1305,7 +1297,6 @@ async def create_virtual_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Generate a new virtual card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify account ownership
     account = db_session.query(Account).filter(
@@ -1388,7 +1379,6 @@ async def freeze_unfreeze_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Freeze or unfreeze a virtual card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get card and verify ownership
     card = db_session.query(Card).filter(
@@ -1459,7 +1449,6 @@ async def set_card_limit(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set spending limits for a card"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get card and verify ownership
     card = db_session.query(Card).filter(

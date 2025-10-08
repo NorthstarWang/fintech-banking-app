@@ -32,7 +32,6 @@ async def transfer_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Transfer money between accounts"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate accounts exist and belong to user
     source_account = Validators.validate_account_ownership(
@@ -203,12 +202,6 @@ async def transfer_money(
             db_session.commit()
     
     # Log transfer
-        session_id,
-        debit_transaction.id,
-        current_user['user_id'],
-        source_account.id,
-        transfer_data.destination_account_id,
-        float(transfer_data.amount),
         transfer_data.is_external
     )
     
@@ -246,7 +239,6 @@ async def deposit_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Deposit money to an account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
@@ -272,11 +264,6 @@ async def deposit_money(
     db_session.refresh(transaction)
     
     # Log deposit
-        session_id,
-        transaction.id,
-        current_user['user_id'],
-        account.id,
-        float(deposit_data.amount),
         deposit_data.deposit_method
     )
     
@@ -291,7 +278,6 @@ async def withdraw_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Withdraw money from an account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
@@ -327,11 +313,6 @@ async def withdraw_money(
     db_session.refresh(transaction)
     
     # Log withdrawal
-        session_id,
-        transaction.id,
-        current_user['user_id'],
-        account.id,
-        float(withdrawal_data.amount),
         withdrawal_data.withdrawal_method
     )
     
@@ -346,7 +327,6 @@ async def pay_bill(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Pay a bill"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
@@ -386,11 +366,6 @@ async def pay_bill(
     db_session.refresh(transaction)
     
     # Log bill payment
-        session_id,
-        transaction.id,
-        current_user['user_id'],
-        account.id,
-        float(payment_data.amount),
         payment_data.payee_name,
         payment_data.bill_type
     )
@@ -422,7 +397,6 @@ async def send_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Send money to another user by username or email"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate source account exists and belongs to sender
     source_account = Validators.validate_account_ownership(
@@ -568,26 +542,14 @@ async def send_money(
     db_session.refresh(debit_transaction)
     db_session.refresh(credit_transaction)
     
-        session_id,
-        debit_transaction.id,
-        current_user['user_id'],
-        source_account.id,
-        recipient_account.id,
-        float(send_data.amount),
         False  # Not external
     )
     
     # Log balance updates
-        session_id,
-        source_account.id,
-        float(old_source_balance),
         float(source_account.balance),
         "Send money"
     )
     
-        session_id,
-        recipient_account.id,
-        float(old_recipient_balance),
         float(recipient_account.balance),
         "Receive money"
     )

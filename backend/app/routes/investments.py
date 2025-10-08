@@ -1,22 +1,34 @@
 """
 Investment management API routes for ETF, stock, and crypto trading.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from datetime import date
-from app.utils.auth import get_current_user
-from app.repositories.investment_manager import InvestmentManager
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from app.models.entities.investment_models import (
-    InvestmentAccountType, AssetType, OrderType, OrderSide, OrderStatus,
+    AssetResponse,
+    AssetType,
+    ETFDetailResponse,
+    InvestmentAccountCreate,
+    InvestmentAccountResponse,
+    InvestmentAccountType,
+    InvestmentSummaryResponse,
+    MarketDataResponse,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    PortfolioAnalysisResponse,
+    PortfolioResponse,
     PortfolioRiskLevel,
-    InvestmentAccountCreate, InvestmentAccountResponse,
-    PortfolioResponse, PositionResponse,
-    TradeOrderCreate, TradeOrderResponse,
-    WatchlistCreate, WatchlistResponse,
-    MarketDataResponse, PortfolioAnalysisResponse, InvestmentSummaryResponse,
-    ETFDetailResponse, StockDetailResponse, AssetResponse
+    PositionResponse,
+    StockDetailResponse,
+    TradeOrderCreate,
+    TradeOrderResponse,
+    WatchlistCreate,
+    WatchlistResponse,
 )
 from app.repositories.data_manager import data_manager
+from app.repositories.investment_manager import InvestmentManager
+from app.utils.auth import get_current_user
 
 router = APIRouter()
 
@@ -35,10 +47,10 @@ async def create_investment_account(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/accounts", response_model=List[InvestmentAccountResponse])
+@router.get("/accounts", response_model=list[InvestmentAccountResponse])
 async def get_investment_accounts(
     current_user = Depends(get_current_user)
-) -> List[InvestmentAccountResponse]:
+) -> list[InvestmentAccountResponse]:
     """Get all investment accounts for the current user."""
     return investment_manager.get_user_accounts(current_user["user_id"])
 
@@ -65,11 +77,11 @@ async def get_portfolio(
         raise HTTPException(status_code=404, detail="Portfolio not found")
     return portfolio
 
-@router.get("/portfolios/{portfolio_id}/positions", response_model=List[PositionResponse])
+@router.get("/portfolios/{portfolio_id}/positions", response_model=list[PositionResponse])
 async def get_positions(
     portfolio_id: int,
     current_user = Depends(get_current_user)
-) -> List[PositionResponse]:
+) -> list[PositionResponse]:
     """Get all positions in a portfolio."""
     return investment_manager.get_positions(portfolio_id, current_user["user_id"])
 
@@ -109,20 +121,20 @@ async def cancel_order(
         raise HTTPException(status_code=404, detail="Order not found or cannot be cancelled")
     return {"message": "Order cancelled successfully"}
 
-@router.get("/accounts/{account_id}/orders", response_model=List[TradeOrderResponse])
+@router.get("/accounts/{account_id}/orders", response_model=list[TradeOrderResponse])
 async def get_orders(
     account_id: int,
-    status: Optional[OrderStatus] = Query(None, description="Filter by order status"),
+    status: OrderStatus | None = Query(None, description="Filter by order status"),
     current_user = Depends(get_current_user)
-) -> List[TradeOrderResponse]:
+) -> list[TradeOrderResponse]:
     """Get orders for an account."""
     return investment_manager.get_orders(account_id, current_user["user_id"], status)
 
 # Watchlist endpoints
-@router.get("/watchlists", response_model=List[WatchlistResponse])
+@router.get("/watchlists", response_model=list[WatchlistResponse])
 async def get_watchlists(
     current_user = Depends(get_current_user)
-) -> List[WatchlistResponse]:
+) -> list[WatchlistResponse]:
     """Get all watchlists for the current user."""
     return investment_manager.get_watchlists(current_user["user_id"])
 
@@ -137,17 +149,17 @@ async def create_watchlist(
 @router.put("/watchlists/{watchlist_id}")
 async def update_watchlist(
     watchlist_id: int,
-    symbols: List[str],
+    symbols: list[str],
     current_user = Depends(get_current_user)
 ) -> dict:
     """Update watchlist symbols."""
     # Find watchlist
-    watchlist = next((w for w in data_manager.investment_watchlists 
+    watchlist = next((w for w in data_manager.investment_watchlists
                      if w['id'] == watchlist_id and w['user_id'] == current_user["user_id"]), None)
-    
+
     if not watchlist:
         raise HTTPException(status_code=404, detail="Watchlist not found")
-    
+
     watchlist['symbols'] = symbols
     return {"message": "Watchlist updated successfully"}
 
@@ -157,12 +169,12 @@ async def delete_watchlist(
     current_user = Depends(get_current_user)
 ) -> dict:
     """Delete a watchlist."""
-    watchlist = next((w for w in data_manager.investment_watchlists 
+    watchlist = next((w for w in data_manager.investment_watchlists
                      if w['id'] == watchlist_id and w['user_id'] == current_user["user_id"]), None)
-    
+
     if not watchlist:
         raise HTTPException(status_code=404, detail="Watchlist not found")
-    
+
     data_manager.investment_watchlists.remove(watchlist)
     return {"message": "Watchlist deleted successfully"}
 
@@ -213,7 +225,7 @@ async def get_market_data(
 async def get_batch_market_data(
     symbols: str,
     current_user = Depends(get_current_user)
-) -> List[MarketDataResponse]:
+) -> list[MarketDataResponse]:
     """Get market data for multiple symbols (comma-separated)."""
     symbol_list = [s.strip().upper() for s in symbols.split(",")]
     return [investment_manager.get_market_data(symbol) for symbol in symbol_list]
@@ -236,7 +248,7 @@ async def get_market_summary(
 
 @router.get("/assets")
 async def get_all_assets(
-    asset_type: Optional[str] = Query(None, description="Filter by asset type (etf, stock, crypto)"),
+    asset_type: str | None = Query(None, description="Filter by asset type (etf, stock, crypto)"),
     current_user = Depends(get_current_user)
 ) -> list:
     """Get all available investment assets."""
@@ -246,12 +258,12 @@ async def get_all_assets(
 @router.get("/search/etfs")
 async def search_etfs(
     query: str = Query(..., description="Search query"),
-    category: Optional[str] = Query(None, description="Filter by category"),
+    category: str | None = Query(None, description="Filter by category"),
     current_user = Depends(get_current_user)
 ) -> list:
     """Search for ETFs."""
     results = []
-    
+
     for etf in data_manager.etf_assets:
         if query.lower() in etf['symbol'].lower() or query.lower() in etf['name'].lower():
             if not category or etf.get('category', '').lower() == category.lower():
@@ -263,18 +275,18 @@ async def search_etfs(
                     'price': etf.get('price', 0),
                     'change_percent': etf.get('change_percent', 0)
                 })
-    
+
     return results[:20]  # Limit to 20 results
 
 @router.get("/search/stocks")
 async def search_stocks(
     query: str = Query(..., description="Search query"),
-    sector: Optional[str] = Query(None, description="Filter by sector"),
+    sector: str | None = Query(None, description="Filter by sector"),
     current_user = Depends(get_current_user)
 ) -> list:
     """Search for stocks."""
     results = []
-    
+
     for stock in data_manager.stock_assets:
         if query.lower() in stock['symbol'].lower() or query.lower() in stock['name'].lower():
             if not sector or stock.get('sector', '').lower() == sector.lower():
@@ -287,7 +299,7 @@ async def search_stocks(
                     'market_cap': stock.get('market_cap', 0),
                     'pe_ratio': stock.get('pe_ratio', 0)
                 })
-    
+
     return results[:20]  # Limit to 20 results
 
 # Mock data generation endpoint (for development)
@@ -298,9 +310,9 @@ async def generate_mock_investment_data(
 ) -> dict:
     """Generate mock investment data for testing."""
     import random
-    
+
     generated_accounts = []
-    
+
     for i in range(num_accounts):
         # Create account
         account_types = list(InvestmentAccountType)
@@ -311,17 +323,17 @@ async def generate_mock_investment_data(
             is_retirement=random.choice([True, False]),
             risk_tolerance=random.choice(list(PortfolioRiskLevel))
         )
-        
+
         account = investment_manager.create_investment_account(current_user["user_id"], account_data)
         generated_accounts.append(account.id)
-        
+
         # Get portfolio
         portfolio = investment_manager.get_portfolio(account.id, current_user["user_id"])
-        
+
         if portfolio and account.balance > 1000:
             # Place some orders
             symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'SPY', 'QQQ', 'VTI']
-            
+
             for _ in range(random.randint(2, 5)):
                 symbol = random.choice(symbols)
                 order_data = TradeOrderCreate(
@@ -333,12 +345,12 @@ async def generate_mock_investment_data(
                     quantity=random.randint(1, 10),
                     time_in_force="day"
                 )
-                
+
                 try:
                     investment_manager.place_order(current_user["user_id"], order_data)
                 except:
                     pass  # Skip if insufficient funds
-    
+
     return {
         "message": f"Generated {len(generated_accounts)} investment accounts with positions",
         "account_ids": generated_accounts

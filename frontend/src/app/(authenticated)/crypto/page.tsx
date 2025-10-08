@@ -11,7 +11,6 @@ import { WalletCard } from '@/components/crypto/WalletCard';
 import { AssetList } from '@/components/crypto/AssetList';
 import { TransactionHistory } from '@/components/crypto/TransactionHistory';
 import { PortfolioSummary } from '@/components/crypto/PortfolioSummary';
-import { formatCurrency } from '@/lib/utils';
 
 export default function CryptoPage() {
   const [wallets, setWallets] = useState<CryptoWallet[]>([]);
@@ -41,8 +40,7 @@ export default function CryptoPage() {
       setAssets(assetsData);
       setTransactions(transactionsData);
       setPortfolioSummary(summaryData);
-    } catch (error) {
-      console.error('Error fetching crypto data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }

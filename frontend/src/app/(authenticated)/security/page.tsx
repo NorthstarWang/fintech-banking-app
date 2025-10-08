@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Shield,
+import {
   Lock,
   Smartphone,
   Key,
@@ -17,14 +16,10 @@ import {
   Globe,
   Clock,
   MapPin,
-  Activity,
   Settings,
   Download,
-  RefreshCw,
   LogOut,
-  Zap,
   ShieldCheck,
-  UserX,
   AlertCircle,
   ChevronRight
 } from 'lucide-react';
@@ -75,7 +70,7 @@ export default function SecurityPage() {
   const [selectedTwoFactorMethod, setSelectedTwoFactorMethod] = useState<'authenticator' | 'sms' | 'email' | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [setupStartTime, setSetupStartTime] = useState<number>(0);
+  const [_setupStartTime, setSetupStartTime] = useState<number>(0);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -158,19 +153,6 @@ export default function SecurityPage() {
 
   useEffect(() => {
     // Enhanced page view logging
-      text: `User ${user?.username || 'unknown'} viewed security page`,
-      page_name: 'Security',
-      user_id: user?.id,
-      timestamp: new Date().toISOString(),
-      data: {
-        available_features: ['password_management', 'two_factor_auth', 'biometric_login', 'session_management'],
-        security_score: securityScore,
-        two_factor_enabled: twoFactorEnabled,
-        biometric_enabled: biometricEnabled,
-        active_sessions_count: loginSessions.length,
-        recent_events_count: securityEvents.length
-      }
-    });
 
     // Simulate loading
     setTimeout(() => {
@@ -239,18 +221,17 @@ export default function SecurityPage() {
       });
       
       if (response.ok) {
-        const data = await response.json();
+        const _data = await response.json();
         setSelectedTwoFactorMethod(method);
         
         if (method === 'authenticator') {
           // Show QR code for authenticator
         } else {
           // Code has been sent via SMS/Email
-          console.log(data.message);
         }
       }
-    } catch (error) {
-      console.error('Error setting up 2FA:', error);
+    } catch {
+      // Error setting up 2FA
     }
   };
 
@@ -270,65 +251,24 @@ export default function SecurityPage() {
       if (response.ok) {
         setTwoFactorEnabled(true);
         setShowEnableTwoFactorModal(false);
-        const method = selectedTwoFactorMethod;
+        const _method = selectedTwoFactorMethod;
         setSelectedTwoFactorMethod(null);
-          text: `User ${user?.username || 'unknown'} successfully enabled 2FA using ${method}`,
-          custom_action: '2fa_enabled',
-          data: {
-            user_id: user?.id,
-            method: method,
-            security_score_increase: 30,
-            new_security_score: securityScore + 30,
-            setup_duration_seconds: Math.floor((Date.now() - setupStartTime) / 1000)
-          }
-        });
       } else {
         // Handle invalid code
-        console.error('Invalid 2FA code');
-          text: 'User entered invalid 2FA verification code',
-          custom_action: '2fa_verification_failed',
-          data: {
-            user_id: user?.id,
-            method: selectedTwoFactorMethod,
-            error: 'invalid_code'
-          }
-        });
       }
-    } catch (error) {
-      console.error('Error verifying 2FA:', error);
+    } catch {
+      // Error verifying 2FA
     }
   };
 
   const handleDisableTwoFactor = () => {
     setTwoFactorEnabled(false);
     setShowDisableTwoFactorModal(false);
-      text: `User ${user?.username || 'unknown'} disabled two-factor authentication`,
-      custom_action: '2fa_disabled',
-      data: {
-        user_id: user?.id,
-        security_score_decrease: 30,
-        new_security_score: Math.max(securityScore - 30, 0),
-        previous_security_score: securityScore,
-        risk_warning_shown: true
-      }
-    });
   };
 
   const handleEndSession = (sessionId: string) => {
-    const session = loginSessions.find(s => s.id === sessionId);
-      text: `User ${user?.username || 'unknown'} ended session on ${session?.device || 'unknown device'}`,
-      custom_action: 'end_session',
-      data: {
-        user_id: user?.id,
-        session_id: sessionId,
-        session_device: session?.device,
-        session_location: session?.location,
-        session_browser: session?.browser,
-        last_active: session?.lastActive,
-        from_location: 'session_list'
-      }
-    });
-    console.log('Ending session:', sessionId);
+    const _session = loginSessions.find(s => s.id === sessionId);
+    // Handle end session logic here
   };
 
   if (isLoading) {
@@ -412,19 +352,6 @@ export default function SecurityPage() {
                   variant="secondary" 
                   icon={<Download size={18} />}
                   onClick={async () => {
-                      text: `User ${user?.username || 'unknown'} downloading security report`,
-                      custom_action: 'download_security_report',
-                      data: {
-                        user_id: user?.id,
-                        security_score: securityScore,
-                        security_status: getSecurityScoreLabel(),
-                        two_factor_enabled: twoFactorEnabled,
-                        biometric_enabled: biometricEnabled,
-                        active_sessions: loginSessions.length,
-                        suspicious_events: securityEvents.filter(e => e.status === 'warning').length,
-                        report_format: 'pdf'
-                      }
-                    });
                     
                     // Download security report PDF from backend
                     try {
@@ -437,8 +364,8 @@ export default function SecurityPage() {
                       a.click();
                       document.body.removeChild(a);
                       window.URL.revokeObjectURL(url);
-                    } catch (error) {
-                      console.error('Failed to download security report:', error);
+                    } catch {
+                      // Failed to download security report
                       notificationService.error('Failed to generate security report. Please try again.');
                     }
                   }}
@@ -478,15 +405,6 @@ export default function SecurityPage() {
                       size="sm" 
                       fullWidth
                       onClick={() => {
-                          text: `User ${user?.username || 'unknown'} clicked Change Password button`,
-                          custom_action: 'initiate_password_change',
-                          data: {
-                            user_id: user?.id,
-                            last_password_change: '3 months ago',
-                            from_security_section: 'authentication_methods',
-                            security_score_before: securityScore
-                          }
-                        });
                         setShowChangePasswordModal(true);
                       }}
                     >
@@ -519,18 +437,11 @@ export default function SecurityPage() {
                       size="sm"
                       fullWidth
                       onClick={() => {
-                        const action = twoFactorEnabled ? 'manage_2fa' : 'enable_2fa';
-                          text: `User ${user?.username || 'unknown'} clicked ${twoFactorEnabled ? 'Manage' : 'Enable'} 2FA button`,
-                          custom_action: action,
-                          data: {
-                            user_id: user?.id,
-                            two_factor_status: twoFactorEnabled ? 'enabled' : 'disabled',
-                            security_score_impact: twoFactorEnabled ? 0 : 30,
-                            current_security_score: securityScore,
-                            from_security_section: 'authentication_methods'
-                          }
-                        });
-                        twoFactorEnabled ? setShowDisableTwoFactorModal(true) : setShowEnableTwoFactorModal(true);
+                        if (twoFactorEnabled) {
+                          setShowDisableTwoFactorModal(true);
+                        } else {
+                          setShowEnableTwoFactorModal(true);
+                        }
                       }}
                     >
                       {twoFactorEnabled ? 'Manage 2FA' : 'Enable 2FA'}
@@ -561,27 +472,9 @@ export default function SecurityPage() {
                       onSuccess={() => {
                         const newState = !biometricEnabled;
                         setBiometricEnabled(newState);
-                          text: `User ${user?.username || 'unknown'} ${newState ? 'enabled' : 'disabled'} biometric login`,
-                          toggle_type: 'biometric_auth',
-                          toggle_state: newState,
-                          data: {
-                            user_id: user?.id,
-                            biometric_type: 'Face ID',
-                            security_score_impact: newState ? 20 : -20,
-                            current_security_score: securityScore,
-                            from_security_section: 'authentication_methods'
-                          }
-                        });
                       }}
                       onCancel={() => {
-                          text: 'User cancelled biometric authentication setup',
-                          custom_action: 'biometric_auth_cancelled',
-                          data: {
-                            user_id: user?.id,
-                            current_state: biometricEnabled
-                          }
-                        });
-                        console.log('Biometric auth cancelled');
+                        // Biometric auth cancelled
                       }}
                       requireSlideConfirm={!biometricEnabled}
                       autoStart={false}
@@ -602,17 +495,7 @@ export default function SecurityPage() {
                     variant="ghost" 
                     size="sm"
                     onClick={() => {
-                        text: 'User viewing all security activity',
-                        custom_action: 'view_all_security_activity',
-                        data: {
-                          user_id: user?.id,
-                          recent_events_shown: 4,
-                          total_events: securityEvents.length,
-                          warning_events: securityEvents.filter(e => e.status === 'warning').length,
-                          from_section: 'recent_activity'
-                        }
-                      });
-                      console.log('Navigate to activity history');
+                      // Navigate to activity history
                     }}
                   >
                     View All
@@ -672,20 +555,7 @@ export default function SecurityPage() {
                   size="sm"
                   icon={<LogOut size={16} />}
                   onClick={() => {
-                      text: `User ${user?.username || 'unknown'} signing out all other sessions`,
-                      custom_action: 'sign_out_all_sessions',
-                      data: {
-                        user_id: user?.id,
-                        total_sessions: loginSessions.length,
-                        other_sessions_count: loginSessions.filter(s => !s.current).length,
-                        affected_sessions: loginSessions.filter(s => !s.current).map(s => ({
-                          device: s.device,
-                          location: s.location,
-                          last_active: s.lastActive
-                        }))
-                      }
-                    });
-                    console.log('Sign out all other sessions');
+                    // Sign out all other sessions
                   }}
                 >
                   Sign Out All Other Sessions
@@ -739,18 +609,6 @@ export default function SecurityPage() {
                         onClick={() => {
                           setSelectedSession(session);
                           setShowSessionDetailsModal(true);
-                            text: `User viewing details for session on ${session.device}`,
-                            custom_action: 'view_session_details',
-                            data: {
-                              user_id: user?.id,
-                              session_id: session.id,
-                              session_device: session.device,
-                              session_location: session.location,
-                              session_browser: session.browser,
-                              is_current_session: session.current,
-                              last_active: session.lastActive
-                            }
-                          });
                         }}
                       >
                         Details
@@ -778,7 +636,7 @@ export default function SecurityPage() {
                 Trusted Devices
               </h3>
               <p className="text-sm text-[var(--text-2)] mt-1">
-                Devices that don't require two-factor authentication
+                Devices that don&apos;t require two-factor authentication
               </p>
             </CardHeader>
             <CardBody>
@@ -797,14 +655,6 @@ export default function SecurityPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                        text: 'User removed trusted device',
-                        custom_action: 'remove_trusted_device',
-                        data: {
-                          user_id: user?.id,
-                          device_name: 'iPhone 14 Pro',
-                          trusted_since: 'Oct 15, 2025'
-                        }
-                      });
                     }}
                   >
                     Remove
@@ -825,14 +675,6 @@ export default function SecurityPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                        text: 'User removed trusted device',
-                        custom_action: 'remove_trusted_device',
-                        data: {
-                          user_id: user?.id,
-                          device_name: 'MacBook Pro',
-                          trusted_since: 'Sep 20, 2025'
-                        }
-                      });
                     }}
                   >
                     Remove
@@ -842,7 +684,7 @@ export default function SecurityPage() {
                 <div className="mt-4 p-4 rounded-lg bg-[rgba(var(--glass-rgb),0.05)] border border-[var(--border-1)]">
                   <p className="text-sm text-[var(--text-2)]">
                     <AlertCircle className="inline w-4 h-4 mr-1" />
-                    Trusted devices won't need to enter a verification code when signing in. Only trust devices you own and use regularly.
+                    Trusted devices won&apos;t need to enter a verification code when signing in. Only trust devices you own and use regularly.
                   </p>
                 </div>
               </div>
@@ -870,12 +712,7 @@ export default function SecurityPage() {
                       type="checkbox" 
                       className="sr-only peer" 
                       defaultChecked 
-                      onChange={(e) => {
-                          text: `User ${e.target.checked ? 'enabled' : 'disabled'} login notifications`,
-                          toggle_type: 'login_notifications',
-                          toggle_state: e.target.checked,
-                          data: { user_id: user?.id }
-                        });
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -894,12 +731,7 @@ export default function SecurityPage() {
                       type="checkbox" 
                       className="sr-only peer" 
                       defaultChecked 
-                      onChange={(e) => {
-                          text: `User ${e.target.checked ? 'enabled' : 'disabled'} transaction alerts`,
-                          toggle_type: 'transaction_alerts',
-                          toggle_state: e.target.checked,
-                          data: { user_id: user?.id }
-                        });
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -917,12 +749,7 @@ export default function SecurityPage() {
                     <input 
                       type="checkbox" 
                       className="sr-only peer"
-                      onChange={(e) => {
-                          text: `User ${e.target.checked ? 'enabled' : 'disabled'} data sharing`,
-                          toggle_type: 'data_sharing',
-                          toggle_state: e.target.checked,
-                          data: { user_id: user?.id }
-                        });
+                      onChange={() => {
                       }}
                     />
                     <div className="w-11 h-6 bg-[var(--border-1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-blue)]"></div>
@@ -934,10 +761,6 @@ export default function SecurityPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                        text: 'User downloading personal data',
-                        custom_action: 'download_personal_data',
-                        data: { user_id: user?.id }
-                      });
                       notificationService.info('Your data export will be ready in 24 hours', {
                         duration: 5000
                       });
@@ -949,15 +772,11 @@ export default function SecurityPage() {
                     variant="danger"
                     size="sm"
                     onClick={() => {
-                        text: 'User initiated account deletion',
-                        custom_action: 'delete_account_request',
-                        data: { user_id: user?.id }
-                      });
                       notificationService.warning('Account deletion requires additional verification', {
                         duration: 5000,
                         action: {
                           label: 'Contact Support',
-                          onClick: () => console.log('Contact support')
+                          onClick: () => {}
                         }
                       });
                     }}
@@ -1027,14 +846,6 @@ export default function SecurityPage() {
                   size="sm"
                   fullWidth
                   onClick={() => {
-                      text: 'User viewing full security activity log',
-                      custom_action: 'view_full_security_log',
-                      data: {
-                        user_id: user?.id,
-                        total_events: securityEvents.length,
-                        suspicious_events: securityEvents.filter(e => e.status === 'warning').length
-                      }
-                    });
                   }}
                 >
                   View All Activity
@@ -1065,15 +876,6 @@ export default function SecurityPage() {
                         size="sm"
                         className="mt-2"
                         onClick={() => {
-                            text: 'User clicked Enable Now for 2FA from security recommendations',
-                            custom_action: 'enable_2fa_from_recommendations',
-                            data: {
-                              user_id: user?.id,
-                              from_section: 'security_recommendations',
-                              current_security_score: securityScore,
-                              potential_score_increase: 30
-                            }
-                          });
                           setShowEnableTwoFactorModal(true);
                         }}
                       >
@@ -1136,14 +938,6 @@ export default function SecurityPage() {
                 {/* Authenticator App */}
                 <button
                   onClick={() => {
-                      text: 'User selected authenticator app for 2FA setup',
-                      custom_action: 'select_2fa_method',
-                      data: {
-                        user_id: user?.id,
-                        method: 'authenticator',
-                        is_recommended: true
-                      }
-                    });
                     handleSetupTwoFactor('authenticator');
                   }}
                   className="w-full p-4 text-left rounded-lg border border-[var(--border-1)] hover:bg-[rgba(var(--glass-rgb),0.05)] transition-colors"
@@ -1163,14 +957,6 @@ export default function SecurityPage() {
                 {/* SMS */}
                 <button
                   onClick={() => {
-                      text: 'User selected SMS for 2FA setup',
-                      custom_action: 'select_2fa_method',
-                      data: {
-                        user_id: user?.id,
-                        method: 'sms',
-                        is_recommended: false
-                      }
-                    });
                     setSelectedTwoFactorMethod('sms');
                   }}
                   className="w-full p-4 text-left rounded-lg border border-[var(--border-1)] hover:bg-[rgba(var(--glass-rgb),0.05)] transition-colors"
@@ -1190,14 +976,6 @@ export default function SecurityPage() {
                 {/* Email */}
                 <button
                   onClick={() => {
-                      text: 'User selected email for 2FA setup',
-                      custom_action: 'select_2fa_method',
-                      data: {
-                        user_id: user?.id,
-                        method: 'email',
-                        is_recommended: false
-                      }
-                    });
                     setSelectedTwoFactorMethod('email');
                   }}
                   className="w-full p-4 text-left rounded-lg border border-[var(--border-1)] hover:bg-[rgba(var(--glass-rgb),0.05)] transition-colors"
@@ -1289,7 +1067,7 @@ export default function SecurityPage() {
               
               <TwoFactorInput
                 onComplete={handleEnableTwoFactor}
-                onResend={() => console.log('Resend code')}
+                onResend={() => {}}
               />
             </>
           )}
@@ -1422,20 +1200,11 @@ export default function SecurityPage() {
                 }
               );
               
-                text: 'User successfully changed password',
-                custom_action: 'password_changed',
-                data: {
-                  user_id: user?.id,
-                  password_strength_score: passwordStrength.score,
-                  password_strength_label: passwordStrength.score <= 2 ? 'weak' : passwordStrength.score <= 3 ? 'medium' : 'strong',
-                  from_security_page: true
-                }
-              });
               
               setShowChangePasswordModal(false);
               setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } catch (error) {
-              console.error('Password change error:', error);
+            } catch {
+              // Password change error
             }
           }}
         >

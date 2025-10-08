@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, DollarSign, CreditCard, Zap, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, DollarSign, CreditCard, Zap, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -18,7 +18,6 @@ import { accountsService } from '@/lib/api';
 import { UserSearchResult } from '@/lib/api/users';
 import { notificationService } from '@/services/notificationService';
 import { useAuth } from '@/contexts/AuthContext';
-import { notificationsService } from '@/lib/notifications';
 
 type TransferStep = 'details' | 'confirm' | 'auth' | 'success';
 type AuthMethod = 'biometric' | '2fa';
@@ -54,11 +53,6 @@ export default function TransferPage() {
   });
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed transfer page`,
-      page_name: 'Transfer',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadAccounts();
   }, [user]);
 
@@ -69,8 +63,8 @@ export default function TransferPage() {
       if (data.length > 0) {
         setFormData(prev => ({ ...prev, fromAccount: data[0].id.toString() }));
       }
-    } catch (error) {
-      console.error('Failed to load accounts:', error);
+    } catch {
+      // Failed to load accounts
     }
   };
 
@@ -115,29 +109,14 @@ export default function TransferPage() {
   const handleNext = () => {
     if (!validateForm()) return;
     
-    const selectedAccount = accounts.find(acc => acc.id.toString() === formData.fromAccount);
-    const fee = formData.transferType === 'instant' ? 0.75 : 0;
+    const _selectedAccount = accounts.find(acc => acc.id.toString() === formData.fromAccount);
+    const _fee = formData.transferType === 'instant' ? 0.75 : 0;
     
-      text: `User proceeding to confirm ${formData.transferType} transfer of $${formData.amount} to ${selectedRecipient?.full_name || formData.recipient}`,
-      custom_action: 'transfer_details_complete',
-      data: {
-        amount: parseFloat(formData.amount),
-        fee: fee,
-        total_amount: parseFloat(formData.amount) + fee,
-        transfer_type: formData.transferType,
-        from_account: selectedAccount?.name || 'Unknown',
-        from_account_balance: selectedAccount?.balance || 0,
-        recipient_type: selectedRecipient ? 'internal_user' : 'external',
-        recipient: selectedRecipient?.username || formData.recipient,
-        has_note: formData.note.length > 0
-      }
-    });
     
     setCurrentStep('confirm');
   };
 
   const handleConfirm = () => {
-    console.log('[Transfer] handleConfirm called, showing auth modal');
     setIsTransferConfirmed(true);
     // Small delay to ensure slider animation completes
     setTimeout(() => {
@@ -146,7 +125,6 @@ export default function TransferPage() {
   };
 
   const handleAuthSuccess = async () => {
-    console.log('[Transfer] handleAuthSuccess called');
     setShowAuthModal(false);
     setIsLoading(true);
     
@@ -167,7 +145,6 @@ export default function TransferPage() {
           description: formData.note || `Transfer to ${selectedRecipient.full_name}`,
           transfer_fee: fee, // Send fee separately
         };
-        console.log('[Transfer] Sending money to user with data:', sendMoneyData);
         response = await transfersService.sendMoney(sendMoneyData);
       } else {
         // For external transfers without a selected recipient
@@ -180,26 +157,9 @@ export default function TransferPage() {
           transfer_fee: fee, // Send fee info in metadata
           transfer_type: formData.transferType,
         };
-        console.log('[Transfer] External transfer with data:', requestData);
         response = await transfersService.transfer(requestData);
       }
       
-        text: `User successfully transferred $${formData.amount} to ${selectedRecipient?.full_name || formData.recipient} via ${formData.transferType} transfer`,
-        custom_action: 'transfer_completed',
-        data: {
-          transaction_id: response?.id,
-          amount: parseFloat(formData.amount),
-          fee: fee,
-          total_amount: totalAmount,
-          transfer_type: formData.transferType,
-          recipient_type: selectedRecipient ? 'internal_user' : 'external',
-          recipient_username: selectedRecipient?.username,
-          recipient_name: selectedRecipient?.full_name || formData.recipient,
-          auth_method: authMethod,
-          from_account_id: formData.fromAccount,
-          note_included: formData.note.length > 0
-        }
-      });
       
       // Store transaction ID for receipt
       if (response?.id) {
@@ -210,7 +170,6 @@ export default function TransferPage() {
         sessionStorage.setItem('lastTransferTimestamp', Date.now().toString());
       }
       
-      console.log('[Transfer] Setting step to success');
       // Important: Set loading to false BEFORE changing step
       setIsLoading(false);
       setCurrentStep('success');
@@ -228,7 +187,6 @@ export default function TransferPage() {
         window.dispatchEvent(new CustomEvent('refreshNotifications'));
       }, 2000);
     } catch (error: any) {
-      console.error('Transfer failed:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Transfer failed. Please try again.';
       notificationService.error(errorMessage);
       setShowAuthModal(false);
@@ -266,18 +224,6 @@ export default function TransferPage() {
             size="sm"
             icon={<ArrowLeft size={16} />}
             onClick={() => {
-                text: `User navigating back to dashboard from transfer page (step: ${currentStep})`,
-                custom_action: 'navigate_back_dashboard',
-                data: {
-                  from_page: 'transfer',
-                  current_step: currentStep,
-                  had_form_data: {
-                    amount: formData.amount.length > 0,
-                    recipient: selectedRecipient !== null || formData.recipient.length > 0,
-                    note: formData.note.length > 0
-                  }
-                }
-              });
               router.push('/dashboard');
             }}
             className="mb-6"
@@ -285,8 +231,6 @@ export default function TransferPage() {
             Back to Dashboard
           </Button>
 
-          {console.log('[Transfer] Current step:', currentStep, 'Amount:', formData.amount, 'IsLoading:', isLoading)}
-          
           {/* Step 1: Transfer Details */}
           {currentStep === 'details' && (
             <div>
@@ -306,21 +250,10 @@ export default function TransferPage() {
                       }))}
                       value={formData.fromAccount}
                       onChange={(value) => {
-                        const previousAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
-                        const newAccount = accounts.find(a => a.id.toString() === value);
+                        const _previousAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
+                        const _newAccount = accounts.find(a => a.id.toString() === value);
                         setFormData({ ...formData, fromAccount: value });
                         setErrors({ ...errors, fromAccount: '' });
-                        
-                          text: `User selected source account "${newAccount?.name}" with balance $${newAccount?.balance.toFixed(2)}`,
-                          custom_action: 'select_source_account',
-                          data: {
-                            account_id: value,
-                            account_name: newAccount?.name,
-                            account_balance: newAccount?.balance,
-                            previous_account: previousAccount?.name,
-                            account_type: newAccount?.account_type
-                          }
-                        });
                       }}
                       error={errors.fromAccount}
                       placeholder="Select source account"
@@ -336,16 +269,6 @@ export default function TransferPage() {
                       onSelect={(user) => {
                         setSelectedRecipient(user);
                         setErrors({ ...errors, recipient: '' });
-                        
-                          text: `User selected recipient "${user.full_name}" (@${user.username})`,
-                          custom_action: 'select_recipient',
-                          data: {
-                            recipient_id: user.id,
-                            recipient_username: user.username,
-                            recipient_name: user.full_name,
-                            recipient_type: 'internal_user'
-                          }
-                        });
                       }}
                       error={errors.recipient}
                       placeholder="Search by username, email, or full name"
@@ -363,21 +286,10 @@ export default function TransferPage() {
                         setErrors({ ...errors, amount: '' });
                         
                         if (amount && parseFloat(amount) > 0) {
-                          const selectedAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
+                          const _selectedAccount = accounts.find(a => a.id.toString() === formData.fromAccount);
                           const fee = formData.transferType === 'instant' ? 0.75 : 0;
-                          const total = parseFloat(amount) + fee;
+                          const _total = parseFloat(amount) + fee;
                           
-                            text: `User entered transfer amount $${amount}${fee > 0 ? ` (total with fee: $${total.toFixed(2)})` : ''}`,
-                            field_name: 'transfer_amount',
-                            field_value: amount,
-                            data: {
-                              amount: parseFloat(amount),
-                              fee: fee,
-                              total_amount: total,
-                              has_sufficient_balance: selectedAccount ? total <= selectedAccount.balance : false,
-                              account_balance: selectedAccount?.balance || 0
-                            }
-                          });
                         }
                       }}
                       error={errors.amount}
@@ -390,21 +302,9 @@ export default function TransferPage() {
                       items={transferTypes}
                       value={formData.transferType}
                       onChange={(value) => {
-                        const oldFee = formData.transferType === 'instant' ? 0.75 : 0;
-                        const newFee = value === 'instant' ? 0.75 : 0;
+                        const _oldFee = formData.transferType === 'instant' ? 0.75 : 0;
+                        const _newFee = value === 'instant' ? 0.75 : 0;
                         setFormData({ ...formData, transferType: value });
-                        
-                          text: `User changed transfer type from ${formData.transferType} to ${value}`,
-                          custom_action: 'change_transfer_type',
-                          data: {
-                            old_type: formData.transferType,
-                            new_type: value,
-                            old_fee: oldFee,
-                            new_fee: newFee,
-                            amount: formData.amount ? parseFloat(formData.amount) : 0,
-                            total_with_new_fee: formData.amount ? parseFloat(formData.amount) + newFee : newFee
-                          }
-                        });
                       }}
                       placeholder="Select transfer type"
                     />
@@ -420,16 +320,6 @@ export default function TransferPage() {
                         setFormData({ ...formData, note: noteValue });
                         
                         if (noteValue.length > 0) {
-                            text: `User entered transfer note: "${noteValue.substring(0, 50)}${noteValue.length > 50 ? '...' : ''}"`,
-                            field_name: 'transfer_note',
-                            field_value: noteValue,
-                            data: {
-                              note_length: noteValue.length,
-                              has_note: true,
-                              transfer_amount: formData.amount ? parseFloat(formData.amount) : 0,
-                              recipient: selectedRecipient?.username || formData.recipient
-                            }
-                          });
                         }
                       }}
                     />
@@ -521,15 +411,6 @@ export default function TransferPage() {
                         variant="ghost"
                         fullWidth
                         onClick={() => {
-                            text: `User going back to edit transfer details (amount: $${formData.amount})`,
-                            custom_action: 'back_to_edit_transfer',
-                            data: {
-                              amount: parseFloat(formData.amount),
-                              fee: formData.transferType === 'instant' ? 0.75 : 0,
-                              recipient: selectedRecipient?.username || formData.recipient,
-                              transfer_type: formData.transferType
-                            }
-                          });
                           setCurrentStep('details');
                         }}
                       >
@@ -543,8 +424,7 @@ export default function TransferPage() {
 
           {/* Step 3: Success */}
           {currentStep === 'success' && !isLoading && (
-            <div>
-                <Card variant="prominent" className="p-8">
+            <Card variant="prominent" className="p-8">
                   <div className="text-center">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -614,16 +494,6 @@ export default function TransferPage() {
                         fullWidth
                         onClick={() => {
                           const transactionId = sessionStorage.getItem('lastTransactionId');
-                            text: `User viewing full receipt for transfer ${transactionId ? `#${transactionId}` : '(unknown)'}`,
-                            custom_action: 'view_transfer_receipt',
-                            data: {
-                              transaction_id: transactionId,
-                              transfer_amount: parseFloat(formData.amount),
-                              recipient: selectedRecipient?.username || formData.recipient,
-                              transfer_type: formData.transferType,
-                              had_fee: formData.transferType === 'instant'
-                            }
-                          });
                           if (transactionId) {
                             router.push(`/transactions/${transactionId}`);
                           } else {
@@ -637,15 +507,6 @@ export default function TransferPage() {
                         variant="secondary"
                         fullWidth
                         onClick={() => {
-                            text: `User starting new transfer after completing $${formData.amount} transfer`,
-                            custom_action: 'start_another_transfer',
-                            data: {
-                              previous_amount: parseFloat(formData.amount),
-                              previous_recipient: selectedRecipient?.username || formData.recipient,
-                              previous_type: formData.transferType,
-                              previous_transaction_id: sessionStorage.getItem('lastTransactionId')
-                            }
-                          });
                           handleNewTransfer();
                         }}
                       >
@@ -655,15 +516,6 @@ export default function TransferPage() {
                         variant="ghost"
                         fullWidth
                         onClick={() => {
-                            text: `User returning to dashboard after completing $${formData.amount} transfer`,
-                            custom_action: 'return_to_dashboard_after_transfer',
-                            data: {
-                              transfer_amount: parseFloat(formData.amount),
-                              recipient: selectedRecipient?.username || formData.recipient,
-                              transfer_type: formData.transferType,
-                              transaction_id: sessionStorage.getItem('lastTransactionId')
-                            }
-                          });
                           router.push('/dashboard');
                         }}
                       >
@@ -672,7 +524,6 @@ export default function TransferPage() {
                     </div>
                   </div>
                 </Card>
-            </div>
           )}
 
           {/* Authentication Modal */}
@@ -691,15 +542,6 @@ export default function TransferPage() {
                   fullWidth
                   onClick={() => {
                     if (authMethod !== 'biometric') {
-                        text: 'User switched to biometric authentication for transfer',
-                        custom_action: 'switch_auth_method',
-                        data: {
-                          from_method: authMethod,
-                          to_method: 'biometric',
-                          transfer_amount: parseFloat(formData.amount),
-                          recipient: selectedRecipient?.username || formData.recipient
-                        }
-                      });
                       setAuthMethod('biometric');
                     }
                   }}
@@ -712,15 +554,6 @@ export default function TransferPage() {
                   fullWidth
                   onClick={() => {
                     if (authMethod !== '2fa') {
-                        text: 'User switched to 2FA authentication for transfer',
-                        custom_action: 'switch_auth_method',
-                        data: {
-                          from_method: authMethod,
-                          to_method: '2fa',
-                          transfer_amount: parseFloat(formData.amount),
-                          recipient: selectedRecipient?.username || formData.recipient
-                        }
-                      });
                       setAuthMethod('2fa');
                     }
                   }}
@@ -740,20 +573,11 @@ export default function TransferPage() {
                 />
               ) : (
                 <TwoFactorInput
-                  onComplete={(code) => {
-                    console.log('2FA code:', code);
+                  onComplete={(_code) => {
                     handleAuthSuccess();
                   }}
                   onResend={() => {
-                      text: 'User requested 2FA code resend for transfer authentication',
-                      custom_action: 'resend_2fa_code',
-                      data: {
-                        transfer_amount: parseFloat(formData.amount),
-                        recipient: selectedRecipient?.username || formData.recipient,
-                        auth_context: 'transfer_confirmation'
-                      }
-                    });
-                    console.log('Resend code');
+                    // Resend 2FA code
                   }}
                   title="Enter Security Code"
                   subtitle="We sent a code to your phone ending in ****1234"

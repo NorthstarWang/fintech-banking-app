@@ -273,7 +273,7 @@ export default function NotFound() {
             variants={itemVariants}
             className="text-lg text-[var(--text-2)] mb-8 max-w-md mx-auto"
           >
-            Looks like you've wandered into uncharted territory. The page you're looking for doesn't exist or has been moved.
+            Looks like you&apos;ve wandered into uncharted territory. The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </motion.p>
 
           {/* Lost items animation */}
@@ -377,7 +377,7 @@ export default function NotFound() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                Error code: 404 | Don't worry, even the best explorers get lost sometimes! 🧭
+                Error code: 404 | Don&apos;t worry, even the best explorers get lost sometimes! 🧭
               </motion.span>
             </AnimatePresence>
           </motion.p>

@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   DollarSign,
   Calendar,
   MessageSquare,
   Send,
-  User,
-  Clock
+  User
 } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -61,8 +59,7 @@ export default function PaymentRequestModal({
 
       onSuccess?.();
       handleClose();
-    } catch (error) {
-      console.error('Failed to create payment request:', error);
+    } catch {
       setError('Failed to create payment request');
     } finally {
       setIsSubmitting(false);

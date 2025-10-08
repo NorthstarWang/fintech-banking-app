@@ -44,10 +44,6 @@ class AuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      // Log login attempt
-        username: credentials.username,
-        text: `Login attempt for user ${credentials.username}`
-      });
 
       const response = await apiClient.post<AuthResponse>(
         '/api/auth/login',
@@ -63,70 +59,32 @@ class AuthService {
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
       }
-
-      // Log successful login
-        userId: response.user.id,
-        username: response.user.username,
-        text: `User ${response.user.username} logged in successfully`
-      });
-
       return response;
     } catch (error) {
-      // Log failed login
-        username: credentials.username,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        text: `Login failed for user ${credentials.username}`
-      });
       throw error;
     }
   }
 
   async register(data: RegisterData): Promise<UserResponse> {
     try {
-      // Log registration attempt
-        username: data.username,
-        email: data.email,
-        text: `Registration attempt for user ${data.username}`
-      });
 
       const response = await apiClient.post<UserResponse>(
         '/api/auth/register',
         data,
         { skipAuth: true }
       );
-
-      // Log successful registration
-        userId: response.id,
-        username: response.username,
-        text: `User ${response.username} registered successfully`
-      });
-
       return response;
     } catch (error) {
-      // Log failed registration
-        username: data.username,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        text: `Registration failed for user ${data.username}`
-      });
       throw error;
     }
   }
 
   async logout(): Promise<void> {
     try {
-      // Log logout
-      if (this.currentUser) {
-          userId: this.currentUser.id,
-          username: this.currentUser.username,
-          text: `User ${this.currentUser.username} logged out`
-        });
-      }
-
       // Call logout endpoint
       await apiClient.post('/api/auth/logout');
-    } catch (error) {
+    } catch {
       // Continue with local logout even if API call fails
-      console.error('Logout API call failed:', error);
     } finally {
       // Clear local state
       apiClient.setAuthToken(null);
@@ -162,7 +120,7 @@ class AuthService {
           localStorage.setItem('currentUser', JSON.stringify(response));
         }
         return response;
-      } catch (error) {
+      } catch {
         // Token might be invalid, clear it
         this.logout();
         return null;
@@ -177,10 +135,6 @@ class AuthService {
       const response = await apiClient.post<AuthResponse>('/api/auth/refresh');
       apiClient.setAuthToken(response.access_token);
       
-      // Log token refresh
-        userId: response.user.id,
-        text: `Token refreshed for user ${response.user.username}`
-      });
     } catch (error) {
       // If refresh fails, logout
       await this.logout();

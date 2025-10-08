@@ -130,8 +130,6 @@ interface MemoizedChartProps {
 
 export const MemoizedChart = memo(function MemoizedChart({
   data,
-  type,
-  options,
   className
 }: MemoizedChartProps) {
   const chartData = useMemo(() => {

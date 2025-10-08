@@ -1,21 +1,27 @@
 """
 Crypto manager for handling digital asset data generation and management.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-import random
 import hashlib
-import uuid
+import random
+from datetime import datetime, timedelta
 
 from ..models import (
-    CryptoWallet, CryptoAsset, NFTAsset, CryptoTransaction, DeFiPosition,
-    BlockchainNetwork, CryptoAssetType, TransactionDirection, DeFiProtocolType,
-    CryptoTransactionStatus
+    BlockchainNetwork,
+    CryptoAsset,
+    CryptoAssetType,
+    CryptoTransaction,
+    CryptoTransactionStatus,
+    CryptoWallet,
+    DeFiPosition,
+    DeFiProtocolType,
+    NFTAsset,
+    TransactionDirection,
 )
+
 
 class CryptoManager:
     """Manager for crypto-related data generation and operations."""
-    
+
     # Crypto assets with realistic data
     CRYPTO_ASSETS = {
         "BTC": {
@@ -87,7 +93,7 @@ class CryptoManager:
             "contract_address": "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9"
         }
     }
-    
+
     # NFT Collections
     NFT_COLLECTIONS = [
         {
@@ -115,7 +121,7 @@ class CryptoManager:
             "network": BlockchainNetwork.ETHEREUM
         }
     ]
-    
+
     # DeFi Protocols
     DEFI_PROTOCOLS = [
         {
@@ -149,18 +155,18 @@ class CryptoManager:
             "apy_range": (5, 15)
         }
     ]
-    
+
     def __init__(self, data_manager):
         self.data_manager = data_manager
-    
+
     def generate_crypto_data(self, user_id: int, seed: int = 42):
         """Generate crypto data for a user."""
         random.seed(seed + user_id)
-        
+
         # Create 1-3 wallets
         num_wallets = random.randint(1, 3)
         wallets = []
-        
+
         for i in range(num_wallets):
             network = random.choice(list(BlockchainNetwork))
             wallet = CryptoWallet(
@@ -172,38 +178,38 @@ class CryptoManager:
             )
             self.data_manager.crypto_wallets.append(wallet.to_dict())
             wallets.append(wallet)
-        
+
         # Generate assets for each wallet
         for wallet in wallets:
             self._generate_wallet_assets(wallet, seed)
-            
+
             # Generate NFTs for Ethereum wallets
             if wallet.network == BlockchainNetwork.ETHEREUM.value:
                 self._generate_wallet_nfts(wallet, seed)
-            
+
             # Generate DeFi positions
             self._generate_defi_positions(wallet, seed)
-        
+
         # Generate transaction history
         self._generate_transaction_history(user_id, wallets, seed)
-    
+
     def _generate_wallet_assets(self, wallet, seed: int):
         """Generate crypto assets for a wallet."""
         random.seed(seed + wallet.id)
-        
+
         # Filter assets available on this network
         available_assets = [
             (symbol, data) for symbol, data in self.CRYPTO_ASSETS.items()
             if any(network.value == wallet.network for network in data["networks"])
         ]
-        
+
         # Generate 2-6 assets (or all available if less than 2)
         if len(available_assets) <= 2:
             selected_assets = available_assets
         else:
             num_assets = random.randint(2, min(6, len(available_assets)))
             selected_assets = random.sample(available_assets, num_assets)
-        
+
         for symbol, asset_data in selected_assets:
             # Generate balance
             if asset_data["type"] == CryptoAssetType.STABLECOIN:
@@ -212,12 +218,12 @@ class CryptoManager:
                 balance = str(round(random.uniform(0.01, 2), 6))
             else:
                 balance = str(round(random.uniform(10, 1000), 4))
-            
+
             # Calculate price and value
             price = random.uniform(*asset_data["price_range"])
             usd_value = float(balance) * price
             change_24h = random.uniform(-10, 10) * asset_data["volatility"]
-            
+
             asset = CryptoAsset(
                 wallet_id=wallet.id,
                 symbol=symbol,
@@ -232,22 +238,22 @@ class CryptoManager:
                 last_updated=datetime.utcnow()
             )
             self.data_manager.crypto_assets.append(asset.to_dict())
-    
+
     def _generate_wallet_nfts(self, wallet, seed: int):
         """Generate NFTs for a wallet."""
         random.seed(seed + wallet.id + 1000)
-        
+
         # 30% chance to have NFTs
         if random.random() > 0.3:
             return
-        
+
         # Generate 1-5 NFTs
         num_nfts = random.randint(1, 5)
-        
+
         for _ in range(num_nfts):
             collection = random.choice(self.NFT_COLLECTIONS)
             token_id = str(random.randint(1, 10000))
-            
+
             # Generate metadata
             metadata = {
                 "attributes": [
@@ -256,10 +262,10 @@ class CryptoManager:
                     {"trait_type": "Edition", "value": random.randint(1, 100)}
                 ]
             }
-            
+
             floor_price = random.uniform(*collection["floor_price_range"]) * 2500  # ETH price
             estimated_value = floor_price * random.uniform(0.8, 1.5)
-            
+
             nft = NFTAsset(
                 wallet_id=wallet.id,
                 collection_name=collection["name"],
@@ -275,40 +281,40 @@ class CryptoManager:
                 acquired_at=datetime.utcnow() - timedelta(days=random.randint(30, 365))
             )
             self.data_manager.nft_assets.append(nft.to_dict())
-    
+
     def _generate_defi_positions(self, wallet, seed: int):
         """Generate DeFi positions for a wallet."""
         random.seed(seed + wallet.id + 2000)
-        
+
         # 40% chance to have DeFi positions
         if random.random() > 0.4:
             return
-        
+
         # Filter protocols available on this network
         available_protocols = [
             p for p in self.DEFI_PROTOCOLS
             if any(network.value == wallet.network for network in p["networks"])
         ]
-        
+
         if not available_protocols:
             return
-        
+
         # Generate 1-3 positions
         num_positions = random.randint(1, min(3, len(available_protocols)))
         selected_protocols = random.sample(available_protocols, num_positions)
-        
+
         for protocol in selected_protocols:
             # Select asset for position
             wallet_assets = [
                 a for a in self.data_manager.crypto_assets
                 if a.get("wallet_id") == wallet.id
             ]
-            
+
             if not wallet_assets:
                 continue
-            
+
             asset = random.choice(wallet_assets)
-            
+
             # Generate position data
             if protocol["type"] == DeFiProtocolType.LENDING:
                 position_type = random.choice(["lending", "borrowing"])
@@ -316,17 +322,17 @@ class CryptoManager:
                 position_type = "staking"
             else:
                 position_type = "LP"
-            
+
             amount = str(round(float(asset["balance"]) * random.uniform(0.1, 0.5), 6))
             usd_value = float(amount) * asset["price_usd"]
             apy = random.uniform(*protocol["apy_range"])
-            
+
             # Calculate rewards (mock)
             days_active = random.randint(30, 180)
             daily_reward = (usd_value * apy / 100) / 365
             total_rewards = daily_reward * days_active
             rewards_earned = str(round(total_rewards / asset["price_usd"], 6))
-            
+
             position = DeFiPosition(
                 wallet_id=wallet.id,
                 protocol=protocol["name"],
@@ -341,35 +347,35 @@ class CryptoManager:
                 started_at=datetime.utcnow() - timedelta(days=days_active)
             )
             self.data_manager.defi_positions.append(position.to_dict())
-    
-    def _generate_transaction_history(self, user_id: int, wallets: List[CryptoWallet], seed: int):
+
+    def _generate_transaction_history(self, user_id: int, wallets: list[CryptoWallet], seed: int):
         """Generate transaction history for user's wallets."""
         random.seed(seed + user_id + 3000)
-        
+
         # Generate 10-30 transactions
         num_transactions = random.randint(10, 30)
-        
+
         for i in range(num_transactions):
             wallet = random.choice(wallets)
-            
+
             # Get wallet assets
             wallet_assets = [
                 a for a in self.data_manager.crypto_assets
                 if a.get("wallet_id") == wallet.id
             ]
-            
+
             if not wallet_assets:
                 continue
-            
+
             asset = random.choice(wallet_assets)
-            
+
             # Determine transaction type
             direction = random.choice(list(TransactionDirection))
-            
+
             # Generate transaction data
             amount = str(round(random.uniform(0.01, float(asset["balance"]) * 0.1), 6))
             usd_value = float(amount) * asset["price_usd"]
-            
+
             # Generate addresses
             if direction == TransactionDirection.SEND:
                 from_address = wallet.address
@@ -380,7 +386,7 @@ class CryptoManager:
             else:  # SWAP, MINT, BURN
                 from_address = wallet.address
                 to_address = "0x" + hashlib.sha256(f"contract{i}".encode()).hexdigest()[:40]
-            
+
             # Gas fees
             if wallet.network == BlockchainNetwork.ETHEREUM.value:
                 gas_fee = str(round(random.uniform(0.001, 0.01), 6))
@@ -388,14 +394,14 @@ class CryptoManager:
             else:
                 gas_fee = str(round(random.uniform(0.00001, 0.0001), 6))
                 gas_fee_usd = random.uniform(0.01, 0.1)
-            
+
             # Transaction timing
             created_at = datetime.utcnow() - timedelta(
                 days=random.randint(0, 180),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59)
             )
-            
+
             transaction = CryptoTransaction(
                 user_id=user_id,
                 wallet_id=wallet.id,
@@ -414,27 +420,27 @@ class CryptoManager:
                 confirmed_at=created_at + timedelta(minutes=random.randint(1, 30))
             )
             self.data_manager.crypto_transactions.append(transaction.to_dict())
-    
-    def get_current_prices(self) -> Dict[str, float]:
+
+    def get_current_prices(self) -> dict[str, float]:
         """Get current mock prices for all assets."""
         prices = {}
         for symbol, data in self.CRYPTO_ASSETS.items():
             prices[symbol] = random.uniform(*data["price_range"])
         return prices
-    
+
     def update_asset_prices(self):
         """Update all asset prices and values."""
         prices = self.get_current_prices()
-        
+
         for asset in self.data_manager.crypto_assets:
             if asset["symbol"] in prices:
                 old_price = asset["price_usd"]
                 new_price = prices[asset["symbol"]]
-                
+
                 # Update price and value
                 asset["price_usd"] = new_price
                 asset["usd_value"] = float(asset["balance"]) * new_price
-                
+
                 # Calculate 24h change
                 asset["change_24h"] = ((new_price - old_price) / old_price) * 100
                 asset["last_updated"] = datetime.utcnow()

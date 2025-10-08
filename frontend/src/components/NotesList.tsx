@@ -48,29 +48,13 @@ export const NotesList: React.FC<NotesListProps> = ({ userId }) => {
 
   const handleTypeTitle = (value: string) => {
     setTitle(value);
-      text: `User typed "${value}" into the note title field`,
-      page_url: window.location.href,
-      element_identifier: "note-title",
-      key: value
-    });
   };
 
   const handleTypeContent = (value: string) => {
     setContent(value);
-      text: `User typed "${value}" into the note content field`,
-      page_url: window.location.href,
-      element_identifier: "note-content",
-      key: value
-    });
   };
 
   const createNote = async () => {
-      text: "User clicked on the create note button",
-      page_url: window.location.href,
-      element_identifier: "create-note-btn",
-      coordinates: { x: 0, y: 0 }
-    });
-
     try {
       const res = await fetch(
         `http://localhost:8000/api/notes`,
@@ -99,11 +83,6 @@ export const NotesList: React.FC<NotesListProps> = ({ userId }) => {
   };
 
   const deleteNote = async (noteId: string) => {
-      text: "User clicked on the delete note button",
-      page_url: window.location.href,
-      element_identifier: "delete-note-btn",
-      coordinates: { x: 0, y: 0 }
-    });
 
     try {
       const res = await fetch(

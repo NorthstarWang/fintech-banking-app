@@ -1,22 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   FileText,
   Plus,
   Search,
-  Filter,
+  
   Download,
   Send,
-  DollarSign,
-  Calendar,
   CheckCircle,
   Clock,
   XCircle,
   AlertCircle,
   Edit,
-  Trash2,
   Eye,
   Copy
 } from 'lucide-react';
@@ -42,20 +39,9 @@ export default function InvoicesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'due'>('date');
   const [selectedInvoices, setSelectedInvoices] = useState<Set<number>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [_showBulkActions, _setShowBulkActions] = useState(false);
 
   useEffect(() => {
-    // Enhanced page view logging
-      text: `User ${user?.username || 'unknown'} viewed invoices page`,
-      page_name: 'Invoices',
-      user_id: user?.id,
-      timestamp: new Date().toISOString(),
-      data: {
-        available_features: ['create_invoice', 'invoice_list', 'invoice_search', 'invoice_export'],
-        initial_filter: filterStatus,
-        initial_sort: sortBy
-      }
-    });
     loadInvoices();
   }, [user]);
 
@@ -69,22 +55,7 @@ export default function InvoicesPage() {
       setInvoices(data);
       
       // Log data loaded event
-        text: `Loaded ${data.length} invoices for user`,
-        custom_action: 'invoices_data_loaded',
-        data: {
-          total_invoices: data.length,
-          paid_count: data.filter(inv => inv.status === 'paid').length,
-          pending_count: data.filter(inv => inv.status === 'pending' || inv.status === 'sent').length,
-          overdue_count: data.filter(inv => inv.status === 'overdue').length,
-          total_value: data.reduce((sum, inv) => sum + inv.total_amount, 0),
-          invoice_statuses: data.reduce((acc, inv) => {
-            acc[inv.status] = (acc[inv.status] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>)
-        }
-      });
-    } catch (error) {
-      console.error('Failed to load invoices:', error);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -129,29 +100,8 @@ export default function InvoicesPage() {
       setInvoices([newInvoice, ...invoices]);
       setShowCreateModal(false);
       
-        text: `User ${user?.username || 'unknown'} created invoice #${newInvoice.invoice_number} for ${newInvoice.client_name} - $${newInvoice.total_amount}`,
-        custom_action: 'create_invoice',
-        data: {
-          invoice_number: newInvoice.invoice_number,
-          invoice_amount: newInvoice.total_amount,
-          client_name: newInvoice.client_name,
-          client_email: newInvoice.client_email,
-          due_date: newInvoice.due_date,
-          payment_terms: newInvoice.payment_terms,
-          items_count: newInvoice.items?.length || 0,
-          user_id: user?.id,
-          total_invoices_after: invoices.length + 1
-        }
-      });
-    } catch (error) {
-      console.error('Failed to create invoice:', error);
+    } catch {
       
-        text: 'Failed to create invoice',
-        custom_action: 'create_invoice_error',
-        data: {
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      });
     }
   };
 
@@ -159,18 +109,6 @@ export default function InvoicesPage() {
     setSelectedInvoice(invoice);
     setShowDetailModal(true);
     
-      text: `User viewing invoice #${invoice.invoice_number} details`,
-      custom_action: 'view_invoice_detail',
-      data: {
-        invoice_id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        invoice_status: invoice.status,
-        invoice_amount: invoice.total_amount,
-        amount_paid: invoice.amount_paid,
-        client_name: invoice.client_name,
-        days_until_due: Math.floor((new Date(invoice.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-      }
-    });
   };
 
   const getStatusBadge = (status: Invoice['status']) => {
@@ -238,19 +176,6 @@ export default function InvoicesPage() {
             icon={<Plus size={18} />}
             onClick={() => {
               setShowCreateModal(true);
-                text: 'User clicked Create Invoice button',
-                custom_action: 'open_create_invoice_modal',
-                data: {
-                  from_location: 'header',
-                  current_invoices_count: invoices.length,
-                  stats: {
-                    total: stats.total,
-                    paid: stats.paid,
-                    pending: stats.pending,
-                    overdue: stats.overdue
-                  }
-                }
-              });
             }}
             className="mt-4 md:mt-0"
           >
@@ -325,16 +250,6 @@ export default function InvoicesPage() {
                   onChange={(e) => {
                     const query = e.target.value;
                     setSearchQuery(query);
-                      text: `User searching invoices with query: "${query}"`,
-                      custom_action: 'search_invoices',
-                      data: {
-                        search_query: query,
-                        query_length: query.length,
-                        current_filter: filterStatus,
-                        current_sort: sortBy,
-                        total_invoices: invoices.length
-                      }
-                    });
                   }}
                   icon={<Search size={18} />}
                 />
@@ -349,17 +264,6 @@ export default function InvoicesPage() {
                   value={filterStatus}
                   onChange={(value) => {
                     setFilterStatus(value);
-                      text: `User filtered invoices by status: ${value}`,
-                      filter_type: 'invoice_status',
-                      filter_value: value,
-                      data: {
-                        old_filter: filterStatus,
-                        new_filter: value,
-                        invoices_matching: value === 'all' ? invoices.length : invoices.filter(inv => inv.status === value).length,
-                        current_search: searchQuery,
-                        current_sort: sortBy
-                      }
-                    });
                   }}
                   placeholder="Status"
                 />
@@ -374,17 +278,6 @@ export default function InvoicesPage() {
                   onChange={(value) => {
                     const newSort = value as 'date' | 'amount' | 'due';
                     setSortBy(newSort);
-                      text: `User sorted invoices by ${value}`,
-                      custom_action: 'sort_invoices',
-                      data: {
-                        old_sort: sortBy,
-                        new_sort: newSort,
-                        sort_direction: newSort === 'amount' ? 'descending' : 'ascending',
-                        current_filter: filterStatus,
-                        current_search: searchQuery,
-                        invoices_count: filteredInvoices.length
-                      }
-                    });
                   }}
                   placeholder="Sort by"
                 />
@@ -394,21 +287,6 @@ export default function InvoicesPage() {
                   size="sm"
                   icon={<Download size={16} />}
                   onClick={() => {
-                      text: 'User exporting invoices list',
-                      custom_action: 'export_invoices',
-                      data: {
-                        export_count: filteredInvoices.length,
-                        current_filter: filterStatus,
-                        current_search: searchQuery,
-                        current_sort: sortBy,
-                        stats: {
-                          total_value: stats.totalValue,
-                          paid_value: stats.paidValue,
-                          pending_value: stats.pendingValue,
-                          overdue_value: stats.overdueValue
-                        }
-                      }
-                    });
                     // Generate CSV export
                     const csvContent = [
                       ['Invoice #', 'Client', 'Email', 'Issue Date', 'Due Date', 'Amount', 'Status', 'Amount Paid'],
@@ -460,18 +338,11 @@ export default function InvoicesPage() {
                     });
                     
                     if (selectedDrafts.length > 0) {
-                        text: `Bulk sending ${selectedDrafts.length} invoices`,
-                        custom_action: 'bulk_send_invoices',
-                        data: {
-                          invoice_count: selectedDrafts.length
-                        }
-                      });
                       
                       for (const id of selectedDrafts) {
                         try {
                           await businessApi.sendInvoice(id);
-                        } catch (error) {
-                          console.error(`Failed to send invoice ${id}:`, error);
+                        } catch {
                         }
                       }
                       await loadInvoices();
@@ -511,13 +382,6 @@ export default function InvoicesPage() {
                     icon={<Plus size={16} />}
                     onClick={() => {
                       setShowCreateModal(true);
-                        text: 'User clicked Create Your First Invoice button',
-                        custom_action: 'open_create_invoice_modal',
-                        data: {
-                          from_location: 'empty_state',
-                          is_first_invoice: true
-                        }
-                      });
                     }}
                     className="mt-4"
                   >
@@ -618,21 +482,10 @@ export default function InvoicesPage() {
                             size="sm"
                             icon={<Copy size={16} />}
                             onClick={async () => {
-                                text: `User duplicating invoice #${invoice.invoice_number}`,
-                                custom_action: 'duplicate_invoice',
-                                data: {
-                                  invoice_id: invoice.id,
-                                  invoice_number: invoice.invoice_number,
-                                  invoice_status: invoice.status,
-                                  invoice_amount: invoice.total_amount,
-                                  client_name: invoice.client_name
-                                }
-                              });
                               try {
                                 await businessApi.duplicateInvoice(invoice.id);
                                 await loadInvoices();
-                              } catch (error) {
-                                console.error('Failed to duplicate invoice:', error);
+                              } catch {
                               }
                             }}
                           />
@@ -642,22 +495,10 @@ export default function InvoicesPage() {
                               size="sm"
                               icon={<Send size={16} />}
                               onClick={async () => {
-                                  text: `User sending invoice #${invoice.invoice_number} to ${invoice.client_name}`,
-                                  custom_action: 'send_invoice',
-                                  data: {
-                                    invoice_id: invoice.id,
-                                    invoice_number: invoice.invoice_number,
-                                    invoice_amount: invoice.total_amount,
-                                    client_name: invoice.client_name,
-                                    client_email: invoice.client_email,
-                                    days_until_due: Math.floor((new Date(invoice.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                                  }
-                                });
                                 try {
                                   await businessApi.sendInvoice(invoice.id);
                                   await loadInvoices();
-                                } catch (error) {
-                                  console.error('Failed to send invoice:', error);
+                                } catch {
                                 }
                               }}
                             />

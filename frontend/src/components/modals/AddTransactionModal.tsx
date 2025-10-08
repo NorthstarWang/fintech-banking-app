@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { 
-  X, 
-  Calendar, 
   DollarSign, 
   Tag, 
   FileText,
@@ -68,8 +65,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       if (accountsData.length > 0 && !formData.account_id) {
         setFormData(prev => ({ ...prev, account_id: accountsData[0].id }));
       }
-    } catch (error) {
-      console.error('Failed to load data:', error);
+    } catch {
     }
   };
 
@@ -107,14 +103,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     try {
       await transactionsService.createTransaction(formData);
       
-        text: 'Transaction created successfully',
-        custom_action: 'add_transaction',
-        data: {
-          transaction_type: formData.transaction_type,
-          amount: formData.amount,
-          category_id: formData.category_id
-        }
-      });
 
       onSuccess();
       onClose();
@@ -129,8 +117,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         transaction_date: new Date().toISOString().split('T')[0],
       });
       setErrors({});
-    } catch (error) {
-      console.error('Failed to create transaction:', error);
+    } catch {
       setErrors({ submit: 'Failed to create transaction. Please try again.' });
     } finally {
       setIsLoading(false);

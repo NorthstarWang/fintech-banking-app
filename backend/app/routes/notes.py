@@ -48,7 +48,6 @@ async def get_notes(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all notes for the current user with optional filtering"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Base query for user's notes
     query = db_session.query(Note).filter(Note.user_id == current_user.id)
@@ -71,10 +70,6 @@ async def get_notes(
     # Apply pagination and get results
     notes = query.offset(skip).limit(limit).all()
     
-        session_id=session_id,
-        user_id=current_user.id,
-        table_name="notes",
-        record_count=len(notes),
         human_readable=f"Retrieved {len(notes)} notes for user {current_user.username}"
     )
     
@@ -88,7 +83,6 @@ async def get_note(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get a specific note by ID"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     note = db_session.query(Note).filter(
         Note.id == note_id,
@@ -101,12 +95,6 @@ async def get_note(
             detail="Note not found"
         )
     
-        session_id=session_id,
-        user_id=current_user.id,
-        table_name="notes",
-        record_count=1,
-        human_readable=f"Retrieved note '{note.title}' for user {current_user.username}"
-    )
     
     return note
 
@@ -118,7 +106,6 @@ async def create_note(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new note"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Create new note
     new_note = Note(
@@ -133,19 +120,6 @@ async def create_note(
     db_session.commit()
     db_session.refresh(new_note)
     
-        session_id=session_id,
-        user_id=current_user.id,
-        operation="CREATE",
-        table_name="notes",
-        record_id=new_note.id,
-        human_readable=f"Created note '{new_note.title}' for user {current_user.username}",
-        details={
-            "note_id": new_note.id,
-            "title": new_note.title,
-            "tags": new_note.tags,
-            "is_encrypted": new_note.is_encrypted
-        }
-    )
     
     # Add related fields for response
     new_note.related_account_id = note_data.related_account_id
@@ -162,7 +136,6 @@ async def update_note(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update an existing note"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get existing note
     note = db_session.query(Note).filter(
@@ -186,15 +159,6 @@ async def update_note(
     db_session.commit()
     db_session.refresh(note)
     
-        session_id=session_id,
-        user_id=current_user.id,
-        operation="UPDATE",
-        table_name="notes",
-        record_id=note.id,
-        human_readable=f"Updated note '{note.title}' for user {current_user.username}",
-        details={
-            "note_id": note.id,
-            "updated_fields": list(update_data.keys())
         }
     )
     
@@ -208,7 +172,6 @@ async def delete_note(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete a note"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get existing note
     note = db_session.query(Note).filter(
@@ -229,17 +192,6 @@ async def delete_note(
     db_session.delete(note)
     db_session.commit()
     
-        session_id=session_id,
-        user_id=current_user.id,
-        operation="DELETE",
-        table_name="notes",
-        record_id=note_id,
-        human_readable=f"Deleted note '{note_title}' for user {current_user.username}",
-        details={
-            "note_id": note_id,
-            "title": note_title
-        }
-    )
     
     return None
 
@@ -250,7 +202,6 @@ async def get_all_tags(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all unique tags used by the current user"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get all notes for the user
     notes = db_session.query(Note).filter(Note.user_id == current_user.id).all()
@@ -261,10 +212,6 @@ async def get_all_tags(
         if note.tags:
             all_tags.update(note.tags)
     
-        session_id=session_id,
-        user_id=current_user.id,
-        table_name="notes",
-        record_count=len(notes),
         human_readable=f"Retrieved {len(all_tags)} unique tags for user {current_user.username}"
     )
     

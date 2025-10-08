@@ -66,8 +66,7 @@ export class PerformanceMonitor {
         });
         navigationObserver.observe({ entryTypes: ['navigation'] });
         this.observers.set('navigation', navigationObserver);
-      } catch (e) {
-        console.warn('Navigation observer not supported');
+      } catch {
       }
 
       // Resource timing
@@ -89,8 +88,7 @@ export class PerformanceMonitor {
         });
         resourceObserver.observe({ entryTypes: ['resource'] });
         this.observers.set('resource', resourceObserver);
-      } catch (e) {
-        console.warn('Resource observer not supported');
+      } catch {
       }
 
       // Largest Contentful Paint
@@ -102,8 +100,7 @@ export class PerformanceMonitor {
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.set('lcp', lcpObserver);
-      } catch (e) {
-        console.warn('LCP observer not supported');
+      } catch {
       }
 
       // First Input Delay
@@ -118,8 +115,7 @@ export class PerformanceMonitor {
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
         this.observers.set('fid', fidObserver);
-      } catch (e) {
-        console.warn('FID observer not supported');
+      } catch {
       }
 
       // Cumulative Layout Shift
@@ -135,8 +131,7 @@ export class PerformanceMonitor {
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.observers.set('cls', clsObserver);
-      } catch (e) {
-        console.warn('CLS observer not supported');
+      } catch {
       }
     }
   }
@@ -159,14 +154,6 @@ export class PerformanceMonitor {
       this.metrics = this.metrics.slice(-500);
     }
 
-    // Log to analytics
-      text: `Performance metric: ${name}`,
-      custom_action: `performance_${name}`,
-      data: {
-        value,
-        ...metadata
-      }
-    });
   }
 
   /**
@@ -196,8 +183,7 @@ export class PerformanceMonitor {
           this.recordMetric(name, duration);
           return duration;
         }
-      } catch (e) {
-        console.warn(`Failed to measure ${name}:`, e);
+      } catch {
       }
     }
     return 0;

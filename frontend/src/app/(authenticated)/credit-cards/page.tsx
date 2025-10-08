@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  CreditCard, 
+import {
+  CreditCard,
   Star, 
   TrendingUp, 
   Shield, 
@@ -14,13 +14,8 @@ import {
   AlertCircle,
   Search
 } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Dropdown from '@/components/ui/Dropdown';
-import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-import { useSyntheticTracking } from '@/hooks/useSyntheticTracking';
 
 interface CreditScore {
   credit_score: number;
@@ -99,7 +94,6 @@ const CARD_TYPE_COLORS = {
 };
 
 export default function CreditCardsPage() {
-  const { trackCardApplication } = useSyntheticTracking();
   const [creditScore, setCreditScore] = useState<CreditScore | null>(null);
   const [recommendations, setRecommendations] = useState<CardRecommendation[]>([]);
   const [allOffers, setAllOffers] = useState<CardOffer[]>([]);
@@ -115,11 +109,6 @@ export default function CreditCardsPage() {
   useEffect(() => {
     fetchCreditData();
     
-    // Track page view
-      text: 'User viewed credit cards page',
-      page_name: 'Credit Cards',
-      timestamp: new Date().toISOString()
-    });
   }, []);
 
   const fetchCreditData = async () => {
@@ -141,8 +130,7 @@ export default function CreditCardsPage() {
       // Fetch applications
       const appsRes = await fetchApi.get('/api/credit-cards/applications');
       setApplications(appsRes);
-    } catch (error) {
-      console.error('Error fetching credit data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -151,32 +139,12 @@ export default function CreditCardsPage() {
   const handleCardApplication = async (cardId: number) => {
     try {
       // Track application submission
-      const card = allOffers.find(c => c.id === cardId);
-      if (card && creditScore) {
-        trackCardApplication({
-          cardId: cardId,
-          cardName: card.name,
-          category: card.type,
-          creditScore: creditScore.credit_score,
-          income: 0, // This would come from the application form
-          applicationStep: 'submit'
-        });
-      }
-
+      const _card = allOffers.find(c => c.id === cardId);
       const result = await fetchApi.post('/api/credit-cards/apply', { card_offer_id: cardId });
       
       if (result.status === 'approved') {
         alert(`Congratulations! Your application was approved with a credit limit of ${formatCurrency(result.approved_credit_limit)}`);
         
-        // Track approval
-          text: `Credit card application approved: ${card?.name}`,
-          custom_action: 'card_application_approved',
-          data: {
-            card_id: cardId,
-            card_name: card?.name,
-            credit_limit: result.approved_credit_limit
-          }
-        });
       } else {
         alert('Your application is being reviewed. We will notify you of our decision soon.');
       }
@@ -186,8 +154,7 @@ export default function CreditCardsPage() {
       
       // Refresh applications
       await fetchCreditData();
-    } catch (error) {
-      console.error('Error applying for card:', error);
+    } catch {
       alert('Failed to submit application. Please try again.');
     }
   };

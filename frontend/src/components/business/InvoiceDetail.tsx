@@ -8,11 +8,9 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  DollarSign,
   Calendar,
   Mail,
-  MapPin,
-  FileText
+  MapPin
 } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -26,7 +24,6 @@ interface InvoiceDetailProps {
 
 export const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
   invoice,
-  onClose,
   onUpdate,
 }) => {
   const formatCurrency = (amount: number) => {
@@ -58,8 +55,7 @@ export const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
     try {
       await businessApi.markInvoicePaid(invoice.id);
       onUpdate();
-    } catch (error) {
-      console.error('Failed to mark invoice as paid:', error);
+    } catch {
     }
   };
 
@@ -67,8 +63,7 @@ export const InvoiceDetail: React.FC<InvoiceDetailProps> = ({
     try {
       await businessApi.sendInvoice(invoice.id);
       onUpdate();
-    } catch (error) {
-      console.error('Failed to send invoice:', error);
+    } catch {
     }
   };
 

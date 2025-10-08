@@ -91,8 +91,7 @@ const AddCardModal = memo(({ isOpen, onClose, onSuccess, accounts }: AddCardModa
       notificationService.success('Card added successfully!');
       handleClose();
       onSuccess();
-    } catch (error) {
-      console.error('Error adding card:', error);
+    } catch {
       notificationService.error('Failed to add card. Please try again.');
     } finally {
       setIsAddingCard(false);

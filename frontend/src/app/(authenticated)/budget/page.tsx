@@ -69,7 +69,7 @@ export interface BudgetGoal {
 }
 
 export default function BudgetPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { showError, showSuccess } = useAlert();
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
@@ -133,15 +133,6 @@ export default function BudgetPage() {
   };
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed budget page`,
-      page_name: 'Budget',
-      user_id: user?.id,
-      default_period: selectedPeriod,
-      timestamp: new Date().toISOString()
-    });
-  }, [user]);
-
-  useEffect(() => {
     loadBudgetData();
   }, [selectedPeriod]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -203,8 +194,7 @@ export default function BudgetPage() {
                 end_date: currentDate.toISOString()
               });
               transactionCount = stats.transaction_count;
-            } catch (err) {
-              console.error(`Failed to get transaction stats for budget ${budget.id}:`, err);
+            } catch {
               transactionCount = 0;
             }
             
@@ -261,21 +251,6 @@ export default function BudgetPage() {
 
       setBudgetGoals(transformedGoals);
 
-        text: `Budget data loaded: ${transformedBudgets.length} budgets, ${transformedGoals.length} goals for ${selectedPeriod} view`,
-        custom_action: 'budget_data_loaded',
-        data: {
-          budgets_count: transformedBudgets.length,
-          goals_count: transformedGoals.length,
-          period: selectedPeriod,
-          total_budget: budgetSummaryData.total_budget,
-          total_spent: budgetSummaryData.total_spent,
-          total_remaining: budgetSummaryData.total_remaining,
-          over_budget_count: budgetSummaryData.over_budget_count,
-          goals_on_track: transformedGoals.filter(g => g.status === 'on-track').length,
-          goals_at_risk: transformedGoals.filter(g => g.status === 'at-risk').length,
-          total_goal_value: goalSummaryData?.total_target_amount || 0
-        }
-      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load budget data';
       setError(errorMessage);
@@ -285,31 +260,10 @@ export default function BudgetPage() {
   };
 
   const handleRefresh = () => {
-      text: `User refreshing budget page with ${budgetCategories.length} budgets in ${selectedPeriod} view`,
-      custom_action: 'refresh_budget',
-      data: {
-        current_budgets_count: budgetCategories.length,
-        current_goals_count: budgetGoals.length,
-        current_period: selectedPeriod,
-        total_allocated: budgetSummary?.total_budget || 0,
-        total_spent: budgetSummary?.total_spent || 0
-      }
-    });
     loadBudgetData();
   };
 
   const handleEditBudget = (category: BudgetCategory) => {
-      text: `User editing budget for ${category.name} category`,
-      custom_action: 'edit_budget_initiated',
-      data: {
-        category_id: category.id,
-        category_name: category.name,
-        current_allocation: category.allocated,
-        current_spent: category.spent,
-        current_percentage: category.percentage,
-        is_over_budget: category.percentage > 100
-      }
-    });
     setEditingCategory(category);
     // Find the budget data to get the category_id
     const budget = budgetCategories.find(b => b.id === category.id);
@@ -329,17 +283,6 @@ export default function BudgetPage() {
   };
 
   const handleDeleteBudget = (category: BudgetCategory) => {
-      text: `User initiating deletion of ${category.name} budget`,
-      custom_action: 'delete_budget_initiated',
-      data: {
-        category_id: category.id,
-        category_name: category.name,
-        allocated_amount: category.allocated,
-        spent_amount: category.spent,
-        percentage_used: category.percentage,
-        will_recover_amount: category.allocated
-      }
-    });
     setDeletingBudget(category);
     setShowDeleteConfirm(true);
   };
@@ -349,21 +292,11 @@ export default function BudgetPage() {
     
     try {
       await budgetsService.deleteBudget(parseInt(deletingBudget.id));
-        text: `User successfully deleted ${deletingBudget.name} budget`,
-        custom_action: 'budget_deleted',
-        data: {
-          category_id: deletingBudget.id,
-          category_name: deletingBudget.name,
-          recovered_amount: deletingBudget.allocated,
-          was_over_budget: deletingBudget.percentage > 100
-        }
-      });
       showSuccess('Budget Deleted', `Budget for ${deletingBudget.name} has been deleted successfully.`);
       setShowDeleteConfirm(false);
       setDeletingBudget(null);
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to delete budget:', err);
+    } catch {
       showError('Delete Failed', 'Unable to delete the budget. Please try again.');
     }
   };
@@ -417,8 +350,7 @@ export default function BudgetPage() {
       setEditingGoal(null);
       setGoalForm({ name: '', targetAmount: '', currentAmount: '', targetDate: '', category: '' });
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to save goal:', err);
+    } catch {
       showError(
         editingGoal ? 'Goal Update Failed' : 'Goal Creation Failed', 
         'Unable to save the goal. Please try again.'
@@ -427,18 +359,6 @@ export default function BudgetPage() {
   };
 
   const handleDeleteGoal = (goal: BudgetGoal) => {
-      text: `User initiating deletion of goal "${goal.name}"`,
-      custom_action: 'delete_goal_initiated',
-      data: {
-        goal_id: goal.id,
-        goal_name: goal.name,
-        current_progress: goal.progress,
-        current_amount: goal.currentAmount,
-        target_amount: goal.targetAmount,
-        status: goal.status,
-        days_to_deadline: Math.floor((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-      }
-    });
     setDeletingGoal(goal);
     setShowDeleteGoalConfirm(true);
   };
@@ -448,22 +368,11 @@ export default function BudgetPage() {
     
     try {
       await goalsService.deleteGoal(parseInt(deletingGoal.id));
-        text: `User successfully deleted goal "${deletingGoal.name}"`,
-        custom_action: 'goal_deleted',
-        data: {
-          goal_id: deletingGoal.id,
-          goal_name: deletingGoal.name,
-          was_on_track: deletingGoal.status === 'on-track',
-          progress_at_deletion: deletingGoal.progress,
-          target_amount: deletingGoal.targetAmount
-        }
-      });
       showSuccess('Goal Deleted', `Goal "${deletingGoal.name}" has been deleted successfully.`);
       setShowDeleteGoalConfirm(false);
       setDeletingGoal(null);
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to delete goal:', err);
+    } catch {
       showError('Delete Failed', 'Unable to delete the goal. Please try again.');
     }
   };
@@ -508,8 +417,7 @@ export default function BudgetPage() {
       setEditingCategory(null);
       setBudgetForm({ categoryId: '', amount: '', period: 'monthly' });
       loadBudgetData();
-    } catch (err) {
-      console.error('Failed to save budget:', err);
+    } catch {
       showError(
         editingCategory ? 'Budget Update Failed' : 'Budget Creation Failed', 
         'Unable to save the budget. Please try again.'
@@ -592,26 +500,15 @@ export default function BudgetPage() {
                   items={periodOptions}
                   value={selectedPeriod}
                   onChange={(value) => {
-                    const oldPeriod = selectedPeriod;
+                    const _oldPeriod = selectedPeriod;
                     setSelectedPeriod(value as typeof selectedPeriod);
-                      text: `User changed budget period from ${oldPeriod} to ${value}`,
-                      custom_action: 'change_budget_period',
-                      data: {
-                        old_period: oldPeriod,
-                        new_period: value,
-                        current_budgets_count: budgetCategories.length,
-                        current_spent: totalSpent,
-                        current_remaining: totalRemaining,
-                        over_budget_count: overBudgetCount
-                      }
-                    });
                   }}
                   placeholder="Select period"
                   analyticsId="budget-period"
                   analyticsLabel="Budget Period"
                 />
                 <div className="absolute top-full mt-2 right-0 w-64 p-2 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-2)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  Filters which budgets to display. Each budget's spending is calculated based on its own period (current month for monthly, current year for yearly).
+                  Filters which budgets to display. Each budget&apos;s spending is calculated based on its own period (current month for monthly, current year for yearly).
                 </div>
               </div>
               <Button
@@ -621,18 +518,6 @@ export default function BudgetPage() {
                 onClick={() => {
                   setEditingCategory(null);
                   setShowAddCategory(true);
-                    text: `User opening add budget modal with ${budgetCategories.length} existing budgets`,
-                    custom_action: 'open_add_budget_modal',
-                    data: {
-                      existing_budgets_count: budgetCategories.length,
-                      total_allocated: totalBudget,
-                      total_spent: totalSpent,
-                      categories_available: categories.filter(c => 
-                        !budgetCategories.find(b => b.name === c.name)
-                      ).length,
-                      current_period: selectedPeriod
-                    }
-                  });
                 }}
                 className="flex-1 lg:flex-none"
               >
@@ -711,16 +596,6 @@ export default function BudgetPage() {
                   size="sm"
                   className="ml-auto"
                   onClick={() => {
-                      text: `User viewing details for ${overBudgetCount} over-budget categories`,
-                      custom_action: 'view_over_budget_details',
-                      data: {
-                        over_budget_count: overBudgetCount,
-                        total_budgets: budgetCategories.length,
-                        over_budget_categories: budgetCategories
-                          .filter(c => c.percentage > 100)
-                          .map(c => ({ name: c.name, spent: c.spent, allocated: c.allocated }))
-                      }
-                    });
                     // Scroll to budget categories
                     document.getElementById('budget-categories')?.scrollIntoView({ behavior: 'smooth' });
                   }}
@@ -785,32 +660,9 @@ export default function BudgetPage() {
               <BudgetGoals
                 goals={budgetGoals}
                 onAddGoal={() => {
-                    text: `User opening add goal modal with ${budgetGoals.length} existing goals`,
-                    custom_action: 'open_add_goal_modal',
-                    data: {
-                      existing_goals_count: budgetGoals.length,
-                      goals_on_track: budgetGoals.filter(g => g.status === 'on-track').length,
-                      goals_at_risk: budgetGoals.filter(g => g.status === 'at-risk').length,
-                      total_goal_value: budgetGoals.reduce((sum, g) => sum + g.targetAmount, 0),
-                      categories_used: [...new Set(budgetGoals.map(g => g.category))].length
-                    }
-                  });
                   setShowAddGoal(true);
                 }}
                 onEditGoal={(goal) => {
-                    text: `User editing goal "${goal.name}"`,
-                    custom_action: 'edit_goal_initiated',
-                    data: {
-                      goal_id: goal.id,
-                      goal_name: goal.name,
-                      current_progress: goal.progress,
-                      current_amount: goal.currentAmount,
-                      target_amount: goal.targetAmount,
-                      days_to_deadline: Math.floor((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-                      status: goal.status,
-                      monthly_contribution_needed: goal.monthlyContribution
-                    }
-                  });
                   setEditingGoal(goal);
                   setGoalForm({
                     name: goal.name,
@@ -1042,7 +894,7 @@ export default function BudgetPage() {
                 </p>
                 {deletingGoal && (
                   <p className="text-sm text-[var(--text-2)] mt-2">
-                    This will permanently delete the goal <span className="font-medium">"{deletingGoal.name}"</span> 
+                    This will permanently delete the goal <span className="font-medium">&quot;{deletingGoal.name}&quot;</span> 
                     {deletingGoal.currentAmount > 0 && ` with ${formatCurrency(deletingGoal.currentAmount)} already saved`}.
                   </p>
                 )}

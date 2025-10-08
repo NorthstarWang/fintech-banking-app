@@ -36,18 +36,6 @@ export const useScrollTracking = ({
     thresholds.forEach(threshold => {
       if (scrollPercentage >= threshold && !reachedThresholdsRef.current.has(threshold)) {
         reachedThresholdsRef.current.add(threshold);
-        
-          text: `User ${user?.username || 'unknown'} scrolled ${threshold}% through ${elementName}`,
-          element_identifier: elementId,
-          data: {
-            user_id: user?.id,
-            scroll_percentage: threshold,
-            scroll_position: scrollTop,
-            content_height: scrollHeight,
-            viewport_height: clientHeight,
-            timestamp: new Date().toISOString()
-          }
-        });
       }
     });
 
@@ -57,24 +45,12 @@ export const useScrollTracking = ({
     }
 
     scrollTimeoutRef.current = setTimeout(() => {
-      const scrollDirection = scrollTop > lastScrollPositionRef.current ? 'down' : 'up';
+      const _scrollDirection = scrollTop > lastScrollPositionRef.current ? 'down' : 'up';
       const scrollDistance = Math.abs(scrollTop - lastScrollPositionRef.current);
       
       // Only log significant scrolls
       if (scrollDistance > 50) {
-          text: `User ${user?.username || 'unknown'} scrolled ${scrollDirection} in ${elementName}`,
-          element_identifier: elementId,
-          data: {
-            user_id: user?.id,
-            scroll_direction: scrollDirection,
-            scroll_distance: scrollDistance,
-            scroll_percentage: scrollPercentage,
-            scroll_position: scrollTop,
-            content_height: scrollHeight,
-            viewport_height: clientHeight,
-            timestamp: new Date().toISOString()
-          }
-        });
+        // Scroll tracking logic removed
       }
       
       lastScrollPositionRef.current = scrollTop;

@@ -11,7 +11,7 @@ import {
   Repeat,
   Check,
   CheckCircle,
-  Filter,
+  
   AlertCircle,
   TrendingUp,
   Clock
@@ -38,13 +38,7 @@ export default function NotificationsPage() {
   });
 
   useEffect(() => {
-      text: `User ${user?.username || 'unknown'} viewed notifications page`,
-      page_name: 'Notifications',
-      user_id: user?.id,
-      timestamp: new Date().toISOString()
-    });
     loadNotifications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, user]);
 
   const loadNotifications = async () => {
@@ -72,22 +66,7 @@ export default function NotificationsPage() {
       }
       
       // Log data loaded
-        text: `Notifications loaded: ${notifs.length} total, ${unreadCount} unread`,
-        custom_action: 'notifications_data_loaded',
-        data: {
-          total_notifications: notifs.length,
-          unread_count: unreadCount,
-          filter_type: filter,
-          notification_types: {
-            success: notifs.filter(n => n.type === 'success').length,
-            warning: notifs.filter(n => n.type === 'warning').length,
-            error: notifs.filter(n => n.type === 'error').length,
-            info: notifs.filter(n => n.type === 'info').length
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -95,44 +74,23 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (notificationId: number) => {
     try {
-      const notification = notifications.find(n => n.id === notificationId);
+      const _notification = notifications.find(n => n.id === notificationId);
       await notificationsService.markAsRead(notificationId);
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
-        text: `User marked notification "${notification?.title}" as read`,
-        custom_action: 'notification_marked_read',
-        data: { 
-          notification_id: notificationId,
-          notification_title: notification?.title,
-          notification_type: notification?.type,
-          was_unread: true,
-          time_since_created: notification?.created_at ? 
-            Math.floor((new Date().getTime() - new Date(notification.created_at).getTime()) / (1000 * 60)) + ' minutes' : 
-            'unknown'
-        }
-      });
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+    } catch {
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      const unreadBefore = notifications.filter(n => !n.is_read).length;
+      const _unreadBefore = notifications.filter(n => !n.is_read).length;
       await notificationsService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-        text: `User marked all ${unreadBefore} notifications as read`,
-        custom_action: 'all_notifications_marked_read',
-        data: {
-          notifications_marked: unreadBefore,
-          total_notifications: notifications.length
-        }
-      });
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
+    } catch {
     }
   };
 
@@ -213,18 +171,8 @@ export default function NotificationsPage() {
             items={filterOptions}
             value={filter}
             onChange={(value) => {
-              const oldFilter = filter;
+              const _oldFilter = filter;
               setFilter(value as 'all' | 'unread' | 'read');
-                text: `User filtered notifications by ${value}`,
-                filter_type: 'read_status',
-                filter_value: value,
-                data: {
-                  old_filter: oldFilter,
-                  new_filter: value,
-                  current_notifications: notifications.length,
-                  unread_count: unreadCount
-                }
-              });
             }}
             placeholder="Filter"
           />
@@ -233,18 +181,8 @@ export default function NotificationsPage() {
             items={typeOptions}
             value={selectedType}
             onChange={(value) => {
-              const oldType = selectedType;
+              const _oldType = selectedType;
               setSelectedType(value);
-                text: `User filtered notifications by type: ${value}`,
-                filter_type: 'notification_type',
-                filter_value: value,
-                data: {
-                  old_type: oldType,
-                  new_type: value,
-                  matching_notifications: value === 'all' ? notifications.length : notifications.filter(n => n.type === value).length,
-                  total_notifications: notifications.length
-                }
-              });
             }}
             placeholder="Type"
           />
@@ -255,24 +193,11 @@ export default function NotificationsPage() {
             variant="secondary"
             size="sm"
             onClick={() => {
-                text: `User clicking mark all as read for ${unreadCount} notifications`,
-                custom_action: 'click_mark_all_read',
-                data: {
-                  unread_count: unreadCount,
-                  total_notifications: notifications.length
-                }
-              });
               handleMarkAllAsRead();
             }}
             className="flex items-center gap-2"
             data-testid="mark-all-read-button"
             onMouseEnter={() => {
-                text: `User hovered over Mark All ${unreadCount} Notifications as Read`,
-                element_identifier: 'mark-all-read-button',
-                data: {
-                  unread_count: unreadCount
-                }
-              });
             }}
           >
             <CheckCircle size={16} />
@@ -313,28 +238,8 @@ export default function NotificationsPage() {
                   }`}
                   data-testid={`notification-${notification.id}`}
                   onMouseEnter={() => {
-                      text: `User hovered over Notification: ${notification.title} - ${notification.type}`,
-                      element_identifier: `notification-${notification.id}`,
-                      data: {
-                        notification_id: notification.id,
-                        notification_type: notification.type,
-                        is_read: notification.is_read
-                      }
-                    });
                   }}
                   onClick={() => {
-                      text: `User clicked on notification: "${notification.title}"`,
-                      custom_action: 'click_notification',
-                      data: {
-                        notification_id: notification.id,
-                        notification_title: notification.title,
-                        notification_type: notification.type,
-                        is_read: notification.is_read,
-                        created_at: notification.created_at,
-                        related_entity_type: notification.related_entity_type,
-                        related_entity_id: notification.related_entity_id
-                      }
-                    });
                     if (!notification.is_read) {
                       handleMarkAsRead(notification.id);
                     }

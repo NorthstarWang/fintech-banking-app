@@ -7,7 +7,6 @@ import {
   UserPlus, 
   UserCheck,
   UserX,
-  Mail,
   MessageSquare,
   MoreVertical,
   Clock,
@@ -35,7 +34,7 @@ export default function ContactsPage() {
   const [searchResults, setSearchResults] = useState<ContactSearchResult[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'requests'>('contacts');
 
@@ -49,8 +48,7 @@ export default function ContactsPage() {
       const data = await contactsService.getContacts('accepted', false);
       setContacts(data);
       setLoading(false);
-    } catch (error) {
-      console.error('Failed to load contacts:', error);
+    } catch {
       setLoading(false);
     }
   };
@@ -59,8 +57,7 @@ export default function ContactsPage() {
     try {
       const data = await contactsService.getPendingRequests();
       setPendingRequests(data);
-    } catch (error) {
-      console.error('Failed to load pending requests:', error);
+    } catch {
     }
   };
 
@@ -74,8 +71,7 @@ export default function ContactsPage() {
     try {
       const results = await contactsService.searchUsers(userSearchQuery);
       setSearchResults(results);
-    } catch (error) {
-      console.error('Failed to search users:', error);
+    } catch {
     } finally {
       setSearching(false);
     }
@@ -92,34 +88,31 @@ export default function ContactsPage() {
   const sendContactRequest = async (userId: number) => {
     try {
       await contactsService.createContactRequest({ contact_id: userId });
-      console.log('Contact request sent');
+      
       setShowAddModal(false);
       setUserSearchQuery('');
       setSearchResults([]);
       loadPendingRequests();
-    } catch (error) {
-      console.error('Failed to send contact request:', error);
+    } catch {
     }
   };
 
   const handleContactRequest = async (contactId: number, accept: boolean) => {
     try {
       await contactsService.updateContactStatus(contactId, accept ? 'accepted' : 'blocked');
-      console.log(accept ? 'Contact request accepted' : 'Contact request declined');
+      
       loadContacts();
       loadPendingRequests();
-    } catch (error) {
-      console.error('Failed to update contact request', error);
+    } catch {
     }
   };
 
-  const removeContact = async (contactId: number) => {
+  const _removeContact = async (contactId: number) => {
     try {
       await contactsService.removeContact(contactId);
-      console.log('Contact removed');
+      
       loadContacts();
-    } catch (error) {
-      console.error('Failed to remove contact:', error);
+    } catch {
     }
   };
 

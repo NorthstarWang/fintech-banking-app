@@ -1,25 +1,32 @@
-from pydantic import BaseModel, EmailStr, Field, validator, ConfigDict
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from enum import Enum
+from datetime import date, datetime
+from typing import Any
+
+from pydantic import BaseModel, EmailStr, Field, validator
 
 # Import shared enums from data_classes
 from .dto import (
-    UserRole, AccountType, TransactionType, TransactionStatus,
-    BudgetPeriod, GoalStatus, NotificationType, ContactStatus,
-    MessageStatus, PaymentMethodType, PaymentMethodStatus,
-    TwoFactorMethod, SecurityEventType, ExportFormat,
-    SavingsRuleType, SavingsRuleFrequency, ChallengeStatus,
-    ChallengeType, RoundUpStatus, InvoiceStatus, PaymentTerms,
-    TaxCategory, ExpenseReportStatus, SubscriptionStatus,
-    BillingCycle, SubscriptionCategory, OptimizationSuggestionType
+    AccountType,
+    BudgetPeriod,
+    ContactStatus,
+    ExportFormat,
+    GoalStatus,
+    MessageStatus,
+    NotificationType,
+    PaymentMethodStatus,
+    PaymentMethodType,
+    SecurityEventType,
+    TransactionStatus,
+    TransactionType,
+    TwoFactorMethod,
+    UserRole,
 )
+
 
 # Base Models
 class BaseResponse(BaseModel):
     id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -29,9 +36,9 @@ class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
     currency: str = "USD"
     timezone: str = "UTC"
 
@@ -40,64 +47,64 @@ class UserLogin(BaseModel):
     password: str
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
-    currency: Optional[str] = None
-    timezone: Optional[str] = None
+    email: EmailStr | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    currency: str | None = None
+    timezone: str | None = None
 
 class UserResponse(BaseResponse):
     username: str
     email: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
     role: UserRole
     currency: str
     timezone: str
     is_active: bool
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
 
 # Account Models
 class AccountCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     account_type: AccountType
-    account_number: Optional[str] = None
-    institution_name: Optional[str] = None
+    account_number: str | None = None
+    institution_name: str | None = None
     initial_balance: float = 0.0
-    credit_limit: Optional[float] = None
-    interest_rate: Optional[float] = None
+    credit_limit: float | None = None
+    interest_rate: float | None = None
 
 class JointAccountCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     account_type: AccountType
-    account_number: Optional[str] = None
-    institution_name: Optional[str] = None
+    account_number: str | None = None
+    institution_name: str | None = None
     initial_balance: float = 0.0
-    credit_limit: Optional[float] = None
-    interest_rate: Optional[float] = None
+    credit_limit: float | None = None
+    interest_rate: float | None = None
     joint_owner_username: str = Field(..., min_length=1)
 
 class AccountUpdate(BaseModel):
-    name: Optional[str] = None
-    institution_name: Optional[str] = None
-    credit_limit: Optional[float] = None
-    interest_rate: Optional[float] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    institution_name: str | None = None
+    credit_limit: float | None = None
+    interest_rate: float | None = None
+    is_active: bool | None = None
 
 class AccountResponse(BaseResponse):
     user_id: int
     name: str
     account_type: AccountType
-    account_number: Optional[str] = None
-    institution_name: Optional[str] = None
+    account_number: str | None = None
+    institution_name: str | None = None
     balance: float
     currency: str = "USD"
-    credit_limit: Optional[float] = None
-    interest_rate: Optional[float] = None
+    credit_limit: float | None = None
+    interest_rate: float | None = None
     is_active: bool
-    
+
     @validator('balance', 'credit_limit', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -109,8 +116,8 @@ class AccountSummary(BaseModel):
     total_assets: float
     total_liabilities: float
     net_worth: float
-    accounts: List[AccountResponse]
-    
+    accounts: list[AccountResponse]
+
     @validator('total_assets', 'total_liabilities', 'net_worth', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -121,45 +128,45 @@ class AccountSummary(BaseModel):
 # Category Models
 class CategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
-    parent_id: Optional[int] = None
-    icon: Optional[str] = None
-    color: Optional[str] = None
+    parent_id: int | None = None
+    icon: str | None = None
+    color: str | None = None
     is_income: bool = False
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    parent_id: Optional[int] = None
-    icon: Optional[str] = None
-    color: Optional[str] = None
-    is_income: Optional[bool] = None
+    name: str | None = None
+    parent_id: int | None = None
+    icon: str | None = None
+    color: str | None = None
+    is_income: bool | None = None
 
 class CategoryResponse(BaseResponse):
-    user_id: Optional[int] = None  # System categories don't have user_id
+    user_id: int | None = None  # System categories don't have user_id
     name: str
-    parent_id: Optional[int] = None
-    icon: Optional[str] = None
-    color: Optional[str] = None
+    parent_id: int | None = None
+    icon: str | None = None
+    color: str | None = None
     is_income: bool
     is_system: bool
 
 # Transaction Models
 class TransactionCreate(BaseModel):
     account_id: int
-    category_id: Optional[int] = None
-    merchant_name: Optional[str] = None
+    category_id: int | None = None
+    merchant_name: str | None = None
     amount: float = Field(..., gt=0)
     transaction_type: TransactionType
-    description: Optional[str] = None
-    notes: Optional[str] = None
+    description: str | None = None
+    notes: str | None = None
     transaction_date: datetime
-    
+
     @validator('transaction_type', pre=True)
     def normalize_transaction_type(cls, v):
         if isinstance(v, str):
             # Convert to lowercase for enum matching
             return v.lower()
         return v
-    
+
     @validator('transaction_date', pre=True)
     def parse_transaction_date(cls, v):
         if isinstance(v, str):
@@ -168,44 +175,44 @@ class TransactionCreate(BaseModel):
                 if 'T' not in v:
                     v = f"{v}T00:00:00"
                 return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except ValueError as e:
+            except ValueError:
                 raise ValueError(f"Invalid date format: {v}. Expected YYYY-MM-DD or ISO datetime string")
         return v
 
 class TransactionUpdate(BaseModel):
-    category_id: Optional[int] = None
-    description: Optional[str] = None
-    merchant: Optional[str] = None
-    notes: Optional[str] = None
-    tags: Optional[List[str]] = None
-    attachments: Optional[List[Dict[str, Any]]] = None
+    category_id: int | None = None
+    description: str | None = None
+    merchant: str | None = None
+    notes: str | None = None
+    tags: list[str] | None = None
+    attachments: list[dict[str, Any]] | None = None
 
 class TransferCreate(BaseModel):
     from_account_id: int
     to_account_id: int
     amount: float = Field(..., gt=0)
-    description: Optional[str] = None
-    notes: Optional[str] = None
+    description: str | None = None
+    notes: str | None = None
     transaction_date: datetime
 
 class TransactionResponse(BaseResponse):
     account_id: int
-    category_id: Optional[int] = None
-    merchant_id: Optional[int] = None
-    merchant: Optional[str] = None
+    category_id: int | None = None
+    merchant_id: int | None = None
+    merchant: str | None = None
     amount: float
     transaction_type: TransactionType
     status: TransactionStatus
-    description: Optional[str] = None
-    notes: Optional[str] = None
-    tags: Optional[List[str]] = None
-    attachments: Optional[List[Dict[str, Any]]] = None
+    description: str | None = None
+    notes: str | None = None
+    tags: list[str] | None = None
+    attachments: list[dict[str, Any]] | None = None
     transaction_date: datetime
-    from_account_id: Optional[int] = None
-    to_account_id: Optional[int] = None
-    reference_number: Optional[str] = None
-    recurring_rule_id: Optional[int] = None
-    
+    from_account_id: int | None = None
+    to_account_id: int | None = None
+    reference_number: str | None = None
+    recurring_rule_id: int | None = None
+
     @validator('amount', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -214,13 +221,13 @@ class TransactionResponse(BaseResponse):
         return round(float(v), 2)
 
 class TransactionFilter(BaseModel):
-    account_id: Optional[int] = None
-    category_id: Optional[int] = None
-    transaction_type: Optional[TransactionType] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    min_amount: Optional[float] = None
-    max_amount: Optional[float] = None
+    account_id: int | None = None
+    category_id: int | None = None
+    transaction_type: TransactionType | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
 
 # Budget Models
 class BudgetCreate(BaseModel):
@@ -228,13 +235,13 @@ class BudgetCreate(BaseModel):
     amount: float = Field(..., gt=0)
     period: BudgetPeriod
     start_date: date
-    end_date: Optional[date] = None
+    end_date: date | None = None
     alert_threshold: float = Field(0.8, ge=0, le=1)
 
 class BudgetUpdate(BaseModel):
-    amount: Optional[float] = None
-    alert_threshold: Optional[float] = None
-    is_active: Optional[bool] = None
+    amount: float | None = None
+    alert_threshold: float | None = None
+    is_active: bool | None = None
 
 class BudgetResponse(BaseResponse):
     user_id: int
@@ -242,13 +249,13 @@ class BudgetResponse(BaseResponse):
     amount: float
     period: BudgetPeriod
     start_date: date
-    end_date: Optional[date] = None
+    end_date: date | None = None
     alert_threshold: float
     is_active: bool
-    spent_amount: Optional[float] = None  # Calculated field
-    remaining_amount: Optional[float] = None  # Calculated field
-    percentage_used: Optional[float] = None  # Calculated field
-    
+    spent_amount: float | None = None  # Calculated field
+    remaining_amount: float | None = None  # Calculated field
+    percentage_used: float | None = None  # Calculated field
+
     @validator('amount', 'spent_amount', 'remaining_amount', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -259,62 +266,62 @@ class BudgetResponse(BaseResponse):
 # Goal Models
 class GoalCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = None
+    description: str | None = None
     target_amount: float = Field(..., gt=0)
-    target_date: Optional[date] = None
-    category: Optional[str] = None
-    priority: Optional[str] = None
-    initial_amount: Optional[float] = None
-    account_id: Optional[int] = None
-    auto_transfer_amount: Optional[float] = None
-    auto_transfer_frequency: Optional[str] = None
+    target_date: date | None = None
+    category: str | None = None
+    priority: str | None = None
+    initial_amount: float | None = None
+    account_id: int | None = None
+    auto_transfer_amount: float | None = None
+    auto_transfer_frequency: str | None = None
     # Automatic allocation fields
-    auto_allocate_percentage: Optional[float] = Field(None, ge=0, le=100)
-    auto_allocate_fixed_amount: Optional[float] = Field(None, ge=0)
-    allocation_priority: Optional[int] = Field(1, ge=1)
-    allocation_source_types: Optional[List[str]] = None
+    auto_allocate_percentage: float | None = Field(None, ge=0, le=100)
+    auto_allocate_fixed_amount: float | None = Field(None, ge=0)
+    allocation_priority: int | None = Field(1, ge=1)
+    allocation_source_types: list[str] | None = None
 
 class GoalUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    target_amount: Optional[float] = None
-    target_date: Optional[date] = None
-    category: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[GoalStatus] = None
-    auto_transfer_amount: Optional[float] = None
-    auto_transfer_frequency: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    target_amount: float | None = None
+    target_date: date | None = None
+    category: str | None = None
+    priority: str | None = None
+    status: GoalStatus | None = None
+    auto_transfer_amount: float | None = None
+    auto_transfer_frequency: str | None = None
     # Automatic allocation fields
-    auto_allocate_percentage: Optional[float] = Field(None, ge=0, le=100)
-    auto_allocate_fixed_amount: Optional[float] = Field(None, ge=0)
-    allocation_priority: Optional[int] = Field(None, ge=1)
-    allocation_source_types: Optional[List[str]] = None
+    auto_allocate_percentage: float | None = Field(None, ge=0, le=100)
+    auto_allocate_fixed_amount: float | None = Field(None, ge=0)
+    allocation_priority: int | None = Field(None, ge=1)
+    allocation_source_types: list[str] | None = None
 
 class GoalContribute(BaseModel):
     amount: float = Field(..., gt=0)
-    notes: Optional[str] = None
+    notes: str | None = None
 
 class GoalResponse(BaseResponse):
     user_id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     target_amount: float
     current_amount: float
-    target_date: Optional[date] = None
-    category: Optional[str] = None
-    priority: Optional[str] = None
+    target_date: date | None = None
+    category: str | None = None
+    priority: str | None = None
     status: GoalStatus
-    account_id: Optional[int] = None
-    auto_transfer_amount: Optional[float] = None
-    auto_transfer_frequency: Optional[str] = None
-    completed_at: Optional[datetime] = None
-    progress_percentage: Optional[float] = None  # Calculated field
+    account_id: int | None = None
+    auto_transfer_amount: float | None = None
+    auto_transfer_frequency: str | None = None
+    completed_at: datetime | None = None
+    progress_percentage: float | None = None  # Calculated field
     # Automatic allocation fields
-    auto_allocate_percentage: Optional[float] = None
-    auto_allocate_fixed_amount: Optional[float] = None
-    allocation_priority: Optional[int] = None
-    allocation_source_types: Optional[List[str]] = None
-    
+    auto_allocate_percentage: float | None = None
+    auto_allocate_fixed_amount: float | None = None
+    allocation_priority: int | None = None
+    allocation_source_types: list[str] | None = None
+
     @validator('target_amount', 'current_amount', 'auto_transfer_amount', 'auto_allocate_fixed_amount', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -329,9 +336,9 @@ class NotificationResponse(BaseResponse):
     title: str
     message: str
     is_read: bool
-    related_entity_type: Optional[str] = None
-    related_entity_id: Optional[int] = None
-    read_at: Optional[datetime] = None
+    related_entity_type: str | None = None
+    related_entity_id: int | None = None
+    read_at: datetime | None = None
 
 class NotificationUpdate(BaseModel):
     is_read: bool
@@ -340,28 +347,28 @@ class NotificationUpdate(BaseModel):
 class RecurringRuleCreate(BaseModel):
     name: str
     account_id: int
-    category_id: Optional[int] = None
+    category_id: int | None = None
     amount: float = Field(..., gt=0)
     transaction_type: TransactionType
     frequency: str  # daily, weekly, monthly, yearly
-    day_of_month: Optional[int] = Field(None, ge=1, le=31)
-    day_of_week: Optional[int] = Field(None, ge=0, le=6)
+    day_of_month: int | None = Field(None, ge=1, le=31)
+    day_of_week: int | None = Field(None, ge=0, le=6)
     start_date: date
-    end_date: Optional[date] = None
+    end_date: date | None = None
 
 class RecurringRuleResponse(BaseResponse):
     user_id: int
     name: str
     account_id: int
-    category_id: Optional[int] = None
+    category_id: int | None = None
     amount: float
     transaction_type: TransactionType
     frequency: str
-    day_of_month: Optional[int] = None
-    day_of_week: Optional[int] = None
+    day_of_month: int | None = None
+    day_of_week: int | None = None
     start_date: date
-    end_date: Optional[date] = None
-    next_occurrence: Optional[date] = None
+    end_date: date | None = None
+    next_occurrence: date | None = None
     is_active: bool
 
 # Import Models
@@ -372,10 +379,10 @@ class ImportFileRequest(BaseModel):
 class ImportFileResponse(BaseResponse):
     user_id: int
     filename: str
-    account_id: Optional[int] = None
+    account_id: int | None = None
     transactions_count: int
     status: str
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 # Analytics Models
 class SpendingByCategory(BaseModel):
@@ -390,14 +397,14 @@ class IncomeExpenseSummary(BaseModel):
     total_income: float
     total_expenses: float
     net_income: float
-    income_by_category: List[SpendingByCategory]
-    expenses_by_category: List[SpendingByCategory]
+    income_by_category: list[SpendingByCategory]
+    expenses_by_category: list[SpendingByCategory]
 
 class BudgetSummary(BaseModel):
     total_budget: float  # Changed from total_budgeted to match frontend
     total_spent: float
     total_remaining: float
-    budgets: List[BudgetResponse]
+    budgets: list[BudgetResponse]
 
 class GoalSummary(BaseModel):
     total_goals: int
@@ -405,8 +412,8 @@ class GoalSummary(BaseModel):
     completed_goals: int
     total_target: float
     total_saved: float
-    goals: List[GoalResponse]
-    
+    goals: list[GoalResponse]
+
     @validator('total_target', 'total_saved', pre=True)
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -417,11 +424,11 @@ class GoalSummary(BaseModel):
 # Contact Models
 class ContactCreate(BaseModel):
     contact_id: int
-    nickname: Optional[str] = None
+    nickname: str | None = None
 
 class ContactUpdate(BaseModel):
-    nickname: Optional[str] = None
-    is_favorite: Optional[bool] = None
+    nickname: str | None = None
+    is_favorite: bool | None = None
 
 class ContactStatusUpdate(BaseModel):
     status: ContactStatus
@@ -430,39 +437,39 @@ class ContactResponse(BaseResponse):
     user_id: int
     contact_id: int
     status: ContactStatus
-    nickname: Optional[str] = None
+    nickname: str | None = None
     is_favorite: bool
-    contact_username: Optional[str] = None  # Populated from joins
-    contact_email: Optional[str] = None  # Populated from joins
+    contact_username: str | None = None  # Populated from joins
+    contact_email: str | None = None  # Populated from joins
 
 # Conversation Models
 class ConversationCreate(BaseModel):
-    participant_ids: List[int]  # User IDs to add to conversation
-    title: Optional[str] = None  # For group chats
-    initial_message: Optional[str] = None
+    participant_ids: list[int]  # User IDs to add to conversation
+    title: str | None = None  # For group chats
+    initial_message: str | None = None
 
 class ConversationUpdate(BaseModel):
-    title: Optional[str] = None
+    title: str | None = None
 
 class ConversationResponse(BaseResponse):
-    title: Optional[str] = None
+    title: str | None = None
     is_group: bool
-    created_by_id: Optional[int] = None
-    last_message_at: Optional[datetime] = None
-    participant_count: Optional[int] = None
-    unread_count: Optional[int] = None  # Calculated per user
+    created_by_id: int | None = None
+    last_message_at: datetime | None = None
+    participant_count: int | None = None
+    unread_count: int | None = None  # Calculated per user
 
 class ConversationParticipantResponse(BaseModel):
     id: int
     conversation_id: int
     user_id: int
     joined_at: datetime
-    last_read_at: Optional[datetime] = None
+    last_read_at: datetime | None = None
     is_admin: bool
     is_muted: bool
     notification_enabled: bool
-    username: Optional[str] = None  # From join
-    
+    username: str | None = None  # From join
+
     class Config:
         from_attributes = True
 
@@ -471,7 +478,7 @@ class MessageCreate(BaseModel):
     conversation_id: int
     content: str
     message_type: str = "text"
-    related_transaction_id: Optional[int] = None
+    related_transaction_id: int | None = None
 
 class MessageUpdate(BaseModel):
     content: str
@@ -481,21 +488,21 @@ class MessageResponse(BaseResponse):
     sender_id: int
     content: str
     message_type: str
-    related_transaction_id: Optional[int] = None
+    related_transaction_id: int | None = None
     status: MessageStatus
     is_edited: bool
-    edited_at: Optional[datetime] = None
+    edited_at: datetime | None = None
     is_deleted: bool
-    deleted_at: Optional[datetime] = None
-    sender_username: Optional[str] = None  # From join
-    read_by_count: Optional[int] = None  # Calculated
+    deleted_at: datetime | None = None
+    sender_username: str | None = None  # From join
+    read_by_count: int | None = None  # Calculated
 
 class MessageReadReceiptResponse(BaseModel):
     message_id: int
     user_id: int
     read_at: datetime
-    username: Optional[str] = None  # From join
-    
+    username: str | None = None  # From join
+
     class Config:
         from_attributes = True
 
@@ -513,7 +520,7 @@ class DirectMessageCreate(BaseModel):
     subject: str
     message: str
     priority: str = "normal"
-    attachments: Optional[List[Dict[str, Any]]] = None
+    attachments: list[dict[str, Any]] | None = None
     is_draft: bool = False
 
 class DirectMessageReply(BaseModel):
@@ -521,24 +528,24 @@ class DirectMessageReply(BaseModel):
 
 class DirectMessageResponse(BaseResponse):
     sender_id: int
-    sender_username: Optional[str] = None
+    sender_username: str | None = None
     recipient_id: int
-    recipient_username: Optional[str] = None
+    recipient_username: str | None = None
     subject: str
     message: str
     priority: str
     is_read: bool
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
     is_draft: bool
-    parent_message_id: Optional[int] = None
-    folder_id: Optional[int] = None
+    parent_message_id: int | None = None
+    folder_id: int | None = None
     sent_at: datetime
-    attachments: Optional[List[Dict[str, Any]]] = []
-    
+    attachments: list[dict[str, Any]] | None = []
+
     @property
     def preview(self) -> str:
         return self.message[:100] + "..." if len(self.message) > 100 else self.message
-    
+
     @classmethod
     def from_orm(cls, obj):
         # Create instance without attachments
@@ -563,22 +570,22 @@ class DirectMessageResponse(BaseResponse):
 
 class MessageFolderCreate(BaseModel):
     folder_name: str
-    color: Optional[str] = None
+    color: str | None = None
 
 class MessageFolderResponse(BaseResponse):
     user_id: int
     folder_name: str
-    color: Optional[str] = None
-    message_count: Optional[int] = 0
+    color: str | None = None
+    message_count: int | None = 0
 
 class MessageMoveRequest(BaseModel):
     folder_id: int
 
 class MessageSettingsUpdate(BaseModel):
-    email_on_new_message: Optional[bool] = None
-    push_notifications: Optional[bool] = None
-    notification_sound: Optional[bool] = None
-    auto_mark_read: Optional[bool] = None
+    email_on_new_message: bool | None = None
+    push_notifications: bool | None = None
+    notification_sound: bool | None = None
+    auto_mark_read: bool | None = None
 
 class MessageSettingsResponse(BaseModel):
     user_id: int
@@ -586,21 +593,21 @@ class MessageSettingsResponse(BaseModel):
     push_notifications: bool
     notification_sound: bool
     auto_mark_read: bool
-    
+
     class Config:
         from_attributes = True
 
 class BlockUserRequest(BaseModel):
     username: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 class BulkMessageUpdate(BaseModel):
-    message_ids: List[int]
+    message_ids: list[int]
 
 # Payment Method Models
 class PaymentMethodBase(BaseModel):
     type: PaymentMethodType
-    nickname: Optional[str] = None
+    nickname: str | None = None
     is_default: bool = False
 
 class PaymentMethodCardCreate(PaymentMethodBase):
@@ -624,31 +631,31 @@ class PaymentMethodWalletCreate(PaymentMethodBase):
     wallet_id: str
 
 class PaymentMethodUpdate(BaseModel):
-    nickname: Optional[str] = None
-    is_default: Optional[bool] = None
-    billing_zip: Optional[str] = None
+    nickname: str | None = None
+    is_default: bool | None = None
+    billing_zip: str | None = None
 
 class PaymentMethodResponse(PaymentMethodBase):
     id: int
     status: PaymentMethodStatus
-    card_last_four: Optional[str] = None
-    card_brand: Optional[str] = None
-    expiry_month: Optional[int] = None
-    expiry_year: Optional[int] = None
-    account_last_four: Optional[str] = None
-    bank_name: Optional[str] = None
-    wallet_provider: Optional[str] = None
+    card_last_four: str | None = None
+    card_brand: str | None = None
+    expiry_month: int | None = None
+    expiry_year: int | None = None
+    account_last_four: str | None = None
+    bank_name: str | None = None
+    wallet_provider: str | None = None
     created_at: datetime
-    last_used_at: Optional[datetime] = None
-    
+    last_used_at: datetime | None = None
+
     class Config:
         from_attributes = True
 
 # Two-Factor Authentication Models
 class TwoFactorSetup(BaseModel):
     method: TwoFactorMethod
-    phone_number: Optional[str] = None  # For SMS
-    email: Optional[str] = None  # For email verification
+    phone_number: str | None = None  # For SMS
+    email: str | None = None  # For email verification
 
 class TwoFactorVerify(BaseModel):
     code: str = Field(..., min_length=6, max_length=6)
@@ -660,15 +667,15 @@ class TwoFactorResponse(BaseModel):
     is_enabled: bool
     is_primary: bool
     created_at: datetime
-    last_used_at: Optional[datetime] = None
-    
+    last_used_at: datetime | None = None
+
     class Config:
         from_attributes = True
 
 class TwoFactorSetupResponse(TwoFactorResponse):
-    secret: Optional[str] = None  # For TOTP setup
-    qr_code: Optional[str] = None  # QR code image data
-    backup_codes: Optional[List[str]] = None  # One-time backup codes
+    secret: str | None = None  # For TOTP setup
+    qr_code: str | None = None  # QR code image data
+    backup_codes: list[str] | None = None  # One-time backup codes
 
 # Device/Session Models
 class UserDeviceResponse(BaseModel):
@@ -676,14 +683,14 @@ class UserDeviceResponse(BaseModel):
     device_id: str
     device_name: str
     device_type: str
-    os: Optional[str] = None
-    browser: Optional[str] = None
-    location: Optional[str] = None
+    os: str | None = None
+    browser: str | None = None
+    location: str | None = None
     is_trusted: bool
     is_active: bool
     created_at: datetime
     last_active_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -694,14 +701,14 @@ class DeviceTrustUpdate(BaseModel):
 class SecurityAuditLogResponse(BaseModel):
     id: int
     event_type: SecurityEventType
-    device_name: Optional[str] = None
-    ip_address: Optional[str] = None
-    location: Optional[str] = None
+    device_name: str | None = None
+    ip_address: str | None = None
+    location: str | None = None
     success: bool
-    failure_reason: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    failure_reason: str | None = None
+    metadata: dict[str, Any] | None = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -714,7 +721,7 @@ class TransactionAttachment(BaseModel):
     file_size: int
     file_url: str
     uploaded_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -728,7 +735,7 @@ class TransactionAttachmentCreate(BaseModel):
 class TransactionSplitCreate(BaseModel):
     user_id: int
     amount: float = Field(..., gt=0)
-    description: Optional[str] = None
+    description: str | None = None
 
 class TransactionSplitResponse(BaseModel):
     id: int
@@ -736,10 +743,10 @@ class TransactionSplitResponse(BaseModel):
     user_id: int
     amount: float
     is_paid: bool
-    paid_at: Optional[datetime] = None
-    description: Optional[str] = None
-    user_name: Optional[str] = None  # From join
-    
+    paid_at: datetime | None = None
+    description: str | None = None
+    user_name: str | None = None  # From join
+
     class Config:
         from_attributes = True
 
@@ -748,19 +755,19 @@ class ExportRequest(BaseModel):
     format: ExportFormat
     start_date: date
     end_date: date
-    account_ids: Optional[List[int]] = None
-    category_ids: Optional[List[int]] = None
+    account_ids: list[int] | None = None
+    category_ids: list[int] | None = None
     include_attachments: bool = False
 
 class ExportResponse(BaseModel):
     export_id: str
     status: str  # pending, processing, completed, failed
     format: ExportFormat
-    file_url: Optional[str] = None
-    file_size: Optional[int] = None
+    file_url: str | None = None
+    file_size: int | None = None
     created_at: datetime
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
 
 # Currency Models
 class CurrencyInfo(BaseModel):
@@ -780,15 +787,15 @@ class CurrencyConversion(BaseModel):
 # Bank Linking Models
 class BankLinkRequest(BaseModel):
     institution_id: str
-    credentials: Dict[str, str]  # Bank-specific credentials
+    credentials: dict[str, str]  # Bank-specific credentials
 
 class BankLinkResponse(BaseModel):
     link_id: str
     institution_name: str
     status: str  # pending, active, error, expired
     accounts_found: int
-    last_sync: Optional[datetime] = None
-    error_message: Optional[str] = None
+    last_sync: datetime | None = None
+    error_message: str | None = None
 
 class LinkedAccountResponse(BaseModel):
     id: int
@@ -806,20 +813,20 @@ class TransferRequest(BaseModel):
     source_account_id: int
     destination_account_id: int
     amount: float = Field(..., gt=0, le=50000)  # Max 50k per transfer
-    description: Optional[str] = None
+    description: str | None = None
     is_external: bool = False
 
 class DepositRequest(BaseModel):
     account_id: int
     amount: float = Field(..., gt=0, le=100000)  # Max 100k per deposit
-    description: Optional[str] = None
+    description: str | None = None
     deposit_method: str = Field(..., pattern="^(cash|check|wire|ach|mobile)$")
-    source: Optional[str] = None
+    source: str | None = None
 
 class WithdrawalRequest(BaseModel):
     account_id: int
     amount: float = Field(..., gt=0, le=10000)  # Max 10k per withdrawal
-    description: Optional[str] = None
+    description: str | None = None
     withdrawal_method: str = Field(..., pattern="^(atm|bank|wire|check)$")
 
 class BillPaymentRequest(BaseModel):
@@ -828,13 +835,12 @@ class BillPaymentRequest(BaseModel):
     payee_name: str
     payee_account_number: str
     bill_type: str = Field(..., pattern="^(utility|credit_card|loan|rent|insurance|other_bills|other)$")
-    category_id: Optional[int] = None
-    due_date: Optional[date] = None
-    description: Optional[str] = None
+    category_id: int | None = None
+    due_date: date | None = None
+    description: str | None = None
 
 class TransferResponse(TransactionResponse):
     """Transfer response is the same as TransactionResponse"""
-    pass
 
 # Import new feature models
 # Note: These are imported separately in each route file that needs them

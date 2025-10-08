@@ -1,8 +1,9 @@
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 # Crypto-specific enums
 class CryptoAssetType(str, Enum):
@@ -36,10 +37,10 @@ class CryptoWalletCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     network: BlockchainNetwork
     is_primary: bool = False
-    
+
 class CryptoWalletResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     name: str
@@ -47,18 +48,18 @@ class CryptoWalletResponse(BaseModel):
     network: BlockchainNetwork
     is_primary: bool
     created_at: datetime
-    last_synced: Optional[datetime] = None
+    last_synced: datetime | None = None
 
 class CryptoAssetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     wallet_id: int
     symbol: str
     name: str
     asset_type: CryptoAssetType
     network: BlockchainNetwork
-    contract_address: Optional[str] = None
+    contract_address: str | None = None
     balance: str  # Using string for precision
     usd_value: float
     price_usd: float
@@ -67,56 +68,56 @@ class CryptoAssetResponse(BaseModel):
 
 class NFTAssetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     wallet_id: int
     collection_name: str
     token_id: str
     name: str
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    metadata: Dict[str, Any]
+    description: str | None = None
+    image_url: str | None = None
+    metadata: dict[str, Any]
     network: BlockchainNetwork
     contract_address: str
-    floor_price_usd: Optional[float] = None
-    estimated_value_usd: Optional[float] = None
+    floor_price_usd: float | None = None
+    estimated_value_usd: float | None = None
     acquired_at: datetime
     last_updated: datetime
 
 class CryptoTransactionCreate(BaseModel):
-    from_wallet_id: Optional[int] = None
+    from_wallet_id: int | None = None
     to_address: str
     asset_symbol: str
     amount: str
     network: BlockchainNetwork
-    gas_price_gwei: Optional[float] = None
-    note: Optional[str] = None
+    gas_price_gwei: float | None = None
+    note: str | None = None
 
 class CryptoTransactionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
-    wallet_id: Optional[int] = None
+    wallet_id: int | None = None
     direction: TransactionDirection
     asset_symbol: str
     amount: str
     usd_value_at_time: float
-    from_address: Optional[str] = None
-    to_address: Optional[str] = None
+    from_address: str | None = None
+    to_address: str | None = None
     network: BlockchainNetwork
     transaction_hash: str
-    gas_fee: Optional[str] = None
-    gas_fee_usd: Optional[float] = None
+    gas_fee: str | None = None
+    gas_fee_usd: float | None = None
     status: str  # pending, confirmed, failed
     confirmations: int
-    note: Optional[str] = None
+    note: str | None = None
     created_at: datetime
-    confirmed_at: Optional[datetime] = None
+    confirmed_at: datetime | None = None
 
 class DeFiPositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     wallet_id: int
     protocol: str
@@ -135,8 +136,8 @@ class CryptoPortfolioSummary(BaseModel):
     total_usd_value: float
     total_assets: int
     total_nfts: int
-    chains: List[str]
-    top_holdings: List[Dict[str, Any]]
+    chains: list[str]
+    top_holdings: list[dict[str, Any]]
     defi_positions_value: float
     total_24h_change: float
     total_24h_change_percent: float
@@ -155,5 +156,5 @@ class CryptoSwapQuote(BaseModel):
     to_amount: str
     price_impact: float
     gas_estimate_usd: float
-    route: List[str]
+    route: list[str]
     expires_at: datetime

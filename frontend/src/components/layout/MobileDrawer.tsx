@@ -6,12 +6,10 @@ import {
   X,
   Home,
   Wallet,
-  DollarSign,
   Receipt,
   Target,
   CreditCard,
   TrendingUp,
-  Users,
   Building2,
   Shield,
   Settings,
@@ -52,12 +50,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      
-      // Add swipe gesture tracking
-        action_type: 'drawer_opened',
-        page_url: pathname,
-        target_element_identifier: 'mobile-drawer',
-      });
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -84,7 +76,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
     { href: '/security', label: 'Security', icon: <Shield size={20} /> },
   ];
 
-  const handleNavClick = (href: string, label: string) => {
+  const handleNavClick = (_href: string, _label: string) => {
     onClose();
   };
 
@@ -96,11 +88,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     // Close drawer when swiped left
     if (info.offset.x < -100) {
-        action_type: 'swipe_gesture',
-        page_url: pathname,
-        target_element_identifier: 'mobile-drawer-swipe-close',
-        interaction_detail: 'swipe_left',
-      });
       onClose();
     }
   };

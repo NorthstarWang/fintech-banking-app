@@ -4,7 +4,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  DollarSign,
   AlertCircle
 } from 'lucide-react';
 import Card, { CardHeader, CardBody } from '../ui/Card';

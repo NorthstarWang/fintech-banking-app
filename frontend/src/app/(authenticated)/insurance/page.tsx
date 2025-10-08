@@ -40,8 +40,7 @@ export default function InsurancePage() {
       setClaims(claimsData);
       setProviders(providersData);
       setInsuranceSummary(summaryData);
-    } catch (error) {
-      console.error('Error fetching insurance data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,7 @@ export default function InsurancePage() {
   }
 
   const activePolicies = policies.filter(p => p.status === 'active');
-  const activeClaims = claims.filter(c => ['submitted', 'under_review', 'approved'].includes(c.status));
+  const _activeClaims = claims.filter(c => ['submitted', 'under_review', 'approved'].includes(c.status));
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">

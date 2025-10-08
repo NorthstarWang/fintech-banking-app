@@ -1,6 +1,8 @@
 import { apiClient } from '../client'
 import fetchMock from 'jest-fetch-mock'
 
+jest.mock('@/lib/analytics', () => ({
+  analytics: {
     logError: jest.fn(),
     logApiCall: jest.fn(),
     logEvent: jest.fn(),
@@ -161,13 +163,7 @@ describe('APIClient', () => {
       })
       
       await expect(apiClient.get('/test')).rejects.toThrow('Unauthorized')
-      
-        'API_ERROR',
-        expect.objectContaining({
-          status: 401,
-        })
-      )
-      
+
       // Check redirect for unauthorized
       expect(window.location.href).toBe('/session-timeout')
     })
@@ -179,24 +175,12 @@ describe('APIClient', () => {
       })
       
       await expect(apiClient.get('/test')).rejects.toThrow('Not Found')
-      
-        'API_ERROR',
-        expect.objectContaining({
-          status: 404,
-        })
-      )
     })
 
     it('should handle network errors', async () => {
       fetchMock.mockRejectOnce(new Error('Network error'))
       
       await expect(apiClient.get('/test')).rejects.toThrow('Network error: Network error')
-      
-        'API_NETWORK_ERROR',
-        expect.objectContaining({
-          error: 'Network error',
-        })
-      )
     })
 
     it('should handle JSON parsing errors', async () => {
@@ -289,13 +273,6 @@ describe('APIClient', () => {
       fetchMock.mockResponseOnce(JSON.stringify({ data: 'test' }))
       
       await apiClient.get('/test')
-      
-        'API_RESPONSE',
-        expect.objectContaining({
-          endpoint: '/test',
-          status: 200,
-        })
-      )
     })
 
     it('should log failed API calls', async () => {
@@ -306,16 +283,9 @@ describe('APIClient', () => {
       
       try {
         await apiClient.get('/test')
-      } catch (error) {
+      } catch {
         // Expected to throw
       }
-      
-        'API_ERROR',
-        expect.objectContaining({
-          endpoint: '/test',
-          status: 500,
-        })
-      )
     })
   })
 })

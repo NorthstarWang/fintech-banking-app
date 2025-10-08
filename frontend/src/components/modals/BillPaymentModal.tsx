@@ -7,14 +7,11 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Calendar,
   Home,
   Zap,
   Smartphone,
-  Wifi,
   CreditCard,
-  Building2,
-  DollarSign
+  Building2
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
@@ -124,10 +121,8 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
         setAccounts(data.filter(acc => acc.is_active && acc.type !== 'credit'));
       } else {
         setAccounts([]);
-        console.error('Invalid accounts data received:', data);
       }
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
+    } catch {
       setAccounts([]);
     }
   };
@@ -198,15 +193,6 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
 
       await transfersService.payBill(billData);
       
-        text: `Bill payment completed: $${amount} to ${billerName}`,
-        custom_action: 'bill_payment_completed',
-        data: {
-          amount: parseFloat(amount),
-          account_id: parseInt(selectedAccount),
-          biller_name: billerName,
-          category: billCategory,
-        }
-      });
 
       setSuccess(true);
       setTimeout(() => {

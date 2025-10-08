@@ -1,28 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional, Any
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
+from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from ..models import (
+    Account,
+    RecurringRule,
+    RecurringRuleCreate,
+    RecurringRuleResponse,
+    Transaction,
+    TransactionStatus,
+    TransactionType,
+)
 from ..storage.memory_adapter import db
-from ..models import RecurringRule, Account, Category, Transaction, TransactionType, TransactionStatus
-from ..models import RecurringRuleCreate, RecurringRuleResponse
 from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from ..utils.validators import ValidationError, Validators
 
 router = APIRouter()
 
 def calculate_next_occurrence(rule: RecurringRule) -> date:
     """Calculate next occurrence date based on frequency"""
     today = date.today()
-    
+
     if rule.frequency == "daily":
         return today + timedelta(days=1)
-    elif rule.frequency == "weekly":
+    if rule.frequency == "weekly":
         days_ahead = rule.day_of_week - today.weekday()
         if days_ahead <= 0:
             days_ahead += 7
         return today + timedelta(days=days_ahead)
-    elif rule.frequency == "monthly":
+    if rule.frequency == "monthly":
         next_month = today.replace(day=1) + timedelta(days=32)
         next_month = next_month.replace(day=1)
         try:
@@ -34,7 +41,7 @@ def calculate_next_occurrence(rule: RecurringRule) -> date:
             return next_month.replace(day=min(rule.day_of_month, last_day))
     elif rule.frequency == "yearly":
         return today.replace(year=today.year + 1)
-    
+
     return today + timedelta(days=30)  # Default
 
 @router.post("/", response_model=RecurringRuleResponse, status_code=status.HTTP_201_CREATED)
@@ -45,15 +52,14 @@ async def create_recurring_rule(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new recurring transaction rule"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Validate account ownership
     account = Validators.validate_account_ownership(
         db_session,
         rule_data.account_id,
         current_user['user_id']
     )
-    
+
     # Validate category if provided
     if rule_data.category_id:
         category = Validators.validate_category_access(
@@ -61,14 +67,14 @@ async def create_recurring_rule(
             rule_data.category_id,
             current_user['user_id']
         )
-    
+
     # Validate frequency parameters
     if rule_data.frequency == "weekly" and (rule_data.day_of_week is None or rule_data.day_of_week < 0 or rule_data.day_of_week > 6):
         raise ValidationError("Weekly frequency requires day_of_week (0-6)")
-    
+
     if rule_data.frequency == "monthly" and (rule_data.day_of_month is None or rule_data.day_of_month < 1 or rule_data.day_of_month > 31):
         raise ValidationError("Monthly frequency requires day_of_month (1-31)")
-    
+
     # Create recurring rule
     new_rule = RecurringRule(
         user_id=current_user['user_id'],
@@ -85,30 +91,16 @@ async def create_recurring_rule(
         next_occurrence=calculate_next_occurrence(rule_data),
         is_active=True
     )
-    
+
     db_session.add(new_rule)
     db_session.commit()
     db_session.refresh(new_rule)
-    
+
     # Log creation
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Recurring rule '{rule_data.name}' created for ${rule_data.amount} {rule_data.frequency}",
-            "table_name": "recurring_rules",
-            "update_type": "insert",
-            "values": {
-                "id": new_rule.id,
-                "name": new_rule.name,
-                "amount": new_rule.amount,
-                "frequency": new_rule.frequency
-            }
-        }
-    )
-    
+
     return RecurringRuleResponse.from_orm(new_rule)
 
-@router.get("/", response_model=List[RecurringRuleResponse])
+@router.get("/", response_model=list[RecurringRuleResponse])
 async def get_recurring_rules(
     active_only: bool = True,
     current_user: dict = Depends(get_current_user),
@@ -118,12 +110,12 @@ async def get_recurring_rules(
     query = db_session.query(RecurringRule).filter(
         RecurringRule.user_id == current_user['user_id']
     )
-    
+
     if active_only:
         query = query.filter(RecurringRule.is_active == True)
-    
+
     rules = query.order_by(RecurringRule.next_occurrence).all()
-    
+
     return [RecurringRuleResponse.from_orm(rule) for rule in rules]
 
 @router.get("/{rule_id}", response_model=RecurringRuleResponse)
@@ -137,13 +129,13 @@ async def get_recurring_rule(
         RecurringRule.id == rule_id,
         RecurringRule.user_id == current_user['user_id']
     ).first()
-    
+
     if not rule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recurring rule not found"
         )
-    
+
     return RecurringRuleResponse.from_orm(rule)
 
 @router.put("/{rule_id}/toggle")
@@ -154,38 +146,25 @@ async def toggle_recurring_rule(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Enable/disable a recurring rule"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     rule = db_session.query(RecurringRule).filter(
         RecurringRule.id == rule_id,
         RecurringRule.user_id == current_user['user_id']
     ).first()
-    
+
     if not rule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recurring rule not found"
         )
-    
+
     rule.is_active = not rule.is_active
     db_session.commit()
-    
+
     action = "enabled" if rule.is_active else "disabled"
-    
+
     # Log toggle
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Recurring rule '{rule.name}' {action}",
-            "table_name": "recurring_rules",
-            "update_type": "update",
-            "values": {
-                "id": rule_id,
-                "is_active": rule.is_active
-            }
-        }
-    )
-    
+
     return {"message": f"Recurring rule {action} successfully", "is_active": rule.is_active}
 
 @router.post("/{rule_id}/execute")
@@ -196,31 +175,30 @@ async def execute_recurring_rule(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Manually execute a recurring rule"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     rule = db_session.query(RecurringRule).filter(
         RecurringRule.id == rule_id,
         RecurringRule.user_id == current_user['user_id']
     ).first()
-    
+
     if not rule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recurring rule not found"
         )
-    
+
     if not rule.is_active:
         raise ValidationError("Cannot execute inactive rule")
-    
+
     # Get account
     account = db_session.query(Account).filter(Account.id == rule.account_id).first()
     if not account:
         raise ValidationError("Associated account not found")
-    
+
     # Validate sufficient funds for debits
     if rule.transaction_type == TransactionType.DEBIT:
         Validators.validate_sufficient_funds(account, rule.amount)
-    
+
     # Create transaction
     transaction = Transaction(
         account_id=rule.account_id,
@@ -233,29 +211,22 @@ async def execute_recurring_rule(
         recurring_rule_id=rule.id,
         reference_number=f"REC-{rule.id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
     )
-    
+
     # Update account balance
     if rule.transaction_type == TransactionType.DEBIT:
         account.balance -= rule.amount
     else:
         account.balance += rule.amount
-    
+
     # Update next occurrence
     rule.next_occurrence = calculate_next_occurrence(rule)
-    
+
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
-    
+
     # Log execution
-        session_id,
-        transaction.id,
-        account.id,
-        rule.amount,
-        rule.transaction_type.value,
-        f"Recurring: {rule.name}"
-    )
-    
+
     return {
         "message": "Recurring transaction executed successfully",
         "transaction_id": transaction.id,
@@ -270,30 +241,24 @@ async def delete_recurring_rule(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete a recurring rule"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     rule = db_session.query(RecurringRule).filter(
         RecurringRule.id == rule_id,
         RecurringRule.user_id == current_user['user_id']
     ).first()
-    
+
     if not rule:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recurring rule not found"
         )
-    
+
     # Soft delete - just deactivate
     rule.is_active = False
     db_session.commit()
-    
+
     # Log deletion
-        session_id,
-        "recurring_rules",
-        rule_id,
-        f"Recurring rule '{rule.name}' deactivated"
-    )
-    
+
     return {"message": "Recurring rule deleted successfully"}
 
 @router.get("/upcoming/preview")
@@ -304,13 +269,13 @@ async def preview_upcoming_recurring(
 ):
     """Preview upcoming recurring transactions"""
     end_date = date.today() + timedelta(days=days_ahead)
-    
+
     rules = db_session.query(RecurringRule).filter(
         RecurringRule.user_id == current_user['user_id'],
         RecurringRule.is_active == True,
         RecurringRule.next_occurrence <= end_date
     ).all()
-    
+
     upcoming = []
     for rule in rules:
         current_date = rule.next_occurrence
@@ -324,7 +289,7 @@ async def preview_upcoming_recurring(
                 "account_id": rule.account_id,
                 "category_id": rule.category_id
             })
-            
+
             # Calculate next date
             if rule.frequency == "daily":
                 current_date += timedelta(days=1)
@@ -340,10 +305,10 @@ async def preview_upcoming_recurring(
                 current_date = current_date.replace(year=current_date.year + 1)
             else:
                 break
-    
+
     # Sort by date
     upcoming.sort(key=lambda x: x['scheduled_date'])
-    
+
     return {
         "count": len(upcoming),
         "upcoming_transactions": upcoming

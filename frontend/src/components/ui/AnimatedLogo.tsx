@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
+import { TrendingUp, DollarSign } from 'lucide-react';
 
 interface AnimatedLogoProps {
   variant?: 'primary' | 'secondary';

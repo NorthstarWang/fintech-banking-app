@@ -1,11 +1,12 @@
 """
 Credit card recommendation and application API routes.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from app.utils.auth import get_current_user
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from app.repositories.credit_card_manager import CreditCardManager
 from app.repositories.data_manager import data_manager
+from app.utils.auth import get_current_user
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ async def get_credit_score(
     """Get user's credit score and factors."""
     score = card_manager.get_user_credit_score(current_user["user_id"])
     factors = card_manager.get_credit_factors(current_user["user_id"])
-    
+
     return {
         "credit_score": score,
         "score_range": _get_score_range(score),
@@ -39,17 +40,17 @@ async def simulate_credit_improvement(
 # Card browsing and recommendations
 @router.get("/offers")
 async def get_all_card_offers(
-    card_type: Optional[str] = Query(None, description="Filter by card type"),
-    min_credit_score: Optional[int] = Query(None, description="Show only cards you qualify for"),
+    card_type: str | None = Query(None, description="Filter by card type"),
+    min_credit_score: int | None = Query(None, description="Show only cards you qualify for"),
     current_user = Depends(get_current_user)
-) -> List[dict]:
+) -> list[dict]:
     """Browse all available credit card offers."""
     offers = data_manager.card_offers
-    
+
     # Apply filters
     if card_type:
         offers = [o for o in offers if o['type'] == card_type]
-    
+
     if min_credit_score is not None:
         user_score = card_manager.get_user_credit_score(current_user["user_id"])
         if min_credit_score > 0:
@@ -59,7 +60,7 @@ async def get_all_card_offers(
             # Show all cards but indicate eligibility
             for offer in offers:
                 offer['eligible'] = offer['min_credit_score'] <= user_score
-    
+
     return offers
 
 @router.get("/offers/{offer_id}")
@@ -69,13 +70,13 @@ async def get_card_offer_details(
 ) -> dict:
     """Get detailed information about a specific card offer."""
     offer = next((o for o in data_manager.card_offers if o['id'] == offer_id), None)
-    
+
     if not offer:
         raise HTTPException(status_code=404, detail="Card offer not found")
-    
+
     # Add user-specific information
     user_score = card_manager.get_user_credit_score(current_user["user_id"])
-    
+
     return {
         **offer,
         "eligible": user_score >= offer['min_credit_score'],
@@ -86,7 +87,7 @@ async def get_card_offer_details(
 @router.get("/recommendations")
 async def get_card_recommendations(
     current_user = Depends(get_current_user)
-) -> List[dict]:
+) -> list[dict]:
     """Get personalized credit card recommendations."""
     return card_manager.get_card_recommendations(current_user["user_id"])
 
@@ -94,14 +95,14 @@ async def get_card_recommendations(
 @router.post("/apply")
 async def apply_for_card(
     card_offer_id: int,
-    requested_credit_limit: Optional[float] = None,
+    requested_credit_limit: float | None = None,
     current_user = Depends(get_current_user)
 ) -> dict:
     """Apply for a credit card."""
     try:
         result = card_manager.apply_for_card(
-            current_user["user_id"], 
-            card_offer_id, 
+            current_user["user_id"],
+            card_offer_id,
             requested_credit_limit
         )
         return result
@@ -110,15 +111,15 @@ async def apply_for_card(
 
 @router.get("/applications")
 async def get_my_applications(
-    status: Optional[str] = Query(None, description="Filter by status"),
+    status: str | None = Query(None, description="Filter by status"),
     current_user = Depends(get_current_user)
-) -> List[dict]:
+) -> list[dict]:
     """Get user's credit card applications."""
     applications = card_manager.get_user_applications(current_user["user_id"])
-    
+
     if status:
         applications = [a for a in applications if a['status'] == status]
-    
+
     return applications
 
 @router.get("/applications/{application_id}")
@@ -129,27 +130,27 @@ async def get_application_details(
     """Get details of a specific application."""
     applications = card_manager.get_user_applications(current_user["user_id"])
     application = next((a for a in applications if a['id'] == application_id), None)
-    
+
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    
+
     return application
 
 # My cards
 @router.get("/my-cards")
 async def get_my_credit_cards(
     current_user = Depends(get_current_user)
-) -> List[dict]:
+) -> list[dict]:
     """Get user's active credit cards."""
-    user_cards = [c for c in data_manager.cards 
+    user_cards = [c for c in data_manager.cards
                  if c['user_id'] == current_user["user_id"] and c['card_type'] == 'credit']
-    
+
     # Enhance with offer details
     enhanced_cards = []
     for card in user_cards:
-        offer = next((o for o in data_manager.card_offers 
+        offer = next((o for o in data_manager.card_offers
                      if o['name'] == card.get('card_name')), None)
-        
+
         enhanced_cards.append({
             **card,
             'benefits': offer['benefits'] if offer else [],
@@ -157,7 +158,7 @@ async def get_my_credit_cards(
             'payment_due_date': _get_payment_due_date(card),
             'minimum_payment': _calculate_minimum_payment(card)
         })
-    
+
     return enhanced_cards
 
 # Educational content
@@ -237,22 +238,22 @@ async def get_credit_education(
 # Comparison tools
 @router.post("/compare")
 async def compare_cards(
-    card_ids: List[int],
+    card_ids: list[int],
     current_user = Depends(get_current_user)
 ) -> dict:
     """Compare multiple credit cards side by side."""
     if len(card_ids) > 5:
         raise HTTPException(status_code=400, detail="Can compare up to 5 cards at once")
-    
+
     cards = []
     for card_id in card_ids:
         offer = next((o for o in data_manager.card_offers if o['id'] == card_id), None)
         if offer:
             cards.append(offer)
-    
+
     if not cards:
         raise HTTPException(status_code=404, detail="No valid cards found")
-    
+
     # Create comparison matrix
     comparison = {
         "cards": cards,
@@ -269,7 +270,7 @@ async def compare_cards(
             "low_credit": min(cards, key=lambda x: x['min_credit_score'])['name']
         }
     }
-    
+
     return comparison
 
 # Helper functions
@@ -277,28 +278,26 @@ def _get_score_range(score: int) -> str:
     """Get credit score range description."""
     if score >= 800:
         return "Excellent"
-    elif score >= 740:
+    if score >= 740:
         return "Very Good"
-    elif score >= 670:
+    if score >= 670:
         return "Good"
-    elif score >= 580:
+    if score >= 580:
         return "Fair"
-    else:
-        return "Poor"
+    return "Poor"
 
 def _calculate_approval_likelihood(user_score: int, min_score: int) -> str:
     """Calculate approval likelihood."""
     diff = user_score - min_score
     if diff >= 100:
         return "Very High"
-    elif diff >= 50:
+    if diff >= 50:
         return "High"
-    elif diff >= 20:
+    if diff >= 20:
         return "Good"
-    elif diff >= 0:
+    if diff >= 0:
         return "Fair"
-    else:
-        return "Low"
+    return "Low"
 
 def _calculate_rewards(card: dict) -> float:
     """Calculate rewards earned (mock)."""

@@ -16,7 +16,6 @@ interface UseFloatingPositionProps {
 
 export const useFloatingPosition = ({
   triggerRef,
-  floatingRef,
   isOpen,
   placement = 'bottom',
   offset = 8,

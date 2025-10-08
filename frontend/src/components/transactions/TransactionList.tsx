@@ -10,7 +10,6 @@ import {
   Music,
   DollarSign,
   ArrowUpRight,
-  ArrowDownLeft,
   Clock,
   Paperclip,
   Hash,
@@ -34,8 +33,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   selectedTransaction,
   onSelectTransaction,
-  analyticsId = 'transaction-list',
-  analyticsLabel = 'Transaction List',
+  analyticsId: _analyticsId = 'transaction-list',
+  analyticsLabel: _analyticsLabel = 'Transaction List',
 }) => {
   const getCategoryIcon = (category: string) => {
     const iconMap: { [key: string]: React.ReactNode } = {
@@ -85,7 +84,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     })}`;
   };
 
-  const formatDate = (dateString: string) => {
+  const _formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
     const yesterday = new Date(today);
@@ -173,24 +172,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                       onClick={() => {
-                          `transaction-item-${transaction.id}`,
-                          `${analyticsLabel} - Clicked ${transaction.description} - ${transaction.category}`
-                        );
                         onSelectTransaction(transaction);
                       }}
                       data-testid={`transaction-item-${transaction.id}`}
-                      onMouseEnter={() => {
-                          text: `User hovered over Transaction: ${transaction.description} - ${transaction.category} - ${formatAmount(transaction.amount, transaction.type)}`,
-                          element_identifier: `transaction-item-${transaction.id}`,
-                          data: {
-                            transaction_id: transaction.id,
-                            description: transaction.description,
-                            category: transaction.category,
-                            amount: transaction.amount,
-                            type: transaction.type
-                          }
-                        });
-                      }}
                       className={`
                         p-4 rounded-lg cursor-pointer transition-all
                         ${selectedTransaction?.id === transaction.id 

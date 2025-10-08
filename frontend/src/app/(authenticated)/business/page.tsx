@@ -91,19 +91,6 @@ export default function BusinessPage() {
 
   useEffect(() => {
     // Enhanced page view logging
-      text: `User ${user?.username || 'unknown'} viewed business dashboard`,
-      page_name: 'Business',
-      user_id: user?.id,
-      timestamp: new Date().toISOString(),
-      data: {
-        initial_tab: selectedTab,
-        available_features: ['overview', 'team_management', 'expense_tracking', 'reports'],
-        business_context: {
-          has_business_account: true,
-          account_types: ['checking', 'savings', 'credit']
-        }
-      }
-    });
 
     // Load real data from backend
     loadBusinessData();
@@ -191,8 +178,7 @@ export default function BusinessPage() {
       }
       
       setIsLoading(false);
-    } catch (error) {
-      console.error('Failed to load business data:', error);
+    } catch {
       // Fall back to mock data on error
       loadMockData();
     }
@@ -430,22 +416,8 @@ export default function BusinessPage() {
       setExpenses([mockExpense, ...expenses]);
       setShowAddExpense(false);
       
-        text: `User ${user?.username || 'unknown'} created business expense for ${expenseData.vendor} - $${expenseData.amount}`,
-        custom_action: 'create_business_expense',
-        data: {
-          expense_amount: expenseData.amount,
-          expense_category: expenseData.category,
-          vendor: expenseData.vendor,
-          description: expenseData.description,
-          has_receipt: !!receiptFile,
-          receipt_file_size: receiptFile?.size,
-          from_tab: selectedTab,
-          user_id: user?.id,
-          total_expenses_after: expenses.length + 1
-        }
-      });
-    } catch (error) {
-      console.error('Failed to create expense:', error);
+    } catch {
+      showNotification('error', 'Failed to add expense. Please try again.');
     }
   };
 
@@ -479,14 +451,6 @@ export default function BusinessPage() {
               icon={<Settings size={18} />}
               onClick={() => {
                 setShowSettings(true);
-                  text: 'User opened business settings',
-                  custom_action: 'open_business_settings',
-                  data: {
-                    from_tab: selectedTab,
-                    current_team_size: teamMembers.length,
-                    active_cards: activeCards
-                  }
-                });
               }}
             >
               Settings
@@ -496,15 +460,6 @@ export default function BusinessPage() {
               icon={<Plus size={18} />}
               onClick={() => {
                 setShowAddExpense(true);
-                  text: 'User clicked Add Expense button in header',
-                  custom_action: 'open_add_expense_modal',
-                  data: {
-                    from_location: 'header',
-                    from_tab: selectedTab,
-                    current_expenses_count: expenses.length,
-                    pending_expenses: pendingExpenses
-                  }
-                });
               }}
             >
               Add Expense
@@ -518,14 +473,6 @@ export default function BusinessPage() {
             variant="default" 
             className="p-6 cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.05)] transition-all"
             onClick={() => {
-                text: 'User navigating to invoices from business dashboard',
-                custom_action: 'navigate_to_invoices',
-                data: {
-                  from_page: 'business',
-                  from_card: 'quick_action_invoices',
-                  from_tab: selectedTab
-                }
-              });
               router.push('/invoices');
             }}
           >
@@ -544,14 +491,6 @@ export default function BusinessPage() {
             className="p-6 cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.05)] transition-all"
             onClick={() => {
               setShowAddExpense(true);
-                text: 'User clicked Add Expense card',
-                custom_action: 'open_add_expense_modal',
-                data: {
-                  from_location: 'quick_actions_card',
-                  from_tab: selectedTab,
-                  current_expenses_count: expenses.length
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between mb-4">
@@ -569,15 +508,6 @@ export default function BusinessPage() {
             className="p-6 cursor-pointer hover:bg-[rgba(var(--glass-rgb),0.05)] transition-all"
             onClick={() => {
               setSelectedTab('reports');
-                text: 'User navigating to reports tab from quick actions',
-                custom_action: 'navigate_to_reports_tab',
-                data: {
-                  from_location: 'quick_actions_card',
-                  from_tab: selectedTab,
-                  switching_to: 'reports',
-                  total_expenses: totalExpenses
-                }
-              });
             }}
           >
             <div className="flex items-center justify-between mb-4">
@@ -651,22 +581,8 @@ export default function BusinessPage() {
             <button
               key={tab}
               onClick={() => {
-                const oldTab = selectedTab;
+                const _oldTab = selectedTab;
                 setSelectedTab(tab);
-                  text: `User switched from ${oldTab} to ${tab} tab`,
-                  custom_action: 'switch_business_tab',
-                  data: {
-                    old_tab: oldTab,
-                    new_tab: tab,
-                    tab_label: tab.charAt(0).toUpperCase() + tab.slice(1),
-                    business_metrics: {
-                      total_balance: totalBalance,
-                      total_expenses: totalExpenses,
-                      team_members: teamMembers.length,
-                      pending_approvals: pendingExpenses
-                    }
-                  }
-                });
               }}
               className={`
                 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all flex-1
@@ -712,16 +628,10 @@ export default function BusinessPage() {
                 teamMembers={teamMembers}
                 onAddMember={() => {
                   setShowAddMember(true);
-                    text: 'User opening add team member modal',
-                    custom_action: 'open_add_team_member',
-                    data: {
-                      current_team_size: teamMembers.length,
-                      active_cards: activeCards,
-                      from_tab: selectedTab
-                    }
-                  });
                 }}
-                onUpdateMember={(member) => console.log('Update member:', member)}
+                onUpdateMember={(_member) => {
+                  // Handle member update
+                }}
               />
             </motion.div>
           )}
@@ -767,16 +677,7 @@ export default function BusinessPage() {
                     variant="primary" 
                     icon={<Download size={18} />}
                     onClick={() => {
-                        text: 'User generating expense report',
-                        custom_action: 'generate_expense_report',
-                        data: {
-                          report_type: 'expense_report',
-                          total_expenses: totalExpenses,
-                          expenses_count: expenses.length,
-                          categories_count: categories.length
-                        }
-                      });
-                      console.log('Generate expense report');
+                      
                     }}
                   >
                     Generate Report
@@ -800,25 +701,12 @@ export default function BusinessPage() {
                     icon={<PieChart size={18} />}
                     onClick={async () => {
                       try {
-                          text: 'User viewing tax summary',
-                          custom_action: 'view_tax_summary',
-                          data: {
-                            report_type: 'tax_summary',
-                            total_expenses: totalExpenses,
-                            deductible_categories: categories.filter(c => c.spent > 0).length
-                          }
-                        });
                         const estimate = await businessApi.getTaxEstimate();
-                        console.log('Tax estimate:', estimate);
+
                         // TODO: Show tax estimate in a modal
-                      } catch (error) {
-                        console.error('Failed to get tax estimate:', error);
-                          text: 'Failed to get tax estimate',
-                          custom_action: 'tax_estimate_error',
-                          data: {
-                            error: error instanceof Error ? error.message : 'Unknown error'
-                          }
-                        });
+                        showNotification('success', `Tax Estimate: ${estimate.formatted}`);
+                      } catch {
+                        showNotification('error', 'Unable to calculate tax estimate at this time.');
                       }
                     }}
                   >
@@ -842,16 +730,7 @@ export default function BusinessPage() {
                     variant="primary" 
                     icon={<BarChart3 size={18} />}
                     onClick={() => {
-                        text: 'User viewing cash flow analysis',
-                        custom_action: 'view_cash_flow_analysis',
-                        data: {
-                          report_type: 'cash_flow',
-                          total_balance: totalBalance,
-                          monthly_expenses: totalExpenses,
-                          accounts_count: businessAccounts.length
-                        }
-                      });
-                      console.log('View cash flow analysis');
+                      
                     }}
                   >
                     View Analysis
@@ -874,14 +753,6 @@ export default function BusinessPage() {
                     variant="primary" 
                     icon={<FileText size={18} />}
                     onClick={() => {
-                        text: 'User navigating to invoices from reports tab',
-                        custom_action: 'navigate_to_invoices',
-                        data: {
-                          from_page: 'business',
-                          from_tab: 'reports',
-                          from_card: 'invoice_summary'
-                        }
-                      });
                       router.push('/invoices');
                     }}
                   >

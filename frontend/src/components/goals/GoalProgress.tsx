@@ -151,7 +151,7 @@ export const GoalProgress: React.FC<GoalProgressProps> = ({ goal }) => {
             </div>
             {isAheadOfSchedule && (
               <p className="text-xs text-[var(--primary-emerald)] mt-2">
-                You're saving more than required!
+                You&apos;re saving more than required!
               </p>
             )}
           </div>

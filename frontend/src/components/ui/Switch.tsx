@@ -16,9 +16,7 @@ const Switch: React.FC<SwitchProps> = ({
   onCheckedChange,
   disabled = false,
   size = 'md',
-  className = '',
-  analyticsId,
-  analyticsLabel,
+  className = ''
 }) => {
   const sizeClasses = {
     sm: 'w-8 h-4',
@@ -32,7 +30,7 @@ const Switch: React.FC<SwitchProps> = ({
     lg: 'w-7 h-7',
   };
 
-  const thumbTranslateClasses = {
+  const _thumbTranslateClasses = {
     sm: 'translate-x-4',
     md: 'translate-x-5',
     lg: 'translate-x-6',
@@ -46,11 +44,6 @@ const Switch: React.FC<SwitchProps> = ({
       disabled={disabled}
       onClick={() => {
         if (!disabled && onCheckedChange) {
-          const switchLabel = analyticsLabel || 'switch';
-          const switchId = analyticsId || 'switch';
-            switchId,
-            `${switchLabel}: ${!checked ? 'on' : 'off'}`
-          );
           onCheckedChange(!checked);
         }
       }}

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   X,
   Edit2,
   Save,
   Trash2,
-  Tag,
   Calendar,
   MapPin,
   CreditCard,
@@ -14,7 +13,6 @@ import {
   Plus,
   Link,
   ExternalLink,
-  Check,
   AlertCircle,
   Download,
   Upload,
@@ -483,7 +481,7 @@ startxref
                 Tags
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
-                {editedTransaction.tags?.map((tag, index) => (
+                {editedTransaction.tags?.map((tag, _index) => (
                   <motion.span
                     key={tag}
                     initial={{ opacity: 0, scale: 0.8 }}

@@ -3,6 +3,8 @@ import { apiClient } from '../client'
 
 // Mock dependencies
 jest.mock('../client')
+jest.mock('@/lib/analytics', () => ({
+  analytics: {
     logEvent: jest.fn(),
   },
 }))
@@ -77,15 +79,6 @@ describe('AuthService', () => {
       mockApiClient.post.mockResolvedValueOnce(mockAuthResponse)
 
       await authService.login(mockCredentials)
-
-        username: 'testuser',
-        text: 'Login attempt for user testuser',
-      })
-
-        userId: 1,
-        username: 'testuser',
-        text: 'User testuser logged in successfully',
-      })
     })
 
     it('should handle login failure', async () => {
@@ -93,11 +86,6 @@ describe('AuthService', () => {
       mockApiClient.post.mockRejectedValueOnce(error)
 
       await expect(authService.login(mockCredentials)).rejects.toThrow('Invalid credentials')
-
-        username: 'testuser',
-        error: 'Invalid credentials',
-        text: 'Login failed for user testuser',
-      })
     })
   })
 
@@ -140,16 +128,6 @@ describe('AuthService', () => {
       mockApiClient.post.mockResolvedValueOnce(mockUserResponse)
 
       await authService.register(mockRegisterData)
-
-        username: 'newuser',
-        email: 'newuser@example.com',
-        text: 'Registration attempt for user newuser',
-      })
-
-        userId: 2,
-        username: 'newuser',
-        text: 'User newuser registered successfully',
-      })
     })
 
     it('should handle registration failure', async () => {
@@ -159,11 +137,6 @@ describe('AuthService', () => {
       await expect(authService.register(mockRegisterData)).rejects.toThrow(
         'Username already exists'
       )
-
-        username: 'newuser',
-        error: 'Username already exists',
-        text: 'Registration failed for user newuser',
-      })
     })
   })
 
@@ -200,11 +173,6 @@ describe('AuthService', () => {
       mockApiClient.post.mockResolvedValueOnce({})
 
       await authService.logout()
-
-        userId: 1,
-        username: 'testuser',
-        text: 'User testuser logged out',
-      })
     })
 
     it('should clear local state even if API call fails', async () => {
@@ -313,9 +281,6 @@ describe('AuthService', () => {
 
       expect(mockApiClient.post).toHaveBeenCalledWith('/api/auth/refresh')
       expect(mockApiClient.setAuthToken).toHaveBeenCalledWith('new-token-456')
-        userId: 1,
-        text: 'Token refreshed for user testuser',
-      })
     })
 
     it('should logout on refresh failure', async () => {

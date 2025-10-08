@@ -64,20 +64,14 @@ class APIClient {
     }
 
     // Get session ID from cookie or generate one
-    const sessionId = this.getSessionId();
+    const _sessionId = this.getSessionId();
     
     const url = `${this.baseURL}${endpoint}`;
     
     try {
-      // Log API request
-        endpoint,
-        method: options.method || 'GET',
-        text: `API request to ${endpoint}`
-      });
-      
       // Log request body for POST/PUT requests (for debugging)
       if ((options.method === 'POST' || options.method === 'PUT') && restOptions.body) {
-        console.log(`[APIClient] ${options.method} ${endpoint} with body:`, JSON.parse(restOptions.body as string));
+        
       }
 
       const response = await fetch(url, {
@@ -92,13 +86,6 @@ class APIClient {
         : await response.text();
 
       if (!response.ok) {
-        // Log API error
-          endpoint,
-          status: response.status,
-          error: data,
-          text: `API error ${response.status} from ${endpoint}`
-        });
-        
         // Handle session timeout
         if (response.status === 401 && !skipAuth) {
           // Clear auth token and cookie immediately
@@ -125,24 +112,12 @@ class APIClient {
         );
       }
 
-      // Log successful response
-        endpoint,
-        status: response.status,
-        text: `API response from ${endpoint}`
-      });
-
       return data as T;
     } catch (error) {
       if (error instanceof APIError) {
         throw error;
       }
-      
-      // Log network error
-        endpoint,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        text: `Network error calling ${endpoint}`
-      });
-      
+
       throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

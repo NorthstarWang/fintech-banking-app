@@ -7,17 +7,14 @@ import {
   TrendingUp,
   TrendingDown,
   Search,
-  Filter,
+  
   ChevronRight,
   Star,
-  DollarSign,
-  Percent,
   Building,
   Bitcoin,
   Globe,
   ArrowUpRight,
-  ArrowDownRight,
-  Info
+  ArrowDownRight
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Dropdown from '@/components/ui/Dropdown';
@@ -104,9 +101,7 @@ export default function InvestmentDiscoverPage() {
       // Fetch available assets
       const assetsRes = await apiClient.get<InvestmentAsset[]>('/api/investments/assets');
       setAssets(assetsRes);
-    } catch (error) {
-      console.error('Error fetching market data:', error);
-      console.error('Failed to load market data');
+    } catch {
       // TODO: Add toast notification
     } finally {
       setLoading(false);
