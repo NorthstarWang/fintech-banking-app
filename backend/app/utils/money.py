@@ -2,11 +2,10 @@
 Utility functions for handling monetary values.
 Ensures all money values are properly formatted with exactly 2 decimal places.
 """
-from typing import Union, Optional
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 
-def format_money(amount: Union[float, int, str, Decimal, None]) -> float:
+def format_money(amount: float | int | str | Decimal | None) -> float:
     """
     Format a monetary amount to exactly 2 decimal places.
     
@@ -18,7 +17,7 @@ def format_money(amount: Union[float, int, str, Decimal, None]) -> float:
     """
     if amount is None:
         return 0.0
-        
+
     # Convert to Decimal for precise rounding
     try:
         decimal_amount = Decimal(str(amount))
@@ -29,7 +28,7 @@ def format_money(amount: Union[float, int, str, Decimal, None]) -> float:
         return 0.0
 
 
-def safe_add_money(amount1: Union[float, int, None], amount2: Union[float, int, None]) -> float:
+def safe_add_money(amount1: float | int | None, amount2: float | int | None) -> float:
     """
     Safely add two monetary amounts and return result with 2 decimal places.
     
@@ -45,7 +44,7 @@ def safe_add_money(amount1: Union[float, int, None], amount2: Union[float, int, 
     return format_money(val1 + val2)
 
 
-def safe_subtract_money(amount1: Union[float, int, None], amount2: Union[float, int, None]) -> float:
+def safe_subtract_money(amount1: float | int | None, amount2: float | int | None) -> float:
     """
     Safely subtract two monetary amounts and return result with 2 decimal places.
     
@@ -61,7 +60,7 @@ def safe_subtract_money(amount1: Union[float, int, None], amount2: Union[float, 
     return format_money(val1 - val2)
 
 
-def safe_multiply_money(amount: Union[float, int, None], factor: Union[float, int, None]) -> float:
+def safe_multiply_money(amount: float | int | None, factor: float | int | None) -> float:
     """
     Safely multiply a monetary amount by a factor and return result with 2 decimal places.
     
@@ -77,7 +76,7 @@ def safe_multiply_money(amount: Union[float, int, None], factor: Union[float, in
     return format_money(val * mult)
 
 
-def validate_positive_amount(amount: Union[float, int, None], field_name: str = "amount") -> float:
+def validate_positive_amount(amount: float | int | None, field_name: str = "amount") -> float:
     """
     Validate that an amount is positive and properly formatted.
     

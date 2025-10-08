@@ -1,13 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional, Any
 from datetime import datetime
+from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from ..models import (
+    Account,
+    AccountCreate,
+    AccountResponse,
+    AccountSummary,
+    AccountType,
+    AccountUpdate,
+    JointAccountCreate,
+    Transaction,
+    User,
+)
 from ..storage.memory_adapter import db, desc
-from ..models import Account, AccountType, Transaction, User
-from ..models import AccountCreate, JointAccountCreate, AccountUpdate, AccountResponse, AccountSummary
 from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from ..utils.validators import ValidationError, Validators
 
 router = APIRouter()
 
@@ -19,12 +28,11 @@ async def create_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Create new account
     # Convert string to enum value
     account_type_value = AccountType[account_data.account_type.upper()]
-    
+
     new_account = Account(
         user_id=current_user['user_id'],
         name=account_data.name,
@@ -36,19 +44,11 @@ async def create_account(
         interest_rate=account_data.interest_rate,
         is_active=True
     )
-    
+
     db_session.add(new_account)
     db_session.commit()
     db_session.refresh(new_account)
-    
-    # Log account creation
-        session_id, 
-        new_account.id, 
-        current_user['user_id'],
-        account_data.account_type.value,
-        account_data.name
-    )
-    
+
     return AccountResponse.from_orm(new_account)
 
 @router.post("/joint", status_code=status.HTTP_201_CREATED)
@@ -59,16 +59,15 @@ async def create_joint_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new joint account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
-    
+
+
     # Validate required fields
     if not account_data.joint_owner_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Joint owner username is required"
         )
-    
+
     # Find the joint owner by username
     joint_owner = db_session.query(User).filter(User.username == account_data.joint_owner_username).first()
     if not joint_owner:
@@ -76,17 +75,17 @@ async def create_joint_account(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with username '{account_data.joint_owner_username}' not found"
         )
-    
+
     # Check if joint owner is different from current user
     if joint_owner.id == current_user['user_id']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot create joint account with yourself"
         )
-    
+
     # Create new account
     account_type_value = AccountType[account_data.account_type.upper()]
-    
+
     new_account = Account(
         user_id=current_user['user_id'],  # Primary owner
         name=account_data.name,
@@ -98,31 +97,23 @@ async def create_joint_account(
         interest_rate=account_data.interest_rate,
         is_active=True
     )
-    
+
     db_session.add(new_account)
     db_session.flush()  # Get the account ID
-    
+
     # For memory-based system, store joint owner info in metadata
     new_account.joint_owner_id = joint_owner.id
     new_account.is_joint = True
-    
+
     db_session.commit()
     db_session.refresh(new_account)
-    
-    # Log account creation
-        session_id, 
-        new_account.id, 
-        current_user['user_id'],
-        account_data.account_type.value,
-        f"Joint account '{account_data.name}' with {joint_owner.username}"
-    )
-    
+
     # Get current user details for notifications
     current_user_obj = db_session.query(User).get(current_user['user_id'])
-    
+
     # Create notifications for both users
     from ..models import Notification, NotificationType
-    
+
     # Notification for the creator
     creator_notification = Notification(
         user_id=current_user['user_id'],
@@ -137,7 +128,7 @@ async def create_joint_account(
         }
     )
     db_session.add(creator_notification)
-    
+
     # Notification for the joint owner
     joint_owner_notification = Notification(
         user_id=joint_owner.id,
@@ -152,9 +143,9 @@ async def create_joint_account(
         }
     )
     db_session.add(joint_owner_notification)
-    
+
     db_session.commit()
-    
+
     # Create custom response with owners field
     response = AccountResponse.from_orm(new_account).dict()
     # For memory-based system, manually create owners list
@@ -162,28 +153,28 @@ async def create_joint_account(
         {"id": current_user_obj.id, "username": current_user_obj.username, "email": current_user_obj.email},
         {"id": joint_owner.id, "username": joint_owner.username, "email": joint_owner.email}
     ]
-    
+
     return response
 
-@router.get("/", response_model=List[AccountResponse])
+@router.get("/", response_model=list[AccountResponse])
 async def get_accounts(
     include_inactive: bool = False,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all user accounts (including joint accounts)"""
-    
+
     # Get accounts where user is primary owner or joint owner
     user = db_session.query(User).get(current_user['user_id'])
-    
+
     # Get primary accounts
     primary_query = db_session.query(Account).filter(Account.user_id == current_user['user_id'])
-    
+
     if not include_inactive:
         primary_query = primary_query.filter(Account.is_active == True)
-    
+
     primary_accounts = primary_query.all()
-    
+
     # Get joint accounts - query for accounts where current user is joint owner
     joint_accounts = []
     all_accounts_query = db_session.query(Account).filter(
@@ -192,13 +183,13 @@ async def get_accounts(
     if not include_inactive:
         all_accounts_query = all_accounts_query.filter(Account.is_active == True)
     joint_accounts = all_accounts_query.all()
-    
+
     # Combine and deduplicate
     all_accounts = list({acc.id: acc for acc in primary_accounts + joint_accounts}.values())
-    
+
     # Sort by created_at
     all_accounts.sort(key=lambda x: x.created_at, reverse=True)
-    
+
     return [AccountResponse.from_orm(acc) for acc in all_accounts]
 
 @router.get("/summary", response_model=AccountSummary)
@@ -209,33 +200,33 @@ async def get_account_summary(
     """Get financial summary across all accounts (including joint accounts)"""
     # Get user for joint accounts
     user = db_session.query(User).get(current_user['user_id'])
-    
+
     # Get primary accounts
     primary_accounts = db_session.query(Account).filter(
         Account.user_id == current_user['user_id'],
         Account.is_active == True
     ).all()
-    
+
     # Get joint accounts - query for accounts where current user is joint owner
     joint_accounts = db_session.query(Account).filter(
         Account.joint_owner_id == current_user['user_id'],
         Account.is_active == True
     ).all()
-    
+
     # Combine and deduplicate
     all_accounts = list({acc.id: acc for acc in primary_accounts + joint_accounts}.values())
-    
+
     total_assets = 0.0
     total_liabilities = 0.0
-    
+
     for account in all_accounts:
         if account.account_type in [AccountType.CHECKING, AccountType.SAVINGS, AccountType.INVESTMENT]:
             total_assets += account.balance
         elif account.account_type in [AccountType.CREDIT_CARD, AccountType.LOAN]:
             total_liabilities += abs(account.balance)
-    
+
     net_worth = total_assets - total_liabilities
-    
+
     return AccountSummary(
         total_assets=round(total_assets, 2),
         total_liabilities=round(total_liabilities, 2),
@@ -251,11 +242,11 @@ async def get_account(
 ):
     """Get specific account details"""
     account = Validators.validate_account_ownership(
-        db_session, 
-        account_id, 
+        db_session,
+        account_id,
         current_user['user_id']
     )
-    
+
     return AccountResponse.from_orm(account)
 
 @router.get("/{account_id}/transactions")
@@ -263,22 +254,22 @@ async def get_account_transactions(
     account_id: int,
     skip: int = 0,
     limit: int = 20,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get transactions for a specific account"""
     # Validate account ownership
     account = Validators.validate_account_ownership(
-        db_session, 
-        account_id, 
+        db_session,
+        account_id,
         current_user['user_id']
     )
-    
+
     # Build query
     query = db_session.query(Transaction).filter(Transaction.account_id == account_id)
-    
+
     # Apply date filters if provided
     if start_date:
         try:
@@ -286,17 +277,17 @@ async def get_account_transactions(
             query = query.filter(Transaction.transaction_date >= start_dt)
         except:
             pass
-            
+
     if end_date:
         try:
             end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
             query = query.filter(Transaction.transaction_date <= end_dt)
         except:
             pass
-    
+
     # Order by date descending and apply pagination
     transactions = query.order_by(desc(Transaction.transaction_date)).offset(skip).limit(limit).all()
-    
+
     # Get categories for transactions - include merchant info too
     from ..models import Category, Merchant
     category_ids = [t.category_id for t in transactions if t.category_id]
@@ -304,14 +295,14 @@ async def get_account_transactions(
     if category_ids:
         cats = db_session.query(Category).filter(Category.id.in_(category_ids)).all()
         categories = {c.id: c for c in cats}
-    
+
     # Get merchants for transactions
     merchant_ids = [t.merchant_id for t in transactions if hasattr(t, 'merchant_id') and t.merchant_id]
     merchants = {}
     if merchant_ids:
         merch = db_session.query(Merchant).filter(Merchant.id.in_(merchant_ids)).all()
         merchants = {m.id: m.name for m in merch}
-    
+
     # Convert to response format
     return [
         {
@@ -352,24 +343,23 @@ async def update_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update account details"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     account = Validators.validate_account_ownership(
-        db_session, 
-        account_id, 
+        db_session,
+        account_id,
         current_user['user_id']
     )
-    
+
     # Update allowed fields
     update_data = account_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         if hasattr(account, field) and value is not None:
             setattr(account, field, value)
-    
+
     account.updated_at = datetime.utcnow()
     db_session.commit()
     db_session.refresh(account)
-    
+
     return AccountResponse.from_orm(account)
 
 @router.delete("/{account_id}")
@@ -380,32 +370,24 @@ async def deactivate_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Deactivate an account (soft delete)"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     account = Validators.validate_account_ownership(
-        db_session, 
-        account_id, 
+        db_session,
+        account_id,
         current_user['user_id']
     )
-    
+
     # Check if account has non-zero balance
     if abs(account.balance) > 0.01:  # Small tolerance for floating point
         raise ValidationError(
             f"Cannot deactivate account with non-zero balance: ${account.balance:.2f}"
         )
-    
+
     # Deactivate account
     account.is_active = False
     account.updated_at = datetime.utcnow()
     db_session.commit()
-    
-    # Log deactivation
-        session_id,
-        "accounts",
-        account_id,
-        f"Account '{account.name}' deactivated"
-    )
-    
+
     return {"message": "Account deactivated successfully"}
 
 @router.get("/{account_id}/balance")
@@ -416,16 +398,16 @@ async def get_account_balance(
 ):
     """Get current account balance with recent transactions"""
     account = Validators.validate_account_ownership(
-        db_session, 
-        account_id, 
+        db_session,
+        account_id,
         current_user['user_id']
     )
-    
+
     # Get last 5 transactions
     recent_transactions = db_session.query(Transaction).filter(
         Transaction.account_id == account_id
     ).order_by(Transaction.transaction_date.desc()).limit(5).all()
-    
+
     return {
         "account_id": account.id,
         "account_name": account.name,

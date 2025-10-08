@@ -1,20 +1,65 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
-from fastapi.staticfiles import StaticFiles
+import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
-import os
 
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from .core.logging import setup_logging
+from .middleware.error_handler import error_handler_middleware, register_exception_handlers
+from .middleware.request_id import request_id_middleware
 from .storage.memory_adapter import db
-from .routes import (
-    auth, accounts, transactions, categories,
-    budgets, goals, recurring, contacts, messages, conversations,
-    notifications, analytics, analytics_export, users, search, notes,
-    cards, savings, business, subscriptions, exports,
-    security, banking, payment_methods, credit, transfers, p2p, uploads, crypto, insurance, loans, unified,
-    investments, currency_converter, credit_cards
+
+# Setup logging
+setup_logging(
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    log_format=os.getenv("LOG_FORMAT", "json"),
+    log_file=os.getenv("LOG_FILE"),
+    app_name="bankflow"
 )
+
+logger = logging.getLogger(__name__)
+from .routes import (
+    accounts,
+    analytics,
+    analytics_export,
+    auth,
+    banking,
+    budgets,
+    business,
+    cards,
+    categories,
+    contacts,
+    conversations,
+    credit,
+    credit_cards,
+    crypto,
+    currency_converter,
+    exports,
+    goals,
+    health,
+    insurance,
+    investments,
+    loans,
+    messages,
+    notes,
+    notifications,
+    p2p,
+    payment_methods,
+    recurring,
+    savings,
+    search,
+    security,
+    subscriptions,
+    transactions,
+    transfers,
+    unified,
+    uploads,
+    users,
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,19 +71,38 @@ async def lifespan(app: FastAPI):
     # Shutdown
 
 app = FastAPI(
-    title="Banking & Finance Application API", 
+    title="Banking & Finance Application API",
     version="1.0.0",
     description="Comprehensive banking, budgeting, and finance management API",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if os.getenv("ENABLE_SWAGGER_UI", "true").lower() == "true" else None,
+    redoc_url="/redoc" if os.getenv("ENABLE_REDOC", "false").lower() == "true" else None
 )
 
-# Add CORS middleware first (so it executes last in the response chain)
+# Register exception handlers
+register_exception_handlers(app)
+
+# Add middleware (order matters - first added = last executed)
+@app.middleware("http")
+async def add_error_handling(request: Request, call_next):
+    return await error_handler_middleware(request, call_next)
+
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    return await request_id_middleware(request, call_next)
+
+# Configure CORS from environment variables
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+cors_origins = [origin.strip() for origin in cors_origins]
+
+# Add CORS middleware with production-ready configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "http://localhost:3000"],  # Allow specific origins
+    allow_origins=cors_origins,  # Specific origins from environment
     allow_credentials=True,  # Enable credentials
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Specific methods
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],  # Specific headers
+    max_age=86400,  # Cache preflight requests for 24 hours
 )
 
 
@@ -97,6 +161,8 @@ app.include_router(investments.router, prefix="/api/investments", tags=["Investm
 app.include_router(currency_converter.router, prefix="/api/currency-converter", tags=["Currency Converter"])
 app.include_router(credit_cards.router, prefix="/api/credit-cards", tags=["Credit Cards"])
 
+# Health check endpoints (no prefix for standard health check paths)
+app.include_router(health.router, tags=["Health"])
 
 # Mount static files for uploads
 uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")

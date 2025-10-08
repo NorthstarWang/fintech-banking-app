@@ -3,29 +3,30 @@ Base data classes and shared models used across the application.
 These provide type safety and consistency between different layers.
 """
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
+
 
 @dataclass
 class UserData:
     """User data representation"""
     username: str
     email: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    password_hash: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    password_hash: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
     role: str = "user"
     currency: str = "USD"
     timezone: str = "UTC"
     is_active: bool = True
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     two_factor_enabled: bool = False
-    two_factor_secret: Optional[str] = None
+    two_factor_secret: str | None = None
 
 @dataclass
 class AccountData:
@@ -33,17 +34,17 @@ class AccountData:
     user_id: int
     name: str
     account_type: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    account_number: Optional[str] = None
-    routing_number: Optional[str] = None
-    institution_name: Optional[str] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    account_number: str | None = None
+    routing_number: str | None = None
+    institution_name: str | None = None
     balance: Decimal = Decimal("0.00")
     currency: str = "USD"
     is_active: bool = True
-    credit_limit: Optional[Decimal] = None
-    interest_rate: Optional[float] = None
+    credit_limit: Decimal | None = None
+    interest_rate: float | None = None
 
 @dataclass
 class TransactionData:
@@ -52,35 +53,35 @@ class TransactionData:
     amount: Decimal
     transaction_type: str
     transaction_date: datetime
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     status: str = "completed"
-    description: Optional[str] = None
-    category_id: Optional[int] = None
-    merchant_id: Optional[int] = None
-    reference_number: Optional[str] = None
-    from_account_id: Optional[int] = None
-    to_account_id: Optional[int] = None
-    tags: List[str] = field(default_factory=list)
-    notes: Optional[str] = None
-    location: Optional[str] = None
-    receipt_url: Optional[str] = None
+    description: str | None = None
+    category_id: int | None = None
+    merchant_id: int | None = None
+    reference_number: str | None = None
+    from_account_id: int | None = None
+    to_account_id: int | None = None
+    tags: list[str] = field(default_factory=list)
+    notes: str | None = None
+    location: str | None = None
+    receipt_url: str | None = None
 
 @dataclass
 class CategoryData:
     """Category data representation"""
     name: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    icon: Optional[str] = "📁"
-    color: Optional[str] = "#6B7280"
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    icon: str | None = "📁"
+    color: str | None = "#6B7280"
     is_income: bool = False
     is_system: bool = False
-    user_id: Optional[int] = None
-    parent_id: Optional[int] = None
-    budget_amount: Optional[Decimal] = None
+    user_id: int | None = None
+    parent_id: int | None = None
+    budget_amount: Decimal | None = None
 
 @dataclass
 class BudgetData:
@@ -90,10 +91,10 @@ class BudgetData:
     amount: Decimal
     period: str
     start_date: date
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    end_date: Optional[date] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    end_date: date | None = None
     spent_amount: Decimal = Decimal("0.00")
     alert_threshold: float = 0.8
     alert_enabled: bool = True
@@ -106,17 +107,17 @@ class GoalData:
     name: str
     target_amount: Decimal
     target_date: date
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     current_amount: Decimal = Decimal("0.00")
     status: str = "active"
-    description: Optional[str] = None
-    account_id: Optional[int] = None
-    category_id: Optional[int] = None
+    description: str | None = None
+    account_id: int | None = None
+    category_id: int | None = None
     auto_transfer_enabled: bool = False
-    auto_transfer_amount: Optional[Decimal] = None
-    auto_transfer_frequency: Optional[str] = None
+    auto_transfer_amount: Decimal | None = None
+    auto_transfer_frequency: str | None = None
 
 @dataclass
 class NotificationData:
@@ -125,12 +126,12 @@ class NotificationData:
     type: str
     title: str
     message: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
     is_read: bool = False
-    action_url: Optional[str] = None
-    related_entity_type: Optional[str] = None
-    related_entity_id: Optional[int] = None
+    action_url: str | None = None
+    related_entity_type: str | None = None
+    related_entity_id: int | None = None
     priority: str = "normal"
 
 @dataclass
@@ -138,11 +139,11 @@ class ContactData:
     """Contact/connection data representation"""
     user_id: int
     contact_id: int
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     status: str = "pending"
-    nickname: Optional[str] = None
+    nickname: str | None = None
     is_favorite: bool = False
     blocked: bool = False
 
@@ -152,25 +153,25 @@ class MessageData:
     conversation_id: int
     sender_id: int
     content: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
     message_type: str = "text"
     status: str = "sent"
-    related_transaction_id: Optional[int] = None
-    attachments: List[Dict[str, Any]] = field(default_factory=list)
-    edited_at: Optional[datetime] = None
-    deleted_at: Optional[datetime] = None
+    related_transaction_id: int | None = None
+    attachments: list[dict[str, Any]] = field(default_factory=list)
+    edited_at: datetime | None = None
+    deleted_at: datetime | None = None
 
 @dataclass
 class ConversationData:
     """Conversation data representation"""
     created_by_id: int
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
     is_group: bool = False
-    name: Optional[str] = None
-    last_message_at: Optional[datetime] = None
-    participant_ids: List[int] = field(default_factory=list)
+    name: str | None = None
+    last_message_at: datetime | None = None
+    participant_ids: list[int] = field(default_factory=list)
 
 @dataclass
 class CardData:
@@ -180,13 +181,13 @@ class CardData:
     card_number: str
     card_type: str
     expiry_date: date
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     status: str = "active"
-    cvv_hash: Optional[str] = None
-    pin_hash: Optional[str] = None
-    spending_limits: Dict[str, Decimal] = field(default_factory=dict)
+    cvv_hash: str | None = None
+    pin_hash: str | None = None
+    spending_limits: dict[str, Decimal] = field(default_factory=dict)
     is_contactless_enabled: bool = True
     is_online_enabled: bool = True
     is_international_enabled: bool = True
@@ -202,16 +203,16 @@ class SubscriptionData:
     billing_cycle: str
     next_billing_date: date
     start_date: date
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     status: str = "active"
-    last_billing_date: Optional[date] = None
-    end_date: Optional[date] = None
-    free_trial_end_date: Optional[date] = None
-    transaction_ids: List[int] = field(default_factory=list)
+    last_billing_date: date | None = None
+    end_date: date | None = None
+    free_trial_end_date: date | None = None
+    transaction_ids: list[int] = field(default_factory=list)
     detected_automatically: bool = False
-    confidence_score: Optional[float] = None
+    confidence_score: float | None = None
 
 @dataclass
 class InvoiceData:
@@ -225,29 +226,29 @@ class InvoiceData:
     payment_terms: str
     subtotal: Decimal
     total_amount: Decimal
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     status: str = "draft"
     tax_amount: Decimal = Decimal("0.00")
     discount_amount: Decimal = Decimal("0.00")
     amount_paid: Decimal = Decimal("0.00")
-    line_items: List[Dict[str, Any]] = field(default_factory=list)
-    notes: Optional[str] = None
-    client_address: Optional[str] = None
+    line_items: list[dict[str, Any]] = field(default_factory=list)
+    notes: str | None = None
+    client_address: str | None = None
 
 @dataclass
 class SecurityEventData:
     """Security event data representation"""
     event_type: str
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    user_id: Optional[int] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
-    session_id: Optional[str] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    user_id: int | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+    session_id: str | None = None
     success: bool = True
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 # Response/Request specific data classes
 @dataclass
@@ -256,7 +257,7 @@ class TokenData:
     access_token: str
     token_type: str = "bearer"
     expires_in: int = 3600
-    refresh_token: Optional[str] = None
+    refresh_token: str | None = None
 
 @dataclass
 class LoginData:
@@ -271,27 +272,27 @@ class TransferData:
     from_account_id: int
     to_account_id: int
     amount: Decimal
-    description: Optional[str] = None
-    scheduled_date: Optional[datetime] = None
+    description: str | None = None
+    scheduled_date: datetime | None = None
 
 @dataclass
 class SearchFilters:
     """Search filter data"""
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    min_amount: Optional[Decimal] = None
-    max_amount: Optional[Decimal] = None
-    category_ids: List[int] = field(default_factory=list)
-    account_ids: List[int] = field(default_factory=list)
-    statuses: List[str] = field(default_factory=list)
-    search_text: Optional[str] = None
+    start_date: date | None = None
+    end_date: date | None = None
+    min_amount: Decimal | None = None
+    max_amount: Decimal | None = None
+    category_ids: list[int] = field(default_factory=list)
+    account_ids: list[int] = field(default_factory=list)
+    statuses: list[str] = field(default_factory=list)
+    search_text: str | None = None
 
 @dataclass
 class PaginationParams:
     """Pagination parameters"""
     page: int = 1
     per_page: int = 20
-    sort_by: Optional[str] = None
+    sort_by: str | None = None
     sort_order: str = "desc"
 
 @dataclass
@@ -300,7 +301,7 @@ class AnalyticsData:
     total_income: Decimal
     total_expenses: Decimal
     net_income: Decimal
-    expenses_by_category: Dict[str, Decimal]
-    trend_data: List[Dict[str, Any]]
+    expenses_by_category: dict[str, Decimal]
+    trend_data: list[dict[str, Any]]
     period: str
-    comparison_period: Optional[Dict[str, Any]] = None
+    comparison_period: dict[str, Any] | None = None

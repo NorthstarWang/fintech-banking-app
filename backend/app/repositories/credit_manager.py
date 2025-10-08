@@ -1,59 +1,60 @@
 """
 Credit manager for generating comprehensive mock credit data.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
 import random
-import uuid
-from decimal import Decimal
+from datetime import datetime, timedelta
 
 from ..models import (
-    CreditScore, CreditSimulation, CreditAlert, CreditDispute, CreditBuilderAccount,
-    CreditScoreProvider, CreditScoreRange, CreditFactorType,
-    CreditAlertType, CreditAlertSeverity, CreditDisputeType, CreditDisputeStatus, 
-    CreditBuilderType
+    CreditAlertSeverity,
+    CreditAlertType,
+    CreditBuilderType,
+    CreditDisputeStatus,
+    CreditDisputeType,
+    CreditFactorType,
+    CreditScoreProvider,
+    CreditScoreRange,
 )
 from ..utils.money import format_money
 
 
 class CreditManager:
     """Manager for credit-related data generation and management."""
-    
+
     def __init__(self, data_manager):
         self.data_manager = data_manager
-        
+
     def generate_credit_data(self, user_id: int, seed: int = 42):
         """Generate comprehensive credit data for a user."""
         random.seed(seed + user_id)
-        
+
         # Generate credit scores with history
         self._generate_credit_scores(user_id)
-        
+
         # Generate credit alerts
         self._generate_credit_alerts(user_id)
-        
+
         # Generate credit disputes
         self._generate_credit_disputes(user_id)
-        
+
         # Generate credit builder accounts
         self._generate_credit_builder_accounts(user_id)
-        
+
         # Generate credit simulations
         self._generate_credit_simulations(user_id)
-    
+
     def _generate_credit_scores(self, user_id: int):
         """Generate credit score history for a user."""
         # Base score varies by user
         base_score = 600 + (user_id * 17) % 150
-        
+
         # Generate scores for the last 24 months
         for months_ago in range(24):
             score_date = datetime.utcnow() - timedelta(days=months_ago * 30)
-            
+
             # Add variation over time
             variation = random.randint(-20, 25)
             score = max(300, min(850, base_score + variation - (months_ago * 2)))
-            
+
             # Create score for each provider (alternate months)
             if months_ago % 3 == 0:
                 provider = CreditScoreProvider.EQUIFAX
@@ -61,10 +62,10 @@ class CreditManager:
                 provider = CreditScoreProvider.EXPERIAN
             else:
                 provider = CreditScoreProvider.TRANSUNION
-            
+
             score_range = self._calculate_score_range(score)
             factors = self._generate_score_factors(score)
-            
+
             credit_score = {
                 'id': len(self.data_manager.credit_scores) + 1,
                 'user_id': user_id,
@@ -76,29 +77,28 @@ class CreditManager:
                 'next_update': score_date + timedelta(days=30),
                 'created_at': score_date
             }
-            
+
             self.data_manager.credit_scores.append(credit_score)
-            
+
             # Update base score for next iteration
             base_score = score
-    
+
     def _calculate_score_range(self, score: int) -> CreditScoreRange:
         """Calculate credit score range."""
         if score >= 800:
             return CreditScoreRange.EXCELLENT
-        elif score >= 740:
+        if score >= 740:
             return CreditScoreRange.VERY_GOOD
-        elif score >= 670:
+        if score >= 670:
             return CreditScoreRange.GOOD
-        elif score >= 580:
+        if score >= 580:
             return CreditScoreRange.FAIR
-        else:
-            return CreditScoreRange.POOR
-    
-    def _generate_score_factors(self, score: int) -> List[Dict]:
+        return CreditScoreRange.POOR
+
+    def _generate_score_factors(self, score: int) -> list[dict]:
         """Generate credit score factors."""
         factors = []
-        
+
         # Payment history (35%)
         payment_score = min(100, (score - 300) * 0.35 / 5.5)
         factors.append({
@@ -107,7 +107,7 @@ class CreditManager:
             "impact": "high",
             "description": "Payment history affects 35% of your score"
         })
-        
+
         # Credit utilization (30%)
         utilization_score = min(100, (score - 300) * 0.30 / 5.5)
         factors.append({
@@ -116,7 +116,7 @@ class CreditManager:
             "impact": "high",
             "description": "Credit utilization affects 30% of your score"
         })
-        
+
         # Credit age (15%)
         age_score = min(100, (score - 300) * 0.15 / 5.5)
         factors.append({
@@ -125,7 +125,7 @@ class CreditManager:
             "impact": "medium",
             "description": "Length of credit history affects 15% of your score"
         })
-        
+
         # Credit mix (10%)
         mix_score = min(100, (score - 300) * 0.10 / 5.5)
         factors.append({
@@ -134,7 +134,7 @@ class CreditManager:
             "impact": "low",
             "description": "Credit mix affects 10% of your score"
         })
-        
+
         # New credit (10%)
         new_credit_score = min(100, (score - 300) * 0.10 / 5.5)
         factors.append({
@@ -143,9 +143,9 @@ class CreditManager:
             "impact": "low",
             "description": "New credit inquiries affect 10% of your score"
         })
-        
+
         return factors
-    
+
     def _generate_credit_alerts(self, user_id: int):
         """Generate credit alerts for a user."""
         alert_templates = [
@@ -187,15 +187,15 @@ class CreditManager:
                 'action_required': False
             }
         ]
-        
+
         # Generate 3-8 alerts per user
         num_alerts = random.randint(3, 8)
         selected_alerts = random.sample(alert_templates, min(num_alerts, len(alert_templates)))
-        
+
         for i, alert_template in enumerate(selected_alerts):
             days_ago = random.randint(0, 90)
             alert_date = datetime.utcnow() - timedelta(days=days_ago)
-            
+
             alert = {
                 'id': len(self.data_manager.credit_alerts) + 1,
                 'user_id': user_id,
@@ -214,15 +214,15 @@ class CreditManager:
                 'alert_date': alert_date,
                 'created_at': alert_date
             }
-            
+
             self.data_manager.credit_alerts.append(alert)
-    
+
     def _generate_credit_disputes(self, user_id: int):
         """Generate credit disputes for a user."""
         # 40% chance of having disputes
         if random.random() > 0.4:
             return
-        
+
         dispute_templates = [
             {
                 'type': CreditDisputeType.INCORRECT_INFO,
@@ -243,15 +243,15 @@ class CreditManager:
                 'details': 'This account was opened fraudulently. I have filed a police report.'
             }
         ]
-        
+
         num_disputes = random.randint(1, 2)
         selected_disputes = random.sample(dispute_templates, num_disputes)
-        
+
         for dispute_template in selected_disputes:
             # Random filing date in last 6 months
             days_ago = random.randint(30, 180)
             filed_date = datetime.utcnow() - timedelta(days=days_ago)
-            
+
             # Determine status based on age
             if days_ago > 120:
                 status = CreditDisputeStatus.RESOLVED
@@ -265,7 +265,7 @@ class CreditManager:
                 status = CreditDisputeStatus.PENDING
                 outcome = None
                 resolution_date = None
-            
+
             dispute = {
                 'id': len(self.data_manager.credit_disputes) + 1,
                 'user_id': user_id,
@@ -283,15 +283,15 @@ class CreditManager:
                 'resolution_date': resolution_date,
                 'created_at': filed_date
             }
-            
+
             self.data_manager.credit_disputes.append(dispute)
-    
+
     def _generate_credit_builder_accounts(self, user_id: int):
         """Generate credit builder accounts for a user."""
         # 60% chance of having credit builder account
         if random.random() > 0.6:
             return
-        
+
         account_types = [
             {
                 'type': CreditBuilderType.SECURED_CARD,
@@ -306,40 +306,40 @@ class CreditManager:
                 'monthly_fee': 5.0
             }
         ]
-        
+
         # Most users have 1, some have 2
         num_accounts = 1 if random.random() < 0.8 else 2
         selected_accounts = random.sample(account_types, num_accounts)
-        
+
         for account_template in selected_accounts:
             # Account age in months
             account_age_months = random.randint(3, 24)
             opened_date = datetime.utcnow() - timedelta(days=account_age_months * 30)
-            
+
             # Generate payment history
             payment_history = []
             current_balance = account_template['secured_amount']
-            
+
             for month in range(min(account_age_months, 12)):
                 payment_date = opened_date + timedelta(days=(month + 1) * 30)
                 payment_amount = account_template['secured_amount'] / 12  # 12-month term
                 on_time = random.random() < 0.9  # 90% on-time
-                
+
                 payment_history.append({
                     'date': payment_date.isoformat(),
                     'amount': round(payment_amount, 2),
                     'on_time': on_time
                 })
-                
+
                 if on_time:
                     current_balance -= payment_amount
-            
+
             # Check graduation eligibility
             graduation_eligible = False
             if len(payment_history) >= 12:
                 on_time_count = sum(1 for p in payment_history[-12:] if p['on_time'])
                 graduation_eligible = on_time_count >= 11
-            
+
             account = {
                 'id': len(self.data_manager.credit_builder_accounts) + 1,
                 'user_id': user_id,
@@ -358,9 +358,9 @@ class CreditManager:
                 'last_payment_date': payment_history[-1]['date'] if payment_history else None,
                 'created_at': opened_date
             }
-            
+
             self.data_manager.credit_builder_accounts.append(account)
-    
+
     def _generate_credit_simulations(self, user_id: int):
         """Generate credit simulation history for a user."""
         simulation_types = [
@@ -383,18 +383,18 @@ class CreditManager:
                 'time_months': 1
             }
         ]
-        
+
         # Generate 2-5 simulations
         num_simulations = random.randint(2, 5)
-        
+
         for i in range(num_simulations):
             sim_template = random.choice(simulation_types)
             days_ago = random.randint(1, 90)
             simulation_date = datetime.utcnow() - timedelta(days=days_ago)
-            
+
             # Get a base score
             base_score = 650 + (user_id * 7) % 100
-            
+
             simulation = {
                 'id': len(self.data_manager.credit_simulations) + 1,
                 'user_id': user_id,
@@ -409,10 +409,10 @@ class CreditManager:
                 'simulation_date': simulation_date,
                 'created_at': simulation_date
             }
-            
+
             self.data_manager.credit_simulations.append(simulation)
-    
-    def _generate_impact_factors(self, action_type: str) -> List[Dict]:
+
+    def _generate_impact_factors(self, action_type: str) -> list[dict]:
         """Generate impact factors for a simulation."""
         if action_type == 'pay_off_debt':
             return [
@@ -422,7 +422,7 @@ class CreditManager:
                     'description': 'Lower utilization improves score'
                 }
             ]
-        elif action_type == 'open_new_card':
+        if action_type == 'open_new_card':
             return [
                 {
                     'factor': 'Hard Inquiry',
@@ -435,21 +435,21 @@ class CreditManager:
                     'description': 'Improved credit mix'
                 }
             ]
-        else:  # close_card
-            return [
-                {
-                    'factor': 'Credit Utilization',
-                    'impact': '-15 points',
-                    'description': 'Higher utilization ratio'
-                },
-                {
-                    'factor': 'Credit History',
-                    'impact': '-5 points',
-                    'description': 'Lost account history'
-                }
-            ]
-    
-    def _generate_recommendations(self, action_type: str) -> List[str]:
+        # close_card
+        return [
+            {
+                'factor': 'Credit Utilization',
+                'impact': '-15 points',
+                'description': 'Higher utilization ratio'
+            },
+            {
+                'factor': 'Credit History',
+                'impact': '-5 points',
+                'description': 'Lost account history'
+            }
+        ]
+
+    def _generate_recommendations(self, action_type: str) -> list[str]:
         """Generate recommendations for a simulation."""
         if action_type == 'pay_off_debt':
             return [
@@ -457,15 +457,15 @@ class CreditManager:
                 'Keep credit cards open to maintain history',
                 'Monitor utilization monthly'
             ]
-        elif action_type == 'open_new_card':
+        if action_type == 'open_new_card':
             return [
                 'Wait 6 months before next application',
                 'Keep utilization below 30%',
                 'Set up automatic payments'
             ]
-        else:  # close_card
-            return [
-                'Consider keeping the card open',
-                'Pay down other balances first',
-                'Request credit limit increases on remaining cards'
-            ]
+        # close_card
+        return [
+            'Consider keeping the card open',
+            'Pay down other balances first',
+            'Request credit limit increases on remaining cards'
+        ]

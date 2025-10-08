@@ -42,7 +42,6 @@ async def create_asset_bridge(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a bridge to convert between different asset types"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
@@ -60,13 +59,6 @@ async def create_asset_bridge(
         )
         
         # Log the bridge creation
-            session_id,
-            "asset_bridge_created",
-            {
-                "bridge_id": bridge.id,
-                "from": f"{bridge_request.from_asset_class.value}",
-                "to": f"{bridge_request.to_asset_class.value}",
-                "amount": str(bridge_request.from_amount)
             }
         )
         
@@ -105,7 +97,6 @@ async def create_smart_transfer(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a smart transfer that finds the optimal route"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
@@ -152,15 +143,6 @@ async def create_smart_transfer(
     db_session.refresh(transaction)
     
     # Log the transfer
-        session_id,
-        "smart_transfer_created",
-        {
-            "transfer_id": transaction.id,
-            "recipient": transfer_request.recipient_identifier,
-            "amount_usd": transfer_request.amount_usd,
-            "route": source_asset['name']
-        }
-    )
     
     # Create response
     response = UnifiedTransferResponse(
@@ -210,7 +192,6 @@ async def create_collateral_position(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new collateral position"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
@@ -224,14 +205,6 @@ async def create_collateral_position(
         )
         
         # Log the creation
-            session_id,
-            "collateral_position_created",
-            {
-                "position_id": position.id,
-                "collateral_value": position.total_collateral_value_usd,
-                "borrow_amount": borrow_amount
-            }
-        )
         
         return CollateralPositionResponse.from_orm(position)
         

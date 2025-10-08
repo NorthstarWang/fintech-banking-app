@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from typing import Dict, Any
+import mimetypes
 import os
 import uuid
 from datetime import datetime
-import mimetypes
+from typing import Any
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from ..utils.auth import get_current_user
 
@@ -23,23 +24,23 @@ ALLOWED_EXTENSIONS = {
     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 }
 
-@router.post("/message-attachment", response_model=Dict[str, Any])
+@router.post("/message-attachment", response_model=dict[str, Any])
 async def upload_message_attachment(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
     """Upload a file attachment for messages"""
-    
+
     # Check file size
     content = await file.read()
     file_size = len(content)
-    
+
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE / 1024 / 1024}MB"
         )
-    
+
     # Check file type
     file_type = file.content_type or mimetypes.guess_type(file.filename)[0]
     if file_type not in ALLOWED_EXTENSIONS:
@@ -47,12 +48,12 @@ async def upload_message_attachment(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"File type {file_type} is not allowed"
         )
-    
+
     # Generate unique filename
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
+
     # Save file
     try:
         with open(file_path, "wb") as f:
@@ -60,9 +61,9 @@ async def upload_message_attachment(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
+            detail=f"Failed to save file: {e!s}"
         )
-    
+
     # Return file information
     return {
         "filename": file.filename,
@@ -79,13 +80,13 @@ async def download_attachment(
 ):
     """Download a file attachment"""
     file_path = os.path.join(UPLOAD_DIR, filename)
-    
+
     if not os.path.exists(file_path):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="File not found"
         )
-    
+
     # For demo purposes, we'll just return the file path
     # In production, you'd use FileResponse
     return {"file_path": file_path}

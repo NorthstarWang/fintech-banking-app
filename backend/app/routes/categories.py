@@ -1,26 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional, Any
 from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
-from ..models import Category, Transaction, Account
-from ..models import CategoryCreate, CategoryUpdate, CategoryResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from ..models import Account, Category, CategoryCreate, CategoryResponse, CategoryUpdate, Transaction
+from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError, sanitize_string
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("/", response_model=list[CategoryResponse])
 async def get_categories(
     include_system: bool = True,
-    income_only: Optional[bool] = None,
+    income_only: bool | None = None,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all categories (system and user-specific)"""
     query = db_session.query(Category)
-    
+
     # Filter by ownership
     if include_system:
         query = query.filter(
@@ -28,33 +27,33 @@ async def get_categories(
         )
     else:
         query = query.filter(Category.user_id == current_user['user_id'])
-    
+
     # Filter by income/expense
     if income_only is not None:
         query = query.filter(Category.is_income == income_only)
-    
+
     # Order by system first, then by name
     categories = query.order_by(
         Category.is_system.desc(),
         Category.is_income.desc(),
         Category.name
     ).all()
-    
+
     return [CategoryResponse.from_orm(cat) for cat in categories]
 
-@router.get("/system", response_model=List[CategoryResponse])
+@router.get("/system", response_model=list[CategoryResponse])
 async def get_system_categories(
-    income_only: Optional[bool] = None,
+    income_only: bool | None = None,
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get only system-defined categories"""
     query = db_session.query(Category).filter(Category.is_system == True)
-    
+
     if income_only is not None:
         query = query.filter(Category.is_income == income_only)
-    
+
     categories = query.order_by(Category.is_income.desc(), Category.name).all()
-    
+
     return [CategoryResponse.from_orm(cat) for cat in categories]
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
@@ -65,20 +64,19 @@ async def create_category(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a custom category"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Sanitize input
     category_name = sanitize_string(category_data.name, 50)
-    
+
     # Check if category name already exists for this user
     existing = db_session.query(Category).filter(
         Category.user_id == current_user['user_id'],
         Category.name == category_name
     ).first()
-    
+
     if existing:
         raise ValidationError("Category with this name already exists")
-    
+
     # Validate parent category if provided
     parent_category = None
     if category_data.parent_id:
@@ -86,16 +84,16 @@ async def create_category(
             Category.id == category_data.parent_id,
             (Category.is_system == True) | (Category.user_id == current_user['user_id'])
         ).first()
-        
+
         if not parent_category:
             raise ValidationError("Parent category not found or access denied")
-        
+
         # Ensure income/expense type matches parent
         if parent_category.is_income != category_data.is_income:
             raise ValidationError(
                 "Category type (income/expense) must match parent category"
             )
-    
+
     # Create new category
     new_category = Category(
         user_id=current_user['user_id'],
@@ -106,27 +104,13 @@ async def create_category(
         is_income=category_data.is_income,
         is_system=False
     )
-    
+
     db_session.add(new_category)
     db_session.commit()
     db_session.refresh(new_category)
-    
+
     # Log category creation
-        session_id,
-        "DB_UPDATE",
-        {
-            "text": f"Custom category '{category_name}' created",
-            "table_name": "categories",
-            "update_type": "insert",
-            "values": {
-                "id": new_category.id,
-                "name": category_name,
-                "is_income": category_data.is_income,
-                "user_id": current_user['user_id']
-            }
-        }
-    )
-    
+
     return CategoryResponse.from_orm(new_category)
 
 @router.get("/{category_id}", response_model=CategoryResponse)
@@ -140,13 +124,13 @@ async def get_category(
         Category.id == category_id,
         (Category.is_system == True) | (Category.user_id == current_user['user_id'])
     ).first()
-    
+
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found"
         )
-    
+
     return CategoryResponse.from_orm(category)
 
 @router.put("/{category_id}", response_model=CategoryResponse)
@@ -158,43 +142,42 @@ async def update_category(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update custom category"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Get category and verify ownership
     category = db_session.query(Category).filter(
         Category.id == category_id,
         Category.user_id == current_user['user_id'],
         Category.is_system == False
     ).first()
-    
+
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found or cannot be modified"
         )
-    
+
     # Update allowed fields
     if update_data.name is not None:
         new_name = sanitize_string(update_data.name, 50)
-        
+
         # Check if name already exists
         existing = db_session.query(Category).filter(
             Category.user_id == current_user['user_id'],
             Category.name == new_name,
             Category.id != category_id
         ).first()
-        
+
         if existing:
             raise ValidationError("Category with this name already exists")
-        
+
         category.name = new_name
-    
+
     if update_data.icon is not None:
         category.icon = update_data.icon
-    
+
     if update_data.color is not None:
         category.color = update_data.color
-    
+
     if update_data.parent_id is not None:
         if update_data.parent_id:
             # Validate parent category
@@ -202,99 +185,93 @@ async def update_category(
                 Category.id == update_data.parent_id,
                 (Category.is_system == True) | (Category.user_id == current_user['user_id'])
             ).first()
-            
+
             if not parent:
                 raise ValidationError("Parent category not found")
-            
+
             # Ensure not creating circular reference
             if parent.parent_id == category_id:
                 raise ValidationError("Cannot create circular category reference")
-            
+
             # Ensure income/expense type matches
             if parent.is_income != category.is_income:
                 raise ValidationError("Category type must match parent category")
-        
+
         category.parent_id = update_data.parent_id
-    
+
     category.updated_at = datetime.utcnow()
     db_session.commit()
     db_session.refresh(category)
-    
+
     return CategoryResponse.from_orm(category)
 
 @router.delete("/{category_id}")
 async def delete_category(
     request: Request,
     category_id: int,
-    reassign_to_category_id: Optional[int] = None,
+    reassign_to_category_id: int | None = None,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete custom category"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Get category and verify ownership
     category = db_session.query(Category).filter(
         Category.id == category_id,
         Category.user_id == current_user['user_id'],
         Category.is_system == False
     ).first()
-    
+
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found or cannot be deleted"
         )
-    
+
     # Check if category has transactions
     transaction_count = db_session.query(Transaction).filter(
         Transaction.category_id == category_id
     ).count()
-    
+
     if transaction_count > 0:
         if not reassign_to_category_id:
             raise ValidationError(
                 f"Category has {transaction_count} transactions. "
                 "Provide reassign_to_category_id to move them to another category"
             )
-        
+
         # Validate reassignment category
         new_category = db_session.query(Category).filter(
             Category.id == reassign_to_category_id,
             (Category.is_system == True) | (Category.user_id == current_user['user_id']),
             Category.is_income == category.is_income  # Must be same type
         ).first()
-        
+
         if not new_category:
             raise ValidationError("Invalid reassignment category")
-        
+
         # Reassign transactions
         db_session.query(Transaction).filter(
             Transaction.category_id == category_id
         ).update({"category_id": reassign_to_category_id})
-    
+
     # Check if category has children
     child_count = db_session.query(Category).filter(
         Category.parent_id == category_id
     ).count()
-    
+
     if child_count > 0:
         # Move children to parent
         db_session.query(Category).filter(
             Category.parent_id == category_id
         ).update({"parent_id": category.parent_id})
-    
+
     # Delete category
     db_session.delete(category)
     db_session.commit()
-    
+
     # Log deletion
-        session_id,
-        "categories",
-        category_id,
-        f"Category '{category.name}' deleted"
-    )
-    
+
     return {"message": "Category deleted successfully"}
 
 @router.get("/{category_id}/transactions/count")
@@ -309,24 +286,24 @@ async def get_category_transaction_count(
         Category.id == category_id,
         (Category.is_system == True) | (Category.user_id == current_user['user_id'])
     ).first()
-    
+
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found"
         )
-    
+
     # Get user's accounts
     user_accounts = db_session.query(Account.id).filter(
         Account.user_id == current_user['user_id']
     ).subquery()
-    
+
     # Count transactions
     count = db_session.query(Transaction).filter(
         Transaction.category_id == category_id,
         Transaction.account_id.in_(user_accounts)
     ).count()
-    
+
     return {
         "category_id": category_id,
         "category_name": category.name,

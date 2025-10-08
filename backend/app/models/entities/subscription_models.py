@@ -1,18 +1,16 @@
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field, ConfigDict
+from datetime import date, datetime
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # Import shared enums from data_classes
-from ..dto import (
-    SubscriptionStatus, BillingCycle, SubscriptionCategory,
-    OptimizationSuggestionType
-)
+from ..dto import BillingCycle, OptimizationSuggestionType, SubscriptionCategory, SubscriptionStatus
 
 
 # Request/Response Models
 class SubscriptionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     name: str
@@ -22,29 +20,29 @@ class SubscriptionResponse(BaseModel):
     amount: float
     billing_cycle: BillingCycle
     next_billing_date: date
-    last_billing_date: Optional[date]
+    last_billing_date: date | None
     start_date: date
-    end_date: Optional[date]
-    free_trial_end_date: Optional[date]
-    transaction_ids: List[int]
+    end_date: date | None
+    free_trial_end_date: date | None
+    transaction_ids: list[int]
     detected_automatically: bool
-    confidence_score: Optional[float]
+    confidence_score: float | None
     created_at: datetime
     updated_at: datetime
     # Additional fields for trial tracking
-    is_trial: Optional[bool] = False
-    regular_price: Optional[float] = None
-    days_until_billing: Optional[int] = None
+    is_trial: bool | None = False
+    regular_price: float | None = None
+    days_until_billing: int | None = None
 
 
 class SubscriptionUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    category: Optional[SubscriptionCategory] = None
-    status: Optional[SubscriptionStatus] = None
-    amount: Optional[float] = None
-    billing_cycle: Optional[BillingCycle] = None
-    next_billing_date: Optional[date] = None
-    notes: Optional[str] = None
+    name: str | None = None
+    category: SubscriptionCategory | None = None
+    status: SubscriptionStatus | None = None
+    amount: float | None = None
+    billing_cycle: BillingCycle | None = None
+    next_billing_date: date | None = None
+    notes: str | None = None
 
 
 class SubscriptionAnalysisResponse(BaseModel):
@@ -52,29 +50,29 @@ class SubscriptionAnalysisResponse(BaseModel):
     active_subscriptions: int
     total_monthly_cost: float
     total_annual_cost: float
-    cost_by_category: Dict[str, float]
-    cost_trend: List[Dict[str, Any]]  # Monthly costs over time
-    most_expensive: List[Dict[str, Any]]
-    least_used: List[Dict[str, Any]]
-    upcoming_renewals: List[Dict[str, Any]]
+    cost_by_category: dict[str, float]
+    cost_trend: list[dict[str, Any]]  # Monthly costs over time
+    most_expensive: list[dict[str, Any]]
+    least_used: list[dict[str, Any]]
+    upcoming_renewals: list[dict[str, Any]]
     savings_opportunities: float
     average_subscription_cost: float
 
 
 class CancellationReminderRequest(BaseModel):
     days_before: int = Field(ge=1, le=90)
-    reason: Optional[str] = None
-    target_date: Optional[date] = None
+    reason: str | None = None
+    target_date: date | None = None
 
 
 class CancellationReminderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     subscription_id: int
     user_id: int
     reminder_date: date
-    reason: Optional[str]
+    reason: str | None
     is_sent: bool
     created_at: datetime
 
@@ -85,19 +83,19 @@ class OptimizationSuggestion(BaseModel):
     suggestion_type: OptimizationSuggestionType
     current_cost: float
     potential_savings: float
-    alternative_name: Optional[str]
-    alternative_cost: Optional[float]
+    alternative_name: str | None
+    alternative_cost: float | None
     reason: str
     confidence: float  # 0-1 score
-    action_steps: List[str]
+    action_steps: list[str]
 
 
 class OptimizationResponse(BaseModel):
     total_potential_savings: float
-    suggestions: List[OptimizationSuggestion]
-    bundling_opportunities: List[Dict[str, Any]]
-    unused_subscriptions: List[Dict[str, Any]]
-    duplicate_services: List[Dict[str, Any]]
+    suggestions: list[OptimizationSuggestion]
+    bundling_opportunities: list[dict[str, Any]]
+    unused_subscriptions: list[dict[str, Any]]
+    duplicate_services: list[dict[str, Any]]
     optimization_score: float  # 0-100
     generated_at: datetime
 
@@ -108,21 +106,21 @@ class SubscriptionCreateRequest(BaseModel):
     category: SubscriptionCategory
     amount: float
     billing_cycle: BillingCycle
-    start_date: Optional[date] = None
-    payment_method_id: Optional[int] = None
-    auto_renew: Optional[bool] = True
-    description: Optional[str] = None
-    is_trial: Optional[bool] = False
-    trial_end_date: Optional[date] = None
-    regular_price: Optional[float] = None
-    shareable: Optional[bool] = False
-    max_users: Optional[int] = 1
+    start_date: date | None = None
+    payment_method_id: int | None = None
+    auto_renew: bool | None = True
+    description: str | None = None
+    is_trial: bool | None = False
+    trial_end_date: date | None = None
+    regular_price: float | None = None
+    shareable: bool | None = False
+    max_users: int | None = 1
 
 
 class SubscriptionDetailResponse(SubscriptionResponse):
-    payment_history: List[Dict[str, Any]]
+    payment_history: list[dict[str, Any]]
     total_spent: float
-    days_until_billing: Optional[int] = None
+    days_until_billing: int | None = None
 
 
 class SubscriptionCancelRequest(BaseModel):
@@ -153,7 +151,7 @@ class SubscriptionSummaryResponse(BaseModel):
     active_subscriptions: int
     paused_subscriptions: int
     cancelled_subscriptions: int
-    by_category: Dict[str, float]
+    by_category: dict[str, float]
 
 
 class PaymentHistoryResponse(BaseModel):
@@ -161,7 +159,7 @@ class PaymentHistoryResponse(BaseModel):
     payment_date: date
     status: str
     payment_method: str
-    transaction_id: Optional[int] = None
+    transaction_id: int | None = None
 
 
 class SubscriptionReminderRequest(BaseModel):
@@ -182,8 +180,8 @@ class SubscriptionReminderResponse(BaseModel):
 
 class SubscriptionUsageRequest(BaseModel):
     usage_date: datetime
-    duration_minutes: Optional[int] = None
-    notes: Optional[str] = None
+    duration_minutes: int | None = None
+    notes: str | None = None
 
 
 class SubscriptionUsageResponse(BaseModel):
@@ -191,9 +189,9 @@ class SubscriptionUsageResponse(BaseModel):
 
 
 class SubscriptionRecommendationsResponse(BaseModel):
-    unused_subscriptions: List[Dict[str, Any]]
-    duplicate_services: List[Dict[str, Any]]
-    savings_opportunities: List[Dict[str, Any]]
+    unused_subscriptions: list[dict[str, Any]]
+    duplicate_services: list[dict[str, Any]]
+    savings_opportunities: list[dict[str, Any]]
     total_potential_savings: float
 
 
@@ -204,15 +202,15 @@ class SubscriptionShareRequest(BaseModel):
 
 class SubscriptionShareResponse(BaseModel):
     id: int
-    shared_users: List[Dict[str, Any]]
+    shared_users: list[dict[str, Any]]
     message: str
 
 
 class BulkImportRequest(BaseModel):
-    subscriptions: List[Dict[str, Any]]
+    subscriptions: list[dict[str, Any]]
 
 
 class BulkImportResponse(BaseModel):
     imported: int
-    subscription_ids: List[int]
-    errors: List[str] = []
+    subscription_ids: list[int]
+    errors: list[str] = []

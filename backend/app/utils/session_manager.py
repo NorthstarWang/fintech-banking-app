@@ -10,7 +10,7 @@ class SessionManager:
 
     def get_session(self):
         return self.session
-    
+
     def clear_session(self, session_id: str):
         self.session = None
 

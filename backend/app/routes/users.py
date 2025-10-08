@@ -36,7 +36,6 @@ async def update_user_profile(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update user profile"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     user = db_session.query(User).filter(User.id == current_user['user_id']).first()
     
@@ -93,7 +92,6 @@ async def change_password(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Change user password"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     if len(new_password) < 8:
         raise ValidationError("Password must be at least 8 characters long")
@@ -203,7 +201,6 @@ async def delete_user_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete user account (soft delete)"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     user = db_session.query(User).filter(User.id == current_user['user_id']).first()
     
@@ -274,7 +271,6 @@ async def update_user_preferences(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update user preferences"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     user = db_session.query(User).filter(User.id == current_user['user_id']).first()
     

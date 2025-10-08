@@ -1,18 +1,19 @@
 """
 Mock model classes that mimic SQLAlchemy models for the mock data system.
 """
-from datetime import datetime
-from typing import Optional, List, Dict, Any
 import uuid
+from datetime import datetime
+from typing import Any
+
 
 class BaseMockModel:
     """Base class for all mock models."""
-    
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
-            
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert model to dictionary."""
         return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
 

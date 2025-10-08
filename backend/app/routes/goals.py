@@ -39,10 +39,8 @@ async def create_goal(
 ):
     """Create a new financial goal"""
     try:
-        session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
         
         # Log incoming request data
-        )
         
         # Validate account if linked
         if goal_data.account_id:
@@ -207,10 +205,8 @@ async def update_goal(
 ):
     """Update goal details"""
     try:
-        session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
         
         # Log incoming request data
-        )
         
         goal = db_session.query(Goal).filter(
             Goal.id == goal_id,
@@ -278,7 +274,6 @@ async def contribute_to_goal(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Add contribution to a goal"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     goal = db_session.query(Goal).filter(
         Goal.id == goal_id,
@@ -365,7 +360,6 @@ async def delete_goal(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete (cancel) a goal"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     goal = db_session.query(Goal).filter(
         Goal.id == goal_id,

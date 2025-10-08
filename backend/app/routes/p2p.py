@@ -100,7 +100,6 @@ async def create_p2p_transfer(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a P2P transfer"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate source account
     try:
@@ -183,7 +182,6 @@ async def create_split_payment(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a split payment request"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate source account
     try:
@@ -281,7 +279,6 @@ async def create_payment_request(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a payment request"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Create payment request record
     request_data = {

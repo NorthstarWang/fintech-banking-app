@@ -1,11 +1,13 @@
 """
 Investment-related models for ETF, stock, and crypto trading.
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
 
 # Investment-specific enums
 class InvestmentAccountType(str, Enum):
@@ -68,10 +70,10 @@ class InvestmentAccountCreate(BaseModel):
     initial_deposit: float = 0
     is_retirement: bool = False
     risk_tolerance: PortfolioRiskLevel = PortfolioRiskLevel.MODERATE
-    
+
 class InvestmentAccountResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     account_type: InvestmentAccountType
@@ -89,7 +91,7 @@ class InvestmentAccountResponse(BaseModel):
 
 class PortfolioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     account_id: int
     name: str
@@ -98,18 +100,18 @@ class PortfolioResponse(BaseModel):
     total_gain_loss: Decimal
     total_gain_loss_percent: Decimal
     positions_count: int
-    asset_allocation: Dict[str, float]
+    asset_allocation: dict[str, float]
     risk_score: float
-    performance_1d: Optional[Decimal] = None
-    performance_1w: Optional[Decimal] = None
-    performance_1m: Optional[Decimal] = None
-    performance_ytd: Optional[Decimal] = None
-    performance_1y: Optional[Decimal] = None
+    performance_1d: Decimal | None = None
+    performance_1w: Decimal | None = None
+    performance_1m: Decimal | None = None
+    performance_ytd: Decimal | None = None
+    performance_1y: Decimal | None = None
 
 class AssetResponse(BaseModel):
     """Base asset information"""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     symbol: str
     name: str
@@ -118,35 +120,35 @@ class AssetResponse(BaseModel):
     price_change: Decimal
     price_change_percent: Decimal
     volume: int
-    market_cap: Optional[Decimal] = None
-    pe_ratio: Optional[float] = None
-    dividend_yield: Optional[float] = None
-    week_52_high: Optional[Decimal] = None
-    week_52_low: Optional[Decimal] = None
-    
+    market_cap: Decimal | None = None
+    pe_ratio: float | None = None
+    dividend_yield: float | None = None
+    week_52_high: Decimal | None = None
+    week_52_low: Decimal | None = None
+
 class ETFDetailResponse(AssetResponse):
     """ETF specific details"""
     expense_ratio: float
     net_assets: Decimal
     category: str
     holdings_count: int
-    top_holdings: List[Dict[str, Any]]
-    sector_allocation: Dict[str, float]
-    
+    top_holdings: list[dict[str, Any]]
+    sector_allocation: dict[str, float]
+
 class StockDetailResponse(AssetResponse):
     """Stock specific details"""
     sector: str
     industry: str
-    earnings_date: Optional[date] = None
-    beta: Optional[float] = None
-    forward_pe: Optional[float] = None
-    profit_margin: Optional[float] = None
-    analyst_rating: Optional[str] = None
-    analyst_target_price: Optional[Decimal] = None
+    earnings_date: date | None = None
+    beta: float | None = None
+    forward_pe: float | None = None
+    profit_margin: float | None = None
+    analyst_rating: str | None = None
+    analyst_target_price: Decimal | None = None
 
 class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     portfolio_id: int
     asset_type: AssetType
@@ -162,7 +164,7 @@ class PositionResponse(BaseModel):
     realized_gain_loss: Decimal
     percentage_of_portfolio: float
     first_purchase_date: date
-    
+
 class TradeOrderCreate(BaseModel):
     account_id: int
     symbol: str
@@ -170,14 +172,14 @@ class TradeOrderCreate(BaseModel):
     order_type: OrderType
     order_side: OrderSide
     quantity: float
-    limit_price: Optional[float] = None
-    stop_price: Optional[float] = None
+    limit_price: float | None = None
+    stop_price: float | None = None
     time_in_force: str = "day"  # day, gtc (good till cancelled), ioc (immediate or cancel)
     extended_hours: bool = False
-    
+
 class TradeOrderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     account_id: int
     order_number: str
@@ -187,20 +189,20 @@ class TradeOrderResponse(BaseModel):
     order_side: OrderSide
     quantity: Decimal
     filled_quantity: Decimal
-    limit_price: Optional[Decimal] = None
-    stop_price: Optional[Decimal] = None
-    average_fill_price: Optional[Decimal] = None
+    limit_price: Decimal | None = None
+    stop_price: Decimal | None = None
+    average_fill_price: Decimal | None = None
     status: OrderStatus
     time_in_force: str
     extended_hours: bool
     commission: Decimal
     submitted_at: datetime
-    filled_at: Optional[datetime] = None
-    cancelled_at: Optional[datetime] = None
-    
+    filled_at: datetime | None = None
+    cancelled_at: datetime | None = None
+
 class TradeHistoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     account_id: int
     order_id: int
@@ -215,23 +217,23 @@ class TradeHistoryResponse(BaseModel):
     fees: Decimal
     executed_at: datetime
     settlement_date: date
-    
+
 class WatchlistCreate(BaseModel):
     name: str
-    description: Optional[str] = None
-    symbols: List[str]
-    
+    description: str | None = None
+    symbols: list[str]
+
 class WatchlistResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     user_id: int
     name: str
-    description: Optional[str] = None
-    symbols: List[str]
+    description: str | None = None
+    symbols: list[str]
     created_at: datetime
     updated_at: datetime
-    
+
 class MarketDataResponse(BaseModel):
     """Real-time market data"""
     symbol: str
@@ -244,17 +246,17 @@ class MarketDataResponse(BaseModel):
     low_price: Decimal
     close_price: Decimal
     timestamp: datetime
-    
+
 class PortfolioAnalysisResponse(BaseModel):
     """Portfolio analysis and recommendations"""
     portfolio_id: int
     risk_score: float
     diversification_score: float
     performance_score: float
-    recommendations: List[Dict[str, Any]]
-    rebalancing_suggestions: List[Dict[str, Any]]
-    tax_loss_harvesting_opportunities: List[Dict[str, Any]]
-    
+    recommendations: list[dict[str, Any]]
+    rebalancing_suggestions: list[dict[str, Any]]
+    tax_loss_harvesting_opportunities: list[dict[str, Any]]
+
 class InvestmentSummaryResponse(BaseModel):
     """Overall investment summary"""
     total_accounts: int
@@ -262,24 +264,24 @@ class InvestmentSummaryResponse(BaseModel):
     total_buying_power: Decimal
     total_gain_loss: Decimal
     total_gain_loss_percent: Decimal
-    accounts_by_type: Dict[str, int]
-    asset_allocation: Dict[str, float]
-    top_performers: List[Dict[str, Any]]
-    worst_performers: List[Dict[str, Any]]
-    recent_trades: List[Dict[str, Any]]
-    
+    accounts_by_type: dict[str, int]
+    asset_allocation: dict[str, float]
+    top_performers: list[dict[str, Any]]
+    worst_performers: list[dict[str, Any]]
+    recent_trades: list[dict[str, Any]]
+
 class ResearchReportResponse(BaseModel):
     """Investment research report"""
     symbol: str
     report_type: str  # fundamental, technical, analyst
     rating: str
-    target_price: Optional[Decimal] = None
+    target_price: Decimal | None = None
     summary: str
-    key_metrics: Dict[str, Any]
-    pros: List[str]
-    cons: List[str]
+    key_metrics: dict[str, Any]
+    pros: list[str]
+    cons: list[str]
     generated_at: datetime
-    
+
 class TaxDocumentResponse(BaseModel):
     """Tax-related investment documents"""
     document_type: str  # 1099-B, 1099-DIV, 1099-INT
@@ -290,7 +292,7 @@ class TaxDocumentResponse(BaseModel):
     total_gain_loss: Decimal
     short_term_gain_loss: Decimal
     long_term_gain_loss: Decimal
-    total_dividends: Optional[Decimal] = None
-    qualified_dividends: Optional[Decimal] = None
+    total_dividends: Decimal | None = None
+    qualified_dividends: Decimal | None = None
     document_url: str
     generated_at: datetime

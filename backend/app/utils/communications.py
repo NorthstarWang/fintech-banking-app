@@ -29,12 +29,9 @@ async def send_sms(phone_number: str, message: str) -> bool:
             }
         )
         
-        print(f"[MOCK SMS] To: {phone_number}")
-        print(f"[MOCK SMS] Message: {message}")
         
         return True
     except Exception as e:
-        print(f"Error sending SMS: {str(e)}")
         return False
 
 async def send_email(email: str, subject: str, body: str, html_body: Optional[str] = None) -> bool:
@@ -55,13 +52,9 @@ async def send_email(email: str, subject: str, body: str, html_body: Optional[st
             }
         )
         
-        print(f"[MOCK EMAIL] To: {email}")
-        print(f"[MOCK EMAIL] Subject: {subject}")
-        print(f"[MOCK EMAIL] Body: {body}")
         
         return True
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
         return False
 
 def store_verification_code(user_id: int, method: str, code: str, expiry_minutes: int = 10):

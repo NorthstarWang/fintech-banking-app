@@ -1,14 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Any
-from datetime import datetime, date, timedelta, time
-from dateutil.relativedelta import relativedelta
+from datetime import date, datetime, time, timedelta
+from typing import Any
 
-from ..storage.memory_adapter import db, desc, func
-from ..models import Budget, Category, Transaction, Account, BudgetPeriod, TransactionType
-from ..models import BudgetCreate, BudgetUpdate, BudgetResponse, BudgetSummary
+from dateutil.relativedelta import relativedelta
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from ..models import (
+    Account,
+    Budget,
+    BudgetCreate,
+    BudgetPeriod,
+    BudgetResponse,
+    BudgetSummary,
+    BudgetUpdate,
+    Category,
+    Transaction,
+    TransactionType,
+)
+from ..storage.memory_adapter import db, func
 from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from ..utils.validators import ValidationError, Validators
 
 router = APIRouter()
 
@@ -16,7 +26,7 @@ def calculate_budget_usage(budget: Budget, db_session: Any, user_id: int) -> dic
     """Calculate current spending for a budget"""
     # Determine date range based on period
     today = date.today()
-    
+
     if budget.period == BudgetPeriod.WEEKLY:
         # Get start of current week (Monday)
         start_date = today - timedelta(days=today.weekday())
@@ -31,12 +41,12 @@ def calculate_budget_usage(budget: Budget, db_session: Any, user_id: int) -> dic
         # Get start of current year
         start_date = today.replace(month=1, day=1)
         end_date = today.replace(month=12, day=31)
-    
+
     # Get user's accounts
     user_accounts = db_session.query(Account.id).filter(
         Account.user_id == user_id
     ).subquery()
-    
+
     # Calculate spending
     spent = db_session.query(func.sum(Transaction.amount)).filter(
         Transaction.category_id == budget.category_id,
@@ -45,10 +55,10 @@ def calculate_budget_usage(budget: Budget, db_session: Any, user_id: int) -> dic
         Transaction.transaction_date >= datetime.combine(start_date, time.min),
         Transaction.transaction_date <= datetime.combine(end_date, time.max)
     ).scalar() or 0.0
-    
+
     remaining = budget.amount - spent
     percentage_used = (spent / budget.amount * 100) if budget.amount > 0 else 0
-    
+
     return {
         "spent_amount": round(spent, 2),
         "remaining_amount": round(remaining, 2),
@@ -65,22 +75,21 @@ async def create_budget(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new budget"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     # Validate category access
     category = Validators.validate_category_access(
         db_session,
         budget_data.category_id,
         current_user['user_id']
     )
-    
+
     # Validate it's an expense category
     if category.is_income:
         raise ValidationError("Budgets can only be created for expense categories")
-    
+
     # Validate budget period
     Validators.validate_budget_period(budget_data.start_date, budget_data.end_date)
-    
+
     # Check if active budget already exists for this category and period
     existing = db_session.query(Budget).filter(
         Budget.user_id == current_user['user_id'],
@@ -88,12 +97,12 @@ async def create_budget(
         Budget.period == budget_data.period,
         Budget.is_active == True
     ).first()
-    
+
     if existing:
         raise ValidationError(
             f"Active {budget_data.period.value} budget already exists for {category.name}"
         )
-    
+
     # Create new budget
     new_budget = Budget(
         user_id=current_user['user_id'],
@@ -105,48 +114,41 @@ async def create_budget(
         alert_threshold=budget_data.alert_threshold,
         is_active=True
     )
-    
+
     db_session.add(new_budget)
     db_session.commit()
     db_session.refresh(new_budget)
-    
+
     # Log budget creation
-        session_id,
-        new_budget.id,
-        current_user['user_id'],
-        category.name,
-        budget_data.amount,
-        budget_data.period.value
-    )
-    
+
     # Calculate initial usage
     usage = calculate_budget_usage(new_budget, db_session, current_user['user_id'])
-    
+
     response = BudgetResponse.from_orm(new_budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
-    
+
     return response
 
-@router.get("/", response_model=List[BudgetResponse])
+@router.get("/", response_model=list[BudgetResponse])
 async def get_budgets(
-    period: Optional[BudgetPeriod] = None,
+    period: BudgetPeriod | None = None,
     active_only: bool = True,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all user budgets with current usage"""
     query = db_session.query(Budget).filter(Budget.user_id == current_user['user_id'])
-    
+
     if active_only:
         query = query.filter(Budget.is_active == True)
-    
+
     if period:
         query = query.filter(Budget.period == period)
-    
+
     budgets = query.order_by(Budget.created_at.desc()).all()
-    
+
     # Calculate usage for each budget
     results = []
     for budget in budgets:
@@ -156,12 +158,12 @@ async def get_budgets(
         response.remaining_amount = usage['remaining_amount']
         response.percentage_used = usage['percentage_used']
         results.append(response)
-    
+
     return results
 
 @router.get("/summary", response_model=BudgetSummary)
 async def get_budget_summary(
-    period: Optional[BudgetPeriod] = None,
+    period: BudgetPeriod | None = None,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
@@ -170,28 +172,28 @@ async def get_budget_summary(
         Budget.user_id == current_user['user_id'],
         Budget.is_active == True
     )
-    
+
     if period:
         query = query.filter(Budget.period == period)
-    
+
     budgets = query.all()
-    
+
     total_budgeted = 0.0
     total_spent = 0.0
     budget_responses = []
-    
+
     for budget in budgets:
         usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
-        
+
         total_budgeted += budget.amount
         total_spent += usage['spent_amount']
-        
+
         response = BudgetResponse.from_orm(budget)
         response.spent_amount = usage['spent_amount']
         response.remaining_amount = usage['remaining_amount']
         response.percentage_used = usage['percentage_used']
         budget_responses.append(response)
-    
+
     return BudgetSummary(
         total_budget=round(total_budgeted, 2),  # Changed to match frontend
         total_spent=round(total_spent, 2),
@@ -210,20 +212,20 @@ async def get_budget(
         Budget.id == budget_id,
         Budget.user_id == current_user['user_id']
     ).first()
-    
+
     if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Budget not found"
         )
-    
+
     usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
-    
+
     response = BudgetResponse.from_orm(budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
-    
+
     return response
 
 @router.put("/{budget_id}", response_model=BudgetResponse)
@@ -235,53 +237,52 @@ async def update_budget(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update budget settings"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     budget = db_session.query(Budget).filter(
         Budget.id == budget_id,
         Budget.user_id == current_user['user_id']
     ).first()
-    
+
     if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Budget not found"
         )
-    
+
     # Update allowed fields
     if update_data.amount is not None:
         if update_data.amount <= 0:
             raise ValidationError("Budget amount must be greater than 0")
         budget.amount = update_data.amount
-    
+
     if update_data.alert_threshold is not None:
         if not 0 <= update_data.alert_threshold <= 1:
             raise ValidationError("Alert threshold must be between 0 and 1")
         budget.alert_threshold = update_data.alert_threshold
-    
+
     if update_data.is_active is not None:
         budget.is_active = update_data.is_active
-    
+
     budget.updated_at = datetime.utcnow()
     db_session.commit()
     db_session.refresh(budget)
-    
+
     # Calculate usage
     usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
-    
+
     # Check if budget is over threshold after update
     if usage['percentage_used'] >= budget.alert_threshold * 100:
         # Get category name for notification
         category = db_session.query(Category).filter(
             Category.id == budget.category_id
         ).first()
-        
+
         # Import Notification model if not already imported
         from ..models import Notification, NotificationType
-        
+
         # Calculate over amount
         over_amount = usage['spent_amount'] - budget.amount
-        
+
         # Create notification
         notification = Notification(
             user_id=current_user['user_id'],
@@ -301,24 +302,14 @@ async def update_budget(
         )
         db_session.add(notification)
         db_session.commit()
-        
+
         # Log budget alert
-            session_id,
-            "BUDGET_THRESHOLD_EXCEEDED",
-            {
-                "text": f"Budget threshold exceeded after update",
-                "budget_id": budget.id,
-                "category": category.name if category else "Unknown",
-                "percentage": usage['percentage_used'],
-                "over_amount": over_amount
-            }
-        )
-    
+
     response = BudgetResponse.from_orm(budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
-    
+
     return response
 
 @router.delete("/{budget_id}")
@@ -329,31 +320,25 @@ async def delete_budget(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete (deactivate) a budget"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
-    
+
     budget = db_session.query(Budget).filter(
         Budget.id == budget_id,
         Budget.user_id == current_user['user_id']
     ).first()
-    
+
     if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Budget not found"
         )
-    
+
     # Soft delete - just deactivate
     budget.is_active = False
     budget.updated_at = datetime.utcnow()
     db_session.commit()
-    
+
     # Log deletion
-        session_id,
-        "budgets",
-        budget_id,
-        f"Budget for category {budget.category_id} deactivated"
-    )
-    
+
     return {"message": "Budget deactivated successfully"}
 
 @router.get("/alerts/check")
@@ -366,18 +351,18 @@ async def check_budget_alerts(
         Budget.user_id == current_user['user_id'],
         Budget.is_active == True
     ).all()
-    
+
     alerts = []
-    
+
     for budget in active_budgets:
         usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
-        
+
         if usage['percentage_used'] >= budget.alert_threshold * 100:
             # Get category name
             category = db_session.query(Category).filter(
                 Category.id == budget.category_id
             ).first()
-            
+
             alerts.append({
                 "budget_id": budget.id,
                 "category_name": category.name if category else "Unknown",
@@ -389,7 +374,7 @@ async def check_budget_alerts(
                 "message": f"You've spent {usage['percentage_used']:.1f}% of your "
                           f"{budget.period if isinstance(budget.period, str) else budget.period.value} budget for {category.name if category else 'this category'}"
             })
-    
+
     return {
         "has_alerts": len(alerts) > 0,
         "alerts": alerts

@@ -341,7 +341,6 @@ async def update_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update subscription information"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get subscription
     subscription = db_session.query(Subscription).filter(
@@ -537,7 +536,6 @@ async def set_cancellation_reminder(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set a cancellation reminder for a subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get subscription
     subscription = db_session.query(Subscription).filter(
@@ -748,7 +746,6 @@ async def create_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Calculate dates
     start_date = subscription_data.start_date or date.today()
@@ -911,7 +908,6 @@ async def cancel_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Cancel a subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get subscription
     subscription = db_session.query(Subscription).filter(
@@ -960,7 +956,6 @@ async def pause_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Pause a subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get subscription
     subscription = db_session.query(Subscription).filter(
@@ -1043,7 +1038,6 @@ async def set_subscription_reminders(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set reminder preferences for a subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify subscription ownership
     subscription = db_session.query(Subscription).filter(
@@ -1102,7 +1096,6 @@ async def track_subscription_usage(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Track usage of a subscription"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify subscription ownership
     subscription = db_session.query(Subscription).filter(
@@ -1211,7 +1204,6 @@ async def share_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Share a subscription with another user"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get subscription
     subscription = db_session.query(Subscription).filter(
@@ -1281,7 +1273,6 @@ async def bulk_import_subscriptions(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Import multiple subscriptions at once"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     imported_count = 0
     subscription_ids = []

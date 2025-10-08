@@ -187,7 +187,6 @@ async def send_invoice(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Send an invoice to client"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     invoice = db_session.query(Invoice).filter(
         Invoice.id == invoice_id,
@@ -213,13 +212,6 @@ async def send_invoice(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Sent invoice #{invoice.invoice_number} to {invoice.client_name}",
-        "invoices",
-        {
-            "invoice_id": invoice.id,
-            "invoice_number": invoice.invoice_number,
-            "sent_at": invoice.sent_at.isoformat()
         }
     )
     
@@ -235,7 +227,6 @@ async def mark_invoice_paid(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Mark an invoice as paid"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     invoice = db_session.query(Invoice).filter(
         Invoice.id == invoice_id,
@@ -270,16 +261,6 @@ async def mark_invoice_paid(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Marked invoice #{invoice.invoice_number} as {'paid' if invoice.status == InvoiceStatus.PAID else 'partially paid'}",
-        "invoices",
-        {
-            "invoice_id": invoice.id,
-            "invoice_number": invoice.invoice_number,
-            "amount_paid": invoice.amount_paid,
-            "status": invoice.status.value
-        }
-    )
     
     return {"message": f"Invoice #{invoice.invoice_number} updated successfully", "status": invoice.status}
 
@@ -291,7 +272,6 @@ async def duplicate_invoice(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Duplicate an existing invoice"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get original invoice
     original = db_session.query(Invoice).filter(
@@ -331,15 +311,6 @@ async def duplicate_invoice(
     db_session.refresh(duplicate)
     
     log_business_action(
-        session_id,
-        f"Duplicated invoice #{original.invoice_number} as #{duplicate.invoice_number}",
-        "invoices",
-        {
-            "original_id": original.id,
-            "duplicate_id": duplicate.id,
-            "duplicate_number": duplicate.invoice_number
-        }
-    )
     
     return InvoiceResponse(
         id=duplicate.id,
@@ -372,7 +343,6 @@ async def generate_expense_report(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Generate an expense report"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify account ownership
     for account_id in report_data.account_ids:
@@ -452,13 +422,6 @@ async def generate_expense_report(
     db_session.refresh(expense_report)
     
     log_business_action(
-        session_id,
-        f"Generated expense report: {report_data.report_name}",
-        "expense_reports",
-        {
-            "report_id": expense_report.id,
-            "total_amount": total_amount,
-            "expense_count": len(transactions),
             "created_at": datetime.utcnow().isoformat()
         }
     )
@@ -488,7 +451,6 @@ async def categorize_transactions(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Auto-categorize transactions for tax purposes"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Get transactions
     transactions = db_session.query(Transaction).join(
@@ -562,8 +524,6 @@ async def categorize_transactions(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Categorized {len(transactions)} transactions for tax",
         "transactions",
         {
             "transaction_count": len(transactions),
@@ -590,7 +550,6 @@ async def upload_receipt(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Upload a receipt"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Validate file type
     allowed_types = ["image/jpeg", "image/png", "image/gif", "application/pdf"]
@@ -640,15 +599,6 @@ async def upload_receipt(
     db_session.refresh(receipt)
     
     log_business_action(
-        session_id,
-        f"Uploaded receipt from {receipt_data.merchant_name}",
-        "receipts",
-        {
-            "receipt_id": receipt.id,
-            "amount": receipt_data.amount,
-            "tax_category": receipt_data.tax_category.value
-        }
-    )
     
     return ReceiptResponse.from_orm(receipt)
 
@@ -776,7 +726,6 @@ async def create_business_account(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new business account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Generate account number
     account_number = f"BUS{str(uuid.uuid4().int)[:10]}"
@@ -804,12 +753,6 @@ async def create_business_account(
     db_session.commit()
     db_session.refresh(business_account)
     
-        session_id,
-        business_account.id,
-        business_account.user_id,
-        business_account.account_type,
-        business_account.name
-    )
     
     return BusinessAccountResponse(
         id=business_account.id,
@@ -904,7 +847,6 @@ async def apply_for_credit_line(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Apply for business credit line"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account ownership
     account = db_session.query(Account).filter(
@@ -951,15 +893,6 @@ async def apply_for_credit_line(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Applied for ${application.requested_amount} credit line",
-        "credit_lines",
-        {
-            "account_id": account.id,
-            "requested_amount": application.requested_amount,
-            "approved_amount": approved_amount,
-            "status": status,
-            "created_at": datetime.utcnow().isoformat()
         }
     )
     
@@ -981,7 +914,6 @@ async def process_payroll(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Process business payroll"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account
     account = db_session.query(Account).filter(
@@ -1042,8 +974,6 @@ async def process_payroll(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Processed payroll for {len(payroll_data.employees)} employees",
         "payroll",
         {
             "account_id": account.id,
@@ -1073,7 +1003,6 @@ async def create_invoice(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new invoice"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Handle both regular and business invoice creation
     business_account_id = None
@@ -1169,15 +1098,6 @@ async def create_invoice(
     db_session.refresh(invoice)
     
     log_business_action(
-        session_id,
-        f"Created invoice {invoice_number} for {invoice_data.client_name}",
-        "invoices",
-        {
-            "invoice_id": invoice.id,
-            "invoice_number": invoice_number,
-            "total_amount": invoice.total_amount,
-            "business_account_id": business_account_id,
-            "created_at": datetime.utcnow().isoformat()
         }
     )
     
@@ -1216,7 +1136,6 @@ async def record_business_expense(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Record a business expense"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account
     account = db_session.query(Account).filter(
@@ -1253,13 +1172,6 @@ async def record_business_expense(
     db_session.commit()
     db_session.refresh(expense_transaction)
     
-        session_id,
-        expense_transaction.id,
-        account.id,
-        expense_data.amount,
-        "debit",
-        expense_data.description
-    )
     
     return BusinessExpenseResponse(
         id=expense_transaction.id,
@@ -1375,7 +1287,6 @@ async def create_vendor(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a vendor for business transactions"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Store vendor in user metadata (in production, use separate table)
     user = db_session.query(User).filter(
@@ -1404,14 +1315,6 @@ async def create_vendor(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Created vendor: {vendor_data.vendor_name}",
-        "vendors",
-        {
-            "vendor_id": vendor_id,
-            "vendor_name": vendor_data.vendor_name,
-            "vendor_type": vendor_data.vendor_type,
-            "created_at": datetime.utcnow().isoformat()
         }
     )
     
@@ -1552,7 +1455,6 @@ async def add_authorized_user(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Add authorized user to business account"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account ownership
     account = db_session.query(Account).filter(
@@ -1584,15 +1486,6 @@ async def add_authorized_user(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Added authorized user {user_data.username} to business account",
-        "authorized_users",
-        {
-            "account_id": account_id,
-            "username": user_data.username,
-            "role": user_data.role,
-            "user_id": user_id,
-            "created_at": datetime.utcnow().isoformat()
         }
     )
     
@@ -1613,7 +1506,6 @@ async def setup_recurring_payment(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set up recurring business payment"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account
     account = db_session.query(Account).filter(
@@ -1661,16 +1553,6 @@ async def setup_recurring_payment(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Set up {payment_data.frequency} payment of ${payment_data.amount} to {payment_data.payee}",
-        "recurring_payments",
-        {
-            "account_id": account.id,
-            "payment_id": payment_id,
-            "amount": payment_data.amount,
-            "frequency": payment_data.frequency
-        }
-    )
     
     return RecurringPaymentResponse(
         id=payment_id,
@@ -1694,7 +1576,6 @@ async def apply_for_business_loan(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Apply for a business loan"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account
     account = db_session.query(Account).filter(
@@ -1751,16 +1632,6 @@ async def apply_for_business_loan(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Applied for ${loan_data.loan_amount} business loan",
-        "loan_applications",
-        {
-            "account_id": account.id,
-            "application_id": application_id,
-            "loan_amount": loan_data.loan_amount,
-            "status": status
-        }
-    )
     
     return BusinessLoanResponse(
         application_id=application_id,
@@ -1784,7 +1655,6 @@ async def generate_api_key(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Generate API key for business account integration"""
-    session_id = request.cookies.get("session_id") or session_manager.get_session() or "no_session"
     
     # Verify business account ownership
     account = db_session.query(Account).filter(
@@ -1824,15 +1694,6 @@ async def generate_api_key(
     db_session.commit()
     
     log_business_action(
-        session_id,
-        f"Generated API key: {api_key_data.key_name}",
-        "api_keys",
-        {
-            "account_id": account_id,
-            "key_id": key_id,
-            "key_name": api_key_data.key_name
-        }
-    )
     
     return APIKeyResponse(
         key_id=key_id,

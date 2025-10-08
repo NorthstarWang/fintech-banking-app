@@ -4,6 +4,7 @@ These enums ensure consistency between memory storage models and API models.
 """
 from enum import Enum
 
+
 # User and Authentication Enums
 class UserRole(str, Enum):
     USER = "user"

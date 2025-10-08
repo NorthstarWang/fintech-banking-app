@@ -45,98 +45,180 @@ CardLimit = SpendingLimit  # Routes expect CardLimit
 InvoiceLineItem = None  # Line items are stored as JSON in Invoice model
 
 # Export enums from data_classes for convenience
-from .dto import (
-    UserRole, AccountType, TransactionType, TransactionStatus,
-    BudgetPeriod, GoalStatus, NotificationType, ContactStatus,
-    MessageStatus, CardStatus, CardType, SpendingLimitPeriod,
-    CreditScoreProvider, CreditScoreRange, CreditFactorType,
-    RoundUpStatus, SavingsRuleType, SavingsRuleFrequency,
-    ChallengeStatus, ChallengeType, InvoiceStatus, PaymentTerms,
-    TaxCategory, ExpenseReportStatus, SubscriptionStatus,
-    BillingCycle, SubscriptionCategory, OptimizationSuggestionType,
-    SecurityEventType, PaymentMethodType, PaymentMethodStatus,
-    TwoFactorMethod, ExportFormat
-)
-
 # Additional enum for compatibility
 import enum
+
+from .dto import (
+    AccountType,
+    BillingCycle,
+    BudgetPeriod,
+    CardStatus,
+    CardType,
+    ChallengeStatus,
+    ChallengeType,
+    ContactStatus,
+    CreditFactorType,
+    CreditScoreProvider,
+    CreditScoreRange,
+    ExpenseReportStatus,
+    ExportFormat,
+    GoalStatus,
+    InvoiceStatus,
+    MessageStatus,
+    NotificationType,
+    OptimizationSuggestionType,
+    PaymentMethodStatus,
+    PaymentMethodType,
+    PaymentTerms,
+    RoundUpStatus,
+    SavingsRuleFrequency,
+    SavingsRuleType,
+    SecurityEventType,
+    SpendingLimitPeriod,
+    SubscriptionCategory,
+    SubscriptionStatus,
+    TaxCategory,
+    TransactionStatus,
+    TransactionType,
+    TwoFactorMethod,
+    UserRole,
+)
+
+
 class BankLinkStatus(enum.Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     PENDING = "pending"
 
 # Import card models
-from .entities.card_models import (
-    VirtualCardCreate, VirtualCardResponse, CardFreezeRequest,
-    CardLimitRequest, CardLimitResponse, CardAnalyticsResponse
-)
+# Also make sub-modules available if needed
+from .entities import business_models, card_models, credit_models, savings_models, subscription_models
 
-# Import savings models
-from .entities.savings_models import (
-    RoundUpConfigRequest, RoundUpConfigResponse, RoundUpTransactionResponse,
-    SavingsRuleRequest, SavingsRuleResponse, SavingsChallengeResponse,
-    ChallengeJoinRequest, SavingsGoalCreate
+# Import business models
+from .entities.business_models import (
+    APIKeyRequest,
+    APIKeyResponse,
+    AuthorizedUserRequest,
+    AuthorizedUserResponse,
+    BusinessAccountCreateRequest,
+    BusinessAccountResponse,
+    BusinessExpenseRequest,
+    BusinessExpenseResponse,
+    BusinessLoanApplicationRequest,
+    BusinessLoanResponse,
+    CashFlowAnalysisResponse,
+    CreditLineApplicationRequest,
+    CreditLineResponse,
+    ExpenseReportRequest,
+    ExpenseReportResponse,
+    InvoiceCreateRequest,
+    InvoiceResponse,
+    PayrollEmployee,
+    PayrollRequest,
+    PayrollResponse,
+    ReceiptResponse,
+    ReceiptUploadRequest,
+    RecurringPaymentRequest,
+    RecurringPaymentResponse,
+    TaxEstimateResponse,
+    TaxReportResponse,
+    TransactionCategorizationRequest,
+    TransactionCategorizationResponse,
+    VendorCreateRequest,
+    VendorResponse,
+)
+from .entities.card_models import (
+    CardAnalyticsResponse,
+    CardFreezeRequest,
+    CardLimitRequest,
+    CardLimitResponse,
+    VirtualCardCreate,
+    VirtualCardResponse,
 )
 
 # Import credit models
 from .entities.credit_models import (
-    CreditScoreResponse, CreditHistoryResponse, CreditSimulatorRequest,
-    CreditSimulatorResponse, CreditTip, CreditTipsResponse, CreditReportResponse
+    CreditHistoryResponse,
+    CreditReportResponse,
+    CreditScoreResponse,
+    CreditSimulatorRequest,
+    CreditSimulatorResponse,
+    CreditTip,
+    CreditTipsResponse,
+)
+
+# Import crypto models
+from .entities.crypto_models import (
+    BlockchainNetwork,
+    CryptoAssetResponse,
+    CryptoAssetType,
+    CryptoPortfolioSummary,
+    CryptoSwapQuote,
+    CryptoSwapRequest,
+    CryptoTransactionCreate,
+    CryptoTransactionResponse,
+    CryptoWalletCreate,
+    CryptoWalletResponse,
+    DeFiPositionResponse,
+    DeFiProtocolType,
+    NFTAssetResponse,
+    TransactionDirection,
+)
+
+# Import savings models
+from .entities.savings_models import (
+    ChallengeJoinRequest,
+    RoundUpConfigRequest,
+    RoundUpConfigResponse,
+    RoundUpTransactionResponse,
+    SavingsChallengeResponse,
+    SavingsGoalCreate,
+    SavingsRuleRequest,
+    SavingsRuleResponse,
 )
 
 # Import subscription models
 from .entities.subscription_models import (
-    SubscriptionResponse, SubscriptionUpdateRequest, SubscriptionAnalysisResponse,
-    CancellationReminderRequest, CancellationReminderResponse,
-    OptimizationSuggestion, OptimizationResponse,
-    SubscriptionCreateRequest, SubscriptionDetailResponse, SubscriptionCancelRequest,
-    SubscriptionCancelResponse, SubscriptionPauseRequest, SubscriptionPauseResponse,
-    SubscriptionSummaryResponse, PaymentHistoryResponse, SubscriptionReminderRequest,
-    SubscriptionReminderResponse, SubscriptionUsageRequest, SubscriptionUsageResponse,
-    SubscriptionRecommendationsResponse, SubscriptionShareRequest, SubscriptionShareResponse,
-    BulkImportRequest, BulkImportResponse
-)
-
-# Import business models
-from .entities.business_models import (
-    InvoiceCreateRequest, InvoiceResponse,
-    ExpenseReportRequest, ExpenseReportResponse, TransactionCategorizationRequest,
-    TransactionCategorizationResponse, ReceiptUploadRequest, ReceiptResponse,
-    TaxEstimateResponse,
-    BusinessAccountCreateRequest, BusinessAccountResponse,
-    CreditLineApplicationRequest, CreditLineResponse,
-    PayrollRequest, PayrollResponse, PayrollEmployee,
-    VendorCreateRequest, VendorResponse,
-    BusinessExpenseRequest, BusinessExpenseResponse,
-    TaxReportResponse, CashFlowAnalysisResponse,
-    AuthorizedUserRequest, AuthorizedUserResponse,
-    RecurringPaymentRequest, RecurringPaymentResponse,
-    BusinessLoanApplicationRequest, BusinessLoanResponse,
-    APIKeyRequest, APIKeyResponse
-)
-
-# Also make sub-modules available if needed
-from .entities import business_models
-from .entities import card_models
-from .entities import credit_models
-from .entities import savings_models
-from .entities import subscription_models
-
-
-# Import crypto models
-from .entities.crypto_models import (
-    CryptoAssetType, BlockchainNetwork, TransactionDirection, DeFiProtocolType,
-    CryptoWalletCreate, CryptoWalletResponse, CryptoAssetResponse,
-    NFTAssetResponse, CryptoTransactionCreate, CryptoTransactionResponse,
-    DeFiPositionResponse, CryptoPortfolioSummary, CryptoSwapRequest,
-    CryptoSwapQuote
+    BulkImportRequest,
+    BulkImportResponse,
+    CancellationReminderRequest,
+    CancellationReminderResponse,
+    OptimizationResponse,
+    OptimizationSuggestion,
+    PaymentHistoryResponse,
+    SubscriptionAnalysisResponse,
+    SubscriptionCancelRequest,
+    SubscriptionCancelResponse,
+    SubscriptionCreateRequest,
+    SubscriptionDetailResponse,
+    SubscriptionPauseRequest,
+    SubscriptionPauseResponse,
+    SubscriptionRecommendationsResponse,
+    SubscriptionReminderRequest,
+    SubscriptionReminderResponse,
+    SubscriptionResponse,
+    SubscriptionShareRequest,
+    SubscriptionShareResponse,
+    SubscriptionSummaryResponse,
+    SubscriptionUpdateRequest,
+    SubscriptionUsageRequest,
+    SubscriptionUsageResponse,
 )
 
 # Import unified models
 from .entities.unified_models import (
-    AssetClass, ConversionType, TransferStatus,
-    UnifiedBalanceResponse, AssetBridgeRequest, AssetBridgeResponse,
-    UnifiedTransferRequest, UnifiedTransferResponse, CollateralPositionResponse,
-    CrossAssetOpportunity, PortfolioOptimizationRequest, PortfolioOptimizationResponse,
-    UnifiedSearchRequest, UnifiedSearchResponse
+    AssetBridgeRequest,
+    AssetBridgeResponse,
+    AssetClass,
+    CollateralPositionResponse,
+    ConversionType,
+    CrossAssetOpportunity,
+    PortfolioOptimizationRequest,
+    PortfolioOptimizationResponse,
+    TransferStatus,
+    UnifiedBalanceResponse,
+    UnifiedSearchRequest,
+    UnifiedSearchResponse,
+    UnifiedTransferRequest,
+    UnifiedTransferResponse,
 )

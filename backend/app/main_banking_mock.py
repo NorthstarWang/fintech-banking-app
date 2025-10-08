@@ -1,45 +1,47 @@
 """
 Main FastAPI application using memory-based mock data system.
 """
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+# Import routers
+import sys
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any
+from typing import Any
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.repositories.data_manager import data_manager
 
-# Import routers
-import sys
 sys.path.append('..')  # Add parent directory to path
-from tests.mock_routes import auth_mock as auth
-
-# For now, use regular routes with mock adapters
-from app.routes import accounts
-from app.routes import transactions
-from app.routes import cards  
-from app.routes import budgets
-from app.routes import goals
-from app.routes import subscriptions
-from app.routes import messages
-from app.routes import notifications
-from app.routes import analytics
-from app.routes import analytics_export
-from app.routes import users
-from app.routes import search
-from app.routes import banking
-from app.routes import business
-from app.routes import categories
-from app.routes import contacts
-from app.routes import credit
-from app.routes import exports
-from app.routes import notes
-from app.routes import payment_methods
-from app.routes import recurring
-from app.routes import savings
-from app.routes import security
-
 # Create placeholder routers for missing ones
 from fastapi import APIRouter
+
+# For now, use regular routes with mock adapters
+from app.routes import (
+    accounts,
+    analytics,
+    analytics_export,
+    banking,
+    budgets,
+    cards,
+    categories,
+    contacts,
+    credit,
+    exports,
+    goals,
+    messages,
+    notes,
+    notifications,
+    payment_methods,
+    recurring,
+    savings,
+    search,
+    security,
+    subscriptions,
+    transactions,
+    users,
+)
+from tests.mock_routes import auth_mock as auth
+
 social = type('Module', (), {'router': APIRouter()})()
 investments = type('Module', (), {'router': APIRouter()})()
 support = type('Module', (), {'router': APIRouter()})()
@@ -50,17 +52,14 @@ bills = type('Module', (), {'router': APIRouter()})()
 async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
     # Startup
-    print("Starting Banking Application with Mock Data System...")
-    
+
     # Reset data manager and generate mock data
     data_manager.reset(seed=42)
-    
-    print("Mock data generated successfully!")
-    
+
+
     yield
-    
+
     # Shutdown
-    print("Shutting down Banking Application...")
 
 app = FastAPI(
     title="Banking & Finance Application API (Mock System)",
@@ -79,7 +78,7 @@ app.add_middleware(
 )
 
 # Dependency to get current user from session
-async def get_current_user(authorization: Optional[str] = None) -> Dict[str, Any]:
+async def get_current_user(authorization: str | None = None) -> dict[str, Any]:
     """
     Get current user from authorization header.
     
@@ -94,13 +93,13 @@ async def get_current_user(authorization: Optional[str] = None) -> Dict[str, Any
     """
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Not authenticated")
-        
+
     token = authorization.replace("Bearer ", "")
     user = data_manager.auth_service.get_current_user(token)
-    
+
     if not user:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
-        
+
     return user
 
 # Include routers

@@ -2,11 +2,11 @@
 Mock data generator for the finance application.
 Creates realistic, interconnected data for testing.
 """
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
 import random
 import uuid
-from decimal import Decimal
+from datetime import datetime, timedelta
+from typing import Any
+
 
 def generate_mock_data(data_manager: Any, seed: int = 42):
     """
@@ -17,7 +17,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         seed: Random seed for reproducible data
     """
     random.seed(seed)
-    
+
     # Define test users
     users = [
         {
@@ -58,7 +58,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         }
     ]
     data_manager.users.extend(users)
-    
+
     # Create accounts for each user
     account_types = ['checking', 'savings', 'credit']
     for user in users[:2]:  # Only for non-admin users
@@ -74,7 +74,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'is_active': True
             }
             data_manager.accounts.append(account)
-            
+
     # Create transaction categories
     categories = [
         {'id': 'cat-1', 'name': 'Food & Dining', 'icon': '🍔', 'color': '#FF6B6B'},
@@ -89,7 +89,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         {'id': 'cat-10', 'name': 'Transfer', 'icon': '🔄', 'color': '#576574'},
     ]
     data_manager.transaction_categories.extend(categories)
-    
+
     # Create merchants
     merchants = [
         {'name': 'Starbucks', 'category': 'cat-1'},
@@ -105,21 +105,21 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         {'name': 'Whole Foods', 'category': 'cat-1'},
         {'name': 'Shell Gas Station', 'category': 'cat-3'},
     ]
-    
+
     # Generate transactions for the past 90 days
     for user in users[:2]:
         user_accounts = [acc for acc in data_manager.accounts if acc['user_id'] == user['id']]
-        
+
         for day_offset in range(90):
             date = datetime.utcnow() - timedelta(days=day_offset)
-            
+
             # Generate 0-5 transactions per day
             num_transactions = random.randint(0, 5)
-            
+
             for _ in range(num_transactions):
                 merchant = random.choice(merchants)
                 account = random.choice([acc for acc in user_accounts if acc['account_type'] != 'savings'])
-                
+
                 # Determine transaction type and amount
                 if merchant['category'] == 'cat-9':  # Income
                     trans_type = 'credit'
@@ -127,7 +127,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 else:
                     trans_type = 'debit'
                     amount = float(random.randint(10, 500))
-                    
+
                 transaction = {
                     'id': str(uuid.uuid4()),
                     'account_id': account['id'],
@@ -141,11 +141,11 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                     'created_at': date.isoformat()
                 }
                 data_manager.transactions.append(transaction)
-                
+
     # Create cards
     for user in users[:2]:
         user_accounts = [acc for acc in data_manager.accounts if acc['user_id'] == user['id']]
-        
+
         # Debit card for checking account
         checking_acc = next((acc for acc in user_accounts if acc['account_type'] == 'checking'), None)
         if checking_acc:
@@ -160,7 +160,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': checking_acc['created_at']
             }
             data_manager.cards.append(card)
-            
+
         # Credit card
         credit_acc = next((acc for acc in user_accounts if acc['account_type'] == 'credit'), None)
         if credit_acc:
@@ -176,7 +176,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': credit_acc['created_at']
             }
             data_manager.cards.append(card)
-            
+
     # Create credit scores
     for user in users[:2]:
         score = {
@@ -192,7 +192,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             ]
         }
         data_manager.credit_scores.append(score)
-        
+
     # Create budgets
     for user in users[:2]:
         for category in categories[:8]:  # Exclude income and transfer
@@ -207,7 +207,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': (datetime.utcnow() - timedelta(days=30)).isoformat()
             }
             data_manager.budgets.append(budget)
-            
+
     # Create goals
     goal_templates = [
         {'name': 'Emergency Fund', 'target': 10000, 'category': 'savings'},
@@ -215,7 +215,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         {'name': 'New Car Down Payment', 'target': 8000, 'category': 'auto'},
         {'name': 'Home Renovation', 'target': 15000, 'category': 'home'},
     ]
-    
+
     for user in users[:2]:
         for i, template in enumerate(goal_templates[:2]):
             goal = {
@@ -230,7 +230,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': (datetime.utcnow() - timedelta(days=60)).isoformat()
             }
             data_manager.goals.append(goal)
-            
+
     # Create bills
     bill_templates = [
         {'name': 'Electricity', 'amount': 150, 'day': 15},
@@ -238,7 +238,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         {'name': 'Phone', 'amount': 50, 'day': 10},
         {'name': 'Rent', 'amount': 2000, 'day': 1},
     ]
-    
+
     for user in users[:2]:
         for template in bill_templates:
             bill = {
@@ -254,7 +254,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': (datetime.utcnow() - timedelta(days=90)).isoformat()
             }
             data_manager.bills.append(bill)
-            
+
     # Create subscriptions
     subscription_templates = [
         {'name': 'Netflix', 'amount': 15.99, 'category': 'cat-5'},
@@ -262,12 +262,12 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         {'name': 'Amazon Prime', 'amount': 14.99, 'category': 'cat-2'},
         {'name': 'Gym Membership', 'amount': 49.99, 'category': 'cat-6'},
     ]
-    
+
     for user in users[:2]:
         user_cards = [card for card in data_manager.cards if card['user_id'] == user['id'] and card['card_type'] == 'credit']
         if user_cards:
             card = user_cards[0]
-            
+
             for template in subscription_templates[:3]:
                 sub = {
                     'id': f"{user['id']}-sub-{template['name'].lower().replace(' ', '-')}",
@@ -282,7 +282,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                     'created_at': (datetime.utcnow() - timedelta(days=random.randint(30, 365))).isoformat()
                 }
                 data_manager.subscriptions.append(sub)
-                
+
     # Create social connections
     if len(users) >= 2:
         # John and Jane are connected
@@ -294,7 +294,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'created_at': (datetime.utcnow() - timedelta(days=100)).isoformat()
         }
         data_manager.social_connections.append(connection)
-        
+
         # Reverse connection
         connection_reverse = {
             'id': 'conn-2',
@@ -304,7 +304,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'created_at': (datetime.utcnow() - timedelta(days=100)).isoformat()
         }
         data_manager.social_connections.append(connection_reverse)
-        
+
     # Create messages
     message_templates = [
         "Hey! Want to split lunch tomorrow?",
@@ -312,7 +312,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         "Can you send me your share for the Uber?",
         "Got the payment, thanks!",
     ]
-    
+
     for i, template in enumerate(message_templates):
         message = {
             'id': f'msg-{i+1}',
@@ -323,7 +323,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'created_at': (datetime.utcnow() - timedelta(hours=i * 24)).isoformat()
         }
         data_manager.messages.append(message)
-        
+
     # Create some P2P transactions
     p2p_transactions = [
         {
@@ -346,7 +346,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         }
     ]
     data_manager.p2p_transactions.extend(p2p_transactions)
-    
+
     # Create notifications
     for user in users[:2]:
         notifications = [
@@ -370,7 +370,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             }
         ]
         data_manager.notifications.extend(notifications)
-        
+
     # Create alerts
     alerts = [
         {
@@ -384,7 +384,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         }
     ]
     data_manager.alerts.extend(alerts)
-    
+
     # Create investment accounts
     for user in users[:2]:
         inv_account = {
@@ -397,7 +397,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'created_at': (datetime.utcnow() - timedelta(days=180)).isoformat()
         }
         data_manager.investment_accounts.append(inv_account)
-        
+
         # Create some holdings
         stocks = [
             {'symbol': 'AAPL', 'name': 'Apple Inc.', 'price': 175.50},
@@ -405,7 +405,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             {'symbol': 'MSFT', 'name': 'Microsoft Corp.', 'price': 380.75},
             {'symbol': 'AMZN', 'name': 'Amazon.com Inc.', 'price': 170.50},
         ]
-        
+
         for stock in stocks[:3]:
             holding = {
                 'id': f"{inv_account['id']}-holding-{stock['symbol']}",
@@ -419,7 +419,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'created_at': (datetime.utcnow() - timedelta(days=random.randint(30, 150))).isoformat()
             }
             data_manager.holdings.append(holding)
-            
+
         # Add to watchlist
         watchlist_item = {
             'id': f"{user['id']}-watch-1",
@@ -429,15 +429,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'added_at': (datetime.utcnow() - timedelta(days=10)).isoformat()
         }
         data_manager.watchlist.append(watchlist_item)
-        
-    print(f"Mock data generated successfully with seed {seed}")
-    print(f"- Users: {len(data_manager.users)}")
-    print(f"- Accounts: {len(data_manager.accounts)}")
-    print(f"- Transactions: {len(data_manager.transactions)}")
-    print(f"- Cards: {len(data_manager.cards)}")
-    print(f"- Goals: {len(data_manager.goals)}")
-    print(f"- Bills: {len(data_manager.bills)}")
-    print(f"- Subscriptions: {len(data_manager.subscriptions)}")
+
 
 def _hash_password(password: str) -> str:
     """Hash a password using SHA256."""

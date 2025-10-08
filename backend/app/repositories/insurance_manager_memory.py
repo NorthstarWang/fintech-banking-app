@@ -1,43 +1,51 @@
 """
 Insurance management repository for handling all insurance-related operations with in-memory storage.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
-from decimal import Decimal
 import random
 import string
+from datetime import date, datetime, timedelta
+from typing import Any
+
 from app.models.entities.insurance_models import (
-    InsuranceType, PolicyStatus, ClaimStatus, PremiumFrequency,
-    InsurancePolicyCreate, InsurancePolicyResponse,
-    InsuranceClaimCreate, InsuranceClaimResponse,
-    InsuranceProviderResponse, InsuranceQuoteRequest, InsuranceQuoteResponse,
-    InsuranceSummaryResponse, ClaimTimelineEvent
+    ClaimStatus,
+    InsuranceClaimCreate,
+    InsuranceClaimResponse,
+    InsurancePolicyCreate,
+    InsurancePolicyResponse,
+    InsuranceProviderResponse,
+    InsuranceQuoteRequest,
+    InsuranceQuoteResponse,
+    InsuranceSummaryResponse,
+    InsuranceType,
+    PolicyStatus,
+    PremiumFrequency,
 )
+
 
 class InsuranceManager:
     """Manages insurance-related data and operations."""
-    
+
     def __init__(self, data_manager):
         self.data_manager = data_manager
-    
+
     def _generate_policy_number(self) -> str:
         """Generate unique policy number."""
         prefix = "POL"
         random_part = ''.join(random.choices(string.digits, k=8))
         return f"{prefix}-{random_part}"
-    
+
     def _generate_claim_number(self) -> str:
         """Generate unique claim number."""
         prefix = "CLM"
         timestamp = datetime.now().strftime("%Y%m%d")
         random_part = ''.join(random.choices(string.digits, k=4))
         return f"{prefix}-{timestamp}-{random_part}"
-    
+
     def create_policy(self, user_id: int, policy_data: InsurancePolicyCreate) -> InsurancePolicyResponse:
         """Create a new insurance policy."""
         # Generate new ID
         new_id = len(self.data_manager.insurance_policies) + 1
-        
+
         # Calculate next premium date
         today = date.today()
         if policy_data.premium_frequency == PremiumFrequency.MONTHLY:
@@ -48,7 +56,7 @@ class InsuranceManager:
             next_premium = today + timedelta(days=180)
         else:  # Annual
             next_premium = today + timedelta(days=365)
-        
+
         # Create policy record
         policy = {
             'id': new_id,
@@ -72,83 +80,83 @@ class InsuranceManager:
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
-        
+
         self.data_manager.insurance_policies.append(policy)
-        
+
         return self._policy_to_response(policy)
-    
-    def get_user_policies(self, user_id: int, 
-                         insurance_type: Optional[InsuranceType] = None,
-                         status: Optional[PolicyStatus] = None) -> List[InsurancePolicyResponse]:
+
+    def get_user_policies(self, user_id: int,
+                         insurance_type: InsuranceType | None = None,
+                         status: PolicyStatus | None = None) -> list[InsurancePolicyResponse]:
         """Get all insurance policies for a user."""
-        policies = [p for p in self.data_manager.insurance_policies 
+        policies = [p for p in self.data_manager.insurance_policies
                    if p['user_id'] == user_id]
-        
+
         # Apply filters
         if insurance_type:
             policies = [p for p in policies if p['insurance_type'] == insurance_type.value]
         if status:
             policies = [p for p in policies if p['status'] == status.value]
-        
+
         return [self._policy_to_response(p) for p in policies]
-    
-    def get_policy(self, policy_id: int, user_id: int) -> Optional[InsurancePolicyResponse]:
+
+    def get_policy(self, policy_id: int, user_id: int) -> InsurancePolicyResponse | None:
         """Get specific insurance policy."""
-        policy = next((p for p in self.data_manager.insurance_policies 
+        policy = next((p for p in self.data_manager.insurance_policies
                       if p['id'] == policy_id and p['user_id'] == user_id), None)
-        
+
         return self._policy_to_response(policy) if policy else None
-    
-    def update_policy(self, policy_id: int, user_id: int, 
-                     update_data: Dict[str, Any]) -> Optional[InsurancePolicyResponse]:
+
+    def update_policy(self, policy_id: int, user_id: int,
+                     update_data: dict[str, Any]) -> InsurancePolicyResponse | None:
         """Update an existing policy."""
-        policy = next((p for p in self.data_manager.insurance_policies 
+        policy = next((p for p in self.data_manager.insurance_policies
                       if p['id'] == policy_id and p['user_id'] == user_id), None)
-        
+
         if not policy:
             return None
-        
+
         # Update allowed fields
-        allowed_fields = ['premium_amount', 'coverage_amount', 'deductible', 
+        allowed_fields = ['premium_amount', 'coverage_amount', 'deductible',
                          'beneficiaries', 'coverage_details']
-        
+
         for field, value in update_data.items():
             if field in allowed_fields:
                 policy[field] = value
-        
+
         policy['updated_at'] = datetime.utcnow()
-        
+
         return self._policy_to_response(policy)
-    
-    def cancel_policy(self, policy_id: int, user_id: int, 
+
+    def cancel_policy(self, policy_id: int, user_id: int,
                      cancellation_date: date, reason: str) -> bool:
         """Cancel an insurance policy."""
-        policy = next((p for p in self.data_manager.insurance_policies 
+        policy = next((p for p in self.data_manager.insurance_policies
                       if p['id'] == policy_id and p['user_id'] == user_id), None)
-        
+
         if not policy:
             return False
-        
+
         policy['status'] = PolicyStatus.CANCELLED.value
         policy['cancellation_date'] = cancellation_date
         policy['cancellation_reason'] = reason
         policy['updated_at'] = datetime.utcnow()
-        
+
         return True
-    
+
     def file_claim(self, user_id: int, claim_data: InsuranceClaimCreate) -> InsuranceClaimResponse:
         """File a new insurance claim."""
         # Verify policy ownership
-        policy = next((p for p in self.data_manager.insurance_policies 
+        policy = next((p for p in self.data_manager.insurance_policies
                       if p['id'] == claim_data.policy_id and p['user_id'] == user_id), None)
-        
+
         if not policy:
             raise ValueError("Policy not found or unauthorized")
-        
+
         # Generate new ID and claim number
         new_id = len(self.data_manager.insurance_claims) + 1
         claim_number = self._generate_claim_number()
-        
+
         # Create claim record
         claim = {
             'id': new_id,
@@ -177,59 +185,59 @@ class InsuranceManager:
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
-        
+
         self.data_manager.insurance_claims.append(claim)
-        
+
         return self._claim_to_response(claim)
-    
+
     def get_user_claims(self, user_id: int,
-                       policy_id: Optional[int] = None,
-                       status: Optional[ClaimStatus] = None) -> List[InsuranceClaimResponse]:
+                       policy_id: int | None = None,
+                       status: ClaimStatus | None = None) -> list[InsuranceClaimResponse]:
         """Get all claims for a user."""
         # Get user's policies first
-        user_policies = {p['id'] for p in self.data_manager.insurance_policies 
+        user_policies = {p['id'] for p in self.data_manager.insurance_policies
                         if p['user_id'] == user_id}
-        
+
         # Get claims for user's policies
-        claims = [c for c in self.data_manager.insurance_claims 
+        claims = [c for c in self.data_manager.insurance_claims
                  if c['policy_id'] in user_policies]
-        
+
         # Apply filters
         if policy_id:
             claims = [c for c in claims if c['policy_id'] == policy_id]
         if status:
             claims = [c for c in claims if c['status'] == status.value]
-        
+
         return [self._claim_to_response(c) for c in claims]
-    
-    def get_claim(self, claim_id: int, user_id: int) -> Optional[InsuranceClaimResponse]:
+
+    def get_claim(self, claim_id: int, user_id: int) -> InsuranceClaimResponse | None:
         """Get specific claim."""
         # Get user's policies first
-        user_policies = {p['id'] for p in self.data_manager.insurance_policies 
+        user_policies = {p['id'] for p in self.data_manager.insurance_policies
                         if p['user_id'] == user_id}
-        
-        claim = next((c for c in self.data_manager.insurance_claims 
+
+        claim = next((c for c in self.data_manager.insurance_claims
                      if c['id'] == claim_id and c['policy_id'] in user_policies), None)
-        
+
         return self._claim_to_response(claim) if claim else None
-    
+
     def update_claim_status(self, claim_id: int, user_id: int,
-                           status: ClaimStatus, notes: Optional[str] = None,
-                           approved_amount: Optional[float] = None) -> Optional[InsuranceClaimResponse]:
+                           status: ClaimStatus, notes: str | None = None,
+                           approved_amount: float | None = None) -> InsuranceClaimResponse | None:
         """Update claim status."""
         # Get user's policies first
-        user_policies = {p['id'] for p in self.data_manager.insurance_policies 
+        user_policies = {p['id'] for p in self.data_manager.insurance_policies
                         if p['user_id'] == user_id}
-        
-        claim = next((c for c in self.data_manager.insurance_claims 
+
+        claim = next((c for c in self.data_manager.insurance_claims
                      if c['id'] == claim_id and c['policy_id'] in user_policies), None)
-        
+
         if not claim:
             return None
-        
+
         # Update status
         claim['status'] = status.value
-        
+
         # Add to status history
         history_entry = {
             'status': status.value,
@@ -237,14 +245,14 @@ class InsuranceManager:
             'notes': notes or f'Status changed to {status.value}'
         }
         claim['status_history'].append(history_entry)
-        
+
         # Update specific fields based on status
         if status == ClaimStatus.IN_REVIEW:
             claim['adjuster_name'] = f'Adjuster-{random.randint(100, 999)}'
         elif status == ClaimStatus.APPROVED:
             claim['amount_approved'] = approved_amount or claim['amount_claimed']
             # Apply deductible
-            policy = next((p for p in self.data_manager.insurance_policies 
+            policy = next((p for p in self.data_manager.insurance_policies
                           if p['id'] == claim['policy_id']), None)
             if policy:
                 claim['deductible_applied'] = min(policy['deductible'], claim['amount_approved'])
@@ -255,19 +263,19 @@ class InsuranceManager:
         elif status == ClaimStatus.PAID:
             claim['payment_date'] = datetime.utcnow()
             claim['amount_paid'] = claim['amount_approved']
-        
+
         claim['updated_at'] = datetime.utcnow()
-        
+
         return self._claim_to_response(claim)
-    
-    def get_providers(self, insurance_type: Optional[InsuranceType] = None) -> List[InsuranceProviderResponse]:
+
+    def get_providers(self, insurance_type: InsuranceType | None = None) -> list[InsuranceProviderResponse]:
         """Get list of insurance providers."""
         providers = []
-        
+
         for provider in self.data_manager.insurance_providers:
             if insurance_type and insurance_type.value not in provider['types']:
                 continue
-            
+
             providers.append(InsuranceProviderResponse(
                 id=provider['id'],
                 name=provider['name'],
@@ -281,18 +289,18 @@ class InsuranceManager:
                 financial_strength_rating=random.choice(['A++', 'A+', 'A', 'A-']),
                 complaint_ratio=round(random.uniform(0.01, 0.05), 3)
             ))
-        
+
         return providers
-    
-    def get_quotes(self, user_id: int, quote_request: InsuranceQuoteRequest) -> List[InsuranceQuoteResponse]:
+
+    def get_quotes(self, user_id: int, quote_request: InsuranceQuoteRequest) -> list[InsuranceQuoteResponse]:
         """Get insurance quotes from multiple providers."""
         providers = self.get_providers(quote_request.insurance_type)
         quotes = []
-        
+
         for provider in providers:
             # Base premium calculation (mock)
             base_premium = quote_request.coverage_amount * 0.002  # 0.2% of coverage
-            
+
             # Adjust based on insurance type
             type_multipliers = {
                 InsuranceType.HEALTH: 2.5,
@@ -301,22 +309,22 @@ class InsuranceManager:
                 InsuranceType.LIFE: 0.5,
                 InsuranceType.DISABILITY: 1.2
             }
-            
+
             multiplier = type_multipliers.get(quote_request.insurance_type, 1.0)
             base_premium *= multiplier
-            
+
             # Adjust based on deductible
             deductible_factor = 1 - (quote_request.deductible / quote_request.coverage_amount * 0.5)
             base_premium *= deductible_factor
-            
+
             # Random variation between providers
             provider_factor = random.uniform(0.8, 1.2)
             monthly_premium = base_premium * provider_factor / 12
-            
+
             # Apply discounts
             discounts = []
             discount_factor = 1.0
-            
+
             if quote_request.insurance_type == InsuranceType.AUTO:
                 if quote_request.personal_info.get('safe_driver', True):
                     discount_factor *= 0.9
@@ -324,11 +332,11 @@ class InsuranceManager:
                 if quote_request.personal_info.get('multi_policy', False):
                     discount_factor *= 0.95
                     discounts.append('Multi-policy discount (5%)')
-            
+
             monthly_premium *= discount_factor
-            
+
             quote_id = f'QUOTE-{provider.name[:3].upper()}-{random.randint(100000, 999999)}'
-            
+
             quotes.append(InsuranceQuoteResponse(
                 provider_name=provider.name,
                 monthly_premium=round(monthly_premium, 2),
@@ -340,18 +348,18 @@ class InsuranceManager:
                 quote_id=quote_id,
                 valid_until=datetime.utcnow() + timedelta(days=30)
             ))
-        
+
         return quotes
-    
+
     def get_insurance_summary(self, user_id: int) -> InsuranceSummaryResponse:
         """Get comprehensive insurance summary for a user."""
         policies = self.get_user_policies(user_id)
         active_policies = [p for p in policies if p.status == PolicyStatus.ACTIVE]
-        
+
         # Calculate totals
         total_monthly = 0
         total_annual = 0
-        
+
         for policy in active_policies:
             if policy.premium_frequency == PremiumFrequency.MONTHLY:
                 total_monthly += policy.premium_amount
@@ -365,17 +373,17 @@ class InsuranceManager:
             else:  # Annual
                 total_monthly += policy.premium_amount / 12
                 total_annual += policy.premium_amount
-        
+
         # Group by type
         policies_by_type = {}
         for policy in active_policies:
             policy_type = policy.insurance_type.value
             policies_by_type[policy_type] = policies_by_type.get(policy_type, 0) + 1
-        
+
         # Get upcoming renewals (within 60 days)
         upcoming_renewals = []
         today = date.today()
-        
+
         for policy in active_policies:
             days_until = (policy.end_date - today).days
             if 0 <= days_until <= 60:
@@ -386,11 +394,11 @@ class InsuranceManager:
                     'end_date': policy.end_date.isoformat(),
                     'days_until_renewal': days_until
                 })
-        
+
         # Get recent claims
         claims = self.get_user_claims(user_id)
         recent_claims = sorted(claims, key=lambda c: c.filed_date, reverse=True)[:5]
-        
+
         recent_claims_summary = []
         for claim in recent_claims:
             recent_claims_summary.append({
@@ -400,12 +408,12 @@ class InsuranceManager:
                 'amount_claimed': claim.amount_claimed,
                 'filed_date': claim.filed_date.isoformat()
             })
-        
+
         # Analyze coverage gaps
         coverage_gaps = self._analyze_coverage_gaps(active_policies)
-        
+
         total_coverage = sum(p.coverage_amount for p in active_policies)
-        
+
         return InsuranceSummaryResponse(
             total_policies=len(policies),
             active_policies=len(active_policies),
@@ -417,12 +425,12 @@ class InsuranceManager:
             recent_claims=recent_claims_summary,
             coverage_gaps=coverage_gaps
         )
-    
-    def _analyze_coverage_gaps(self, policies: List[InsurancePolicyResponse]) -> List[str]:
+
+    def _analyze_coverage_gaps(self, policies: list[InsurancePolicyResponse]) -> list[str]:
         """Analyze insurance coverage and identify gaps."""
         gaps = []
         covered_types = {p.insurance_type for p in policies}
-        
+
         # Essential insurance types
         essential_types = {
             InsuranceType.HEALTH: 'Health insurance',
@@ -431,11 +439,11 @@ class InsuranceManager:
             InsuranceType.LIFE: 'Life insurance (if you have dependents)',
             InsuranceType.DISABILITY: 'Disability insurance'
         }
-        
+
         for ins_type, description in essential_types.items():
             if ins_type not in covered_types:
                 gaps.append(f'Missing {description}')
-        
+
         # Check for adequate coverage amounts
         for policy in policies:
             if policy.insurance_type == InsuranceType.LIFE and policy.coverage_amount < 500000:
@@ -443,10 +451,10 @@ class InsuranceManager:
             elif policy.insurance_type == InsuranceType.DISABILITY:
                 # Disability should cover 60-80% of income
                 gaps.append('Review disability coverage amount')
-        
+
         return gaps
-    
-    def _policy_to_response(self, policy: Dict[str, Any]) -> InsurancePolicyResponse:
+
+    def _policy_to_response(self, policy: dict[str, Any]) -> InsurancePolicyResponse:
         """Convert policy dict to response model."""
         return InsurancePolicyResponse(
             id=policy['id'],
@@ -470,8 +478,8 @@ class InsuranceManager:
             created_at=policy['created_at'],
             updated_at=policy['updated_at']
         )
-    
-    def _claim_to_response(self, claim: Dict[str, Any]) -> InsuranceClaimResponse:
+
+    def _claim_to_response(self, claim: dict[str, Any]) -> InsuranceClaimResponse:
         """Convert claim dict to response model."""
         return InsuranceClaimResponse(
             id=claim['id'],

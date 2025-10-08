@@ -1,28 +1,42 @@
 """
 Virtual currency converter management (Airtm-like P2P currency exchange).
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, date
-from decimal import Decimal
 import random
 import string
-import hashlib
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+from typing import Any
+
 from app.models.entities.currency_converter_models import (
-    CurrencyType, TransferMethod, TransferStatus, PeerStatus, VerificationLevel,
-    CurrencyPair, ExchangeRateResponse, ConversionQuoteRequest, ConversionQuoteResponse,
-    ConversionOrderCreate, ConversionOrderResponse, PeerOfferCreate, PeerOfferResponse,
-    P2PTradeRequest, P2PTradeResponse, CurrencyBalanceResponse, ConversionHistoryResponse,
-    CurrencySupportedResponse, TransferLimitResponse
+    ConversionHistoryResponse,
+    ConversionOrderCreate,
+    ConversionOrderResponse,
+    ConversionQuoteRequest,
+    ConversionQuoteResponse,
+    CurrencyBalanceResponse,
+    CurrencyPair,
+    CurrencySupportedResponse,
+    CurrencyType,
+    ExchangeRateResponse,
+    P2PTradeRequest,
+    P2PTradeResponse,
+    PeerOfferCreate,
+    PeerOfferResponse,
+    TransferLimitResponse,
+    TransferMethod,
+    TransferStatus,
+    VerificationLevel,
 )
+
 
 class CurrencyConverterManager:
     """Manages P2P currency conversion and virtual currency operations."""
-    
+
     def __init__(self, data_manager):
         self.data_manager = data_manager
         self._init_supported_currencies()
         self._init_exchange_rates()
-    
+
     def _init_supported_currencies(self):
         """Initialize supported currencies."""
         if not hasattr(self.data_manager, 'supported_currencies'):
@@ -46,12 +60,12 @@ class CurrencyConverterManager:
                 # Virtual currency
                 {'code': 'VIRT', 'name': 'Virtual Dollar', 'type': 'virtual', 'symbol': 'V$', 'decimals': 2}
             ]
-    
+
     def _init_exchange_rates(self):
         """Initialize exchange rates."""
         if not hasattr(self.data_manager, 'exchange_rates'):
             self.data_manager.exchange_rates = {}
-            
+
         # Base rates (to USD)
         base_rates = {
             'USD': 1.0,
@@ -70,40 +84,40 @@ class CurrencyConverterManager:
             'USDC': 1.0,
             'VIRT': 1.0
         }
-        
+
         # Calculate cross rates
         for from_curr, from_rate in base_rates.items():
             for to_curr, to_rate in base_rates.items():
                 if from_curr != to_curr:
                     pair_key = f"{from_curr}/{to_curr}"
                     self.data_manager.exchange_rates[pair_key] = to_rate / from_rate
-    
+
     def _generate_quote_id(self) -> str:
         """Generate unique quote ID."""
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         random_part = ''.join(random.choices(string.digits + string.ascii_uppercase, k=6))
         return f"QT-{timestamp}-{random_part}"
-    
+
     def _generate_order_number(self) -> str:
         """Generate unique order number."""
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         random_part = ''.join(random.choices(string.digits, k=6))
         return f"CVT-{timestamp}-{random_part}"
-    
+
     def _generate_trade_number(self) -> str:
         """Generate unique P2P trade number."""
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         random_part = ''.join(random.choices(string.digits, k=6))
         return f"P2P-{timestamp}-{random_part}"
-    
-    def get_supported_currencies(self, currency_type: Optional[CurrencyType] = None) -> List[CurrencySupportedResponse]:
+
+    def get_supported_currencies(self, currency_type: CurrencyType | None = None) -> list[CurrencySupportedResponse]:
         """Get list of supported currencies."""
         currencies = []
-        
+
         for curr in self.data_manager.supported_currencies:
             if currency_type and curr['type'] != currency_type.value:
                 continue
-            
+
             # Determine supported transfer methods
             methods = []
             if curr['type'] == 'fiat':
@@ -114,7 +128,7 @@ class CurrencyConverterManager:
                 methods = [TransferMethod.CRYPTO_WALLET]
             else:  # virtual
                 methods = list(TransferMethod)
-            
+
             currencies.append(CurrencySupportedResponse(
                 code=curr['code'],
                 name=curr['name'],
@@ -127,33 +141,33 @@ class CurrencyConverterManager:
                 supported_methods=methods,
                 countries=['US', 'MX', 'BR', 'AR', 'CO', 'VE'] if curr['type'] == 'fiat' else []
             ))
-        
+
         return currencies
-    
-    def get_exchange_rate(self, from_currency: str, to_currency: str) -> Optional[ExchangeRateResponse]:
+
+    def get_exchange_rate(self, from_currency: str, to_currency: str) -> ExchangeRateResponse | None:
         """Get exchange rate between two currencies."""
         # Try both key formats for compatibility
         pair_key_slash = f"{from_currency}/{to_currency}"
         pair_key_underscore = f"{from_currency}_{to_currency}"
         rate = self.data_manager.exchange_rates.get(pair_key_slash) or self.data_manager.exchange_rates.get(pair_key_underscore)
-        
+
         if not rate:
             return None
-        
+
         # Get currency types
         from_curr = next((c for c in self.data_manager.supported_currencies if c['code'] == from_currency), None)
         to_curr = next((c for c in self.data_manager.supported_currencies if c['code'] == to_currency), None)
-        
+
         if not from_curr or not to_curr:
             return None
-        
+
         # Calculate spread and fees
         base_spread = 0.02  # 2% spread
         if from_curr['type'] == 'crypto' or to_curr['type'] == 'crypto':
             base_spread = 0.015  # 1.5% for crypto
-        
+
         fee_percentage = self._calculate_fee_percentage(from_currency, to_currency)
-        
+
         return ExchangeRateResponse(
             currency_pair=CurrencyPair(
                 from_currency=from_currency,
@@ -171,33 +185,33 @@ class CurrencyConverterManager:
             last_updated=datetime.utcnow(),
             is_available=True
         )
-    
+
     def create_conversion_quote(self, user_id: int, request: ConversionQuoteRequest) -> ConversionQuoteResponse:
         """Create a conversion quote."""
         # Get exchange rate
         rate_info = self.get_exchange_rate(request.from_currency, request.to_currency)
         if not rate_info:
             raise ValueError("Currency pair not supported")
-        
+
         # Calculate amounts
         from_amount = Decimal(str(request.amount))
         exchange_rate = rate_info.effective_rate
         raw_to_amount = from_amount * exchange_rate
-        
+
         # Calculate fees
         fee_percentage = rate_info.fee_percentage
         fee_amount = from_amount * fee_percentage / 100
         total_cost = from_amount + fee_amount
-        
+
         # Final amount user receives
         to_amount = raw_to_amount * (1 - fee_percentage / 100)
-        
+
         quote_id = self._generate_quote_id()
-        
+
         # Store quote
         if not hasattr(self.data_manager, 'conversion_quotes'):
             self.data_manager.conversion_quotes = []
-        
+
         quote_data = {
             'id': quote_id,
             'user_id': user_id,
@@ -213,9 +227,9 @@ class CurrencyConverterManager:
             'created_at': datetime.utcnow(),
             'expires_at': datetime.utcnow() + timedelta(minutes=15)
         }
-        
+
         self.data_manager.conversion_quotes.append(quote_data)
-        
+
         return ConversionQuoteResponse(
             quote_id=quote_id,
             from_currency=request.from_currency,
@@ -237,29 +251,29 @@ class CurrencyConverterManager:
                 'network_fee': 0 if rate_info.currency_pair.from_type != CurrencyType.CRYPTO else 5.0
             }
         )
-    
+
     def create_conversion_order(self, user_id: int, order_data: ConversionOrderCreate) -> ConversionOrderResponse:
         """Create a conversion order from a quote."""
         # Find quote
         if not hasattr(self.data_manager, 'conversion_quotes'):
             raise ValueError("Quote not found")
-        
-        quote = next((q for q in self.data_manager.conversion_quotes 
+
+        quote = next((q for q in self.data_manager.conversion_quotes
                      if q['id'] == order_data.quote_id and q['user_id'] == user_id), None)
-        
+
         if not quote:
             raise ValueError("Quote not found or expired")
-        
+
         if quote['expires_at'] < datetime.utcnow():
             raise ValueError("Quote has expired")
-        
+
         # Create order
         if not hasattr(self.data_manager, 'conversion_orders'):
             self.data_manager.conversion_orders = []
-        
+
         order_id = len(self.data_manager.conversion_orders) + 1
         order_number = self._generate_order_number()
-        
+
         order = {
             'id': order_id,
             'order_number': order_number,
@@ -285,36 +299,36 @@ class CurrencyConverterManager:
                 'message': 'Order created'
             }]
         }
-        
+
         self.data_manager.conversion_orders.append(order)
-        
+
         # Simulate processing
         self._process_conversion_order(order)
-        
+
         return self._order_to_response(order)
-    
-    def get_user_orders(self, user_id: int, status: Optional[TransferStatus] = None) -> List[ConversionOrderResponse]:
+
+    def get_user_orders(self, user_id: int, status: TransferStatus | None = None) -> list[ConversionOrderResponse]:
         """Get conversion orders for a user."""
         if not hasattr(self.data_manager, 'conversion_orders'):
             return []
-        
+
         orders = [o for o in self.data_manager.conversion_orders if o['user_id'] == user_id]
-        
+
         if status:
             orders = [o for o in orders if o['status'] == status.value]
-        
+
         return [self._order_to_response(o) for o in orders]
-    
+
     def create_peer_offer(self, user_id: int, offer_data: PeerOfferCreate) -> PeerOfferResponse:
         """Create a P2P currency offer."""
         if not hasattr(self.data_manager, 'peer_offers'):
             self.data_manager.peer_offers = []
-        
+
         offer_id = len(self.data_manager.peer_offers) + 1
-        
+
         # Get user verification level (mock)
         verification_level = self._get_user_verification_level(user_id)
-        
+
         offer = {
             'id': offer_id,
             'peer_id': user_id,
@@ -331,71 +345,71 @@ class CurrencyConverterManager:
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
-        
+
         self.data_manager.peer_offers.append(offer)
-        
+
         return self._offer_to_response(offer, user_id, verification_level)
-    
-    def search_peer_offers(self, currency: str, amount: float, 
-                          transfer_method: Optional[TransferMethod] = None) -> List[PeerOfferResponse]:
+
+    def search_peer_offers(self, currency: str, amount: float,
+                          transfer_method: TransferMethod | None = None) -> list[PeerOfferResponse]:
         """Search for P2P offers."""
         if not hasattr(self.data_manager, 'peer_offers'):
             return []
-        
+
         offers = []
-        
+
         for offer in self.data_manager.peer_offers:
             if not offer['is_active']:
                 continue
-            
+
             if offer['currency'] != currency:
                 continue
-            
+
             if amount < offer['min_transaction'] or amount > offer['max_transaction']:
                 continue
-            
+
             if amount > offer['amount_remaining']:
                 continue
-            
+
             if transfer_method and transfer_method.value not in offer['transfer_methods']:
                 continue
-            
+
             # Get peer info
             verification_level = self._get_user_verification_level(offer['peer_id'])
             offers.append(self._offer_to_response(offer, offer['peer_id'], verification_level))
-        
+
         # Sort by rate (best first)
         offers.sort(key=lambda x: x.rate)
-        
+
         return offers
-    
+
     def create_p2p_trade(self, user_id: int, trade_request: P2PTradeRequest) -> P2PTradeResponse:
         """Create a P2P trade."""
         if not hasattr(self.data_manager, 'peer_offers'):
             raise ValueError("Offer not found")
-        
+
         offer = next((o for o in self.data_manager.peer_offers if o['id'] == trade_request.offer_id), None)
-        
+
         if not offer or not offer['is_active']:
             raise ValueError("Offer not found or inactive")
-        
+
         if trade_request.amount > offer['amount_remaining']:
             raise ValueError("Insufficient amount available")
-        
+
         if user_id == offer['peer_id']:
             raise ValueError("Cannot trade with yourself")
-        
+
         # Create trade
         if not hasattr(self.data_manager, 'p2p_trades'):
             self.data_manager.p2p_trades = []
-        
+
         trade_id = len(self.data_manager.p2p_trades) + 1
         trade_number = self._generate_trade_number()
-        
+
         # Calculate rate with adjustment
         base_rate = self.data_manager.exchange_rates.get(f"{offer['currency']}/USD", 1.0)
         adjusted_rate = base_rate * (1 + offer['rate_adjustment'] / 100)
-        
+
         trade = {
             'id': trade_id,
             'trade_number': trade_number,
@@ -417,23 +431,23 @@ class CurrencyConverterManager:
             'expires_at': datetime.utcnow() + timedelta(hours=2),
             'completed_at': None
         }
-        
+
         self.data_manager.p2p_trades.append(trade)
-        
+
         # Update offer
         offer['amount_remaining'] -= float(trade_request.amount)
         offer['updated_at'] = datetime.utcnow()
-        
+
         return self._trade_to_response(trade)
-    
-    def get_user_balances(self, user_id: int) -> List[CurrencyBalanceResponse]:
+
+    def get_user_balances(self, user_id: int) -> list[CurrencyBalanceResponse]:
         """Get user's currency balances."""
         if not hasattr(self.data_manager, 'currency_balances'):
             self.data_manager.currency_balances = []
-        
+
         # Get or create balances
         user_balances = [b for b in self.data_manager.currency_balances if b['user_id'] == user_id]
-        
+
         if not user_balances:
             # Create default USD balance
             usd_balance = {
@@ -448,13 +462,13 @@ class CurrencyConverterManager:
             }
             self.data_manager.currency_balances.append(usd_balance)
             user_balances = [usd_balance]
-        
+
         return [self._balance_to_response(b) for b in user_balances]
-    
+
     def get_conversion_history(self, user_id: int) -> ConversionHistoryResponse:
         """Get user's conversion history and statistics."""
         orders = self.get_user_orders(user_id)
-        
+
         if not orders:
             return ConversionHistoryResponse(
                 total_conversions=0,
@@ -466,39 +480,39 @@ class CurrencyConverterManager:
                 member_since=date.today(),
                 verification_level=VerificationLevel.BASIC
             )
-        
+
         # Calculate statistics
         total_volume = sum(o.from_amount for o in orders)
         total_fees = sum(o.fee_amount for o in orders)
         currencies = set()
         pairs = []
-        
+
         for order in orders:
             currencies.add(order.from_currency)
             currencies.add(order.to_currency)
             pairs.append((order.from_currency, order.to_currency))
-        
+
         # Find most common pairs
         pair_counts = {}
         for pair in pairs:
             key = f"{pair[0]}/{pair[1]}"
             pair_counts[key] = pair_counts.get(key, 0) + 1
-        
+
         favorite_pairs = []
         for pair_str, count in sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
             from_curr, to_curr = pair_str.split('/')
             from_type = next((c['type'] for c in self.data_manager.supported_currencies if c['code'] == from_curr), 'fiat')
             to_type = next((c['type'] for c in self.data_manager.supported_currencies if c['code'] == to_curr), 'fiat')
-            
+
             favorite_pairs.append(CurrencyPair(
                 from_currency=from_curr,
                 to_currency=to_curr,
                 from_type=CurrencyType(from_type),
                 to_type=CurrencyType(to_type)
             ))
-        
+
         avg_fee = (total_fees / total_volume * 100) if total_volume > 0 else 0
-        
+
         return ConversionHistoryResponse(
             total_conversions=len(orders),
             total_volume=total_volume,
@@ -509,11 +523,11 @@ class CurrencyConverterManager:
             member_since=min(o.created_at.date() for o in orders),
             verification_level=self._get_user_verification_level(user_id)
         )
-    
+
     def get_transfer_limits(self, user_id: int) -> TransferLimitResponse:
         """Get user's transfer limits based on verification level."""
         verification_level = self._get_user_verification_level(user_id)
-        
+
         # Define limits by level
         limits = {
             VerificationLevel.UNVERIFIED: {'daily': 500, 'monthly': 1000, 'transaction': 200},
@@ -522,17 +536,17 @@ class CurrencyConverterManager:
             VerificationLevel.ADVANCED: {'daily': 50000, 'monthly': 200000, 'transaction': 25000},
             VerificationLevel.PREMIUM: {'daily': 100000, 'monthly': 500000, 'transaction': 50000}
         }
-        
+
         user_limits = limits[verification_level]
-        
+
         # Calculate usage
         orders = self.get_user_orders(user_id)
         today = date.today()
         month_start = date(today.year, today.month, 1)
-        
+
         daily_usage = sum(o.from_amount for o in orders if o.created_at.date() == today)
         monthly_usage = sum(o.from_amount for o in orders if o.created_at.date() >= month_start)
-        
+
         return TransferLimitResponse(
             verification_level=verification_level,
             daily_limit=Decimal(str(user_limits['daily'])),
@@ -543,40 +557,39 @@ class CurrencyConverterManager:
             next_limit_reset=datetime.combine(today + timedelta(days=1), datetime.min.time()),
             upgrade_available=verification_level != VerificationLevel.PREMIUM
         )
-    
+
     # Helper methods
     def _calculate_fee_percentage(self, from_currency: str, to_currency: str) -> float:
         """Calculate fee percentage based on currency pair."""
         base_fee = 2.0  # 2% base fee
-        
+
         # Lower fees for stablecoins
         if from_currency in ['USDT', 'USDC'] or to_currency in ['USDT', 'USDC']:
             base_fee = 1.0
-        
+
         # Higher fees for volatile currencies
         if from_currency in ['VES', 'ARS'] or to_currency in ['VES', 'ARS']:
             base_fee = 3.0
-        
+
         return base_fee
-    
+
     def _estimate_arrival_time(self, from_type: str, to_type: str) -> str:
         """Estimate transfer arrival time."""
         if from_type == 'crypto' and to_type == 'crypto':
             return "10-30 minutes"
-        elif from_type == 'virtual' or to_type == 'virtual':
+        if from_type == 'virtual' or to_type == 'virtual':
             return "Instant"
-        elif from_type == 'fiat' and to_type == 'fiat':
+        if from_type == 'fiat' and to_type == 'fiat':
             return "1-3 business days"
-        else:
-            return "1-24 hours"
-    
+        return "1-24 hours"
+
     def _get_user_verification_level(self, user_id: int) -> VerificationLevel:
         """Get user's verification level (mock)."""
         # In real implementation, this would check KYC status
         levels = list(VerificationLevel)
         return levels[min(user_id % 5, len(levels) - 1)]
-    
-    def _process_conversion_order(self, order: Dict[str, Any]):
+
+    def _process_conversion_order(self, order: dict[str, Any]):
         """Process a conversion order (simulation)."""
         # Simulate processing steps
         order['status'] = TransferStatus.PROCESSING.value
@@ -585,7 +598,7 @@ class CurrencyConverterManager:
             'timestamp': datetime.utcnow(),
             'message': 'Payment received, processing conversion'
         })
-        
+
         # Simulate completion (in real system, this would be async)
         order['status'] = TransferStatus.COMPLETED.value
         order['completed_at'] = datetime.utcnow()
@@ -594,9 +607,9 @@ class CurrencyConverterManager:
             'timestamp': datetime.utcnow(),
             'message': 'Conversion completed, funds sent to recipient'
         })
-    
+
     # Response conversion methods
-    def _order_to_response(self, order: Dict[str, Any]) -> ConversionOrderResponse:
+    def _order_to_response(self, order: dict[str, Any]) -> ConversionOrderResponse:
         """Convert order dict to response model."""
         return ConversionOrderResponse(
             id=order['id'],
@@ -619,19 +632,19 @@ class CurrencyConverterManager:
             completed_at=order.get('completed_at'),
             tracking_updates=order.get('tracking_updates', [])
         )
-    
-    def _offer_to_response(self, offer: Dict[str, Any], peer_id: int, 
+
+    def _offer_to_response(self, offer: dict[str, Any], peer_id: int,
                           verification_level: VerificationLevel) -> PeerOfferResponse:
         """Convert offer dict to response model."""
         # Get peer stats (mock)
         peer_username = f"peer_{peer_id}"
         peer_rating = 4.5 + (peer_id % 5) * 0.1
         completed_trades = peer_id * 10 + random.randint(0, 50)
-        
+
         # Calculate effective rate
         base_rate = self.data_manager.exchange_rates.get(f"{offer['currency']}/USD", 1.0)
         effective_rate = base_rate * (1 + offer['rate_adjustment'] / 100)
-        
+
         return PeerOfferResponse(
             id=offer['id'],
             peer_id=peer_id,
@@ -652,8 +665,8 @@ class CurrencyConverterManager:
             last_seen=datetime.utcnow() - timedelta(minutes=random.randint(0, 60)),
             created_at=offer['created_at']
         )
-    
-    def _trade_to_response(self, trade: Dict[str, Any]) -> P2PTradeResponse:
+
+    def _trade_to_response(self, trade: dict[str, Any]) -> P2PTradeResponse:
         """Convert trade dict to response model."""
         return P2PTradeResponse(
             id=trade['id'],
@@ -676,8 +689,8 @@ class CurrencyConverterManager:
             expires_at=trade['expires_at'],
             completed_at=trade.get('completed_at')
         )
-    
-    def _balance_to_response(self, balance: Dict[str, Any]) -> CurrencyBalanceResponse:
+
+    def _balance_to_response(self, balance: dict[str, Any]) -> CurrencyBalanceResponse:
         """Convert balance dict to response model."""
         return CurrencyBalanceResponse(
             currency=balance['currency'],
