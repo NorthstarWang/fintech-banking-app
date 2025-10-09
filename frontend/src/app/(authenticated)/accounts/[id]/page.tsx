@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -45,12 +45,12 @@ export default function AccountDetailPage() {
     if (id) {
       loadAccountData();
     }
-  }, [id]);
+  }, [id, loadAccountData]);
 
-  const loadAccountData = async () => {
+  const loadAccountData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Load account details and transactions in parallel
       const [accountData, transactionsData] = await Promise.all([
         accountsService.getAccount(Number(id)),
@@ -64,13 +64,13 @@ export default function AccountDetailPage() {
 
       setAccount(accountData);
       setTransactions(transactionsData);
-      
+
     } catch {
       showError('Failed to load account details', 'Please try again later or contact support.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, dateRange, showError]);
 
   const handleExportStatement = async () => {
     try {

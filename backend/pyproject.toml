@@ -64,3 +64,6 @@ show_error_context = true
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 addopts = "-v --tb=short --strict-markers"
+markers = [
+    "timeout: marks tests as having a timeout limit"
+]

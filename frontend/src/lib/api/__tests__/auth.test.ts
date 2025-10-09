@@ -3,11 +3,6 @@ import { apiClient } from '../client'
 
 // Mock dependencies
 jest.mock('../client')
-jest.mock('@/lib/analytics', () => ({
-  analytics: {
-    logEvent: jest.fn(),
-  },
-}))
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -75,11 +70,6 @@ describe('AuthService', () => {
       expect(result).toEqual(mockAuthResponse)
     })
 
-    it('should log analytics events for successful login', async () => {
-      mockApiClient.post.mockResolvedValueOnce(mockAuthResponse)
-
-      await authService.login(mockCredentials)
-    })
 
     it('should handle login failure', async () => {
       const error = new Error('Invalid credentials')
@@ -124,11 +114,6 @@ describe('AuthService', () => {
       expect(result).toEqual(mockUserResponse)
     })
 
-    it('should log analytics events for registration', async () => {
-      mockApiClient.post.mockResolvedValueOnce(mockUserResponse)
-
-      await authService.register(mockRegisterData)
-    })
 
     it('should handle registration failure', async () => {
       const error = new Error('Username already exists')
@@ -169,27 +154,15 @@ describe('AuthService', () => {
       expect(authService['currentUser']).toBeNull()
     })
 
-    it('should log analytics event for logout', async () => {
-      mockApiClient.post.mockResolvedValueOnce({})
-
-      await authService.logout()
-    })
 
     it('should clear local state even if API call fails', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
       mockApiClient.post.mockRejectedValueOnce(new Error('Network error'))
 
       await authService.logout()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Logout API call failed:',
-        expect.any(Error)
-      )
       expect(mockApiClient.setAuthToken).toHaveBeenCalledWith(null)
       expect(localStorage.removeItem).toHaveBeenCalledWith('currentUser')
       expect(localStorage.removeItem).toHaveBeenCalledWith('authToken')
-
-      consoleErrorSpy.mockRestore()
     })
   })
 

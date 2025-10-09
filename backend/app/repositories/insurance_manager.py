@@ -42,12 +42,11 @@ class InsuranceManager:
     def get_user_insurance_summary(self, user_id: int) -> InsuranceSummaryResponse:
         """Get comprehensive insurance summary for a user."""
         # Get all policies
-        policies = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).all()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
 
         active_policies = [p for p in policies if p.data.get("status") == PolicyStatus.ACTIVE.value]
 
@@ -97,12 +96,13 @@ class InsuranceManager:
                     })
 
         # Get recent claims
-        claims = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        ).order_by(MemoryModel.created_at.desc()).limit(5).all()
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
+        # Sort by created_at descending and limit to 5
+        claims = sorted(claims, key=lambda x: x.created_at, reverse=True)[:5]
 
         recent_claims = []
         for c in claims:
@@ -165,14 +165,12 @@ class InsuranceManager:
         status: PolicyStatus | None = None
     ) -> list[InsurancePolicyResponse]:
         """Get all insurance policies for a user."""
-        query = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        )
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
 
-        policies = query.all()
         results = []
 
         for policy in policies:
@@ -188,13 +186,14 @@ class InsuranceManager:
 
     def get_policy(self, policy_id: int, user_id: int) -> InsurancePolicyResponse | None:
         """Get specific insurance policy."""
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == policy_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == policy_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             return None
@@ -248,13 +247,14 @@ class InsuranceManager:
         policy_data: InsurancePolicyCreate
     ) -> InsurancePolicyResponse | None:
         """Update existing insurance policy."""
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == policy_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == policy_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             return None
@@ -281,13 +281,14 @@ class InsuranceManager:
 
     def delete_policy(self, policy_id: int, user_id: int) -> bool:
         """Delete insurance policy."""
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == policy_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == policy_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             return False
@@ -304,13 +305,14 @@ class InsuranceManager:
         reason: str
     ) -> bool:
         """Cancel an insurance policy."""
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == policy_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == policy_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             return False
@@ -330,14 +332,12 @@ class InsuranceManager:
         status: ClaimStatus | None = None
     ) -> list[InsuranceClaimResponse]:
         """Get all claims for a user."""
-        query = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        )
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
 
-        claims = query.all()
         results = []
 
         for claim in claims:
@@ -353,13 +353,14 @@ class InsuranceManager:
 
     def get_claim(self, claim_id: int, user_id: int) -> InsuranceClaimResponse | None:
         """Get specific claim."""
-        claim = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == claim_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        ).first()
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == claim_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
+
+        claim = claims[0] if claims else None
 
         if not claim:
             return None
@@ -371,12 +372,13 @@ class InsuranceManager:
         claim_number = self._generate_claim_number()
 
         # Get policy to determine user_id
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == claim_data.policy_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == claim_data.policy_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             raise ValueError("Policy not found")
@@ -420,13 +422,14 @@ class InsuranceManager:
         notes: str | None = None
     ) -> InsuranceClaimResponse | None:
         """Update claim status."""
-        claim = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == claim_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        ).first()
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == claim_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
+
+        claim = claims[0] if claims else None
 
         if not claim:
             return None
@@ -466,13 +469,14 @@ class InsuranceManager:
 
     def get_claim_timeline(self, claim_id: int, user_id: int) -> list[ClaimTimelineEvent] | None:
         """Get timeline of events for a claim."""
-        claim = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == claim_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        ).first()
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == claim_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
+
+        claim = claims[0] if claims else None
 
         if not claim:
             return None
@@ -519,13 +523,14 @@ class InsuranceManager:
         document_type: str
     ) -> bool:
         """Add document to claim."""
-        claim = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == claim_id,
-                MemoryModel.user_id == user_id,
-                MemoryModel.memory_type == "insurance_claim"
-            )
-        ).first()
+        claims = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == claim_id and
+                item.user_id == user_id and
+                item.memory_type == "insurance_claim")
+        ]
+
+        claim = claims[0] if claims else None
 
         if not claim:
             return False
@@ -671,7 +676,7 @@ class InsuranceManager:
         active_policies = [p for p in policies if p.status == PolicyStatus.ACTIVE]
 
         gaps = self._analyze_coverage_gaps([
-            self.db.query(MemoryModel).filter(MemoryModel.id == p.id).first()
+            next((item for item in self.db.memory_storage.values() if item.id == p.id), None)
             for p in active_policies
         ])
 
@@ -719,12 +724,13 @@ class InsuranceManager:
 
     def get_renewal_options(self, policy_id: int) -> dict[str, Any]:
         """Get renewal options for an expiring policy."""
-        policy = self.db.query(MemoryModel).filter(
-            and_(
-                MemoryModel.id == policy_id,
-                MemoryModel.memory_type == "insurance_policy"
-            )
-        ).first()
+        policies = [
+            item for item in self.db.memory_storage.values()
+            if (item.id == policy_id and
+                item.memory_type == "insurance_policy")
+        ]
+
+        policy = policies[0] if policies else None
 
         if not policy:
             return {}

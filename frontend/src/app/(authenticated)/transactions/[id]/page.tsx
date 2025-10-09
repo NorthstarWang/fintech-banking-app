@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
@@ -28,13 +28,7 @@ export default function TransactionDetailPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (params.id) {
-      loadTransaction();
-    }
-  }, [params.id]);
-
-  const loadTransaction = async () => {
+  const loadTransaction = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await transactionsService.getTransaction(Number(params.id));
@@ -44,7 +38,13 @@ export default function TransactionDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    if (params.id) {
+      loadTransaction();
+    }
+  }, [params.id, loadTransaction]);
 
   const handleDownloadReceipt = () => {
     // In a real app, this would generate a PDF

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   FileText,
   Plus,
   Search,
-  
+
   Download,
   Send,
   CheckCircle,
@@ -45,28 +45,12 @@ export default function InvoicesPage() {
     loadInvoices();
   }, [user]);
 
-  useEffect(() => {
-    filterAndSortInvoices();
-  }, [invoices, searchQuery, filterStatus, sortBy]);
-
-  const loadInvoices = async () => {
-    try {
-      const data = await businessApi.getInvoices();
-      setInvoices(data);
-      
-      // Log data loaded event
-    } catch {
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filterAndSortInvoices = () => {
+  const filterAndSortInvoices = useCallback(() => {
     let filtered = [...invoices];
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(invoice => 
+      filtered = filtered.filter(invoice =>
         invoice.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         invoice.client_email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -81,20 +65,37 @@ export default function InvoicesPage() {
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case 'amount':
-          return b.total_amount - a.total_amount;
+          return parseFloat(b.total) - parseFloat(a.total);
         case 'due':
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-        case 'date':
         default:
-          return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime();
+          return 0;
       }
     });
 
     setFilteredInvoices(filtered);
+  }, [invoices, searchQuery, filterStatus, sortBy]);
+
+  useEffect(() => {
+    filterAndSortInvoices();
+  }, [filterAndSortInvoices]);
+
+  const loadInvoices = async () => {
+    try {
+      const data = await businessApi.getInvoices();
+      setInvoices(data);
+
+      // Log data loaded event
+    } catch {
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCreateInvoice = async (invoiceData: any) => {
+  const handleCreateInvoice = async (invoiceData: Partial<Invoice>) => {
     try {
       const newInvoice = await businessApi.createInvoice(invoiceData);
       setInvoices([newInvoice, ...invoices]);

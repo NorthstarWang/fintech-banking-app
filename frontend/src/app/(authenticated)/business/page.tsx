@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -78,7 +78,7 @@ export interface ExpenseCategory {
 
 export default function BusinessPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [businessAccounts, setBusinessAccounts] = useState<BusinessAccount[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [expenses, setExpenses] = useState<BusinessExpense[]>([]);
@@ -89,36 +89,29 @@ export default function BusinessPage() {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'team' | 'expenses' | 'reports'>('overview');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Enhanced page view logging
-
-    // Load real data from backend
-    loadBusinessData();
-  }, [user, selectedTab]);
-
-  const loadBusinessData = async () => {
+  const loadBusinessData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Load accounts and filter for business accounts
       const allAccounts = await accountsService.getAccounts();
-      
+
       // Identify business accounts (those with "Business" in the name or specific patterns)
-      const businessAccountsData = allAccounts.filter(account => 
+      const businessAccountsData = allAccounts.filter(account =>
         account.name.toLowerCase().includes('business') ||
         account.name.toLowerCase().includes('corporate') ||
         account.name.toLowerCase().includes('company')
       );
-      
+
       // If no business accounts found, use some regular accounts as business accounts for demo
-      const accountsToUse = businessAccountsData.length > 0 ? businessAccountsData : 
+      const accountsToUse = businessAccountsData.length > 0 ? businessAccountsData :
         allAccounts.slice(0, 3).map(acc => ({
           ...acc,
-          name: acc.name.includes('Checking') ? 'Business Checking' : 
-                acc.name.includes('Savings') ? 'Business Savings' : 
+          name: acc.name.includes('Checking') ? 'Business Checking' :
+                acc.name.includes('Savings') ? 'Business Savings' :
                 acc.name.includes('Credit') ? 'Business Credit' : acc.name
         }));
-      
+
       // Convert to business account format
       const formattedAccounts: BusinessAccount[] = accountsToUse.map(acc => ({
         id: acc.id.toString(),
@@ -129,16 +122,16 @@ export default function BusinessPage() {
         currency: 'USD',
         status: acc.is_active ? 'active' : 'frozen'
       }));
-      
+
       setBusinessAccounts(formattedAccounts);
-      
+
       // Load transactions for expense tracking
       if (formattedAccounts.length > 0) {
         const accountIds = formattedAccounts.map(acc => parseInt(acc.id));
         const allTransactions = await Promise.all(
           accountIds.map(id => transactionsService.getTransactions({ account_id: id }))
         );
-        
+
         // Flatten and format as expenses
         const expenseTransactions = allTransactions
           .flat()
@@ -155,15 +148,15 @@ export default function BusinessPage() {
             notes: tx.notes,
             tags: tx.tags || []
           }));
-        
+
         setExpenses(expenseTransactions);
-        
+
         // Calculate categories from actual expenses
         const categoryMap = new Map<string, number>();
         expenseTransactions.forEach(exp => {
           categoryMap.set(exp.category, (categoryMap.get(exp.category) || 0) + exp.amount);
         });
-        
+
         const calculatedCategories: ExpenseCategory[] = Array.from(categoryMap.entries())
           .slice(0, 4) // Top 4 categories
           .map(([name, spent]) => ({
@@ -173,18 +166,18 @@ export default function BusinessPage() {
             icon: categoryIcons[name] || <Briefcase className="w-5 h-5" />,
             color: categoryColors[name] || 'from-[var(--primary-blue)] to-[var(--primary-indigo)]/80'
           }));
-        
+
         setCategories(calculatedCategories);
       }
-      
+
       setIsLoading(false);
     } catch {
       // Fall back to mock data on error
       loadMockData();
     }
-  };
+  }, [teamMembers, categoryIcons, categoryColors, loadMockData]);
 
-  const loadMockData = () => {
+  const loadMockData = useCallback(() => {
 
     // Mock accounts for fallback
     const mockAccounts: BusinessAccount[] = [
@@ -348,10 +341,17 @@ export default function BusinessPage() {
     setExpenses(mockExpenses);
     setCategories(mockCategories);
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    // Enhanced page view logging
+
+    // Load real data from backend
+    loadBusinessData();
+  }, [loadBusinessData]);
 
   // Category icons and colors for expense categorization
-  const categoryIcons: { [key: string]: React.ReactNode } = {
+  const categoryIcons = useMemo<{ [key: string]: React.ReactNode }>(() => ({
     'Office Supplies': <Briefcase className="w-5 h-5" />,
     'Travel': <Building2 className="w-5 h-5" />,
     'Marketing': <TrendingUp className="w-5 h-5" />,
@@ -360,9 +360,9 @@ export default function BusinessPage() {
     'Transport': <Building2 className="w-5 h-5" />,
     'Utilities': <Zap className="w-5 h-5" />,
     'Other': <DollarSign className="w-5 h-5" />
-  };
+  }), []);
 
-  const categoryColors: { [key: string]: string } = {
+  const categoryColors = useMemo<{ [key: string]: string }>(() => ({
     'Office Supplies': 'from-[var(--cat-blue)] to-[var(--cat-blue)]/80',
     'Travel': 'from-[var(--cat-indigo)] to-[var(--cat-indigo)]/80',
     'Marketing': 'from-[var(--cat-violet)] to-[var(--cat-violet)]/80',
@@ -371,7 +371,7 @@ export default function BusinessPage() {
     'Transport': 'from-[var(--cat-amber)] to-[var(--cat-amber)]/80',
     'Utilities': 'from-[var(--cat-teal)] to-[var(--cat-teal)]/80',
     'Other': 'from-[var(--primary-blue)] to-[var(--primary-indigo)]/80'
-  };
+  }), []);
 
   const totalBalance = businessAccounts.reduce((sum, account) => 
     account.type === 'credit' ? sum - account.balance : sum + account.balance, 0

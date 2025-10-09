@@ -671,6 +671,39 @@ class PaymentMethodStatus:
     SUSPENDED = "suspended"
 
 
+class TwoFactorAuth(BaseMemoryModel):
+    """Two-factor authentication model."""
+    __tablename__ = "two_factor_auth"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('is_enabled', False)
+        self._data.setdefault('method', 'totp')
+        self._data.setdefault('created_at', datetime.utcnow().isoformat())
+
+
+class UserDevice(BaseMemoryModel):
+    """User device model for security tracking."""
+    __tablename__ = "user_devices"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('is_trusted', False)
+        self._data.setdefault('first_seen', datetime.utcnow().isoformat())
+        self._data.setdefault('last_seen', datetime.utcnow().isoformat())
+
+
+class SecurityAuditLog(BaseMemoryModel):
+    """Security audit log model."""
+    __tablename__ = "security_audit_logs"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('event_type', 'unknown')
+        self._data.setdefault('timestamp', datetime.utcnow().isoformat())
+        self._data.setdefault('ip_address', '127.0.0.1')
+
+
 # Log Model (for analytics)
 class Log(BaseMemoryModel):
     """Log model for analytics."""

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CreditCard,
@@ -77,12 +77,7 @@ export default function CardsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
-  useEffect(() => {
-    fetchCards();
-    fetchAccounts();
-  }, []);
-
-  const fetchCards = async () => {
+  const fetchCards = useCallback(async () => {
     try {
       setIsLoading(true);
       const apiCards = await cardsApi.getCards();
@@ -164,7 +159,7 @@ export default function CardsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const formatCardNumber = (cardNumber: string) => {
     // Ensure the card number is formatted as XXXX **** **** XXXX
@@ -323,13 +318,18 @@ export default function CardsPage() {
     ];
   }
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
       const data = await accountsService.getAccounts();
       setAccounts(data);
     } catch {
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCards();
+    fetchAccounts();
+  }, [fetchCards, fetchAccounts]);
 
   const _totalBalance = cards.reduce((sum, card) => {
     if (card.type === 'credit') {

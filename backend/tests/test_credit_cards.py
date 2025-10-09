@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from datetime import datetime
 from app.main_banking import app
 from app.repositories.data_manager import data_manager
-from app.models.entities.credit_card_models import (
+from app.models.enums import (
     CardCategory, ApplicationStatus, EmploymentType
 )
 

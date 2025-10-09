@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -44,11 +44,25 @@ interface ETFDetail {
   sector_allocation: Record<string, number>;
 }
 
+interface Holding {
+  symbol: string;
+  name: string;
+  weight: number;
+  shares: number;
+  value: number;
+}
+
+interface Watchlist {
+  id: number;
+  symbols: string[];
+  name: string;
+}
+
 export default function ETFDetailPage() {
   const params = useParams();
   const router = useRouter();
   const symbol = params.symbol as string;
-  
+
   const [etf, setEtf] = useState<ETFDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,11 +71,11 @@ export default function ETFDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  const fetchETFDetail = async () => {
+  const fetchETFDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetchApi.get(`/api/investments/etf/${symbol.toUpperCase()}`);
-      
+
       // Convert string numbers to actual numbers
       const processedETF = {
         ...response,
@@ -77,36 +91,36 @@ export default function ETFDetailPage() {
         expense_ratio: parseFloat(response.expense_ratio),
         net_assets: parseFloat(response.net_assets),
         holdings_count: parseInt(response.holdings_count),
-        top_holdings: response.top_holdings.map((h: any) => ({
+        top_holdings: response.top_holdings.map((h: Holding) => ({
           ...h,
-          weight: parseFloat(h.weight),
-          shares: parseInt(h.shares),
-          value: parseFloat(h.value)
+          weight: parseFloat(h.weight.toString()),
+          shares: parseInt(h.shares.toString()),
+          value: parseFloat(h.value.toString())
         })),
         sector_allocation: Object.fromEntries(
           Object.entries(response.sector_allocation).map(([k, v]) => [k, parseFloat(v as string)])
         )
       };
-      
+
       setEtf(processedETF);
-      
+
     } catch {
       setError('Failed to load ETF details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol]);
 
-  const checkWatchlist = async () => {
+  const checkWatchlist = useCallback(async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) =>
+      const isInWatchlist = watchlists.some((w: Watchlist) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     if (symbol) {
@@ -120,7 +134,7 @@ export default function ETFDetailPage() {
       if (inWatchlist) {
         // Remove from watchlist
         const watchlists = await fetchApi.get('/api/investments/watchlists');
-        const watchlist = watchlists.find((w: any) => w.symbols.includes(symbol.toUpperCase()));
+        const watchlist = watchlists.find((w: Watchlist) => w.symbols.includes(symbol.toUpperCase()));
         if (watchlist) {
           const updatedSymbols = watchlist.symbols.filter((s: string) => s !== symbol.toUpperCase());
           await fetchApi.put(`/api/investments/watchlists/${watchlist.id}`, updatedSymbols);

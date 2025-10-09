@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   User, 
@@ -52,11 +52,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isContact, _setIsContact] = useState(false);
 
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       // TODO: Replace with actual API call
       // const response = await usersService.getProfile(userId);
@@ -89,7 +85,11 @@ export default function ProfilePage() {
     } catch {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   if (loading) {
     return (

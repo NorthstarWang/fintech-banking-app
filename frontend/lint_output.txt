@@ -1,0 +1,325 @@
+
+> frontend@0.1.0 lint
+> next lint
+
+
+./src/__tests__/integration/user-flows.test.tsx
+63:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+153:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+347:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/accounts/[id]/page.tsx
+303:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/credit-cards/__tests__/page.test.tsx
+230:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/crypto/page.tsx
+19:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/currency-converter/__tests__/page.test.tsx
+91:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/dashboard/page.tsx
+402:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/insurance/page.tsx
+18:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+137:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+168:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+308:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/(authenticated)/investments/._page.tsx
+Error: Parsing error: Invalid character.
+
+./src/app/(authenticated)/investments/__tests__/._page.test.tsx
+Error: Parsing error: Invalid character.
+
+./src/app/(authenticated)/investments/trade/[assetType]/page.tsx
+463:94  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+534:97  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/loans/page.tsx
+18:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/notifications/page.tsx
+26:11  Error: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+74:9  Error: 'markAsRead' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/(authenticated)/security/page.tsx
+207:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/settings/page.tsx
+51:11  Error: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+200:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(authenticated)/subscriptions/page.tsx
+64:11  Error: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+146:6  Warning: React Hook useCallback has a missing dependency: 'loadMockData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(authenticated)/transactions/page.tsx
+216:6  Warning: React Hook useEffect has a missing dependency: 'loadTransactionsData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+225:6  Warning: React Hook useEffect has missing dependencies: 'filters', 'isLoading', 'loadTransactionsData', and 'transactions.length'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(authenticated)/transfer/page.tsx
+33:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+189:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/analytics/NetWorthTracker.tsx
+32:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/business/ExpenseForm.tsx
+53:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+72:6  Warning: React Hook useEffect has a missing dependency: 'loadBusinessAccounts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+380:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/business/InvoiceForm.tsx
+74:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+80:6  Warning: React Hook useEffect has a missing dependency: 'loadBusinessAccounts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+121:69  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+335:87  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/cards/AddCardModal.tsx
+73:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/cards/CardTransactionsModal.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'fetchTransactions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/cards/SpendingLimits.tsx
+57:6  Warning: React Hook useEffect has a missing dependency: 'fetchLimits'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/crypto/AssetList.tsx
+60:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/crypto/PortfolioSummary.tsx
+147:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/investments/PortfolioSummary.tsx
+64:6  Warning: React Hook useEffect has a missing dependency: 'fetchPortfolioSummary'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/layout/Header.tsx
+61:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+63:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+64:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+136:6  Warning: React Hook useEffect has a missing dependency: 'loadUnreadMessagesCount'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+225:6  Warning: React Hook useEffect has a missing dependency: 'loadUnreadMessagesCount'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/messaging/ConversationView.tsx
+199:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+276:6  Warning: React Hook useEffect has a missing dependency: 'onMessageRead'. Either include it or remove the dependency array. If 'onMessageRead' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/components/mobile/PullToRefresh.tsx
+114:6  Warning: React Hook useEffect has missing dependencies: 'handleTouchEnd', 'handleTouchMove', and 'handleTouchStart'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/mobile/ResponsiveChart.tsx
+88:69  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/modals/AddAccountModal.tsx
+152:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/modals/AddTransactionModal.tsx
+53:6  Warning: React Hook useEffect has a missing dependency: 'loadAccountsAndCategories'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/modals/BillPaymentModal.tsx
+210:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/modals/DepositModal.tsx
+189:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/modals/QRCodeModal.tsx
+23:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+32:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:6  Warning: React Hook useEffect has a missing dependency: 'generateQRCode'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+195:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/modals/SplitPaymentModal.tsx
+57:6  Warning: React Hook useEffect has a missing dependency: 'selectedAccount'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/modals/TransferModal.tsx
+47:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+174:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/performance/LazyRoute.tsx
+7:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+9:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+27:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/performance/OptimizedComponents.tsx
+111:7  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+125:9  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+127:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+254:85  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+296:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/transactions/OptimizedTransactionList.tsx
+213:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:81  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/transactions/TransactionDetail.tsx
+71:6  Warning: React Hook useEffect has a missing dependency: 'transaction'. Either include it or remove the dependency array. If 'setEditedTransaction' needs the current value of 'transaction', you can also switch to useReducer instead of useState and read 'transaction' in the reducer.  react-hooks/exhaustive-deps
+91:6  Warning: React Hook useEffect has missing dependencies: 'allTransactions' and 'transaction'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+133:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/transfer/RecipientSearch.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'searchUsers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/transfer/TransferModal.tsx
+20:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/ui/BiometricAuth.tsx
+104:6  Warning: React Hook useEffect has a missing dependency: 'startAuthentication'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/ui/Button.tsx
+30:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/ui/QRScannerModal.tsx
+19:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:6  Warning: React Hook useEffect has a missing dependency: 'startCamera'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/ui/SlideToConfirmTracked.tsx
+99:6  Warning: React Hook useEffect has a missing dependency: 'x'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/ui/Tabs.tsx
+187:1  Warning: Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+./src/components/ui/__tests__/Button.test.tsx
+9:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+175:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/contexts/AuthContext.tsx
+12:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+67:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useErrorHandler.ts
+12:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+42:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useFloatingPosition.ts
+110:6  Warning: React Hook useEffect has a missing dependency: 'triggerRef'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/useHoverTracking.ts
+35:6  Warning: React Hook useCallback has unnecessary dependencies: 'elementId', 'elementName', and 'user'. Either exclude them or remove the dependency array.  react-hooks/exhaustive-deps
+48:6  Warning: React Hook useCallback has unnecessary dependencies: 'elementId', 'elementName', and 'user'. Either exclude them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/useOptimizedQuery.ts
+32:9  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+148:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+197:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+257:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+257:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+259:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+291:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useScrollTracking.ts
+58:6  Warning: React Hook useCallback has unnecessary dependencies: 'elementId', 'elementName', and 'user'. Either exclude them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/useSyntheticTracking.ts
+2:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+3:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+4:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+5:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+6:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+10:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+12:5  Error: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+15:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:5  Error: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+20:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:5  Error: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+25:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+27:5  Error: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+30:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+32:5  Error: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+
+./src/lib/api/__tests__/client.test.ts
+17:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/__tests__/currencyConverter.test.ts
+2:49  Error: 'PaymentMethod' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/api/accounts.ts
+82:114  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+96:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+105:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/budgets.ts
+110:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+115:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/client.ts
+12:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+165:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/goals.ts
+121:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/index.ts
+87:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+90:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/insurance.ts
+21:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+134:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+194:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/messages.ts
+19:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/p2p.ts
+90:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+109:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+114:79  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+122:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/api/subscriptions.ts
+88:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+89:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+90:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/notifications.ts
+45:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+90:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+108:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+110:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/services/eventBus.ts
+1:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/services/notificationService.tsx
+67:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/types.ts
+42:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+200:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/utils/InputSanitizer.ts
+74:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+217:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+299:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/utils/PerformanceMonitor.ts
+6:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+127:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+142:71  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/utils/browserSecurity.ts
+197:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+208:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/utils/security.ts
+2:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

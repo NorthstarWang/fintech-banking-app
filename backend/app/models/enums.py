@@ -256,4 +256,52 @@ class ExportFormat(str, Enum):
     QIF = "qif"
     OFX = "ofx"
 
+# Credit Card Application Related Enums
+class CardCategory(str, Enum):
+    REWARDS = "rewards"
+    CASH_BACK = "cash_back"
+    TRAVEL = "travel"
+    BUSINESS = "business"
+    STUDENT = "student"
+    SECURED = "secured"
+    LOW_INTEREST = "low_interest"
+    BALANCE_TRANSFER = "balance_transfer"
+
+class ApplicationStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    DENIED = "denied"
+    UNDER_REVIEW = "under_review"
+    WITHDRAWN = "withdrawn"
+
+class EmploymentType(str, Enum):
+    FULL_TIME = "full_time"
+    PART_TIME = "part_time"
+    SELF_EMPLOYED = "self_employed"
+    UNEMPLOYED = "unemployed"
+    RETIRED = "retired"
+    STUDENT = "student"
+
+# Currency Converter Related Enums
+class TradeStatus(str, Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    DISPUTED = "disputed"
+
+class OfferStatus(str, Enum):
+    ACTIVE = "active"
+    MATCHED = "matched"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+class PaymentMethod(str, Enum):
+    BANK_TRANSFER = "bank_transfer"
+    CREDIT_CARD = "credit_card"
+    DEBIT_CARD = "debit_card"
+    PAYPAL = "paypal"
+    CRYPTO = "crypto"
+    CASH = "cash"
+
 # Synthetic Data Related Enums (for testing)

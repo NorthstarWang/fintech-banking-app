@@ -3,12 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Input } from '../Input'
 
-// Mock analytics logger
-jest.mock('@/lib/analytics', () => ({
-  analytics: {
-    logFormField: jest.fn(),
-  },
-}))
 
 describe('Input', () => {
   beforeEach(() => {

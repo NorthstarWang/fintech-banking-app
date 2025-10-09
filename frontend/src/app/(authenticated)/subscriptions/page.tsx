@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   CreditCard,
   Calendar,
@@ -99,14 +99,7 @@ export default function SubscriptionsPage() {
     'Other': 'from-[var(--primary-blue)] to-[var(--primary-indigo)]/80',
   };
 
-  useEffect(() => {
-    // Enhanced page view logging
-
-    // Load real subscriptions from backend
-    loadSubscriptions();
-  }, [user]);
-
-  const loadSubscriptions = async () => {
+  const loadSubscriptions = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -150,7 +143,14 @@ export default function SubscriptionsPage() {
       // Fall back to mock data
       loadMockData();
     }
-  };
+  }, [categoryColors, categoryIcons]);
+
+  useEffect(() => {
+    // Enhanced page view logging
+
+    // Load real subscriptions from backend
+    loadSubscriptions();
+  }, [loadSubscriptions]);
 
   const mapApiCategoryToDisplay = (category: ApiSubscription['category']): string => {
     const categoryMap: Record<ApiSubscription['category'], string> = {

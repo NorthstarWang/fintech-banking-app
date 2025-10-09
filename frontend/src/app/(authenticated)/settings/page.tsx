@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -109,11 +109,7 @@ export default function SettingsPage() {
   const [_theme, _setTheme] = useState('dark');
   const [_autoTheme, _setAutoTheme] = useState(false);
 
-  useEffect(() => {
-    loadUserProfile();
-  }, [user]);
-  
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
     try {
       const userProfile = await usersService.getCurrentUser();
       setProfileData({
@@ -125,12 +121,16 @@ export default function SettingsPage() {
         currency: userProfile.currency || 'USD',
       });
       setIsLoading(false);
-      
+
     } catch {
       showError('Error', 'Failed to load profile data');
       setIsLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    loadUserProfile();
+  }, [loadUserProfile]);
 
   const settingSections: SettingSection[] = [
     {

@@ -165,6 +165,11 @@ class CurrencyConverterService {
     return apiClient.get<Currency[]>('/api/currency-converter/currencies');
   }
 
+  // Alias for backward compatibility with tests
+  async getCurrencies(): Promise<Currency[]> {
+    return this.getSupportedCurrencies();
+  }
+
   async getCurrency(code: string): Promise<Currency> {
     return apiClient.get<Currency>(`/api/currency-converter/currencies/${code}`);
   }
@@ -182,6 +187,11 @@ class CurrencyConverterService {
   // Conversions
   async getConversionQuote(data: ConversionRequest): Promise<ConversionQuote> {
     return apiClient.post<ConversionQuote>('/api/currency-converter/quote', data);
+  }
+
+  // Alias for backward compatibility with tests
+  async createQuote(data: ConversionRequest): Promise<ConversionQuote> {
+    return this.getConversionQuote(data);
   }
 
   async executeConversion(quoteId: string): Promise<{
@@ -211,6 +221,21 @@ class CurrencyConverterService {
     return apiClient.get(`/api/currency-converter/conversions${params}`);
   }
 
+  // Alias for backward compatibility with tests
+  async getConversions(limit?: number): Promise<Array<{
+    id: string;
+    from_currency: string;
+    to_currency: string;
+    from_amount: number;
+    to_amount: number;
+    exchange_rate: number;
+    fee_amount: number;
+    status: string;
+    created_at: string;
+  }>> {
+    return this.getConversionHistory(limit);
+  }
+
   // User Balances
   async getBalances(): Promise<UserBalance[]> {
     return apiClient.get<UserBalance[]>('/api/currency-converter/balances');
@@ -230,7 +255,9 @@ class CurrencyConverterService {
         }
       });
     }
-    return apiClient.get<PeerOffer[]>(`/api/currency-converter/p2p/offers?${queryParams.toString()}`);
+    const queryString = queryParams.toString();
+    const url = queryString ? `/api/currency-converter/p2p/offers?${queryString}` : '/api/currency-converter/p2p/offers';
+    return apiClient.get<PeerOffer[]>(url);
   }
 
   async createOffer(data: CreateOfferRequest): Promise<PeerOffer> {

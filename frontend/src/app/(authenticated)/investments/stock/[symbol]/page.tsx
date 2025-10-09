@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -41,11 +41,17 @@ interface StockDetail {
   analyst_target_price?: number;
 }
 
+interface Watchlist {
+  id: number;
+  symbols: string[];
+  name: string;
+}
+
 export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
   const symbol = params.symbol as string;
-  
+
   const [stock, setStock] = useState<StockDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,11 +60,11 @@ export default function StockDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  const fetchStockDetail = async () => {
+  const fetchStockDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetchApi.get(`/api/investments/stock/${symbol.toUpperCase()}`);
-      
+
       // Convert string numbers to actual numbers
       const processedStock = {
         ...response,
@@ -76,26 +82,26 @@ export default function StockDetailPage() {
         profit_margin: response.profit_margin ? parseFloat(response.profit_margin) : undefined,
         analyst_target_price: response.analyst_target_price ? parseFloat(response.analyst_target_price) : undefined
       };
-      
+
       setStock(processedStock);
-      
+
     } catch {
       setError('Failed to load stock details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol]);
 
-  const checkWatchlist = async () => {
+  const checkWatchlist = useCallback(async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) =>
+      const isInWatchlist = watchlists.some((w: Watchlist) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     if (symbol) {
@@ -109,7 +115,7 @@ export default function StockDetailPage() {
       if (inWatchlist) {
         // Remove from watchlist
         const watchlists = await fetchApi.get('/api/investments/watchlists');
-        const watchlist = watchlists.find((w: any) => w.symbols.includes(symbol.toUpperCase()));
+        const watchlist = watchlists.find((w: Watchlist) => w.symbols.includes(symbol.toUpperCase()));
         if (watchlist) {
           const updatedSymbols = watchlist.symbols.filter((s: string) => s !== symbol.toUpperCase());
           await fetchApi.put(`/api/investments/watchlists/${watchlist.id}`, updatedSymbols);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Target,
@@ -58,7 +58,7 @@ export interface Goal {
 }
 
 export default function GoalsPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { showError, _showSuccess, _showInfo } = useAlert();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -90,7 +90,7 @@ export default function GoalsPage() {
     priority: 'MEDIUM'
   });
 
-  const categoryIcons: { [key: string]: React.ReactNode } = {
+  const categoryIcons = useMemo<{ [key: string]: React.ReactNode }>(() => ({
     'SAVINGS': <PiggyBank className="w-5 h-5" />,
     'DEBT': <DollarSign className="w-5 h-5" />,
     'INVESTMENT': <TrendingUp className="w-5 h-5" />,
@@ -105,13 +105,9 @@ export default function GoalsPage() {
     'Gift': <Gift className="w-5 h-5" />,
     'Retirement': <Briefcase className="w-5 h-5" />,
     'Other': <Target className="w-5 h-5" />,
-  };
+  }), []);
 
-  useEffect(() => {
-    loadGoals();
-  }, [user]);
-
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -178,12 +174,16 @@ export default function GoalsPage() {
       const _completedGoals = transformedGoals.filter(g => g.status === 'completed');
       const _goalsAtRisk = transformedGoals.filter(g => g.riskLevel === 'at-risk');
       
-    } catch {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [categoryIcons]);
+
+  useEffect(() => {
+    loadGoals();
+  }, [loadGoals]);
 
   const handleCreateGoal = async () => {
     try {

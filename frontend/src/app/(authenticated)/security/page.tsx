@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Lock,
@@ -160,17 +160,17 @@ export default function SecurityPage() {
     }, 500);
   }, [user]);
 
-  const calculateSecurityScore = () => {
+  const calculateSecurityScore = useCallback(() => {
     let score = 40; // Base score
     if (twoFactorEnabled) score += 30;
     if (biometricEnabled) score += 20;
     if (securityEvents.filter(e => e.status === 'warning').length === 0) score += 10;
     return Math.min(score, 100);
-  };
+  }, [twoFactorEnabled, biometricEnabled, securityEvents]);
 
   useEffect(() => {
     setSecurityScore(calculateSecurityScore());
-  }, [twoFactorEnabled, biometricEnabled]);
+  }, [calculateSecurityScore]);
 
   const getSecurityScoreColor = () => {
     if (securityScore >= 80) return 'text-[var(--primary-emerald)]';

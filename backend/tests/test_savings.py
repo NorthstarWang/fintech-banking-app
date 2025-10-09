@@ -12,6 +12,9 @@ class TestSavingsGoals:
     """Test savings goals management endpoints"""
     
     @pytest.fixture(autouse=True)
+    def setup_mock_logger(self):
+        """Set up mock logger for tests"""
+        with patch('app.utils.security_logger') as mock_logger:
             # Create a mock that handles any number of arguments
             mock_logger.log_goal_created = MagicMock()
             mock_logger.log_delete = MagicMock()
@@ -255,13 +258,15 @@ class TestSavingsGoals:
     def test_filter_goals_by_category(self, client: TestClient, auth_headers: dict):
         """Test filtering goals by category"""
         # First create a goal with emergency category
-        client.post("/api/savings", 
+        client.post("/api/savings",
             headers=auth_headers,
             json={
                 "goal_name": "Emergency Test",
                 "target_amount": 1000.00,
                 "current_amount": 0.00,
                 "category": "emergency"
+            }
+        )
 
         response = client.get("/api/savings?category=emergency", headers=auth_headers)
         assert response.status_code == 200

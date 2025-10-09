@@ -12,7 +12,7 @@ import {
   Shield,
   Zap
 } from 'lucide-react';
-import { fetchApi } from '@/lib/api';
+import { apiClient } from '@/lib/api/client';
 import { formatCurrency } from '@/lib/utils';
 import PortfolioSummary from '@/components/investments/PortfolioSummary';
 
@@ -94,16 +94,17 @@ export default function InvestmentsPage() {
       setLoading(true);
       
       // Fetch investment accounts
-      const accountsRes = await fetchApi.get('/api/investments/accounts');
+      const accountsRes = await apiClient.get('/api/investments/accounts');
       setAccounts(accountsRes);
 
       // If user has accounts, fetch portfolio data
       if (accountsRes.length > 0) {
-        const portfolioRes = await fetchApi.get(`/api/investments/portfolio/${accountsRes[0].id}`);
+        const portfolioRes = await apiClient.get(`/api/investments/portfolio/${accountsRes[0].id}`);
         setPositions(portfolioRes.positions || []);
         setAllocation(portfolioRes.allocation || []);
       }
-    } catch {
+    } catch (error) {
+      console.error('Error fetching investment data:', error);
     } finally {
       setLoading(false);
     }
@@ -211,7 +212,7 @@ export default function InvestmentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {Object.entries(ASSET_TYPE_CONFIG).map(([key, config]) => {
             const Icon = config.icon;
-            const hasAccount = accounts.some(acc => acc.name.toLowerCase().includes(key));
+            const hasAccount = accounts.some(acc => acc.account_name.toLowerCase().includes(key));
             
             return (
               <div key={key} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">

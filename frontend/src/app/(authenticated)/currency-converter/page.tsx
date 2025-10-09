@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowRightLeft, 
   DollarSign,
@@ -140,23 +140,18 @@ export default function CurrencyConverterPage() {
   const [myTrades, setMyTrades] = useState<P2PTrade[]>([]);
   const [showP2PModal, setShowP2PModal] = useState(false);
 
-  useEffect(() => {
-    fetchInitialData();
-    
-  }, []);
-
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Fetch supported currencies
       const currenciesRes = await fetchApi.get('/api/currency-converter/currencies');
       setCurrencies(currenciesRes);
-      
+
       // Fetch user balances
       const balancesRes = await fetchApi.get('/api/currency-converter/balances');
       setBalances(balancesRes);
-      
+
       // Fetch user's P2P trades
       const tradesRes = await fetchApi.get('/api/currency-converter/p2p/trades');
       setMyTrades(tradesRes);
@@ -164,21 +159,26 @@ export default function CurrencyConverterPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchExchangeRate = async () => {
+  useEffect(() => {
+    fetchInitialData();
+
+  }, [fetchInitialData]);
+
+  const fetchExchangeRate = useCallback(async () => {
     try {
       const rateRes = await fetchApi.get(`/api/currency-converter/exchange-rate/${fromCurrency}/${toCurrency}`);
       setExchangeRate(rateRes);
     } catch {
     }
-  };
+  }, [fromCurrency, toCurrency]);
 
   useEffect(() => {
     if (fromCurrency && toCurrency) {
       fetchExchangeRate();
     }
-  }, [fromCurrency, toCurrency]);
+  }, [fromCurrency, toCurrency, fetchExchangeRate]);
 
   const handleCreateQuote = async () => {
     if (!fromAmount || parseFloat(fromAmount) <= 0) return;

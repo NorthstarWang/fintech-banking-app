@@ -14,9 +14,10 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-# TwoFactorAuth, UserDevice, SecurityAuditLog models not yet implemented
 from ..models import (
-    Any,
+    TwoFactorAuth,
+    UserDevice,
+    SecurityAuditLog,
     DeviceTrustUpdate,
     SecurityAuditLogResponse,
     SecurityEvent,

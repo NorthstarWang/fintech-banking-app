@@ -142,7 +142,8 @@ class NotificationsService {
         });
       }
       
-    } catch {
+    } catch (error) {
+      console.error('Failed to generate notifications:', error);
     }
     
     return notifications.slice(0, 5); // Return max 5 notifications

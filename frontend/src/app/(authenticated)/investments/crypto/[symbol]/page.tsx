@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -46,11 +46,11 @@ export default function CryptoDetailPage() {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('');
 
-  const fetchCryptoDetail = async () => {
+  const fetchCryptoDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetchApi.get(`/api/investments/crypto/${symbol.toUpperCase()}`);
-      
+
       // Convert string numbers to actual numbers
       const processedCrypto = {
         ...response,
@@ -64,26 +64,27 @@ export default function CryptoDetailPage() {
         week_52_high: parseFloat(response.week_52_high),
         week_52_low: parseFloat(response.week_52_low)
       };
-      
+
       setCrypto(processedCrypto);
-      
+
     } catch {
       setError('Failed to load crypto details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol]);
 
-  const checkWatchlist = async () => {
+  const checkWatchlist = useCallback(async () => {
     try {
       const watchlists = await fetchApi.get('/api/investments/watchlists');
-      const isInWatchlist = watchlists.some((w: any) =>
+      interface Watchlist { symbols: string[] }
+      const isInWatchlist = watchlists.some((w: Watchlist) =>
         w.symbols.includes(symbol.toUpperCase())
       );
       setInWatchlist(isInWatchlist);
     } catch {
     }
-  };
+  }, [symbol]);
 
   useEffect(() => {
     if (symbol) {
@@ -97,7 +98,8 @@ export default function CryptoDetailPage() {
       if (inWatchlist) {
         // Remove from watchlist
         const watchlists = await fetchApi.get('/api/investments/watchlists');
-        const watchlist = watchlists.find((w: any) => w.symbols.includes(symbol.toUpperCase()));
+        interface Watchlist { id: number; symbols: string[] }
+        const watchlist = watchlists.find((w: Watchlist) => w.symbols.includes(symbol.toUpperCase()));
         if (watchlist) {
           const updatedSymbols = watchlist.symbols.filter((s: string) => s !== symbol.toUpperCase());
           await fetchApi.put(`/api/investments/watchlists/${watchlist.id}`, updatedSymbols);

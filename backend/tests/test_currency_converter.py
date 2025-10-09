@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
 from app.main_banking import app
 from app.repositories.data_manager import data_manager
-from app.models.entities.currency_models import (
+from app.models.enums import (
     TradeStatus, OfferStatus, PaymentMethod
 )
 

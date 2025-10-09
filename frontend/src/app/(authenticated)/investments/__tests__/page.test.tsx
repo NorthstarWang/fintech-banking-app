@@ -2,10 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import InvestmentsPage from '../page';
-import { fetchApi } from '@/lib/api';
+import { apiClient } from '@/lib/api/client';
 
 // Mock dependencies
-jest.mock('@/lib/api');
+jest.mock('@/lib/api/client');
 jest.mock('@/hooks/useSyntheticTracking', () => ({
   useSyntheticTracking: () => ({
     trackInvestmentOrder: jest.fn(),
@@ -14,7 +14,14 @@ jest.mock('@/hooks/useSyntheticTracking', () => ({
   })
 }));
 
-const mockFetchApi = fetchApi as jest.MockedFunction<typeof fetchApi>;
+// Mock analytics logger
+const mockAnalyticsLogger = {
+  logEvent: jest.fn(),
+  logPageView: jest.fn(),
+  logUserAction: jest.fn()
+};
+
+const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('InvestmentsPage', () => {
   const mockAccounts = [
@@ -87,7 +94,15 @@ describe('InvestmentsPage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetchApi.mockImplementation((url: string) => {
+    // Manually set up mock functions
+    mockApiClient.get = jest.fn();
+    mockApiClient.post = jest.fn();
+    mockApiClient.put = jest.fn();
+    mockApiClient.delete = jest.fn();
+    mockApiClient.setAuthToken = jest.fn();
+    mockApiClient.getAuthToken = jest.fn();
+
+    mockApiClient.get.mockImplementation((url: string) => {
       if (url === '/api/investments/accounts') {
         return Promise.resolve(mockAccounts);
       }
@@ -227,7 +242,7 @@ describe('InvestmentsPage', () => {
   });
 
   test('error handling when API fails', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('API Error'));
+    mockApiClient.get.mockRejectedValueOnce(new Error('API Error'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
     render(<InvestmentsPage />);

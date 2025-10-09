@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  Search, 
-  TrendingUp, 
+import {
+  Search,
+  TrendingUp,
   TrendingDown,
   Plus,
   Minus,
   AlertCircle,
   Star,
-  
+
   X
 } from 'lucide-react';
 import Dropdown from '@/components/ui/Dropdown';
@@ -94,44 +94,36 @@ export default function TradingPage() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('');
 
-  useEffect(() => {
-    if (!['etf', 'stock', 'crypto'].includes(assetType)) {
-      router.push('/investments');
-      return;
+  const searchAssets = useCallback(async (query: string) => {
+    try {
+      const response = await fetchApi.get(`/api/investments/assets/search?query=${query}&type=${assetType}`);
+      setAssets(response);
+    } catch {
     }
-    
-    fetchInitialData();
   }, [assetType]);
 
-  useEffect(() => {
-    if (selectedAsset) {
-      setOrderForm(prev => ({ ...prev, symbol: selectedAsset.symbol }));
-      checkExistingPosition(selectedAsset.symbol);
-    }
-  }, [selectedAsset]);
-
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Fetch accounts
       const accountsRes = await fetchApi.get('/api/investments/accounts');
-      const filteredAccounts = accountsRes.filter((acc: InvestmentAccount) => 
+      const filteredAccounts = accountsRes.filter((acc: InvestmentAccount) =>
         acc.name.toLowerCase().includes(assetType)
       );
       setAccounts(filteredAccounts);
-      
+
       if (filteredAccounts.length > 0) {
         setSelectedAccount(filteredAccounts[0]);
-        
+
         // Fetch positions
         const portfolioRes = await fetchApi.get(`/api/investments/portfolio/${filteredAccounts[0].id}`);
         setPositions(portfolioRes.positions || []);
       }
-      
+
       // Fetch available assets
       await searchAssets('');
-      
+
       // Load watchlist from localStorage
       const savedWatchlist = localStorage.getItem(`watchlist_${assetType}`);
       if (savedWatchlist) {
@@ -141,20 +133,28 @@ export default function TradingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [assetType, searchAssets]);
 
-  const searchAssets = async (query: string) => {
-    try {
-      const response = await fetchApi.get(`/api/investments/assets/search?query=${query}&type=${assetType}`);
-      setAssets(response);
-    } catch {
-    }
-  };
-
-  const checkExistingPosition = (symbol: string) => {
+  const checkExistingPosition = useCallback((symbol: string) => {
     const position = positions.find(p => p.symbol === symbol);
     setCurrentPosition(position || null);
-  };
+  }, [positions]);
+
+  useEffect(() => {
+    if (!['etf', 'stock', 'crypto'].includes(assetType)) {
+      router.push('/investments');
+      return;
+    }
+
+    fetchInitialData();
+  }, [assetType, router, fetchInitialData]);
+
+  useEffect(() => {
+    if (selectedAsset) {
+      setOrderForm(prev => ({ ...prev, symbol: selectedAsset.symbol }));
+      checkExistingPosition(selectedAsset.symbol);
+    }
+  }, [selectedAsset, checkExistingPosition]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

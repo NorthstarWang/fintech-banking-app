@@ -2,12 +2,6 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Button } from '../Button'
 
-// Mock analytics logger
-jest.mock('@/lib/analytics', () => ({
-  analytics: {
-    logClick: jest.fn(),
-  },
-}))
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({

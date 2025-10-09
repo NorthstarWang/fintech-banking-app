@@ -244,9 +244,9 @@ class InvestmentsService {
     return apiClient.post<Watchlist>('/api/investments/watchlists', { name });
   }
 
-  async addToWatchlist(data: AddToWatchlistRequest): Promise<Watchlist> {
-    return apiClient.post<Watchlist>(`/api/investments/watchlists/${data.watchlist_id}/assets`, {
-      asset_id: data.asset_id
+  async addToWatchlist(watchlistId: number, assetId: number): Promise<Watchlist> {
+    return apiClient.post<Watchlist>(`/api/investments/watchlists/${watchlistId}/assets`, {
+      asset_id: assetId
     });
   }
 
@@ -265,6 +265,15 @@ class InvestmentsService {
     returns: number[];
   }> {
     return apiClient.get(`/api/investments/accounts/${accountId}/performance?period=${period}`);
+  }
+
+  // Alias for backward compatibility with tests
+  async getPortfolioPerformance(accountId: number, period: string = '1M'): Promise<{
+    dates: string[];
+    values: number[];
+    returns: number[];
+  }> {
+    return this.getPerformanceHistory(accountId, period as '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL');
   }
 }
 

@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScrollTracking } from '@/hooks/useScrollTracking';
-import { 
-  Bell, 
-  DollarSign, 
-  Shield, 
+import {
+  Bell,
+  DollarSign,
+  Shield,
   Target,
   Repeat,
   Check,
   CheckCircle,
-  
+
   AlertCircle,
   TrendingUp,
   Clock
@@ -29,7 +29,7 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Scroll tracking must be at top level to avoid hooks order issues
   const scrollContainerRef = useScrollTracking({
     elementId: 'notifications-list-scroll',
@@ -37,11 +37,7 @@ export default function NotificationsPage() {
     thresholds: [25, 50, 75, 100]
   });
 
-  useEffect(() => {
-    loadNotifications();
-  }, [filter, user]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       // Pass the correct parameter based on filter
@@ -51,21 +47,37 @@ export default function NotificationsPage() {
       } else if (filter === 'read') {
         isReadParam = true;
       }
-      
+
       const notifs = await notificationsService.getNotifications(isReadParam);
       setNotifications(notifs);
-      
+
       // Get unread count - we need to fetch all notifications to get accurate count
       if (filter !== 'all') {
         const allNotifs = await notificationsService.getNotifications();
-        const unreadNotifs = allNotifs.filter(n => !n.is_read);
-        setUnreadCount(unreadNotifs.length);
+        const unread = allNotifs.filter(n => !n.is_read).length;
+        setUnreadCount(unread);
       } else {
-        const unreadNotifs = notifs.filter(n => !n.is_read);
-        setUnreadCount(unreadNotifs.length);
+        const unread = notifs.filter(n => !n.is_read).length;
+        setUnreadCount(unread);
       }
-      
-      // Log data loaded
+    } catch {
+      // Error handled
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationsService.markAsRead(id);
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
     } finally {
       setLoading(false);

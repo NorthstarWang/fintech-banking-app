@@ -1,14 +1,22 @@
 import { jest } from '@jest/globals';
 import { creditCardsService, CardCategory, ApplicationStatus } from '../creditCards';
-import { fetchApi } from '@/lib/api';
+import { apiClient } from '../client';
 
-// Mock fetchApi
-jest.mock('@/lib/api');
-const mockFetchApi = fetchApi as jest.MockedFunction<typeof fetchApi>;
+// Mock apiClient
+jest.mock('../client');
 
 describe('CreditCardsService', () => {
+  const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Manually set up mock functions
+    mockApiClient.get = jest.fn();
+    mockApiClient.post = jest.fn();
+    mockApiClient.put = jest.fn();
+    mockApiClient.delete = jest.fn();
+    mockApiClient.setAuthToken = jest.fn();
+    mockApiClient.getAuthToken = jest.fn();
   });
 
   describe('Credit Score', () => {
@@ -21,24 +29,21 @@ describe('CreditCardsService', () => {
           credit_utilization: { score: 25, impact: 'positive' }
         }
       };
-      mockFetchApi.mockResolvedValueOnce(mockScore);
+      mockApiClient.get.mockResolvedValueOnce(mockScore);
 
       const result = await creditCardsService.getCreditScore();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/credit-score');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/credit-score');
       expect(result).toEqual(mockScore);
     });
 
     test('updateCreditScore updates score', async () => {
       const mockResponse = { score: 760, rating: 'very_good' };
-      mockFetchApi.mockResolvedValueOnce(mockResponse);
+      mockApiClient.put.mockResolvedValueOnce(mockResponse);
 
       const result = await creditCardsService.updateCreditScore(760);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/credit-score', {
-        method: 'PUT',
-        body: JSON.stringify({ score: 760 })
-      });
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/credit-cards/credit-score', { score: 760 });
       expect(result).toEqual(mockResponse);
     });
   });
@@ -48,11 +53,11 @@ describe('CreditCardsService', () => {
       const mockCards = [
         { id: 1, card_name: 'Test Card', category: CardCategory.CASH_BACK }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockCards);
+      mockApiClient.get.mockResolvedValueOnce(mockCards);
 
       const result = await creditCardsService.getCards();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards');
       expect(result).toEqual(mockCards);
     });
 
@@ -60,14 +65,14 @@ describe('CreditCardsService', () => {
       const mockCards = [
         { id: 1, card_name: 'Travel Card', category: CardCategory.TRAVEL }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockCards);
+      mockApiClient.get.mockResolvedValueOnce(mockCards);
 
       const result = await creditCardsService.getCards({
         category: CardCategory.TRAVEL,
         min_credit_score: 700
       });
 
-      expect(mockFetchApi).toHaveBeenCalledWith(
+      expect(mockApiClient.get).toHaveBeenCalledWith(
         '/api/credit-cards?category=travel&min_credit_score=700'
       );
       expect(result).toEqual(mockCards);
@@ -75,11 +80,11 @@ describe('CreditCardsService', () => {
 
     test('getCard fetches specific card', async () => {
       const mockCard = { id: 1, card_name: 'Test Card' };
-      mockFetchApi.mockResolvedValueOnce(mockCard);
+      mockApiClient.get.mockResolvedValueOnce(mockCard);
 
       const result = await creditCardsService.getCard(1);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/1');
       expect(result).toEqual(mockCard);
     });
 
@@ -87,11 +92,11 @@ describe('CreditCardsService', () => {
       const mockCards = [
         { id: 1, card_name: 'Featured Card', is_featured: true }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockCards);
+      mockApiClient.get.mockResolvedValueOnce(mockCards);
 
       const result = await creditCardsService.getFeaturedCards();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/featured');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/featured');
       expect(result).toEqual(mockCards);
     });
   });
@@ -101,11 +106,11 @@ describe('CreditCardsService', () => {
       const mockRecommendations = [
         { card: { id: 1, name: 'Recommended Card' }, match_score: 0.95 }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockRecommendations);
+      mockApiClient.get.mockResolvedValueOnce(mockRecommendations);
 
       const result = await creditCardsService.getRecommendations();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/recommendations');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/recommendations');
       expect(result).toEqual(mockRecommendations);
     });
 
@@ -113,15 +118,15 @@ describe('CreditCardsService', () => {
       const mockRecommendations = [
         { card: { id: 1, name: 'Travel Card' }, match_score: 0.9 }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockRecommendations);
+      mockApiClient.get.mockResolvedValueOnce(mockRecommendations);
 
       const result = await creditCardsService.getRecommendations({
         income_level: 'high',
         spending_categories: ['travel', 'dining']
       });
 
-      expect(mockFetchApi).toHaveBeenCalledWith(
-        '/api/credit-cards/recommendations?income_level=high&spending_categories=travel,dining'
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        '/api/credit-cards/recommendations?income_level=high&spending_categories=travel%2Cdining'
       );
       expect(result).toEqual(mockRecommendations);
     });
@@ -130,11 +135,11 @@ describe('CreditCardsService', () => {
       const mockRecommendations = [
         { card: { id: 1, name: 'Personalized Card' }, match_score: 0.98 }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockRecommendations);
+      mockApiClient.get.mockResolvedValueOnce(mockRecommendations);
 
       const result = await creditCardsService.getPersonalizedRecommendations();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/recommendations/personalized');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/recommendations/personalized');
       expect(result).toEqual(mockRecommendations);
     });
   });
@@ -149,14 +154,11 @@ describe('CreditCardsService', () => {
         housing_payment: 1500
       };
       const mockResponse = { id: 1, status: ApplicationStatus.PENDING };
-      mockFetchApi.mockResolvedValueOnce(mockResponse);
+      mockApiClient.post.mockResolvedValueOnce(mockResponse);
 
       const result = await creditCardsService.submitApplication(applicationData);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/applications', {
-        method: 'POST',
-        body: JSON.stringify(applicationData)
-      });
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/credit-cards/applications', applicationData);
       expect(result).toEqual(mockResponse);
     });
 
@@ -164,33 +166,31 @@ describe('CreditCardsService', () => {
       const mockApplications = [
         { id: 1, card_name: 'Test Card', status: ApplicationStatus.APPROVED }
       ];
-      mockFetchApi.mockResolvedValueOnce(mockApplications);
+      mockApiClient.get.mockResolvedValueOnce(mockApplications);
 
       const result = await creditCardsService.getApplications();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/applications');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/applications');
       expect(result).toEqual(mockApplications);
     });
 
     test('getApplication fetches specific application', async () => {
       const mockApplication = { id: 1, status: ApplicationStatus.APPROVED };
-      mockFetchApi.mockResolvedValueOnce(mockApplication);
+      mockApiClient.get.mockResolvedValueOnce(mockApplication);
 
       const result = await creditCardsService.getApplication(1);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/applications/1');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/applications/1');
       expect(result).toEqual(mockApplication);
     });
 
     test('withdrawApplication withdraws application', async () => {
       const mockResponse = { id: 1, status: ApplicationStatus.WITHDRAWN };
-      mockFetchApi.mockResolvedValueOnce(mockResponse);
+      mockApiClient.put.mockResolvedValueOnce(mockResponse);
 
       const result = await creditCardsService.withdrawApplication(1);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/applications/1/withdraw', {
-        method: 'PUT'
-      });
+      expect(mockApiClient.put).toHaveBeenCalledWith('/api/credit-cards/applications/1/withdraw', {});
       expect(result).toEqual(mockResponse);
     });
   });
@@ -206,14 +206,11 @@ describe('CreditCardsService', () => {
           { feature: 'Annual Fee', values: [0, 95] }
         ]
       };
-      mockFetchApi.mockResolvedValueOnce(mockComparison);
+      mockApiClient.post.mockResolvedValueOnce(mockComparison);
 
       const result = await creditCardsService.compareCards([1, 2]);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/compare', {
-        method: 'POST',
-        body: JSON.stringify({ card_ids: [1, 2] })
-      });
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/credit-cards/compare', { card_ids: [1, 2] });
       expect(result).toEqual(mockComparison);
     });
   });
@@ -225,13 +222,11 @@ describe('CreditCardsService', () => {
         approval_odds: 'high',
         reasons: ['Good credit score', 'Low utilization']
       };
-      mockFetchApi.mockResolvedValueOnce(mockEligibility);
+      mockApiClient.post.mockResolvedValueOnce(mockEligibility);
 
       const result = await creditCardsService.checkEligibility(1);
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/1/check-eligibility', {
-        method: 'POST'
-      });
+      expect(mockApiClient.post).toHaveBeenCalledWith('/api/credit-cards/1/check-eligibility', {});
       expect(result).toEqual(mockEligibility);
     });
   });
@@ -245,11 +240,11 @@ describe('CreditCardsService', () => {
         pending_count: 1,
         approval_rate: 0.7
       };
-      mockFetchApi.mockResolvedValueOnce(mockStats);
+      mockApiClient.get.mockResolvedValueOnce(mockStats);
 
       const result = await creditCardsService.getApplicationStats();
 
-      expect(mockFetchApi).toHaveBeenCalledWith('/api/credit-cards/applications/stats');
+      expect(mockApiClient.get).toHaveBeenCalledWith('/api/credit-cards/applications/stats');
       expect(result).toEqual(mockStats);
     });
   });
@@ -257,7 +252,7 @@ describe('CreditCardsService', () => {
   describe('Error Handling', () => {
     test('handles API errors gracefully', async () => {
       const error = new Error('API Error');
-      mockFetchApi.mockRejectedValueOnce(error);
+      mockApiClient.get.mockRejectedValueOnce(error);
 
       await expect(creditCardsService.getCreditScore()).rejects.toThrow('API Error');
     });

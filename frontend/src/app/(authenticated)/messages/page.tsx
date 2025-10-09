@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  MessageSquare, 
-  Search, 
-  Plus, 
+import {
+  MessageSquare,
+  Search,
+  Plus,
   MoreVertical,
   User
 } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const targetUsername = searchParams.get('user');
-  
+
   // const { showError } = useNotification();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -32,17 +32,48 @@ export default function MessagesPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
 
+  const loadConversations = useCallback(async () => {
+    try {
+      const data = await messagesService.getConversations();
+      setConversations(data);
+      setLoading(false);
+    } catch {
+
+      setLoading(false);
+    }
+  }, []);
+
+  const loadContacts = useCallback(async () => {
+    try {
+      const data = await contactsService.getContacts('accepted', false);
+      setContacts(data);
+    } catch {
+
+    }
+  }, []);
+
+  const loadMessages = useCallback(async (userId: number, isPolling: boolean = false) => {
+    try {
+      const data = await messagesService.getMessages(userId);
+      if (!isPolling || data.length !== messages.length) {
+        setMessages(data);
+      }
+    } catch {
+
+    }
+  }, [messages.length]);
+
   useEffect(() => {
     loadConversations();
     loadContacts();
-    
+
     // Poll for new conversations/updates every 5 seconds
     const conversationPollInterval = setInterval(() => {
       loadConversations();
     }, 5000);
-    
+
     return () => clearInterval(conversationPollInterval);
-  }, []);
+  }, [loadConversations, loadContacts]);
 
   // Handle navigation from contacts page
   useEffect(() => {
@@ -113,66 +144,27 @@ export default function MessagesPage() {
   useEffect(() => {
     if (selectedConversation && selectedConversation.other_user.id > 0) {
       loadMessages(selectedConversation.other_user.id);
-      
+
       // Set up polling for new messages every 3 seconds
       const pollInterval = setInterval(() => {
         loadMessages(selectedConversation.other_user.id, true);
       }, 3000);
-      
+
       return () => clearInterval(pollInterval);
     } else if (selectedConversation) {
       // For new conversations, just clear messages
       setMessages([]);
     }
-  }, [selectedConversation]);
-
-  const loadConversations = async () => {
-    try {
-      const data = await messagesService.getConversations();
-      setConversations(data);
-      setLoading(false);
-    } catch {
-      
-      setLoading(false);
-    }
-  };
-
-  const loadContacts = async () => {
-    try {
-      const data = await contactsService.getContacts('accepted', false);
-      setContacts(data);
-    } catch {
-      
-    }
-  };
-
-  const loadMessages = async (userId: number, isPolling: boolean = false) => {
-    try {
-      const data = await messagesService.getConversationMessages(userId);
-      
-      // Only update if there are new messages (to avoid unnecessary re-renders)
-      if (!isPolling || data.length !== messages.length) {
-        setMessages(data);
-        
-        // Mark as read only if there are new messages from the other user
-        const hasUnreadMessages = data.some(msg => !msg.is_from_me && !msg.is_read);
-        if (hasUnreadMessages) {
-          await messagesService.markConversationAsRead(userId);
-        }
-      }
-    } catch {
-      
-    }
-  };
+  }, [selectedConversation, loadMessages]);
 
   const handleMessageRead = (messageId: number) => {
     // Update the message in state to mark it as read
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
+    setMessages(prevMessages =>
+      prevMessages.map(msg =>
         msg.id === messageId ? { ...msg, is_read: true } : msg
       )
     );
-    
+
     // Update unread count in conversations
     if (selectedConversation) {
       setConversations(prevConversations =>

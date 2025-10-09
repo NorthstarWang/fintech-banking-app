@@ -125,7 +125,9 @@ class CreditCardsService {
         }
       });
     }
-    return apiClient.get<CreditCard[]>(`/api/credit-cards?${queryParams.toString()}`);
+    const queryString = queryParams.toString();
+    const url = queryString ? `/api/credit-cards?${queryString}` : '/api/credit-cards';
+    return apiClient.get<CreditCard[]>(url);
   }
 
   async getCard(cardId: number): Promise<CreditCard> {
@@ -159,7 +161,9 @@ class CreditCardsService {
         }
       });
     }
-    return apiClient.get<CardRecommendation[]>(`/api/credit-cards/recommendations?${queryParams.toString()}`);
+    const queryString = queryParams.toString();
+    const url = queryString ? `/api/credit-cards/recommendations?${queryString}` : '/api/credit-cards/recommendations';
+    return apiClient.get<CardRecommendation[]>(url);
   }
 
   async getPersonalizedRecommendations(): Promise<CardRecommendation[]> {

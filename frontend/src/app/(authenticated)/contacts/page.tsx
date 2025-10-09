@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
   Search, 
@@ -38,12 +38,7 @@ export default function ContactsPage() {
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'requests'>('contacts');
 
-  useEffect(() => {
-    loadContacts();
-    loadPendingRequests();
-  }, []);
-
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async () => {
     try {
       const data = await contactsService.getContacts('accepted', false);
       setContacts(data);
@@ -51,17 +46,22 @@ export default function ContactsPage() {
     } catch {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadPendingRequests = async () => {
+  const loadPendingRequests = useCallback(async () => {
     try {
       const data = await contactsService.getPendingRequests();
       setPendingRequests(data);
     } catch {
     }
-  };
+  }, []);
 
-  const searchUsers = async () => {
+  useEffect(() => {
+    loadContacts();
+    loadPendingRequests();
+  }, [loadContacts, loadPendingRequests]);
+
+  const searchUsers = useCallback(async () => {
     if (!userSearchQuery.trim() || userSearchQuery.length < 2) {
       setSearchResults([]);
       return;
@@ -75,7 +75,7 @@ export default function ContactsPage() {
     } finally {
       setSearching(false);
     }
-  };
+  }, [userSearchQuery]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -83,7 +83,7 @@ export default function ContactsPage() {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [userSearchQuery]);
+  }, [userSearchQuery, searchUsers]);
 
   const sendContactRequest = async (userId: number) => {
     try {

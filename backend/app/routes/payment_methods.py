@@ -4,9 +4,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-# PaymentMethod model not yet implemented
 from ..models import (
-    Any,
+    PaymentMethod,
     PaymentMethodBankCreate,
     PaymentMethodCardCreate,
     PaymentMethodResponse,

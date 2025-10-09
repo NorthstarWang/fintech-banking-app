@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
   TrendingDown,
   Search,
-  
+
   ChevronRight,
   Star,
   Building,
@@ -87,28 +87,7 @@ export default function InvestmentDiscoverPage() {
     fetchMarketData();
   }, []);
 
-  useEffect(() => {
-    filterAndSortAssets();
-  }, [assets, searchQuery, selectedType, sortBy]);
-
-  const fetchMarketData = async () => {
-    try {
-      setLoading(true);
-      // Fetch market summary
-      const summaryRes = await apiClient.get<MarketSummary>('/api/investments/market-summary');
-      setMarketSummary(summaryRes);
-
-      // Fetch available assets
-      const assetsRes = await apiClient.get<InvestmentAsset[]>('/api/investments/assets');
-      setAssets(assetsRes);
-    } catch {
-      // TODO: Add toast notification
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterAndSortAssets = () => {
+  const filterAndSortAssets = useCallback(() => {
     let filtered = assets;
 
     // Filter by type
@@ -141,6 +120,27 @@ export default function InvestmentDiscoverPage() {
     });
 
     setFilteredAssets(filtered);
+  }, [assets, searchQuery, selectedType, sortBy]);
+
+  useEffect(() => {
+    filterAndSortAssets();
+  }, [filterAndSortAssets]);
+
+  const fetchMarketData = async () => {
+    try {
+      setLoading(true);
+      // Fetch market summary
+      const summaryRes = await apiClient.get<MarketSummary>('/api/investments/market-summary');
+      setMarketSummary(summaryRes);
+
+      // Fetch available assets
+      const assetsRes = await apiClient.get<InvestmentAsset[]>('/api/investments/assets');
+      setAssets(assetsRes);
+    } catch {
+      // TODO: Add toast notification
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -303,7 +303,7 @@ export default function InvestmentDiscoverPage() {
           <div className="flex gap-2">
             <Dropdown
               value={selectedType}
-              onChange={(value) => setSelectedType(value as any)}
+              onChange={(value) => setSelectedType(value as 'all' | 'etf' | 'stock' | 'crypto')}
               items={[
                 { value: 'all', label: 'All Types' },
                 { value: 'etf', label: 'ETFs' },
@@ -316,7 +316,7 @@ export default function InvestmentDiscoverPage() {
             />
             <Dropdown
               value={sortBy}
-              onChange={(value) => setSortBy(value as any)}
+              onChange={(value) => setSortBy(value as 'name' | 'price' | 'change' | 'volume')}
               items={[
                 { value: 'name', label: 'Name' },
                 { value: 'price', label: 'Price' },

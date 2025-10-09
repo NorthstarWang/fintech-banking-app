@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   PiggyBank,
@@ -104,7 +104,7 @@ export default function BudgetPage() {
     category: ''
   });
 
-  const categoryIcons: { [key: string]: React.ReactNode } = {
+  const categoryIcons = useMemo<{ [key: string]: React.ReactNode }>(() => ({
     'Shopping': <ShoppingBag className="w-5 h-5" />,
     'Groceries': <ShoppingBag className="w-5 h-5" />,
     'Dining': <Coffee className="w-5 h-5" />,
@@ -116,9 +116,9 @@ export default function BudgetPage() {
     'Travel': <Plane className="w-5 h-5" />,
     'Business': <Briefcase className="w-5 h-5" />,
     'Gifts': <Gift className="w-5 h-5" />,
-  };
+  }), []);
 
-  const categoryColors: { [key: string]: string } = {
+  const categoryColors = useMemo<{ [key: string]: string }>(() => ({
     'Shopping': 'from-[var(--cat-indigo)] to-[var(--cat-indigo)]/80',
     'Groceries': 'from-[var(--cat-emerald)] to-[var(--cat-emerald)]/80',
     'Dining': 'from-[var(--cat-amber)] to-[var(--cat-amber)]/80',
@@ -130,9 +130,9 @@ export default function BudgetPage() {
     'Travel': 'from-[var(--cat-blue)] to-[var(--cat-indigo)]/80',
     'Business': 'from-[var(--cat-indigo)] to-[var(--cat-navy)]/80',
     'Gifts': 'from-[var(--cat-amber)] to-[var(--cat-yellow)]/80',
-  };
+  }), []);
 
-  const loadBudgetData = async () => {
+  const loadBudgetData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -140,10 +140,10 @@ export default function BudgetPage() {
       // Load all necessary data
       // Map UI period to API period
       // For quarterly view, we'll fetch all budgets and aggregate them
-      const apiPeriod = selectedPeriod === 'month' ? 'monthly' : 
+      const apiPeriod = selectedPeriod === 'month' ? 'monthly' :
                         selectedPeriod === 'quarter' ? undefined : // Get all budgets for quarterly view
                         selectedPeriod === 'year' ? 'yearly' : undefined;
-      
+
       const [budgetsData, goalsData, budgetSummaryData, goalSummaryData, categoriesData] = await Promise.all([
         budgetsService.getBudgets(),
         goalsService.getGoals(),
@@ -159,7 +159,7 @@ export default function BudgetPage() {
       // Get transaction stats for each budget category to get transaction counts
       const currentDate = new Date();
       const startDate = new Date();
-      
+
       // Set start date based on selected period for viewing
       // This is for the UI filtering, not for the actual budget period calculation
       if (selectedPeriod === 'month') {
@@ -180,7 +180,7 @@ export default function BudgetPage() {
           .map(async (budget) => {
             const category = categoriesData.find(c => c.id === budget.category_id);
             const categoryName = category?.name || 'Uncategorized';
-            
+
             // Get transaction count for this category
             let transactionCount = 0;
             try {
@@ -193,7 +193,7 @@ export default function BudgetPage() {
             } catch {
               transactionCount = 0;
             }
-            
+
             return {
               id: budget.id.toString(),
               name: categoryName,
@@ -221,7 +221,7 @@ export default function BudgetPage() {
           const currentAmount = Number(goal.current_amount) || 0;
           const amountNeeded = Math.max(0, targetAmount - currentAmount);
           const monthlyContribution = monthsRemaining > 0 ? amountNeeded / monthsRemaining : 0;
-          
+
           // Determine status
           let status: BudgetGoal['status'] = 'on-track';
           if (goal.progress_percentage >= 100) {
@@ -231,7 +231,7 @@ export default function BudgetPage() {
           } else if (monthlyContribution > goal.monthly_target * 1.2) {
             status = 'at-risk';
           }
-          
+
           return {
             id: goal.id.toString(),
             name: goal.name,
@@ -253,11 +253,11 @@ export default function BudgetPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPeriod, categoryIcons, categoryColors]);
 
   useEffect(() => {
     loadBudgetData();
-  }, [selectedPeriod, budgetsService, goalsService, categoriesService, transactionsService]);
+  }, [loadBudgetData]);
 
   const handleRefresh = () => {
     loadBudgetData();
