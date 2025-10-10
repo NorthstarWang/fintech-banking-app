@@ -12,11 +12,10 @@ This provides:
 
 import json
 import uuid
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Optional
-from dataclasses import dataclass, asdict
 
 
 class TransactionEventType(str, Enum):
@@ -83,8 +82,8 @@ class TransactionEvent:
     currency: str = "USD"
 
     # Accounts involved
-    from_account_id: Optional[int] = None
-    to_account_id: Optional[int] = None
+    from_account_id: int | None = None
+    to_account_id: int | None = None
 
     # Additional context
     description: str = ""
@@ -92,10 +91,10 @@ class TransactionEvent:
 
     # Status tracking
     status: TransactionEventStatus = TransactionEventStatus.PENDING
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     # Reference to related events
-    previous_event_id: Optional[str] = None  # For event chaining
+    previous_event_id: str | None = None  # For event chaining
 
     def __post_init__(self):
         """Post-initialization processing"""
@@ -172,7 +171,7 @@ class EventStore:
 
         # Ensure timestamp is set
         if event.timestamp is None:
-            event.timestamp = datetime.now(timezone.utc)
+            event.timestamp = datetime.now(UTC)
 
         # Append to main log
         self._events.append(event)
@@ -211,8 +210,8 @@ class EventStore:
         return self._transaction_index.get(transaction_id, [])
 
     def get_account_events(self, account_id: int,
-                          start_time: Optional[datetime] = None,
-                          end_time: Optional[datetime] = None) -> list[TransactionEvent]:
+                          start_time: datetime | None = None,
+                          end_time: datetime | None = None) -> list[TransactionEvent]:
         """
         Get all events for an account within a time range.
 
@@ -236,7 +235,7 @@ class EventStore:
     def get_user_events(
         self,
         user_id: int,
-        event_type: Optional[TransactionEventType] = None
+        event_type: TransactionEventType | None = None
     ) -> list[TransactionEvent]:
         """
         Get all events for a user.
@@ -329,7 +328,7 @@ class EventStore:
 
 
 # Global event store instance
-_event_store: Optional[EventStore] = None
+_event_store: EventStore | None = None
 
 
 def get_event_store() -> EventStore:

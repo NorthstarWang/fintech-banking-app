@@ -514,7 +514,7 @@ async def generate_credit_report(
     ]
 
     # Generate report
-    report = CreditReportResponse(
+    return CreditReportResponse(
         report_id=f"CR{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
         generated_at=datetime.utcnow(),
         user_info={
@@ -535,7 +535,6 @@ async def generate_credit_report(
 
     # Log report generation
 
-    return report
 
 
 # Credit Alert Endpoints
@@ -554,7 +553,7 @@ async def get_credit_alerts(
     )
 
     if not include_dismissed:
-        query = query.filter(CreditAlert.is_dismissed == False)
+        query = query.filter(not CreditAlert.is_dismissed)
 
     if alert_type:
         query = query.filter(CreditAlert.alert_type == alert_type)

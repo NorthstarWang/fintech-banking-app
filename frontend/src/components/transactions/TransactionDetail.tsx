@@ -68,6 +68,7 @@ export const TransactionDetail: React.FC<TransactionDetailProps> = ({
     } else {
       setAttachments([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transaction.id]); // Only depend on transaction ID to avoid infinite loops
 
   // Find related transactions in a separate effect
@@ -88,6 +89,7 @@ export const TransactionDetail: React.FC<TransactionDetailProps> = ({
       
       setRelatedTransactions(related);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transaction.id, allTransactions.length]); // Simplified dependencies
 
   // Use categories from props or fall back to defaults
@@ -130,7 +132,7 @@ export const TransactionDetail: React.FC<TransactionDetailProps> = ({
       
       // Call parent's onEdit to refresh the data - this will trigger a full reload
       onEdit(updatedUITransaction);
-    } catch (error: any) {
+    } catch (error: unknown) {
       showError(
         'Update Failed', 
         error.message || 'Failed to update transaction. Please try again.'
@@ -148,7 +150,7 @@ export const TransactionDetail: React.FC<TransactionDetailProps> = ({
       
       // Call parent's onEdit to refresh the data
       onEdit(transaction);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setShowDeleteConfirm(false);
       
       // Check if it's a specific error about pending status

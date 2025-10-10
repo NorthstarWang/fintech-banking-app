@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { currencyConverterService, TradeStatus, PaymentMethod } from '../currencyConverter';
+import { currencyConverterService, TradeStatus, PaymentMethod as _PaymentMethod } from '../currencyConverter';
 import { apiClient } from '../client';
 
 // Define missing enum for the test

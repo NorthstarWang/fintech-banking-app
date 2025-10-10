@@ -232,7 +232,7 @@ class LoanManager:
         if payment.payment_type == "payoff":
             principal_amount = loan['current_balance']
             interest_amount = self._calculate_payoff_interest(loan, payment_date)
-            total_amount = principal_amount + interest_amount
+            principal_amount + interest_amount
         else:
             principal_amount = payment.amount - interest_amount
             if payment.payment_type == "extra_principal":

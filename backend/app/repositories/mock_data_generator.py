@@ -11,7 +11,7 @@ from typing import Any
 def generate_mock_data(data_manager: Any, seed: int = 42):
     """
     Generate comprehensive mock data for the finance application.
-    
+
     Args:
         data_manager: DataManager instance to populate
         seed: Random seed for reproducible data

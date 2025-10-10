@@ -111,7 +111,7 @@ async def mock_bank_sync(
 
         # Create 2-3 mock linked accounts
         num_accounts = random.randint(2, 3)
-        for i in range(num_accounts):
+        for _i in range(num_accounts):
             account_type = random.choice(account_types)
 
             # Generate mock account details
@@ -239,7 +239,7 @@ async def get_bank_links(
         # Count linked accounts
         account_count = db_session.query(LinkedAccount).filter(
             LinkedAccount.bank_link_id == link.id,
-            LinkedAccount.is_active == True
+            LinkedAccount.is_active
         ).count()
 
         results.append(
@@ -277,7 +277,7 @@ async def get_linked_accounts(
     # Get linked accounts
     accounts = db_session.query(LinkedAccount).filter(
         LinkedAccount.bank_link_id == bank_link.id,
-        LinkedAccount.is_active == True
+        LinkedAccount.is_active
     ).all()
 
     return [
@@ -444,7 +444,6 @@ async def unlink_bank_account(
             "Remove imported accounts first."
         )
 
-    institution_name = bank_link.institution_name
 
     # Delete bank link (cascades to linked accounts)
     db_session.delete(bank_link)
@@ -544,7 +543,7 @@ async def generate_statement(
     closing_balance = account.balance
 
     # Generate statement data
-    statement = {
+    return {
         "account": {
             "name": account.name,
             "type": account.account_type.value,
@@ -578,4 +577,3 @@ async def generate_statement(
 
     # Log statement generation
 
-    return statement

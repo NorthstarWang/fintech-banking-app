@@ -210,6 +210,7 @@ export const OptimizedTransactionList: React.FC<TransactionListProps> = memo(({
   const flattenedItems = useMemo(() => {
     performanceMonitor.mark('transaction-processing-start');
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items: Array<{ type: 'header' | 'transaction'; data: any }> = [];
     const groupedTransactions = transactions.reduce((groups, transaction) => {
       const date = new Date(transaction.date).toDateString();
@@ -247,6 +248,7 @@ export const OptimizedTransactionList: React.FC<TransactionListProps> = memo(({
     return items;
   }, [transactions]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderItem = useCallback((item: { type: 'header' | 'transaction'; data: any }, _index: number) => {
     if (item.type === 'header') {
       return (

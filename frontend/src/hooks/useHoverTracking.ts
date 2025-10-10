@@ -32,6 +32,7 @@ export const useHoverTracking = ({
         hasLoggedRef.current = true;
       }
     }, minHoverDuration);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elementId, elementName, user, minHoverDuration]);
 
   const handleMouseLeave = useCallback(() => {
@@ -45,6 +46,7 @@ export const useHoverTracking = ({
     }
 
     hoverStartTimeRef.current = 0;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elementId, elementName, user, trackDuration]);
 
   // Return props to spread on the element

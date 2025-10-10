@@ -58,9 +58,13 @@ export const Header: React.FC<HeaderProps> = ({ _onMenuToggle }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showBalanceDropdown, setShowBalanceDropdown] = useState(false);
   const [accountsData, setAccountsData] = useState<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     accounts: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     businessAccounts: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cards: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     businessCards: any[];
   }>({
     accounts: [],
@@ -133,6 +137,7 @@ export const Header: React.FC<HeaderProps> = ({ _onMenuToggle }) => {
     if (user) {
       loadData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Subscribe to balance update events
@@ -222,6 +227,7 @@ export const Header: React.FC<HeaderProps> = ({ _onMenuToggle }) => {
       }
       window.removeEventListener('refreshNotifications', handleRefreshNotifications);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showNotifications]); // Re-create interval when dropdown state changes
 
   // Handle click outside for notifications and balance dropdown

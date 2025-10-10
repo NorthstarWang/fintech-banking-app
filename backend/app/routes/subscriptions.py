@@ -1,78 +1,98 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, date
 from collections import defaultdict
+from datetime import date, datetime, timedelta
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
 from ..models import (
-    Subscription, CancellationReminder, Transaction, Account, User,
-    SubscriptionStatus, BillingCycle, SubscriptionCategory,
-    TransactionType
+    Account,
+    BillingCycle,
+    BulkImportRequest,
+    BulkImportResponse,
+    CancellationReminder,
+    CancellationReminderRequest,
+    CancellationReminderResponse,
+    OptimizationResponse,
+    OptimizationSuggestion,
+    OptimizationSuggestionType,
+    PaymentHistoryResponse,
+    Subscription,
+    SubscriptionAnalysisResponse,
+    SubscriptionCancelRequest,
+    SubscriptionCancelResponse,
+    SubscriptionCategory,
+    SubscriptionCreateRequest,
+    SubscriptionDetailResponse,
+    SubscriptionPauseRequest,
+    SubscriptionPauseResponse,
+    SubscriptionRecommendationsResponse,
+    SubscriptionReminderRequest,
+    SubscriptionReminderResponse,
+    SubscriptionResponse,
+    SubscriptionShareRequest,
+    SubscriptionShareResponse,
+    SubscriptionStatus,
+    SubscriptionSummaryResponse,
+    SubscriptionUpdateRequest,
+    SubscriptionUsageRequest,
+    SubscriptionUsageResponse,
+    Transaction,
+    TransactionType,
+    User,
 )
-from ..models import (
-    SubscriptionResponse, SubscriptionUpdateRequest, SubscriptionAnalysisResponse,
-    CancellationReminderRequest, CancellationReminderResponse,
-    OptimizationSuggestion, OptimizationResponse, OptimizationSuggestionType,
-    SubscriptionCreateRequest, SubscriptionDetailResponse, SubscriptionCancelRequest,
-    SubscriptionCancelResponse, SubscriptionPauseRequest, SubscriptionPauseResponse,
-    SubscriptionSummaryResponse, PaymentHistoryResponse, SubscriptionReminderRequest,
-    SubscriptionReminderResponse, SubscriptionUsageRequest, SubscriptionUsageResponse,
-    SubscriptionRecommendationsResponse, SubscriptionShareRequest, SubscriptionShareResponse,
-    BulkImportRequest, BulkImportResponse
-)
+from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
 def detect_recurring_transactions(
-    transactions: List[Transaction],
+    transactions: list[Transaction],
     confidence_threshold: float = 0.8
-) -> List[Dict]:
+) -> list[dict]:
     """Detect potential subscriptions from transaction history"""
     # Group by merchant name
     merchant_groups = defaultdict(list)
-    
+
     for tx in transactions:
         # Extract merchant name (simplified)
         merchant = tx.description.split()[0] if tx.description else "Unknown"
         merchant_groups[merchant].append(tx)
-    
+
     detected_subscriptions = []
-    
+
     for merchant, txs in merchant_groups.items():
         if len(txs) < 2:
             continue
-        
+
         # Sort by date
         txs.sort(key=lambda x: x.transaction_date)
-        
+
         # Check for regular intervals
         intervals = []
         amounts = []
-        
+
         for i in range(1, len(txs)):
             interval = (txs[i].transaction_date - txs[i-1].transaction_date).days
             intervals.append(interval)
             amounts.append(txs[i].amount)
-        
+
         if not intervals:
             continue
-        
+
         # Analyze pattern
         avg_interval = sum(intervals) / len(intervals)
         avg_amount = sum(amounts) / len(amounts)
-        
+
         # Check consistency
         interval_variance = sum((i - avg_interval) ** 2 for i in intervals) / len(intervals)
         amount_variance = sum((a - avg_amount) ** 2 for a in amounts) / len(amounts)
-        
+
         # Calculate confidence
         interval_consistency = 1 - (interval_variance / (avg_interval ** 2) if avg_interval > 0 else 0)
         amount_consistency = 1 - (amount_variance / (avg_amount ** 2) if avg_amount > 0 else 0)
         confidence = (interval_consistency + amount_consistency) / 2
-        
+
         if confidence >= confidence_threshold:
             # Determine billing cycle
             if 26 <= avg_interval <= 35:
@@ -85,10 +105,10 @@ def detect_recurring_transactions(
                 billing_cycle = BillingCycle.ANNUAL
             else:
                 continue  # Skip if doesn't match known patterns
-            
+
             # Categorize subscription
             category = categorize_subscription(merchant.lower())
-            
+
             detected_subscriptions.append({
                 "merchant_name": merchant,
                 "amount": round(avg_amount, 2),
@@ -98,57 +118,55 @@ def detect_recurring_transactions(
                 "last_transaction": txs[-1],
                 "transaction_count": len(txs)
             })
-    
+
     return detected_subscriptions
 
 def categorize_subscription(merchant_name: str) -> SubscriptionCategory:
     """Categorize subscription based on merchant name"""
     merchant_lower = merchant_name.lower()
-    
+
     # Streaming
     if any(name in merchant_lower for name in ["netflix", "hulu", "disney", "hbo", "youtube", "spotify"]):
         return SubscriptionCategory.STREAMING
     # Software
-    elif any(name in merchant_lower for name in ["adobe", "microsoft", "github", "jetbrains", "slack"]):
+    if any(name in merchant_lower for name in ["adobe", "microsoft", "github", "jetbrains", "slack"]):
         return SubscriptionCategory.SOFTWARE
     # Gaming
-    elif any(name in merchant_lower for name in ["xbox", "playstation", "steam", "nintendo"]):
+    if any(name in merchant_lower for name in ["xbox", "playstation", "steam", "nintendo"]):
         return SubscriptionCategory.GAMING
     # Music
-    elif any(name in merchant_lower for name in ["apple music", "pandora", "tidal"]):
+    if any(name in merchant_lower for name in ["apple music", "pandora", "tidal"]):
         return SubscriptionCategory.MUSIC
     # News
-    elif any(name in merchant_lower for name in ["times", "journal", "post", "bloomberg"]):
+    if any(name in merchant_lower for name in ["times", "journal", "post", "bloomberg"]):
         return SubscriptionCategory.NEWS
     # Fitness
-    elif any(name in merchant_lower for name in ["gym", "fitness", "peloton", "strava"]):
+    if any(name in merchant_lower for name in ["gym", "fitness", "peloton", "strava"]):
         return SubscriptionCategory.FITNESS
     # Food Delivery
-    elif any(name in merchant_lower for name in ["doordash", "uber eats", "grubhub", "hello fresh"]):
+    if any(name in merchant_lower for name in ["doordash", "uber eats", "grubhub", "hello fresh"]):
         return SubscriptionCategory.FOOD_DELIVERY
     # Cloud Storage
-    elif any(name in merchant_lower for name in ["dropbox", "google", "icloud", "onedrive"]):
+    if any(name in merchant_lower for name in ["dropbox", "google", "icloud", "onedrive"]):
         return SubscriptionCategory.CLOUD_STORAGE
     # Education
-    elif any(name in merchant_lower for name in ["coursera", "udemy", "masterclass", "skillshare"]):
+    if any(name in merchant_lower for name in ["coursera", "udemy", "masterclass", "skillshare"]):
         return SubscriptionCategory.EDUCATION
-    else:
-        return SubscriptionCategory.OTHER
+    return SubscriptionCategory.OTHER
 
 def calculate_next_billing_date(last_date: date, billing_cycle: BillingCycle) -> date:
     """Calculate next billing date based on cycle"""
     if billing_cycle == BillingCycle.WEEKLY:
         return last_date + timedelta(days=7)
-    elif billing_cycle == BillingCycle.MONTHLY:
+    if billing_cycle == BillingCycle.MONTHLY:
         # Handle month boundaries
         if last_date.month == 12:
             return last_date.replace(year=last_date.year + 1, month=1)
-        else:
-            try:
-                return last_date.replace(month=last_date.month + 1)
-            except ValueError:
-                # Handle day overflow (e.g., Jan 31 -> Feb 28)
-                return last_date.replace(month=last_date.month + 1, day=1) + timedelta(days=27)
+        try:
+            return last_date.replace(month=last_date.month + 1)
+        except ValueError:
+            # Handle day overflow (e.g., Jan 31 -> Feb 28)
+            return last_date.replace(month=last_date.month + 1, day=1) + timedelta(days=27)
     elif billing_cycle == BillingCycle.QUARTERLY:
         return last_date + timedelta(days=90)
     elif billing_cycle == BillingCycle.SEMI_ANNUAL:
@@ -161,17 +179,17 @@ def calculate_next_billing_date(last_date: date, billing_cycle: BillingCycle) ->
 
 def _create_subscription_response(
     sub: Any,
-    transaction_ids: List[int] = None,
+    transaction_ids: list[int] | None = None,
     is_trial: bool = False,
-    regular_price: Optional[float] = None,
-    days_until_billing: Optional[int] = None
+    regular_price: float | None = None,
+    days_until_billing: int | None = None
 ) -> SubscriptionResponse:
     """Helper to create SubscriptionResponse with proper field handling."""
     # Ensure all required fields are present
     merchant_name = getattr(sub, 'merchant_name', None) or sub.name.replace(' Subscription', '') if sub.name else 'Unknown'
     start_date_value = getattr(sub, 'start_date', None) or date.today()
     updated_at_value = getattr(sub, 'updated_at', None) or sub.created_at
-    
+
     # Convert next_billing_date to date if it's a datetime
     next_billing_date_value = sub.next_billing_date
     if isinstance(next_billing_date_value, datetime):
@@ -179,9 +197,9 @@ def _create_subscription_response(
     elif isinstance(next_billing_date_value, str):
         try:
             next_billing_date_value = datetime.fromisoformat(next_billing_date_value.replace('Z', '+00:00')).date()
-        except:
+        except (ValueError, AttributeError):
             next_billing_date_value = date.today() + timedelta(days=30)
-    
+
     # Map old category values to new enum values
     category_mapping = {
         'entertainment': SubscriptionCategory.STREAMING,
@@ -202,7 +220,7 @@ def _create_subscription_response(
         'other': SubscriptionCategory.OTHER
     }
     category_value = category_mapping.get(sub.category, SubscriptionCategory.OTHER)
-    
+
     # Map old billing cycle values
     billing_cycle_mapping = {
         'yearly': BillingCycle.ANNUAL,
@@ -214,7 +232,7 @@ def _create_subscription_response(
         'semi_annual': BillingCycle.SEMI_ANNUAL
     }
     billing_cycle_value = billing_cycle_mapping.get(sub.billing_cycle, sub.billing_cycle)
-    
+
     return SubscriptionResponse(
         id=sub.id,
         user_id=sub.user_id,
@@ -239,16 +257,16 @@ def _create_subscription_response(
         days_until_billing=days_until_billing
     )
 
-@router.get("", response_model=List[SubscriptionResponse])
+@router.get("", response_model=list[SubscriptionResponse])
 async def list_subscriptions(
-    status: Optional[SubscriptionStatus] = None,
-    category: Optional[SubscriptionCategory] = None,
+    status: SubscriptionStatus | None = None,
+    category: SubscriptionCategory | None = None,
     auto_detect: bool = False,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """List all subscriptions with optional auto-detection"""
-    
+
     # Get existing subscriptions
     query = db_session.query(Subscription).filter(
         Subscription.user_id == current_user['user_id']
@@ -256,17 +274,17 @@ async def list_subscriptions(
 
     if status:
         query = query.filter(Subscription.status == status)
-    
+
     if category:
         query = query.filter(Subscription.category == category)
-    
+
     subscriptions = query.order_by(Subscription.next_billing_date).all()
-    
+
     # Auto-detect if requested
     if auto_detect:
         # Get recent transactions
         three_months_ago = datetime.utcnow() - timedelta(days=90)
-        
+
         transactions = db_session.query(Transaction).join(
             Account
         ).filter(
@@ -274,10 +292,10 @@ async def list_subscriptions(
             Transaction.transaction_date >= three_months_ago,
             Transaction.transaction_type == TransactionType.DEBIT
         ).all()
-        
+
         # Detect recurring patterns
         detected = detect_recurring_transactions(transactions)
-        
+
         # Add detected subscriptions that don't exist yet
         for detection in detected:
             # Check if already tracked
@@ -286,7 +304,7 @@ async def list_subscriptions(
                 Subscription.merchant_name == detection["merchant_name"],
                 Subscription.amount == detection["amount"]
             ).first()
-            
+
             if not existing:
                 last_tx = detection["last_transaction"]
                 next_billing = calculate_next_billing_date(
@@ -310,24 +328,24 @@ async def list_subscriptions(
                 )
 
                 db_session.add(subscription)
-        
+
         db_session.commit()
-        
+
         # Refresh subscription list
         subscriptions = query.order_by(Subscription.next_billing_date).all()
-    
+
     # Build response with transaction links
     results = []
     for sub in subscriptions:
         # Get linked transactions
         linked_txs = []
-        
+
         response = _create_subscription_response(
-            sub, 
+            sub,
             transaction_ids=[tx.id for tx in linked_txs]
         )
         results.append(response)
-    
+
     return results
 
 @router.put("/{subscription_id}", response_model=SubscriptionResponse)
@@ -339,13 +357,13 @@ async def update_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update subscription information"""
-    
+
     # Get subscription
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -355,32 +373,31 @@ async def update_subscription(
     # Update fields
     if update_data.name is not None:
         subscription.name = update_data.name
-    
+
     if update_data.category is not None:
         subscription.category = update_data.category
-    
+
     if update_data.status is not None:
-        old_status = subscription.status
         subscription.status = update_data.status
-        
+
         # Handle status changes
         if update_data.status == SubscriptionStatus.CANCELLED:
             subscription.end_date = date.today()
-    
+
     if update_data.amount is not None:
         subscription.amount = update_data.amount
-    
+
     if update_data.billing_cycle is not None:
         subscription.billing_cycle = update_data.billing_cycle
-    
+
     if update_data.next_billing_date is not None:
         subscription.next_billing_date = update_data.next_billing_date
-    
+
     if update_data.notes is not None:
         subscription.notes = update_data.notes
-    
+
     subscription.updated_at = datetime.utcnow()
-    
+
     db_session.commit()
     db_session.refresh(subscription)
 
@@ -392,7 +409,7 @@ async def update_subscription(
         Transaction.description.ilike(f"%{subscription.merchant_name}%"),
         Transaction.amount == subscription.amount
     ).order_by(Transaction.transaction_date.desc()).limit(5).all()
-    
+
     return SubscriptionResponse(
         id=subscription.id,
         user_id=subscription.user_id,
@@ -424,20 +441,20 @@ async def analyze_subscriptions(
     subscriptions = db_session.query(Subscription).filter(
         Subscription.user_id == current_user['user_id']
     ).all()
-    
+
     # Calculate metrics
     total_subscriptions = len(subscriptions)
     active_subscriptions = sum(1 for s in subscriptions if s.status == SubscriptionStatus.ACTIVE)
-    
+
     # Calculate costs
     total_monthly_cost = 0
     total_annual_cost = 0
     cost_by_category = defaultdict(float)
-    
+
     for sub in subscriptions:
         if sub.status != SubscriptionStatus.ACTIVE:
             continue
-        
+
         # Convert to monthly cost
         if sub.billing_cycle == BillingCycle.WEEKLY:
             monthly_cost = sub.amount * 4.33  # 52/12
@@ -451,12 +468,12 @@ async def analyze_subscriptions(
             monthly_cost = sub.amount / 12
         else:
             monthly_cost = sub.amount
-        
+
         total_monthly_cost += monthly_cost
         cost_by_category[sub.category] += monthly_cost
-    
+
     total_annual_cost = total_monthly_cost * 12
-    
+
     # Cost trend (mock - last 6 months)
     cost_trend = []
     for i in range(6):
@@ -467,16 +484,16 @@ async def analyze_subscriptions(
             "month": month_date.strftime("%Y-%m"),
             "cost": round(total_monthly_cost * variation, 2)
         })
-    
+
     cost_trend.reverse()
-    
+
     # Find most expensive
     most_expensive = sorted(
         [s for s in subscriptions if s.status == SubscriptionStatus.ACTIVE],
         key=lambda x: x.amount if x.billing_cycle == BillingCycle.MONTHLY else x.amount / 12,
         reverse=True
     )[:5]
-    
+
     most_expensive_data = [
         {
             "id": s.id,
@@ -486,7 +503,7 @@ async def analyze_subscriptions(
         }
         for s in most_expensive
     ]
-    
+
     # Find least used (mock based on category)
     least_used = []
     for sub in subscriptions:
@@ -500,13 +517,13 @@ async def analyze_subscriptions(
                 "last_used": "30 days ago",  # Mock
                 "usage_score": 0.2
             })
-    
+
     # Upcoming renewals
     upcoming = sorted(
         [s for s in subscriptions if s.status == SubscriptionStatus.ACTIVE and s.next_billing_date],
         key=lambda x: x.next_billing_date
     )[:5]
-    
+
     upcoming_renewals = [
         {
             "id": s.id,
@@ -516,10 +533,10 @@ async def analyze_subscriptions(
         }
         for s in upcoming
     ]
-    
+
     # Calculate potential savings (20% estimate)
     savings_opportunities = total_monthly_cost * 0.2
-    
+
     return SubscriptionAnalysisResponse(
         total_subscriptions=total_subscriptions,
         active_subscriptions=active_subscriptions,
@@ -543,7 +560,7 @@ async def set_cancellation_reminder(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set a cancellation reminder for a subscription"""
-    
+
     # Get subscription
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
@@ -563,17 +580,17 @@ async def set_cancellation_reminder(
         reminder_date = subscription.next_billing_date - timedelta(days=reminder_data.days_before)
     else:
         raise ValidationError("Cannot set reminder without billing date")
-    
+
     # Check for existing reminder
     existing = db_session.query(CancellationReminder).filter(
         CancellationReminder.subscription_id == subscription_id,
         CancellationReminder.user_id == current_user['user_id'],
-        CancellationReminder.is_sent == False
+        not CancellationReminder.is_sent
     ).first()
-    
+
     if existing:
         raise ValidationError("Active reminder already exists for this subscription")
-    
+
     # Create reminder
     reminder = CancellationReminder(
         subscription_id=subscription_id,
@@ -585,8 +602,8 @@ async def set_cancellation_reminder(
     db_session.add(reminder)
     db_session.commit()
     db_session.refresh(reminder)
-    
-    
+
+
     return CancellationReminderResponse.from_orm(reminder)
 
 @router.get("/optimize", response_model=OptimizationResponse)
@@ -600,15 +617,15 @@ async def get_optimization_suggestions(
         Subscription.user_id == current_user['user_id'],
         Subscription.status == SubscriptionStatus.ACTIVE
     ).all()
-    
+
     suggestions = []
     total_potential_savings = 0
-    
+
     # Check for duplicate services
     category_services = defaultdict(list)
     for sub in subscriptions:
         category_services[sub.category].append(sub)
-    
+
     duplicate_services = []
     for category, subs in category_services.items():
         if len(subs) > 1:
@@ -617,11 +634,11 @@ async def get_optimization_suggestions(
                 "services": [{"id": s.id, "name": s.name, "cost": s.amount} for s in subs],
                 "potential_savings": sum(s.amount for s in subs[1:])  # Keep cheapest
             })
-            
+
             # Add suggestion for most expensive duplicate
             most_expensive = max(subs, key=lambda x: x.amount)
             cheapest = min(subs, key=lambda x: x.amount)
-            
+
             if most_expensive.id != cheapest.id:
                 suggestions.append(OptimizationSuggestion(
                     subscription_id=most_expensive.id,
@@ -640,16 +657,16 @@ async def get_optimization_suggestions(
                     ]
                 ))
                 total_potential_savings += most_expensive.amount
-    
+
     # Check for bundling opportunities
     bundling_opportunities = []
-    
+
     # Example: Multiple streaming services
     streaming_subs = [s for s in subscriptions if s.category == SubscriptionCategory.STREAMING]
     if len(streaming_subs) >= 3:
         total_streaming_cost = sum(s.amount for s in streaming_subs)
         bundle_cost = 25.99  # Mock bundle price
-        
+
         if total_streaming_cost > bundle_cost:
             bundling_opportunities.append({
                 "services": [s.name for s in streaming_subs],
@@ -657,7 +674,7 @@ async def get_optimization_suggestions(
                 "bundle_price": bundle_cost,
                 "savings": total_streaming_cost - bundle_cost
             })
-            
+
             suggestions.append(OptimizationSuggestion(
                 subscription_id=streaming_subs[0].id,
                 subscription_name="Multiple Streaming Services",
@@ -675,21 +692,21 @@ async def get_optimization_suggestions(
                 ]
             ))
             total_potential_savings += total_streaming_cost - bundle_cost
-    
+
     # Check for unused subscriptions (mock based on category/price)
     unused_subscriptions = []
     for sub in subscriptions:
         # Mock logic: expensive fitness/education subscriptions often go unused
-        if (sub.category in [SubscriptionCategory.FITNESS, SubscriptionCategory.EDUCATION] and 
+        if (sub.category in [SubscriptionCategory.FITNESS, SubscriptionCategory.EDUCATION] and
             sub.amount > 20):
-            
+
             unused_subscriptions.append({
                 "id": sub.id,
                 "name": sub.name,
                 "cost": sub.amount,
                 "last_used": "Over 30 days ago"  # Mock
             })
-            
+
             suggestions.append(OptimizationSuggestion(
                 subscription_id=sub.id,
                 subscription_name=sub.name,
@@ -707,7 +724,7 @@ async def get_optimization_suggestions(
                 ]
             ))
             total_potential_savings += sub.amount
-    
+
     # Check for cheaper alternatives
     for sub in subscriptions:
         # Mock alternative suggestions
@@ -729,11 +746,11 @@ async def get_optimization_suggestions(
                 ]
             ))
             total_potential_savings += sub.amount * 0.3
-    
+
     # Calculate optimization score (0-100)
     current_total = sum(s.amount for s in subscriptions)
     optimization_score = max(0, min(100, 100 - (total_potential_savings / current_total * 100))) if current_total > 0 else 100
-    
+
     return OptimizationResponse(
         total_potential_savings=round(total_potential_savings, 2),
         suggestions=suggestions[:10],  # Top 10 suggestions
@@ -752,15 +769,15 @@ async def create_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new subscription"""
-    
+
     # Calculate dates
     start_date = subscription_data.start_date or date.today()
     next_billing_date = calculate_next_billing_date(start_date, subscription_data.billing_cycle)
-    
+
     # Handle trial period
     if subscription_data.is_trial and subscription_data.trial_end_date:
         next_billing_date = subscription_data.trial_end_date
-    
+
     # Create subscription
     subscription = Subscription(
         user_id=current_user['user_id'],
@@ -783,13 +800,13 @@ async def create_subscription(
         subscription.free_trial_end_date = subscription_data.trial_end_date
         if subscription_data.regular_price:
             subscription.notes = f"{subscription.notes or ''} Regular price: ${subscription_data.regular_price}"
-    
+
     db_session.add(subscription)
     db_session.commit()
     db_session.refresh(subscription)
-    
-    
-    
+
+
+
     # Calculate days until billing for trials
     days_until_billing = None
     if subscription_data.is_trial and subscription.next_billing_date:
@@ -797,7 +814,7 @@ async def create_subscription(
             days_until_billing = (subscription.next_billing_date.date() - date.today()).days
         elif isinstance(subscription.next_billing_date, date):
             days_until_billing = (subscription.next_billing_date - date.today()).days
-    
+
     return _create_subscription_response(
         subscription,
         is_trial=subscription_data.is_trial,
@@ -815,20 +832,20 @@ async def get_subscription_summary(
     subscriptions = db_session.query(Subscription).filter(
         Subscription.user_id == current_user['user_id']
     ).all()
-    
+
     # Count by status
     active_count = sum(1 for s in subscriptions if s.status == SubscriptionStatus.ACTIVE)
     paused_count = sum(1 for s in subscriptions if s.status == SubscriptionStatus.PAUSED)
     cancelled_count = sum(1 for s in subscriptions if s.status == SubscriptionStatus.CANCELLED)
-    
+
     # Calculate costs
     total_monthly_cost = 0
     by_category = defaultdict(float)
-    
+
     for sub in subscriptions:
         if sub.status != SubscriptionStatus.ACTIVE:
             continue
-        
+
         # Convert to monthly cost
         if sub.billing_cycle == BillingCycle.WEEKLY:
             monthly_cost = sub.amount * 4.33
@@ -842,12 +859,12 @@ async def get_subscription_summary(
             monthly_cost = sub.amount / 12
         else:
             monthly_cost = sub.amount
-        
+
         total_monthly_cost += monthly_cost
         by_category[sub.category] += monthly_cost
-    
+
     total_annual_cost = total_monthly_cost * 12
-    
+
     return SubscriptionSummaryResponse(
         total_monthly_cost=round(total_monthly_cost, 2),
         total_annual_cost=round(total_annual_cost, 2),
@@ -869,7 +886,7 @@ async def get_subscription(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -880,7 +897,7 @@ async def get_subscription(
     payment_history = []
     linked_txs = []
     total_spent = 0
-    
+
     # Calculate days until billing
     days_until_billing = None
     if subscription.next_billing_date:
@@ -888,7 +905,7 @@ async def get_subscription(
             days_until_billing = (subscription.next_billing_date.date() - date.today()).days
         elif isinstance(subscription.next_billing_date, date):
             days_until_billing = (subscription.next_billing_date - date.today()).days
-    
+
     # Create base response
     base_response = _create_subscription_response(
         subscription,
@@ -901,7 +918,7 @@ async def get_subscription(
     response_dict['payment_history'] = payment_history
     response_dict['total_spent'] = total_spent
     response_dict['days_until_billing'] = days_until_billing
-    
+
     return SubscriptionDetailResponse(**response_dict)
 
 @router.post("/{subscription_id}/cancel", response_model=SubscriptionCancelResponse)
@@ -913,13 +930,13 @@ async def cancel_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Cancel a subscription"""
-    
+
     # Get subscription
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -938,12 +955,12 @@ async def cancel_subscription(
         subscription.end_date = date.today()
         cancellation_date = date.today()
         message = "Subscription cancelled immediately"
-    
+
     subscription.updated_at = datetime.utcnow()
-    
+
     db_session.commit()
-    
-    
+
+
     return SubscriptionCancelResponse(
         id=subscription.id,
         status=subscription.status,
@@ -960,13 +977,13 @@ async def pause_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Pause a subscription"""
-    
+
     # Get subscription
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -977,13 +994,13 @@ async def pause_subscription(
     subscription.status = SubscriptionStatus.PAUSED
     subscription.next_billing_date = pause_data.pause_until
     subscription.updated_at = datetime.utcnow()
-    
+
     # Store the resume date in notes (in a real system, would have a separate field)
     subscription.notes = f"{subscription.notes or ''} [Resume: {pause_data.pause_until}]"
-    
+
     db_session.commit()
-    
-    
+
+
     return SubscriptionPauseResponse(
         id=subscription.id,
         status=subscription.status,
@@ -991,7 +1008,7 @@ async def pause_subscription(
         message=f"Subscription paused until {pause_data.pause_until}"
     )
 
-@router.get("/{subscription_id}/payments", response_model=List[PaymentHistoryResponse])
+@router.get("/{subscription_id}/payments", response_model=list[PaymentHistoryResponse])
 async def get_subscription_payments(
     subscription_id: int,
     current_user: dict = Depends(get_current_user),
@@ -1003,7 +1020,7 @@ async def get_subscription_payments(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1018,7 +1035,7 @@ async def get_subscription_payments(
         Transaction.description.ilike(f"%{subscription.merchant_name}%"),
         Transaction.amount == subscription.amount
     ).order_by(Transaction.transaction_date.desc()).limit(24).all()
-    
+
     # Build payment history
     payments = []
     for tx in linked_txs:
@@ -1029,7 +1046,7 @@ async def get_subscription_payments(
             payment_method=tx.account.name if tx.account else "Unknown",
             transaction_id=tx.id
         ))
-    
+
     return payments
 
 @router.put("/{subscription_id}/reminders", response_model=SubscriptionReminderResponse)
@@ -1041,13 +1058,13 @@ async def set_subscription_reminders(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set reminder preferences for a subscription"""
-    
+
     # Verify subscription ownership
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1071,15 +1088,15 @@ async def set_subscription_reminders(
             existing_notes = json.loads(subscription.notes)
             existing_notes.update(notes_data)
             notes_data = existing_notes
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             notes_data["original_notes"] = subscription.notes
-    
+
     subscription.notes = json.dumps(notes_data)
     subscription.updated_at = datetime.utcnow()
-    
+
     db_session.commit()
-    
-    
+
+
     return SubscriptionReminderResponse(
         subscription_id=subscription.id,
         payment_reminder=reminder_data.payment_reminder,
@@ -1098,13 +1115,13 @@ async def track_subscription_usage(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Track usage of a subscription"""
-    
+
     # Verify subscription ownership
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1128,18 +1145,18 @@ async def get_subscription_recommendations(
         Subscription.user_id == current_user['user_id'],
         Subscription.status == SubscriptionStatus.ACTIVE
     ).all()
-    
+
     # Analyze for recommendations
     unused_subscriptions = []
     duplicate_services = []
     savings_opportunities = []
     total_potential_savings = 0
-    
+
     # Find duplicates by category
     category_services = defaultdict(list)
     for sub in subscriptions:
         category_services[sub.category].append(sub)
-    
+
     for category, subs in category_services.items():
         if len(subs) > 1:
             # Find duplicates
@@ -1149,19 +1166,19 @@ async def get_subscription_recommendations(
                 "services": services,
                 "recommendation": f"Consider keeping only one {category} service"
             })
-            
+
             # Calculate potential savings
             costs = sorted([s.amount for s in subs])
             savings = sum(costs[1:])  # Keep cheapest
             total_potential_savings += savings
-            
+
             savings_opportunities.append({
                 "type": "duplicate_removal",
                 "description": f"Remove duplicate {category} services",
                 "monthly_savings": savings,
                 "annual_savings": savings * 12
             })
-    
+
     # Mock unused subscriptions (based on category patterns)
     for sub in subscriptions:
         if sub.category in [SubscriptionCategory.FITNESS, SubscriptionCategory.EDUCATION]:
@@ -1174,13 +1191,13 @@ async def get_subscription_recommendations(
                     "recommendation": "Consider cancelling if not actively using"
                 })
                 total_potential_savings += sub.amount
-    
+
     # Add bundling opportunities
     streaming_count = sum(1 for s in subscriptions if s.category == SubscriptionCategory.STREAMING)
     if streaming_count >= 3:
         streaming_cost = sum(s.amount for s in subscriptions if s.category == SubscriptionCategory.STREAMING)
         bundle_savings = streaming_cost * 0.3  # Assume 30% savings
-        
+
         savings_opportunities.append({
             "type": "bundling",
             "description": "Bundle streaming services",
@@ -1188,7 +1205,7 @@ async def get_subscription_recommendations(
             "annual_savings": bundle_savings * 12
         })
         total_potential_savings += bundle_savings
-    
+
     return SubscriptionRecommendationsResponse(
         unused_subscriptions=unused_subscriptions,
         duplicate_services=duplicate_services,
@@ -1205,13 +1222,13 @@ async def share_subscription(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Share a subscription with another user"""
-    
+
     # Get subscription
     subscription = db_session.query(Subscription).filter(
         Subscription.id == subscription_id,
         Subscription.user_id == current_user['user_id']
     ).first()
-    
+
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1222,7 +1239,7 @@ async def share_subscription(
     share_user = db_session.query(User).filter(
         User.username == share_data.share_with_username
     ).first()
-    
+
     if not share_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -1247,15 +1264,15 @@ async def share_subscription(
             else:
                 existing_notes.update(notes_data)
             notes_data = existing_notes
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             notes_data["original_notes"] = subscription.notes
-    
+
     subscription.notes = json.dumps(notes_data)
     subscription.updated_at = datetime.utcnow()
-    
+
     db_session.commit()
-    
-    
+
+
     return SubscriptionShareResponse(
         id=subscription.id,
         shared_users=[{
@@ -1273,28 +1290,28 @@ async def bulk_import_subscriptions(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Import multiple subscriptions at once"""
-    
+
     imported_count = 0
     subscription_ids = []
     errors = []
-    
+
     for sub_data in import_data.subscriptions:
         try:
             # Validate required fields
             if not all(k in sub_data for k in ["service_name", "category", "amount", "billing_cycle"]):
                 errors.append(f"Missing required fields for subscription: {sub_data.get('service_name', 'Unknown')}")
                 continue
-            
+
             # Create subscription
             start_date = date.today()
             if "start_date" in sub_data:
                 start_date = datetime.fromisoformat(sub_data["start_date"]).date()
-            
+
             billing_cycle = BillingCycle(sub_data["billing_cycle"])
             category = SubscriptionCategory(sub_data["category"])
-            
+
             next_billing_date = calculate_next_billing_date(start_date, billing_cycle)
-            
+
             subscription = Subscription(
                 user_id=current_user['user_id'],
                 name=f"{sub_data['service_name']} Subscription",
@@ -1313,16 +1330,16 @@ async def bulk_import_subscriptions(
 
             db_session.add(subscription)
             db_session.flush()  # Get the ID
-            
+
             subscription_ids.append(subscription.id)
             imported_count += 1
-            
+
         except Exception as e:
-            errors.append(f"Error importing {sub_data.get('service_name', 'Unknown')}: {str(e)}")
-    
+            errors.append(f"Error importing {sub_data.get('service_name', 'Unknown')}: {e!s}")
+
     db_session.commit()
-    
-    
+
+
     return BulkImportResponse(
         imported=imported_count,
         subscription_ids=subscription_ids,

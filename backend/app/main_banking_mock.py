@@ -82,13 +82,13 @@ app.add_middleware(
 async def get_current_user(authorization: str | None = None) -> dict[str, Any]:
     """
     Get current user from authorization header.
-    
+
     Args:
         authorization: Authorization header value
-        
+
     Returns:
         Current user data
-        
+
     Raises:
         HTTPException: If not authenticated
     """

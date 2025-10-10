@@ -2,10 +2,10 @@
 Input validation and sanitization middleware for banking security.
 Prevents XSS, injection attacks, and validates financial data formats.
 """
-import re
 import json
-from typing import Any, Dict, List, Union
+import re
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -89,11 +89,7 @@ class InputSanitizer:
                 return True
 
         # Check SQL injection patterns
-        for pattern in self.sql_patterns:
-            if re.search(pattern, text_lower, re.IGNORECASE):
-                return True
-
-        return False
+        return any(re.search(pattern, text_lower, re.IGNORECASE) for pattern in self.sql_patterns)
 
     def _sanitize_string(self, text: str, field_name: str = "") -> str:
         """Sanitize string input by removing dangerous characters."""
@@ -131,7 +127,7 @@ class InputSanitizer:
         pattern = self.financial_patterns[field_type]
         return bool(re.match(pattern, value))
 
-    def _validate_amount(self, amount: Union[str, int, float]) -> float:
+    def _validate_amount(self, amount: str | int | float) -> float:
         """Validate and normalize financial amounts."""
         try:
             # Convert to Decimal for precise financial calculations
@@ -151,9 +147,9 @@ class InputSanitizer:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid amount format. Must be a valid number."
-            )
+            ) from None
 
-    def _sanitize_dict(self, data: Dict[str, Any], parent_key: str = "") -> Dict[str, Any]:
+    def _sanitize_dict(self, data: dict[str, Any], parent_key: str = "") -> dict[str, Any]:
         """Recursively sanitize dictionary data."""
         sanitized = {}
 
@@ -214,7 +210,7 @@ class InputSanitizer:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid JSON format"
-                )
+                ) from None
 
             # Sanitize data
             if isinstance(data, dict):
@@ -226,9 +222,9 @@ class InputSanitizer:
 
         except HTTPException:
             raise
-        except Exception as e:
+        except Exception:
             # Log the error but don't break the request
-            print(f"Input sanitization error: {e}")
+            pass
 
     def validate_email(self, email: str) -> bool:
         """Validate email format with enhanced security checks."""
@@ -249,10 +245,7 @@ class InputSanitizer:
             return False
 
         # Additional security checks
-        if '..' in email or email.startswith('.') or email.endswith('.'):
-            return False
-
-        return True
+        return not ('..' in email or email.startswith('.') or email.endswith('.'))
 
 
 # Global sanitizer instance
@@ -270,8 +263,7 @@ async def input_sanitization_middleware(request: Request, call_next):
         # Sanitize request
         await input_sanitizer.sanitize_request(request)
 
-        response = await call_next(request)
-        return response
+        return await call_next(request)
 
     except HTTPException as e:
         return JSONResponse(
@@ -282,6 +274,5 @@ async def input_sanitization_middleware(request: Request, call_next):
                 "security_alert": "Potentially malicious input blocked"
             }
         )
-    except Exception as e:
-        print(f"Input sanitization middleware error: {e}")
+    except Exception:
         return await call_next(request)

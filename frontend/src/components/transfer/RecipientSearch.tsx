@@ -53,6 +53,7 @@ export const RecipientSearch: React.FC<RecipientSearchProps> = ({
       setSearchResults([]);
       setShowDropdown(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, selectedUser]);
 
   const searchUsers = async () => {

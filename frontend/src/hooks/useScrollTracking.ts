@@ -55,6 +55,7 @@ export const useScrollTracking = ({
       
       lastScrollPositionRef.current = scrollTop;
     }, debounceMs);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elementId, elementName, user, debounceMs, thresholds]);
 
   useEffect(() => {

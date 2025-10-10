@@ -64,8 +64,8 @@ async def export_transactions_csv(
     transactions = query.order_by(Transaction.transaction_date.desc()).all()
 
     # Get all related accounts and categories
-    account_ids = list(set(t.account_id for t in transactions))
-    category_ids = list(set(t.category_id for t in transactions if t.category_id))
+    account_ids = list({t.account_id for t in transactions})
+    category_ids = list({t.category_id for t in transactions if t.category_id})
 
     accounts = {}
     categories = {}
@@ -139,10 +139,7 @@ async def export_transactions_csv(
                 running_balance += tx.amount
 
         amount_str = f"${tx.amount:.2f}"
-        if tx.transaction_type == TransactionType.DEBIT:
-            amount_str = f"-{amount_str}"
-        else:
-            amount_str = f"+{amount_str}"
+        amount_str = f"-{amount_str}" if tx.transaction_type == TransactionType.DEBIT else f"+{amount_str}"
 
         writer.writerow([
             tx.transaction_date.strftime('%Y-%m-%d'),
@@ -196,7 +193,7 @@ async def export_analytics_csv(
     ).all()
 
     # Get categories
-    categories = db_session.query(Category).filter(Category.is_income == False).all()
+    categories = db_session.query(Category).filter(not Category.is_income).all()
     category_map = {cat.id: cat for cat in categories}
 
     # Calculate spending by category manually
@@ -221,12 +218,12 @@ async def export_analytics_csv(
 
     # Calculate totals
     # Get user account IDs (fix subquery issue)
-    user_account_list = [acc.id for acc in db_session.query(Account).filter(
+    [acc.id for acc in db_session.query(Account).filter(
         Account.user_id == current_user['user_id']
     ).all()]
 
     # Calculate total income
-    income_categories = db_session.query(Category).filter(Category.is_income == True).all()
+    income_categories = db_session.query(Category).filter(Category.is_income).all()
     income_cat_ids = [cat.id for cat in income_categories]
 
     total_income = 0.0
@@ -547,8 +544,8 @@ async def export_transactions_pdf(
     transactions = query.order_by(Transaction.transaction_date.desc()).all()
 
     # Get all related accounts and categories
-    account_ids = list(set(t.account_id for t in transactions))
-    category_ids = list(set(t.category_id for t in transactions if t.category_id))
+    account_ids = list({t.account_id for t in transactions})
+    category_ids = list({t.category_id for t in transactions if t.category_id})
 
     accounts = {}
     categories = {}
@@ -584,10 +581,7 @@ async def export_transactions_pdf(
 
     for tx in transactions:
         amount_str = f"${tx.amount:.2f}"
-        if tx.transaction_type == TransactionType.DEBIT:
-            amount_str = f"-{amount_str}"
-        else:
-            amount_str = f"+{amount_str}"
+        amount_str = f"-{amount_str}" if tx.transaction_type == TransactionType.DEBIT else f"+{amount_str}"
 
         data.append([
             tx.transaction_date.strftime('%Y-%m-%d'),
@@ -926,7 +920,7 @@ async def export_net_worth_pdf(
 ):
     """Export net worth history to PDF"""
     end_date = date.today()
-    start_date = end_date - relativedelta(months=months_back)
+    end_date - relativedelta(months=months_back)
 
     # Get all user accounts
     accounts = db_session.query(Account).filter(
@@ -1001,9 +995,9 @@ async def export_net_worth_pdf(
     for i in range(months_back):
         month_start = current_date.replace(day=1)
         if month_start.month == 12:
-            month_end = month_start.replace(year=month_start.year + 1, month=1, day=1) - timedelta(days=1)
+            month_start.replace(year=month_start.year + 1, month=1, day=1) - timedelta(days=1)
         else:
-            month_end = month_start.replace(month=month_start.month + 1, day=1) - timedelta(days=1)
+            month_start.replace(month=month_start.month + 1, day=1) - timedelta(days=1)
 
         # Calculate balances for this month
         # (Simplified - in reality you'd track historical balances)

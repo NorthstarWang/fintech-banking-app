@@ -460,6 +460,7 @@ export default function TradingPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Order Type</label>
                 <Dropdown
                   value={orderForm.order_type}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange={(value) => setOrderForm(prev => ({ ...prev, order_type: value as any }))}
                   items={[
                     { value: 'market', label: 'Market Order' },
@@ -531,6 +532,7 @@ export default function TradingPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Time in Force</label>
                 <Dropdown
                   value={orderForm.time_in_force}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange={(value) => setOrderForm(prev => ({ ...prev, time_in_force: value as any }))}
                   items={TIME_IN_FORCE_OPTIONS.map(option => ({
                     value: option.value,

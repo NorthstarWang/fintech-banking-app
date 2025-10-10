@@ -38,7 +38,7 @@ async def create_loan_application(
     try:
         return loan_manager.create_application(current_user["user_id"], application)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 @router.get("/applications", response_model=list[LoanApplicationResponse])
 async def get_loan_applications(
@@ -72,10 +72,9 @@ async def process_loan_application(
         raise HTTPException(status_code=404, detail="Application not found")
 
     try:
-        offers = loan_manager.process_application(application_id)
-        return offers
+        return loan_manager.process_application(application_id)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 # Offer endpoints
 @router.get("/offers", response_model=list[LoanOfferResponse])
@@ -93,14 +92,12 @@ async def get_loan_offers(
 
         # Get offers from data manager
         offers = data_manager.loan_offers
-        user_offers = [LoanOfferResponse(**o) for o in offers if o['application_id'] == application_id]
-        return user_offers
+        return [LoanOfferResponse(**o) for o in offers if o['application_id'] == application_id]
     # Get all offers for user's applications
     applications = loan_manager.get_user_applications(current_user["user_id"])
     app_ids = {app.id for app in applications}
     offers = data_manager.loan_offers
-    user_offers = [LoanOfferResponse(**o) for o in offers if o['application_id'] in app_ids]
-    return user_offers
+    return [LoanOfferResponse(**o) for o in offers if o['application_id'] in app_ids]
 
 @router.get("/offers/{offer_id}", response_model=LoanOfferResponse)
 async def get_loan_offer(
@@ -127,9 +124,9 @@ async def accept_loan_offer(
     try:
         return loan_manager.accept_offer(offer_id, current_user["user_id"])
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 # Loan endpoints
 @router.get("/", response_model=list[LoanResponse])
@@ -161,9 +158,9 @@ async def make_loan_payment(
     try:
         return loan_manager.make_payment(payment, current_user["user_id"])
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.get("/{loan_id}/payments", response_model=list[LoanPaymentResponse])
 async def get_loan_payments(
@@ -199,7 +196,7 @@ async def calculate_amortization(
     try:
         return loan_manager.calculate_amortization(request)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 @router.get("/{loan_id}/refinance-analysis", response_model=LoanRefinanceAnalysis)
 async def analyze_refinance_options(
@@ -210,9 +207,9 @@ async def analyze_refinance_options(
     try:
         return loan_manager.analyze_refinance(loan_id, current_user["user_id"])
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.get("/summary")
 async def get_loan_summary_alias(
@@ -336,7 +333,7 @@ async def apply_for_crypto_loan(
     try:
         return loan_manager.create_application(current_user["user_id"], application)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 # Mock data generation endpoint (for development)
 @router.post("/generate-mock-data")
@@ -361,7 +358,7 @@ async def generate_mock_loan_data(
 
     generated_loans = []
 
-    for i in range(num_loans):
+    for _i in range(num_loans):
         # Create a mock application
         loan_types = list(LoanType)
         loan_type = random.choice(loan_types)
@@ -404,7 +401,7 @@ async def generate_mock_loan_data(
                 )
                 try:
                     loan_manager.make_payment(payment, current_user["user_id"])
-                except:
+                except (ValueError, KeyError, Exception):
                     pass  # Skip if loan is already paid off
 
             generated_loans.append(loan.id)

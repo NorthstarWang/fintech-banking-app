@@ -149,7 +149,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
         onAccountCreated?.();
       }, 1500);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Failed to create account';
       if (err.response?.data?.detail) {
         errorMessage = err.response.data.detail;

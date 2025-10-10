@@ -44,7 +44,7 @@ class JSONFormatter(logging.Formatter):
 def setup_logging(
     log_level: str = "INFO",
     log_format: str = "json",
-    log_file: str = None,
+    log_file: str | None = None,
     app_name: str = "bankflow"
 ) -> None:
     """

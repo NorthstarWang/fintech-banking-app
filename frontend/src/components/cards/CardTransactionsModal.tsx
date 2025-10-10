@@ -51,6 +51,7 @@ export const CardTransactionsModal: React.FC<CardTransactionsModalProps> = ({
     if (isOpen) {
       fetchTransactions();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, cardId]);
 
   const fetchTransactions = async () => {

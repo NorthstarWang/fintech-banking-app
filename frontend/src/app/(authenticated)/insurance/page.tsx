@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { insuranceApi } from '@/lib/api';
 import { InsurancePolicy, InsuranceClaim, InsuranceProvider } from '@/types';
@@ -15,7 +16,7 @@ export default function InsurancePage() {
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [providers, setProviders] = useState<InsuranceProvider[]>([]);
-  const [insuranceSummary, setInsuranceSummary] = useState<any>(null);
+  const [insuranceSummary, setInsuranceSummary] = useState<string | null>(null);
   const [selectedPolicy, setSelectedPolicy] = useState<InsurancePolicy | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'claims' | 'providers'>('overview');
@@ -134,7 +135,7 @@ export default function InsurancePage() {
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-[var(--text-1)] mb-4">Coverage Overview</h3>
               <div className="space-y-3">
-                {insuranceSummary.policiesByType.map((type: any) => (
+                {insuranceSummary.policiesByType.map((type: unknown) => (
                   <div key={type.type}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="capitalize text-[var(--text-1)]">
@@ -165,7 +166,7 @@ export default function InsurancePage() {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-[var(--text-1)] mb-4">Upcoming Renewals</h3>
                 <div className="space-y-3">
-                  {insuranceSummary.upcomingRenewals.map((renewal: any) => (
+                  {insuranceSummary.upcomingRenewals.map((renewal: unknown) => (
                     <div 
                       key={renewal.policy.id}
                       className="flex items-center justify-between p-3 bg-[rgba(var(--glass-rgb),0.2)] rounded-lg"
@@ -305,7 +306,7 @@ export default function InsurancePage() {
                       </div>
                     </div>
                     {provider.logo && (
-                      <img src={provider.logo} alt={provider.name} className="w-12 h-12 object-contain" />
+                      <Image src={provider.logo} alt={provider.name} width={48} height={48} className="object-contain" />
                     )}
                   </div>
 

@@ -95,7 +95,7 @@ async def create_budget(
         Budget.user_id == current_user['user_id'],
         Budget.category_id == budget_data.category_id,
         Budget.period == budget_data.period,
-        Budget.is_active == True
+        Budget.is_active
     ).first()
 
     if existing:
@@ -142,7 +142,7 @@ async def get_budgets(
     query = db_session.query(Budget).filter(Budget.user_id == current_user['user_id'])
 
     if active_only:
-        query = query.filter(Budget.is_active == True)
+        query = query.filter(Budget.is_active)
 
     if period:
         query = query.filter(Budget.period == period)
@@ -170,7 +170,7 @@ async def get_budget_summary(
     """Get budget summary with totals"""
     query = db_session.query(Budget).filter(
         Budget.user_id == current_user['user_id'],
-        Budget.is_active == True
+        Budget.is_active
     )
 
     if period:
@@ -349,7 +349,7 @@ async def check_budget_alerts(
     """Check for budgets that have exceeded alert threshold"""
     active_budgets = db_session.query(Budget).filter(
         Budget.user_id == current_user['user_id'],
-        Budget.is_active == True
+        Budget.is_active
     ).all()
 
     alerts = []

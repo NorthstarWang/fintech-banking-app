@@ -23,7 +23,7 @@ import { notificationsService, type Notification } from '@/lib/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -70,19 +70,6 @@ export default function NotificationsPage() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
-
-  const markAsRead = async (id: number) => {
-    try {
-      await notificationsService.markAsRead(id);
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch {
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMarkAsRead = async (notificationId: number) => {
     try {

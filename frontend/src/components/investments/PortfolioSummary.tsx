@@ -61,6 +61,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ onLoading })
 
   useEffect(() => {
     fetchPortfolioSummary();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPortfolioSummary = async () => {

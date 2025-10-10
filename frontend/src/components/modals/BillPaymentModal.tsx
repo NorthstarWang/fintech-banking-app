@@ -207,7 +207,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
         setSuccess(false);
         setSavePayee(false);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Bill payment failed. Please try again.');
     } finally {
       setIsLoading(false);

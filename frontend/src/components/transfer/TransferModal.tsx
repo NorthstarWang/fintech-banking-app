@@ -17,6 +17,7 @@ type AuthMethod = 'biometric' | '2fa';
 interface TransferModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSuccess?: (data: any) => void;
   defaultFromAccount?: string;
 }

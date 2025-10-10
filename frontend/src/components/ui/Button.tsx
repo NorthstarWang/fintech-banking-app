@@ -27,6 +27,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   // Filter out any isLoading prop that might be passed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { isLoading, ...restProps } = props as any;
   const baseClasses = `
     inline-flex items-center justify-center

@@ -1,35 +1,30 @@
 export interface SyntheticTrackingHook {
-  trackCardApplication: (data: any) => void;
-  trackCurrencyConversion: (data: any) => void;
-  trackP2PTrade: (data: any) => void;
-  trackInvestmentOrder: (data: any) => void;
-  trackPortfolioView: (data: any) => void;
+  trackCardApplication: (data: Record<string, unknown>) => void;
+  trackCurrencyConversion: (data: Record<string, unknown>) => void;
+  trackP2PTrade: (data: Record<string, unknown>) => void;
+  trackInvestmentOrder: (data: Record<string, unknown>) => void;
+  trackPortfolioView: (data: Record<string, unknown>) => void;
 }
 
 export function useSyntheticTracking(): SyntheticTrackingHook {
-  const trackCardApplication = (data: any) => {
+  const trackCardApplication = (_data: Record<string, unknown>) => {
     // Placeholder for synthetic tracking
-    console.log('Tracking card application:', data);
   };
 
-  const trackCurrencyConversion = (data: any) => {
+  const trackCurrencyConversion = (_data: Record<string, unknown>) => {
     // Placeholder for synthetic tracking
-    console.log('Tracking currency conversion:', data);
   };
 
-  const trackP2PTrade = (data: any) => {
+  const trackP2PTrade = (_data: Record<string, unknown>) => {
     // Placeholder for synthetic tracking
-    console.log('Tracking P2P trade:', data);
   };
 
-  const trackInvestmentOrder = (data: any) => {
+  const trackInvestmentOrder = (_data: Record<string, unknown>) => {
     // Placeholder for synthetic tracking
-    console.log('Tracking investment order:', data);
   };
 
-  const trackPortfolioView = (data: any) => {
+  const trackPortfolioView = (_data: Record<string, unknown>) => {
     // Placeholder for synthetic tracking
-    console.log('Tracking portfolio view:', data);
   };
 
   return {

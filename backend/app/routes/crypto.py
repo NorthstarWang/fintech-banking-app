@@ -68,7 +68,7 @@ async def create_wallet(
         # Unset any existing primary wallet
         existing_primary = db_session.query(CryptoWallet).filter(
             CryptoWallet.user_id == current_user['user_id'],
-            CryptoWallet.is_primary == True
+            CryptoWallet.is_primary
         ).first()
         if existing_primary:
             existing_primary.is_primary = False

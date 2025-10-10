@@ -455,7 +455,7 @@ class InsuranceManager:
                 try:
                     approved_amount = float(notes.split("approved_amount:")[1].split()[0])
                     claim.data["amount_approved"] = approved_amount
-                except:
+                except (ValueError, IndexError, AttributeError):
                     claim.data["amount_approved"] = claim.data.get("amount_claimed")
         elif status == ClaimStatus.PAID:
             claim.data["payment_date"] = datetime.utcnow().isoformat()
@@ -611,9 +611,8 @@ class InsuranceManager:
         results = []
         for provider in providers:
             # Apply filters
-            if insurance_type:
-                if insurance_type not in provider["insurance_types"]:
-                    continue
+            if insurance_type and insurance_type not in provider["insurance_types"]:
+                continue
             if min_rating and provider["rating"] < min_rating:
                 continue
 

@@ -19,7 +19,6 @@ import {
 import Card from '@/components/ui/Card';
 import Dropdown from '@/components/ui/Dropdown';
 import { apiClient } from '@/lib/api/client';
-// import toast from 'react-hot-toast';  // TODO: Add toast notifications
 
 interface InvestmentAsset {
   id: string;
@@ -137,7 +136,7 @@ export default function InvestmentDiscoverPage() {
       const assetsRes = await apiClient.get<InvestmentAsset[]>('/api/investments/assets');
       setAssets(assetsRes);
     } catch {
-      // TODO: Add toast notification
+      // Error handling can be added here if needed
     } finally {
       setLoading(false);
     }

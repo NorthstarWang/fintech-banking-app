@@ -1,9 +1,20 @@
+import re
 from datetime import date
 from typing import Any
 
 from fastapi import HTTPException, status
 
 from ..models import Account, AccountType, Category, User
+
+# Constants
+MAX_TRANSACTION_AMOUNT = 1_000_000
+MAX_IMPORT_FILE_SIZE_MB = 5
+MAX_PAGE_SIZE = 100
+MAX_DATE_RANGE_DAYS = 365
+MIN_PHONE_DIGITS = 10
+MAX_PHONE_DIGITS = 15
+EMAIL_PATTERN = r'^[\w\.-]+@[\w\.-]+ \.\w+$'
+PHONE_PATTERN = r'^\d{10,15}$'
 
 
 class ValidationError(HTTPException):
@@ -19,7 +30,7 @@ class Validators:
         account = db.query(Account).filter(
             Account.id == account_id,
             Account.user_id == user_id,
-            Account.is_active == True
+            Account.is_active
         ).first()
 
         if account:
@@ -39,7 +50,7 @@ class Validators:
         """Validate user has access to category (system or own)"""
         category = db.query(Category).filter(
             Category.id == category_id,
-            (Category.is_system == True) | (Category.user_id == user_id)
+            (Category.is_system) | (Category.user_id == user_id)
         ).first()
 
         if not category:
@@ -59,12 +70,12 @@ class Validators:
         return from_account, to_account
 
     @staticmethod
-    def validate_transaction_amount(amount: float, account_type: AccountType = None):
+    def validate_transaction_amount(amount: float, account_type: AccountType | None = None):
         """Validate transaction amount"""
         if amount <= 0:
             raise ValidationError("Amount must be greater than 0")
 
-        if amount > 1000000:  # Reasonable limit
+        if amount > MAX_TRANSACTION_AMOUNT:
             raise ValidationError("Amount exceeds maximum allowed")
 
     @staticmethod
@@ -91,16 +102,14 @@ class Validators:
     @staticmethod
     def validate_credit_limit(account: Account, new_balance: float):
         """Validate credit card limit"""
-        if account.account_type == AccountType.CREDIT_CARD:
-            if account.credit_limit and new_balance < -account.credit_limit:
-                raise ValidationError(f"Transaction would exceed credit limit of ${account.credit_limit}")
+        if account.account_type == AccountType.CREDIT_CARD and account.credit_limit and new_balance < -account.credit_limit:
+            raise ValidationError(f"Transaction would exceed credit limit of ${account.credit_limit}")
 
     @staticmethod
     def validate_sufficient_funds(account: Account, amount: float):
         """Validate sufficient funds for debit"""
-        if account.account_type in [AccountType.CHECKING, AccountType.SAVINGS]:
-            if account.balance < amount:
-                raise ValidationError(f"Insufficient funds. Available balance: ${account.balance:.2f}")
+        if account.account_type in [AccountType.CHECKING, AccountType.SAVINGS] and account.balance < amount:
+            raise ValidationError(f"Insufficient funds. Available balance: ${account.balance:.2f}")
 
     @staticmethod
     def validate_date_range(start_date: date | None, end_date: date | None):
@@ -110,7 +119,7 @@ class Validators:
                 raise ValidationError("End date must be after start date")
 
             # Limit range to 1 year
-            if (end_date - start_date).days > 365:
+            if (end_date - start_date).days > MAX_DATE_RANGE_DAYS:
                 raise ValidationError("Date range cannot exceed 1 year")
 
     @staticmethod
@@ -133,9 +142,8 @@ class Validators:
             raise ValidationError("File must be a CSV")
 
         # Check file size (base64 encoded)
-        max_size_mb = 5
-        if len(file_content) > max_size_mb * 1024 * 1024 * 1.37:  # Base64 overhead
-            raise ValidationError(f"File size exceeds {max_size_mb}MB limit")
+        if len(file_content) > MAX_IMPORT_FILE_SIZE_MB * 1024 * 1024 * 1.37:  # Base64 overhead
+            raise ValidationError(f"File size exceeds {MAX_IMPORT_FILE_SIZE_MB}MB limit")
 
     @staticmethod
     def validate_pagination(page: int = 1, page_size: int = 20):
@@ -143,25 +151,24 @@ class Validators:
         if page < 1:
             raise ValidationError("Page must be greater than 0")
 
-        if page_size < 1 or page_size > 100:
+        if page_size < 1 or page_size > MAX_PAGE_SIZE:
             raise ValidationError("Page size must be between 1 and 100")
 
         return page, page_size
 
+
 # Utility functions for common validations
 def validate_email(email: str) -> bool:
     """Basic email validation"""
-    import re
-    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    return re.match(pattern, email) is not None
+    return re.match(EMAIL_PATTERN, email) is not None
+
 
 def validate_phone(phone: str) -> bool:
     """Basic phone validation"""
-    import re
     # Remove common formatting characters
     cleaned = re.sub(r'[\s\-\(\)\+]', '', phone)
     # Check if it's a valid number (10-15 digits)
-    return re.match(r'^\d{10,15}$', cleaned) is not None
+    return re.match(PHONE_PATTERN, cleaned) is not None
 
 def sanitize_string(value: str, max_length: int = 255) -> str:
     """Sanitize string input"""

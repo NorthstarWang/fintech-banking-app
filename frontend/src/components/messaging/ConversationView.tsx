@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Send, 
-  Paperclip, 
-  Smile, 
+import Image from 'next/image';
+import {
+  Send,
+  Paperclip,
+  Smile,
   Image as ImageIcon,
   X,
   Download,
@@ -196,9 +197,11 @@ export default function ConversationView({
     return (
       <div className="mt-2">
         {isImage ? (
-          <img 
-            src={attachmentUrl} 
+          <Image
+            src={attachmentUrl}
             alt={attachment.filename}
+            width={300}
+            height={200}
             className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => window.open(attachmentUrl, '_blank')}
           />
@@ -273,6 +276,7 @@ export default function ConversationView({
     });
 
     return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   return (

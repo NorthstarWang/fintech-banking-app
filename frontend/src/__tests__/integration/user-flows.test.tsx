@@ -60,7 +60,7 @@ describe('User Flow Integration Tests', () => {
   });
 
   function setupMockResponses() {
-    mockFetchApi.mockImplementation((url: string, _options?: any) => {
+    mockFetchApi.mockImplementation((url: string, _options?: RequestInit) => {
       // Credit cards endpoints
       if (url === '/api/credit-cards/credit-score') {
         return Promise.resolve(mockUserData.creditScore);
@@ -150,7 +150,7 @@ describe('User Flow Integration Tests', () => {
   describe('Investment to Currency Conversion Flow', () => {
     test('user sells investments and converts currency', async () => {
       // Mock successful investment sell order
-      mockFetchApi.mockImplementation((url: string, _options?: any) => {
+      mockFetchApi.mockImplementation((url: string, _options?: RequestInit) => {
         if (url === '/api/investments/orders' && options?.method === 'POST') {
           const orderData = JSON.parse(options.body);
           if (orderData.order_side === 'sell') {
@@ -344,7 +344,7 @@ describe('User Flow Integration Tests', () => {
       let applicationCount = 0;
       
       // Mock dynamic responses
-      mockFetchApi.mockImplementation((url: string, _options?: any) => {
+      mockFetchApi.mockImplementation((url: string, _options?: RequestInit) => {
         if (url === '/api/credit-cards/applications' && options?.method === 'POST') {
           applicationCount++;
           return Promise.resolve({

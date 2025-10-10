@@ -4,13 +4,11 @@ Provides secure session handling for banking applications with multi-device supp
 """
 import secrets
 import time
-from typing import Dict, List, Optional, Set
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request
 
-from .auth import session_auth
-from ..services.audit_logger import audit_logger, AuditEventType, AuditSeverity
+from ..services.audit_logger import AuditEventType, AuditSeverity, audit_logger
 
 
 class DeviceInfo:
@@ -33,7 +31,7 @@ class DeviceInfo:
         """Update last seen timestamp."""
         self.last_seen = time.time()
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
             "fingerprint": self.fingerprint,
@@ -63,7 +61,7 @@ class SessionInfo:
         self.last_activity = time.time()
         self.device_info.update_last_seen()
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
             "session_id": self.session_id,
@@ -82,13 +80,13 @@ class EnhancedSessionManager:
 
     def __init__(self):
         # Store sessions: {session_id: SessionInfo}
-        self.sessions: Dict[str, SessionInfo] = {}
+        self.sessions: dict[str, SessionInfo] = {}
 
         # User to sessions mapping: {user_id: Set[session_id]}
-        self.user_sessions: Dict[int, Set[str]] = {}
+        self.user_sessions: dict[int, set[str]] = {}
 
         # Device tracking: {user_id: {device_fingerprint: DeviceInfo}}
-        self.user_devices: Dict[int, Dict[str, DeviceInfo]] = {}
+        self.user_devices: dict[int, dict[str, DeviceInfo]] = {}
 
         # Configuration
         self.max_concurrent_sessions = 3  # Max sessions per user
@@ -188,7 +186,7 @@ class EnhancedSessionManager:
 
         return session_id
 
-    def _handle_concurrent_login(self, user_id: int, existing_sessions: Set[str], request: Request):
+    def _handle_concurrent_login(self, user_id: int, existing_sessions: set[str], request: Request):
         """Handle concurrent login detection."""
         # Log concurrent login attempt
         audit_logger.log_security_event(
@@ -217,7 +215,7 @@ class EnhancedSessionManager:
         if oldest_session_id:
             self.terminate_session(oldest_session_id, reason="concurrent_login_limit")
 
-    def get_session(self, session_id: str, request: Optional[Request] = None) -> Optional[SessionInfo]:
+    def get_session(self, session_id: str, request: Request | None = None) -> SessionInfo | None:
         """Get session information with activity tracking."""
         if session_id not in self.sessions:
             return None
@@ -262,7 +260,7 @@ class EnhancedSessionManager:
 
         return session_info
 
-    def terminate_session(self, session_id: str, reason: str = "manual", user_id: Optional[int] = None):
+    def terminate_session(self, session_id: str, reason: str = "manual", user_id: int | None = None):
         """Terminate a specific session."""
         if session_id not in self.sessions:
             return
@@ -289,7 +287,7 @@ class EnhancedSessionManager:
         # Remove from sessions
         del self.sessions[session_id]
 
-    def terminate_all_user_sessions(self, user_id: int, except_session: Optional[str] = None):
+    def terminate_all_user_sessions(self, user_id: int, except_session: str | None = None):
         """Terminate all sessions for a user."""
         if user_id not in self.user_sessions:
             return
@@ -301,7 +299,7 @@ class EnhancedSessionManager:
         for session_id in sessions_to_terminate:
             self.terminate_session(session_id, reason="user_requested")
 
-    def get_user_sessions(self, user_id: int) -> List[Dict]:
+    def get_user_sessions(self, user_id: int) -> list[dict]:
         """Get all active sessions for a user."""
         if user_id not in self.user_sessions:
             return []
@@ -351,7 +349,7 @@ class EnhancedSessionManager:
         # Keep only the most recent devices
         self.user_devices[user_id] = dict(sorted_devices[:self.max_devices_per_user])
 
-    def get_security_summary(self, user_id: int) -> Dict:
+    def get_security_summary(self, user_id: int) -> dict:
         """Get security summary for a user."""
         active_sessions = len(self.user_sessions.get(user_id, set()))
         known_devices = len(self.user_devices.get(user_id, {}))

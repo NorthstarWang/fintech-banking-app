@@ -1,224 +1,428 @@
+# ruff: noqa: I001
 # Export all Pydantic models from core_models
-from .core_models import *
-
-# Import memory models (replacing SQLAlchemy)
-from .memory_models import *
-
-# Additional models for compatibility
-Bill = type('Bill', (BaseMemoryModel,), {'__tablename__': 'bills'})
-CreditScore = type('CreditScore', (BaseMemoryModel,), {'__tablename__': 'credit_scores'})
-SocialConnection = type('SocialConnection', (BaseMemoryModel,), {'__tablename__': 'social_connections'})
-P2PTransaction = type('P2PTransaction', (BaseMemoryModel,), {'__tablename__': 'p2p_transactions'})
-InvestmentAccount = type('InvestmentAccount', (BaseMemoryModel,), {'__tablename__': 'investment_accounts'})
-Holding = type('Holding', (BaseMemoryModel,), {'__tablename__': 'holdings'})
-Alert = type('Alert', (BaseMemoryModel,), {'__tablename__': 'alerts'})
-AnalyticsEvent = type('AnalyticsEvent', (BaseMemoryModel,), {'__tablename__': 'analytics_events'})
-BankLink = type('BankLink', (BaseMemoryModel,), {'__tablename__': 'bank_links'})
-PlaidAccount = type('PlaidAccount', (BaseMemoryModel,), {'__tablename__': 'plaid_accounts'})
-TransactionsSyncStatus = type('TransactionsSyncStatus', (BaseMemoryModel,), {'__tablename__': 'transactions_sync_status'})
-LinkedAccount = type('LinkedAccount', (BaseMemoryModel,), {'__tablename__': 'linked_accounts'})
-CreditSimulation = type('CreditSimulation', (BaseMemoryModel,), {'__tablename__': 'credit_simulations'})
-TwoFactorAuth = type('TwoFactorAuth', (BaseMemoryModel,), {'__tablename__': 'two_factor_auth'})
-UserDevice = type('UserDevice', (BaseMemoryModel,), {'__tablename__': 'user_devices'})
-SecurityAuditLog = type('SecurityAuditLog', (BaseMemoryModel,), {'__tablename__': 'security_audit_logs'})
-
-# Additional models that don't have full implementations
-SpendingLimit = type('SpendingLimit', (BaseMemoryModel,), {'__tablename__': 'spending_limits'})
-RoundUpConfig = type('RoundUpConfig', (BaseMemoryModel,), {'__tablename__': 'round_up_configs'})
-RoundUpTransaction = type('RoundUpTransaction', (BaseMemoryModel,), {'__tablename__': 'round_up_transactions'})
-SavingsRule = type('SavingsRule', (BaseMemoryModel,), {'__tablename__': 'savings_rules'})
-SavingsChallenge = type('SavingsChallenge', (BaseMemoryModel,), {'__tablename__': 'savings_challenges'})
-ChallengeParticipant = type('ChallengeParticipant', (BaseMemoryModel,), {'__tablename__': 'challenge_participants'})
-Invoice = type('Invoice', (BaseMemoryModel,), {'__tablename__': 'invoices'})
-ExpenseReport = type('ExpenseReport', (BaseMemoryModel,), {'__tablename__': 'expense_reports'})
-Receipt = type('Receipt', (BaseMemoryModel,), {'__tablename__': 'receipts'})
-CancellationReminder = type('CancellationReminder', (BaseMemoryModel,), {'__tablename__': 'cancellation_reminders'})
-DirectMessage = type('DirectMessage', (BaseMemoryModel,), {'__tablename__': 'direct_messages'})
-MessageAttachment = type('MessageAttachment', (BaseMemoryModel,), {'__tablename__': 'message_attachments'})
-MessageFolder = type('MessageFolder', (BaseMemoryModel,), {'__tablename__': 'message_folders'})
-BlockedUser = type('BlockedUser', (BaseMemoryModel,), {'__tablename__': 'blocked_users'})
-MessageSettings = type('MessageSettings', (BaseMemoryModel,), {'__tablename__': 'message_settings'})
-
-# Create aliases for backward compatibility
-VirtualCard = Card  # Routes expect VirtualCard
-CardLimit = SpendingLimit  # Routes expect CardLimit
-InvoiceLineItem = None  # Line items are stored as JSON in Invoice model
-
-# Export enums from data_classes for convenience
-# Additional enum for compatibility
 import enum
 
-from .dto import (
+from .core_models import *
+from .core_models import (
+    CurrencyConversionRequest,
+    CurrencyConversionResponse,
+    CurrencyInfo,
+    CurrencyInfoResponse,
+    LinkedAccountResponse,
+)
+from .enums import *
+from .mock_models import (
+    Account as MockAccount,
+    Alert,
+    AnalyticsEvent,
+    BankLink,
+    Bill,
+    Budget as MockBudget,
+    Card as MockCard,
+    Category as MockCategory,
+    CreditScore as MockCreditScore,
+    Goal as MockGoal,
+    Holding,
+    InvestmentAccount,
+    Message as MockMessage,
+    Notification as MockNotification,
+    P2PTransaction,
+    PlaidAccount,
+    SocialConnection,
+    Subscription as MockSubscription,
+    Transaction as MockTransaction,
+    TransactionsSyncStatus,
+    User as MockUser,
+)
+from .memory_models import (
+    Account,
     AccountType,
-    BillingCycle,
+    AssetBridge,
+    AssetClass,
+    BlockchainNetwork,
+    Budget,
     BudgetPeriod,
+    Card,
     CardStatus,
     CardType,
-    ChallengeStatus,
-    ChallengeType,
+    Category,
+    CollateralPosition,
+    Contact,
     ContactStatus,
-    CreditFactorType,
-    CreditScoreProvider,
-    CreditScoreRange,
-    ExpenseReportStatus,
-    ExportFormat,
+    Conversation,
+    ConversationParticipant,
+    ConversionRate,
+    ConversionType,
+    CreditAlert,
+    CreditAlertSeverity,
+    CreditAlertType,
+    CreditBuilderAccount,
+    CreditBuilderType,
+    CreditDispute,
+    CreditDisputeStatus,
+    CreditDisputeType,
+    CreditScore,
+    CreditSimulation,
+    CryptoAsset,
+    CryptoAssetType,
+    CryptoTransaction,
+    CryptoTransactionStatus,
+    CryptoWallet,
+    DeFiPosition,
+    DeFiProtocolType,
+    DirectMessage,
+    Goal,
+    GoalContribution,
     GoalStatus,
-    InvoiceStatus,
+    LinkedAccount,
+    Log,
+    Merchant,
+    Message,
+    MessageReadReceipt,
     MessageStatus,
+    NFTAsset,
+    Note,
+    Notification,
     NotificationType,
-    OptimizationSuggestionType,
+    PaymentMethod,
     PaymentMethodStatus,
     PaymentMethodType,
-    PaymentTerms,
-    RoundUpStatus,
-    SavingsRuleFrequency,
-    SavingsRuleType,
+    RecurringRule,
+    SecurityAuditLog,
+    SecurityEvent,
     SecurityEventType,
-    SpendingLimitPeriod,
+    Subscription,
     SubscriptionCategory,
     SubscriptionStatus,
-    TaxCategory,
+    TwoFactorAuth,
+    TransactionDirection,
     TransactionStatus,
     TransactionType,
-    TwoFactorMethod,
+    Transaction,
+    UnifiedBalance,
+    UnifiedTransaction,
+    UnifiedTransferStatus,
+    User,
+    UserDevice,
     UserRole,
 )
+from .dto import (
+    AccountType as AccountType,
+    BillingCycle as BillingCycle,
+    BudgetPeriod as BudgetPeriod,
+    CardStatus as CardStatus,
+    CardType as CardType,
+    ChallengeStatus as ChallengeStatus,
+    ChallengeType as ChallengeType,
+    ContactStatus as ContactStatus,
+    CreditFactorType as CreditFactorType,
+    CreditScoreProvider as CreditScoreProvider,
+    CreditScoreRange as CreditScoreRange,
+    ExpenseReportStatus as ExpenseReportStatus,
+    ExportFormat as ExportFormat,
+    GoalStatus as GoalStatus,
+    InvoiceStatus as InvoiceStatus,
+    MessageStatus as MessageStatus,
+    NotificationType as NotificationType,
+    OptimizationSuggestionType as OptimizationSuggestionType,
+    PaymentMethodStatus as PaymentMethodStatus,
+    PaymentMethodType as PaymentMethodType,
+    PaymentTerms as PaymentTerms,
+    RoundUpStatus as RoundUpStatus,
+    SavingsRuleFrequency as SavingsRuleFrequency,
+    SavingsRuleType as SavingsRuleType,
+    SecurityEventType as SecurityEventType,
+    SpendingLimitPeriod as SpendingLimitPeriod,
+    SubscriptionCategory as SubscriptionCategory,
+    SubscriptionStatus as SubscriptionStatus,
+    TaxCategory as TaxCategory,
+    TransactionStatus as TransactionStatus,
+    TransactionType as TransactionType,
+    TwoFactorMethod as TwoFactorMethod,
+    UserRole as UserRole,
+)
+from .entities import (
+    business_models as business_models,
+    card_models as card_models,
+    credit_models as credit_models,
+    savings_models as savings_models,
+    subscription_models as subscription_models,
+)
 
-
-class BankLinkStatus(enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-
-# Import card models
-# Also make sub-modules available if needed
-from .entities import business_models, card_models, credit_models, savings_models, subscription_models
-
-# Import business models
+# Business Models
 from .entities.business_models import (
-    APIKeyRequest,
-    APIKeyResponse,
-    AuthorizedUserRequest,
-    AuthorizedUserResponse,
-    BusinessAccountCreateRequest,
-    BusinessAccountResponse,
-    BusinessExpenseRequest,
-    BusinessExpenseResponse,
-    BusinessLoanApplicationRequest,
-    BusinessLoanResponse,
-    CashFlowAnalysisResponse,
-    CreditLineApplicationRequest,
-    CreditLineResponse,
-    ExpenseReportRequest,
-    ExpenseReportResponse,
-    InvoiceCreateRequest,
-    InvoiceResponse,
-    PayrollEmployee,
-    PayrollRequest,
-    PayrollResponse,
-    ReceiptResponse,
-    ReceiptUploadRequest,
-    RecurringPaymentRequest,
-    RecurringPaymentResponse,
-    TaxEstimateResponse,
-    TaxReportResponse,
-    TransactionCategorizationRequest,
-    TransactionCategorizationResponse,
-    VendorCreateRequest,
-    VendorResponse,
+    APIKeyRequest as APIKeyRequest,
+    APIKeyResponse as APIKeyResponse,
+    AuthorizedUserRequest as AuthorizedUserRequest,
+    AuthorizedUserResponse as AuthorizedUserResponse,
+    BusinessAccountCreateRequest as BusinessAccountCreateRequest,
+    BusinessAccountResponse as BusinessAccountResponse,
+    BusinessExpenseRequest as BusinessExpenseRequest,
+    BusinessExpenseResponse as BusinessExpenseResponse,
+    BusinessLoanApplicationRequest as BusinessLoanApplicationRequest,
+    BusinessLoanResponse as BusinessLoanResponse,
+    CashFlowAnalysisResponse as CashFlowAnalysisResponse,
+    CreditLineApplicationRequest as CreditLineApplicationRequest,
+    CreditLineResponse as CreditLineResponse,
+    ExpenseReportRequest as ExpenseReportRequest,
+    ExpenseReportResponse as ExpenseReportResponse,
+    InvoiceCreateRequest as InvoiceCreateRequest,
+    InvoiceLineItem as InvoiceLineItem,
+    InvoiceResponse as InvoiceResponse,
+    PayrollEmployee as PayrollEmployee,
+    PayrollRequest as PayrollRequest,
+    PayrollResponse as PayrollResponse,
+    ReceiptResponse as ReceiptResponse,
+    ReceiptUploadRequest as ReceiptUploadRequest,
+    RecurringPaymentRequest as RecurringPaymentRequest,
+    RecurringPaymentResponse as RecurringPaymentResponse,
+    TaxEstimateResponse as TaxEstimateResponse,
+    TaxReportResponse as TaxReportResponse,
+    TransactionCategorizationRequest as TransactionCategorizationRequest,
+    TransactionCategorizationResponse as TransactionCategorizationResponse,
+    VendorCreateRequest as VendorCreateRequest,
+    VendorResponse as VendorResponse,
 )
+
+# Card Models
 from .entities.card_models import (
-    CardAnalyticsResponse,
-    CardFreezeRequest,
-    CardLimitRequest,
-    CardLimitResponse,
-    VirtualCardCreate,
-    VirtualCardResponse,
+    CardAnalyticsResponse as CardAnalyticsResponse,
+    CardFreezeRequest as CardFreezeRequest,
+    CardLimitRequest as CardLimitRequest,
+    CardLimitResponse as CardLimitResponse,
+    VirtualCardCreate as VirtualCardCreate,
+    VirtualCardResponse as VirtualCardResponse,
 )
 
-# Import credit models
+# Credit Models
 from .entities.credit_models import (
-    CreditHistoryResponse,
-    CreditReportResponse,
-    CreditScoreResponse,
-    CreditSimulatorRequest,
-    CreditSimulatorResponse,
-    CreditTip,
-    CreditTipsResponse,
+    CreditHistoryResponse as CreditHistoryResponse,
+    CreditReportResponse as CreditReportResponse,
+    CreditScoreResponse as CreditScoreResponse,
+    CreditSimulatorRequest as CreditSimulatorRequest,
+    CreditSimulatorResponse as CreditSimulatorResponse,
+    CreditTip as CreditTip,
+    CreditTipsResponse as CreditTipsResponse,
 )
 
-# Import crypto models
+# Crypto Models
 from .entities.crypto_models import (
-    BlockchainNetwork,
-    CryptoAssetResponse,
-    CryptoAssetType,
-    CryptoPortfolioSummary,
-    CryptoSwapQuote,
-    CryptoSwapRequest,
-    CryptoTransactionCreate,
-    CryptoTransactionResponse,
-    CryptoWalletCreate,
-    CryptoWalletResponse,
-    DeFiPositionResponse,
-    DeFiProtocolType,
-    NFTAssetResponse,
-    TransactionDirection,
+    BlockchainNetwork as BlockchainNetwork,
+    CryptoAssetResponse as CryptoAssetResponse,
+    CryptoAssetType as CryptoAssetType,
+    CryptoPortfolioSummary as CryptoPortfolioSummary,
+    CryptoSwapQuote as CryptoSwapQuote,
+    CryptoSwapRequest as CryptoSwapRequest,
+    CryptoTransactionCreate as CryptoTransactionCreate,
+    CryptoTransactionResponse as CryptoTransactionResponse,
+    CryptoWalletCreate as CryptoWalletCreate,
+    CryptoWalletResponse as CryptoWalletResponse,
+    DeFiPositionResponse as DeFiPositionResponse,
+    DeFiProtocolType as DeFiProtocolType,
+    NFTAssetResponse as NFTAssetResponse,
+    TransactionDirection as TransactionDirection,
 )
 
-# Import savings models
+# Currency Converter Models
+from .entities.currency_converter_models import (
+    ComplianceCheckResponse as ComplianceCheckResponse,
+    ConversionHistoryResponse as ConversionHistoryResponse,
+    ConversionOrderCreate as ConversionOrderCreate,
+    ConversionOrderResponse as ConversionOrderResponse,
+    ConversionQuoteRequest as ConversionQuoteRequest,
+    ConversionQuoteResponse as ConversionQuoteResponse,
+    CurrencyBalanceResponse as CurrencyBalanceResponse,
+    CurrencyPair as CurrencyPair,
+    CurrencySupportedResponse as CurrencySupportedResponse,
+    CurrencyType as CurrencyType,
+    ExchangeRateResponse as ExchangeRateResponse,
+    FeeType as FeeType,
+    P2PTradeRequest as P2PTradeRequest,
+    P2PTradeResponse as P2PTradeResponse,
+    PeerOfferCreate as PeerOfferCreate,
+    PeerOfferResponse as PeerOfferResponse,
+    PeerStatus as PeerStatus,
+    TransferLimitResponse as TransferLimitResponse,
+    TransferMethod as TransferMethod,
+    TransferStatus as TransferStatus,
+    VerificationLevel as VerificationLevel,
+)
+
+# Insurance Models
+from .entities.insurance_models import (
+    AutoInsuranceDetails as AutoInsuranceDetails,
+    ClaimStatus as ClaimStatus,
+    ClaimTimelineEvent as ClaimTimelineEvent,
+    CoverageType as CoverageType,
+    HealthInsuranceDetails as HealthInsuranceDetails,
+    InsuranceClaimCreate as InsuranceClaimCreate,
+    InsuranceClaimResponse as InsuranceClaimResponse,
+    InsurancePolicyCreate as InsurancePolicyCreate,
+    InsurancePolicyResponse as InsurancePolicyResponse,
+    InsuranceProviderResponse as InsuranceProviderResponse,
+    InsuranceQuoteRequest as InsuranceQuoteRequest,
+    InsuranceQuoteResponse as InsuranceQuoteResponse,
+    InsuranceSummaryResponse as InsuranceSummaryResponse,
+    InsuranceType as InsuranceType,
+    PolicyStatus as PolicyStatus,
+    PremiumFrequency as PremiumFrequency,
+)
+
+# Investment Models
+from .entities.investment_models import (
+    AssetResponse as AssetResponse,
+    AssetType as AssetType,
+    ETFDetailResponse as ETFDetailResponse,
+    InvestmentAccountCreate as InvestmentAccountCreate,
+    InvestmentAccountResponse as InvestmentAccountResponse,
+    InvestmentAccountType as InvestmentAccountType,
+    InvestmentSummaryResponse as InvestmentSummaryResponse,
+    MarketDataResponse as MarketDataResponse,
+    OrderSide as OrderSide,
+    OrderStatus as OrderStatus,
+    OrderType as OrderType,
+    PortfolioAnalysisResponse as PortfolioAnalysisResponse,
+    PortfolioResponse as PortfolioResponse,
+    PortfolioRiskLevel as PortfolioRiskLevel,
+    PositionResponse as PositionResponse,
+    ResearchReportResponse as ResearchReportResponse,
+    StockDetailResponse as StockDetailResponse,
+    TaxDocumentResponse as TaxDocumentResponse,
+    TradeHistoryResponse as TradeHistoryResponse,
+    TradeOrderCreate as TradeOrderCreate,
+    TradeOrderResponse as TradeOrderResponse,
+    TradingSession as TradingSession,
+    WatchlistCreate as WatchlistCreate,
+    WatchlistResponse as WatchlistResponse,
+)
+
+# Loan Models
+from .entities.loan_models import (
+    CryptoLoanCreate as CryptoLoanCreate,
+    InterestType as InterestType,
+    LoanAmortizationRequest as LoanAmortizationRequest,
+    LoanApplicationCreate as LoanApplicationCreate,
+    LoanApplicationResponse as LoanApplicationResponse,
+    LoanOfferResponse as LoanOfferResponse,
+    LoanPaymentCreate as LoanPaymentCreate,
+    LoanPaymentResponse as LoanPaymentResponse,
+    LoanPaymentScheduleResponse as LoanPaymentScheduleResponse,
+    LoanRefinanceAnalysis as LoanRefinanceAnalysis,
+    LoanResponse as LoanResponse,
+    LoanStatus as LoanStatus,
+    LoanSummaryStats as LoanSummaryStats,
+    LoanType as LoanType,
+    PaymentFrequency as PaymentFrequency,
+)
+
+# Savings Models
 from .entities.savings_models import (
-    ChallengeJoinRequest,
-    RoundUpConfigRequest,
-    RoundUpConfigResponse,
-    RoundUpTransactionResponse,
-    SavingsChallengeResponse,
-    SavingsGoalCreate,
-    SavingsRuleRequest,
-    SavingsRuleResponse,
+    ChallengeJoinRequest as ChallengeJoinRequest,
+    RoundUpConfigRequest as RoundUpConfigRequest,
+    RoundUpConfigResponse as RoundUpConfigResponse,
+    RoundUpTransaction as RoundUpTransaction,
+    RoundUpTransactionResponse as RoundUpTransactionResponse,
+    SavingsChallengeResponse as SavingsChallengeResponse,
+    SavingsGoalCreate as SavingsGoalCreate,
+    SavingsRuleRequest as SavingsRuleRequest,
+    SavingsRuleResponse as SavingsRuleResponse,
 )
 
-# Import subscription models
+# Subscription Models
 from .entities.subscription_models import (
-    BulkImportRequest,
-    BulkImportResponse,
-    CancellationReminderRequest,
-    CancellationReminderResponse,
-    OptimizationResponse,
-    OptimizationSuggestion,
-    PaymentHistoryResponse,
-    SubscriptionAnalysisResponse,
-    SubscriptionCancelRequest,
-    SubscriptionCancelResponse,
-    SubscriptionCreateRequest,
-    SubscriptionDetailResponse,
-    SubscriptionPauseRequest,
-    SubscriptionPauseResponse,
-    SubscriptionRecommendationsResponse,
-    SubscriptionReminderRequest,
-    SubscriptionReminderResponse,
-    SubscriptionResponse,
-    SubscriptionShareRequest,
-    SubscriptionShareResponse,
-    SubscriptionSummaryResponse,
-    SubscriptionUpdateRequest,
-    SubscriptionUsageRequest,
-    SubscriptionUsageResponse,
+    BulkImportRequest as BulkImportRequest,
+    BulkImportResponse as BulkImportResponse,
+    CancellationReminderRequest as CancellationReminderRequest,
+    CancellationReminderResponse as CancellationReminderResponse,
+    OptimizationResponse as OptimizationResponse,
+    OptimizationSuggestion as OptimizationSuggestion,
+    PaymentHistoryResponse as PaymentHistoryResponse,
+    SubscriptionAnalysisResponse as SubscriptionAnalysisResponse,
+    SubscriptionCancelRequest as SubscriptionCancelRequest,
+    SubscriptionCancelResponse as SubscriptionCancelResponse,
+    SubscriptionCreateRequest as SubscriptionCreateRequest,
+    SubscriptionDetailResponse as SubscriptionDetailResponse,
+    SubscriptionPauseRequest as SubscriptionPauseRequest,
+    SubscriptionPauseResponse as SubscriptionPauseResponse,
+    SubscriptionRecommendationsResponse as SubscriptionRecommendationsResponse,
+    SubscriptionReminderRequest as SubscriptionReminderRequest,
+    SubscriptionReminderResponse as SubscriptionReminderResponse,
+    SubscriptionResponse as SubscriptionResponse,
+    SubscriptionShareRequest as SubscriptionShareRequest,
+    SubscriptionShareResponse as SubscriptionShareResponse,
+    SubscriptionSummaryResponse as SubscriptionSummaryResponse,
+    SubscriptionUpdateRequest as SubscriptionUpdateRequest,
+    SubscriptionUsageRequest as SubscriptionUsageRequest,
+    SubscriptionUsageResponse as SubscriptionUsageResponse,
 )
 
-# Import unified models
+# Unified Models
 from .entities.unified_models import (
-    AssetBridgeRequest,
-    AssetBridgeResponse,
-    AssetClass,
-    CollateralPositionResponse,
-    ConversionType,
-    CrossAssetOpportunity,
-    PortfolioOptimizationRequest,
-    PortfolioOptimizationResponse,
-    TransferStatus,
-    UnifiedBalanceResponse,
-    UnifiedSearchRequest,
-    UnifiedSearchResponse,
-    UnifiedTransferRequest,
-    UnifiedTransferResponse,
+    AssetBridgeRequest as AssetBridgeRequest,
+    AssetBridgeResponse as AssetBridgeResponse,
+    AssetClass as AssetClass,
+    CollateralPositionResponse as CollateralPositionResponse,
+    ConversionType as ConversionType,
+    CrossAssetOpportunity as CrossAssetOpportunity,
+    PortfolioOptimizationRequest as PortfolioOptimizationRequest,
+    PortfolioOptimizationResponse as PortfolioOptimizationResponse,
+    TransferStatus as TransferStatus,
+    UnifiedBalanceResponse as UnifiedBalanceResponse,
+    UnifiedSearchRequest as UnifiedSearchRequest,
+    UnifiedSearchResponse as UnifiedSearchResponse,
+    UnifiedTransferRequest as UnifiedTransferRequest,
+    UnifiedTransferResponse as UnifiedTransferResponse,
 )
+
+# Create backwards compatibility aliases (after all imports)
+CurrencyInfo = CurrencyInfoResponse
+ExpenseReport = ExpenseReportResponse
+Invoice = InvoiceResponse
+Receipt = ReceiptResponse
+
+# Add missing model aliases for route imports
+SpendingLimit = CardLimitResponse
+MessageSettings = MessageSettingsResponse
+MessageFolder = MessageFolderResponse
+RoundUpConfig = RoundUpConfigResponse
+SavingsChallenge = SavingsChallengeResponse
+SavingsRule = SavingsRuleResponse
+CancellationReminder = CancellationReminderResponse
+RoundUpTransaction = RoundUpTransactionResponse
+
+# Create placeholder classes for missing database models
+# These models are used in routes but don't exist in memory_models yet
+from pydantic import BaseModel as _BaseModel
+
+class MessageAttachment(_BaseModel):
+    """Placeholder for MessageAttachment model"""
+    message_id: int
+    filename: str
+    file_url: str
+    file_size: int | None = None
+    content_type: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class BlockedUser(_BaseModel):
+    """Placeholder for BlockedUser model"""
+    user_id: int
+    blocked_user_id: int
+    reason: str | None = None
+    blocked_at: str | None = None
+
+    class Config:
+        from_attributes = True
+
+class ChallengeParticipant(_BaseModel):
+    """Placeholder for ChallengeParticipant model"""
+    challenge_id: int
+    user_id: int
+    current_amount: float = 0.0
+    joined_at: str | None = None
+
+    class Config:
+        from_attributes = True
+
+__all__ = [name for name in dir() if not name.startswith('_')]

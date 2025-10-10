@@ -17,10 +17,10 @@ class AccountRepository(BaseRepository[dict[str, Any]]):
     def create_account(self, account_data: dict[str, Any]) -> dict[str, Any]:
         """
         Create a new account.
-        
+
         Args:
             account_data: Dictionary containing account details
-            
+
         Returns:
             Created account dictionary
         """
@@ -57,12 +57,12 @@ class AccountRepository(BaseRepository[dict[str, Any]]):
     def update_balance(self, account_id: str, amount: float, operation: str = 'add') -> bool:
         """
         Update account balance.
-        
+
         Args:
             account_id: Account ID
             amount: Amount to add/subtract
             operation: 'add' or 'subtract'
-            
+
         Returns:
             True if successful
         """

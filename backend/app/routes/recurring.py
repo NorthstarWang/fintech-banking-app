@@ -54,7 +54,7 @@ async def create_recurring_rule(
     """Create a new recurring transaction rule"""
 
     # Validate account ownership
-    account = Validators.validate_account_ownership(
+    Validators.validate_account_ownership(
         db_session,
         rule_data.account_id,
         current_user['user_id']
@@ -62,7 +62,7 @@ async def create_recurring_rule(
 
     # Validate category if provided
     if rule_data.category_id:
-        category = Validators.validate_category_access(
+        Validators.validate_category_access(
             db_session,
             rule_data.category_id,
             current_user['user_id']
@@ -112,7 +112,7 @@ async def get_recurring_rules(
     )
 
     if active_only:
-        query = query.filter(RecurringRule.is_active == True)
+        query = query.filter(RecurringRule.is_active)
 
     rules = query.order_by(RecurringRule.next_occurrence).all()
 
@@ -272,7 +272,7 @@ async def preview_upcoming_recurring(
 
     rules = db_session.query(RecurringRule).filter(
         RecurringRule.user_id == current_user['user_id'],
-        RecurringRule.is_active == True,
+        RecurringRule.is_active,
         RecurringRule.next_occurrence <= end_date
     ).all()
 

@@ -18,8 +18,7 @@ async def error_handler_middleware(request: Request, call_next):
     and returns appropriate error responses.
     """
     try:
-        response = await call_next(request)
-        return response
+        return await call_next(request)
     except Exception as exc:
         return await handle_exception(request, exc)
 

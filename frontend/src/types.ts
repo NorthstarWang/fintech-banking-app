@@ -39,7 +39,7 @@ export interface NFTAsset {
   rarity?: string;
   floorPrice?: number;
   estimatedValue?: number;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
 }
 
 export interface CryptoTransaction {
@@ -197,7 +197,7 @@ export interface InsurancePolicy {
     relationship: string;
     percentage: number;
   }>;
-  coverage: Record<string, any>;
+  coverage: Record<string, unknown>;
   documents: string[];
   autoRenew: boolean;
 }

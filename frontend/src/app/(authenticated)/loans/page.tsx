@@ -15,7 +15,7 @@ export default function LoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [applications, setApplications] = useState<LoanApplication[]>([]);
   const [offers, setOffers] = useState<LoanOffer[]>([]);
-  const [loanSummary, setLoanSummary] = useState<any>(null);
+  const [loanSummary, setLoanSummary] = useState<string | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [paymentSchedule, setPaymentSchedule] = useState<LoanPaymentSchedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +148,7 @@ export default function LoansPage() {
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-[var(--text-1)] mb-4">Loans by Type</h3>
               <div className="space-y-3">
-                {loanSummary.loansByType.map((type: any) => (
+                {loanSummary.loansByType.map((type: unknown) => (
                   <div key={type.type} className="flex items-center justify-between p-3 bg-[rgba(var(--glass-rgb),0.2)] rounded-lg">
                     <span className="capitalize text-[var(--text-1)]">
                       {type.type.replace(/_/g, ' ')} ({type.count})

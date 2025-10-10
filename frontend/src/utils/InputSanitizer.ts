@@ -71,12 +71,12 @@ export class InputSanitizer {
   /**
    * Sanitize numeric input
    */
-  static sanitizeNumber(input: any): number | null {
+  static sanitizeNumber(input: string | number | null | undefined): number | null {
     if (input === null || input === undefined || input === '') return null;
-    
+
     const num = Number(input);
     if (isNaN(num) || !isFinite(num)) return null;
-    
+
     return num;
   }
 
@@ -214,15 +214,15 @@ export class InputSanitizer {
   /**
    * Generic sanitization for form data
    */
-  static sanitizeFormData<T extends Record<string, any>>(data: T): T {
+  static sanitizeFormData<T extends Record<string, unknown>>(data: T): T {
     const sanitized = {} as T;
-    
+
     for (const [key, value] of Object.entries(data)) {
       if (value === null || value === undefined) {
         sanitized[key as keyof T] = value;
         continue;
       }
-      
+
       switch (typeof value) {
         case 'string':
           sanitized[key as keyof T] = this.sanitizeText(value) as T[keyof T];
@@ -232,18 +232,18 @@ export class InputSanitizer {
           break;
         case 'object':
           if (Array.isArray(value)) {
-            sanitized[key as keyof T] = value.map(item => 
+            sanitized[key as keyof T] = value.map(item =>
               typeof item === 'string' ? this.sanitizeText(item) : item
             ) as T[keyof T];
           } else {
-            sanitized[key as keyof T] = this.sanitizeFormData(value) as T[keyof T];
+            sanitized[key as keyof T] = this.sanitizeFormData(value as Record<string, unknown>) as T[keyof T];
           }
           break;
         default:
           sanitized[key as keyof T] = value;
       }
     }
-    
+
     return sanitized;
   }
 
@@ -296,24 +296,26 @@ export class InputSanitizer {
   /**
    * Create a sanitized error message (remove sensitive data)
    */
-  static sanitizeErrorMessage(error: any): string {
+  static sanitizeErrorMessage(error: unknown): string {
     if (!error) return 'An unknown error occurred';
-    
+
     let message = '';
-    
+
     if (typeof error === 'string') {
       message = error;
-    } else if (error.message) {
+    } else if (error instanceof Error) {
       message = error.message;
+    } else if (typeof error === 'object' && error !== null && 'message' in error) {
+      message = String((error as { message: unknown }).message);
     } else {
       message = 'An error occurred';
     }
-    
+
     // Remove potentially sensitive patterns
     message = message.replace(/\b\d{4,}\b/g, '****'); // Credit cards, SSNs
     message = message.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '***@***.***'); // Emails
     message = message.replace(/Bearer\s+[A-Za-z0-9\-._~+\/]+=*/g, 'Bearer ***'); // Auth tokens
-    
+
     return message;
   }
 }

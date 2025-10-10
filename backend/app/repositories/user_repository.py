@@ -15,7 +15,7 @@ class UserRepository(BaseRepository):
     def __init__(self, users: list[dict[str, Any]], sessions: list[dict[str, Any]]):
         """
         Initialize with users and sessions data stores.
-        
+
         Args:
             users: List storing user data
             sessions: List storing session data
@@ -26,10 +26,10 @@ class UserRepository(BaseRepository):
     def create_user(self, user_data: dict[str, Any]) -> dict[str, Any]:
         """
         Create a new user with hashed password.
-        
+
         Args:
             user_data: User data including plaintext password
-            
+
         Returns:
             Created user without password
         """
@@ -63,11 +63,11 @@ class UserRepository(BaseRepository):
     def verify_password(self, username: str, password: str) -> dict[str, Any] | None:
         """
         Verify user password.
-        
+
         Args:
             username: Username to check
             password: Plaintext password to verify
-            
+
         Returns:
             User data if password correct, None otherwise
         """
@@ -88,11 +88,11 @@ class UserRepository(BaseRepository):
     def create_session(self, user_id: str, device_info: dict[str, Any] | None = None) -> str:
         """
         Create a new session for user.
-        
+
         Args:
             user_id: ID of the user
             device_info: Optional device/browser information
-            
+
         Returns:
             Session token
         """
@@ -115,10 +115,10 @@ class UserRepository(BaseRepository):
     def get_user_by_session(self, token: str) -> dict[str, Any] | None:
         """
         Get user by session token.
-        
+
         Args:
             token: Session token
-            
+
         Returns:
             User data if valid session, None otherwise
         """
@@ -146,10 +146,10 @@ class UserRepository(BaseRepository):
     def invalidate_session(self, token: str) -> bool:
         """
         Invalidate a session.
-        
+
         Args:
             token: Session token to invalidate
-            
+
         Returns:
             True if invalidated, False if not found
         """
@@ -162,10 +162,10 @@ class UserRepository(BaseRepository):
     def invalidate_user_sessions(self, user_id: str) -> int:
         """
         Invalidate all sessions for a user.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             Number of sessions invalidated
         """
@@ -179,10 +179,10 @@ class UserRepository(BaseRepository):
     def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """
         Get all active sessions for a user.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             List of active sessions
         """
@@ -200,11 +200,11 @@ class UserRepository(BaseRepository):
     def update_password(self, user_id: str, new_password: str) -> bool:
         """
         Update user password.
-        
+
         Args:
             user_id: User ID
             new_password: New plaintext password
-            
+
         Returns:
             True if updated, False if user not found
         """

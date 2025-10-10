@@ -108,6 +108,7 @@ export const LazyImage = memo(function LazyImage({
 
   return (
     <div ref={ref} className={`relative ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageSrc}
         alt={alt}
@@ -122,8 +123,9 @@ export const LazyImage = memo(function LazyImage({
 
 // Memoized chart component wrapper
 interface MemoizedChartProps {
-  data: any[];
+  data: unknown[];
   type: 'line' | 'bar' | 'pie';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: any;
   className?: string;
 }
@@ -251,7 +253,7 @@ interface OptimizedTableProps<T> {
   className?: string;
 }
 
-export const OptimizedTable = memo(function OptimizedTable<T extends Record<string, any>>({
+export const OptimizedTable = memo(function OptimizedTable<T extends Record<string, unknown>>({
   columns,
   data,
   rowHeight = 50,
@@ -293,4 +295,4 @@ export const OptimizedTable = memo(function OptimizedTable<T extends Record<stri
       />
     </div>
   );
-}) as <T extends Record<string, any>>(props: OptimizedTableProps<T>) => JSX.Element;
+}) as <T extends Record<string, unknown>>(props: OptimizedTableProps<T>) => JSX.Element;

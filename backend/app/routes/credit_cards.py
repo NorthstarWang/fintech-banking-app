@@ -100,14 +100,13 @@ async def apply_for_card(
 ) -> dict:
     """Apply for a credit card."""
     try:
-        result = card_manager.apply_for_card(
+        return card_manager.apply_for_card(
             current_user["user_id"],
             card_offer_id,
             requested_credit_limit
         )
-        return result
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 @router.get("/applications")
 async def get_my_applications(
@@ -255,7 +254,7 @@ async def compare_cards(
         raise HTTPException(status_code=404, detail="No valid cards found")
 
     # Create comparison matrix
-    comparison = {
+    return {
         "cards": cards,
         "features": {
             "annual_fee": [c['annual_fee'] for c in cards],
@@ -271,7 +270,6 @@ async def compare_cards(
         }
     }
 
-    return comparison
 
 # Helper functions
 def _get_score_range(score: int) -> str:

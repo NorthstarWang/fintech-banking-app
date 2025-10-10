@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { formatCurrency } from '@/lib/utils';
@@ -144,10 +145,12 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             >
               <div className="flex items-center gap-3">
                 {item.asset.icon ? (
-                  <img 
-                    src={item.asset.icon} 
+                  <Image
+                    src={item.asset.icon}
                     alt={item.asset.symbol}
-                    className="w-8 h-8 rounded-full"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-[var(--primary-blue)]20 flex items-center justify-center text-sm font-bold">

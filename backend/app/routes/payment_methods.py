@@ -41,7 +41,7 @@ def get_card_brand(card_number: str) -> str:
         return "Mastercard"
     if card_number.startswith(('34', '37')):
         return "American Express"
-    if card_number.startswith('6011') or card_number.startswith('65'):
+    if card_number.startswith(('6011', '65')):
         return "Discover"
     return "Other"
 
@@ -107,7 +107,7 @@ async def add_card(
     if card_data.is_default:
         db_session.query(PaymentMethod).filter(
             PaymentMethod.user_id == current_user['user_id'],
-            PaymentMethod.is_default == True
+            PaymentMethod.is_default
         ).update({"is_default": False})
 
     db_session.add(payment_method)
@@ -158,7 +158,7 @@ async def add_bank_account(
     if bank_data.is_default:
         db_session.query(PaymentMethod).filter(
             PaymentMethod.user_id == current_user['user_id'],
-            PaymentMethod.is_default == True
+            PaymentMethod.is_default
         ).update({"is_default": False})
 
     db_session.add(payment_method)
@@ -218,7 +218,7 @@ async def add_digital_wallet(
     if wallet_data.is_default:
         db_session.query(PaymentMethod).filter(
             PaymentMethod.user_id == current_user['user_id'],
-            PaymentMethod.is_default == True
+            PaymentMethod.is_default
         ).update({"is_default": False})
 
     db_session.add(payment_method)
@@ -302,7 +302,7 @@ async def update_payment_method(
             db_session.query(PaymentMethod).filter(
                 PaymentMethod.user_id == current_user['user_id'],
                 PaymentMethod.id != payment_method_id,
-                PaymentMethod.is_default == True
+                PaymentMethod.is_default
             ).update({"is_default": False})
         payment_method.is_default = update_data.is_default
 

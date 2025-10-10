@@ -93,7 +93,8 @@ class Settings(BaseSettings):
     connection_pool_size: int = Field(default=20)
     connection_max_overflow: int = Field(default=10)
 
-    @field_validator("environment")
+    @field_validator("environment", mode="before")
+    @classmethod
     def validate_environment(cls, v: str) -> str:
         """Validate environment value."""
         allowed = ["development", "staging", "production", "test"]
@@ -101,7 +102,8 @@ class Settings(BaseSettings):
             raise ValueError(f"Environment must be one of {allowed}")
         return v
 
-    @field_validator("log_level")
+    @field_validator("log_level", mode="before")
+    @classmethod
     def validate_log_level(cls, v: str) -> str:
         """Validate log level."""
         allowed = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]

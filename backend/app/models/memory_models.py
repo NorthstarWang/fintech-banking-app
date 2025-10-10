@@ -1234,6 +1234,72 @@ class UnifiedTransferStatus:
     CANCELLED = "cancelled"
 
 
+class LinkedAccount(BaseMemoryModel):
+    """Represents a linked bank account from external sources (Plaid, etc)."""
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'bank_link_id',
+        'plaid_account_id',
+        'name',
+        'type',
+        'subtype',
+        'mask',
+        'official_name',
+        'current_balance',
+        'available_balance',
+        'iso_currency_code',
+        'created_at',
+        'last_synced_at',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class CurrencyConversion(BaseMemoryModel):
+    """Represents a currency conversion transaction."""
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'from_currency',
+        'to_currency',
+        'from_amount',
+        'to_amount',
+        'exchange_rate',
+        'markup_percentage',
+        'fee',
+        'total_fee',
+        'conversion_date',
+        'status',
+        'user_id',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class CurrencyInfoMemory(BaseMemoryModel):
+    """Represents information about a currency (memory model)."""
+    __key__ = 'code'
+    __attributes__ = [
+        'code',
+        'name',
+        'symbol',
+        'is_crypto',
+        'exchange_rate_to_usd',
+        'precision',
+        'supported_for_conversion',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+# Backwards compatibility alias
+CurrencyInfo = CurrencyInfoMemory
+
+
 # Additional models as needed...
 
 # Export all models and enums
@@ -1273,12 +1339,15 @@ __all__ = [
     'CryptoTransaction',
     'CryptoTransactionStatus',
     'CryptoWallet',
+    'CurrencyConversion',
+    'CurrencyInfo',
     'DeFiPosition',
     'DeFiProtocolType',
     'DirectMessage',
     'Goal',
     'GoalContribution',
     'GoalStatus',
+    'LinkedAccount',
     'Log',
     'Merchant',
     'Message',

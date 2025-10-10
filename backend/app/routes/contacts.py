@@ -204,7 +204,6 @@ async def update_contact_status(
     requester = db_session.query(User).filter(User.id == contact.user_id).first()
 
     # Log status update
-    action = "accepted" if status_update.status == ContactStatus.ACCEPTED else "blocked"
 
     # Prepare response
     response = ContactResponse(
@@ -310,7 +309,7 @@ async def search_users(
         # Get all users first
         all_users = db_session.query(User).filter(
             User.id != current_user['user_id'],
-            User.is_active == True
+            User.is_active
         ).all()
 
         # Filter by search term in Python
@@ -359,4 +358,4 @@ async def search_users(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Search failed: {e!s}"
-        )
+        ) from None

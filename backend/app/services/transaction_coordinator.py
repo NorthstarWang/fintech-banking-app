@@ -14,19 +14,15 @@ Features:
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from queue import Queue, Empty
-from threading import Lock, Thread, Event
-from typing import Callable, Dict, List, Optional, Tuple, Any
+from queue import Empty, Queue
+from threading import Event, Lock, Thread
+from typing import Any
 
-from app.services.event_store import (
-    TransactionEvent,
-    TransactionEventType,
-    TransactionEventStatus,
-    get_event_store
-)
+from app.services.event_store import TransactionEvent, TransactionEventStatus, TransactionEventType, get_event_store
 
 
 class TransactionState(str, Enum):
@@ -46,10 +42,10 @@ class TransactionContext:
                  user_id: int,
                  transaction_type: str,
                  amount: Decimal,
-                 from_account_id: Optional[int] = None,
-                 to_account_id: Optional[int] = None,
+                 from_account_id: int | None = None,
+                 to_account_id: int | None = None,
                  description: str = "",
-                 metadata: Optional[Dict[str, Any]] = None):
+                 metadata: dict[str, Any] | None = None):
         """
         Initialize transaction context.
 
@@ -74,37 +70,37 @@ class TransactionContext:
 
         # State tracking
         self.state = TransactionState.PENDING
-        self.created_at = datetime.now(timezone.utc)
-        self.started_at: Optional[datetime] = None
-        self.completed_at: Optional[datetime] = None
-        self.error_message: Optional[str] = None
+        self.created_at = datetime.now(UTC)
+        self.started_at: datetime | None = None
+        self.completed_at: datetime | None = None
+        self.error_message: str | None = None
 
         # Version tracking for optimistic locking
         self.version = 1
-        self.account_versions: Dict[int, int] = {}
+        self.account_versions: dict[int, int] = {}
 
     def mark_processing(self) -> None:
         """Mark transaction as processing"""
         self.state = TransactionState.PROCESSING
-        self.started_at = datetime.now(timezone.utc)
+        self.started_at = datetime.now(UTC)
 
     def mark_completed(self) -> None:
         """Mark transaction as completed"""
         self.state = TransactionState.COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def mark_failed(self, error_message: str) -> None:
         """Mark transaction as failed"""
         self.state = TransactionState.FAILED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
         self.error_message = error_message
 
     def mark_cancelled(self) -> None:
         """Mark transaction as cancelled"""
         self.state = TransactionState.CANCELLED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
-    def duration(self) -> Optional[timedelta]:
+    def duration(self) -> timedelta | None:
         """Get duration of transaction"""
         if self.started_at and self.completed_at:
             return self.completed_at - self.started_at
@@ -121,7 +117,7 @@ class AccountVersionLock:
 
     def __init__(self):
         """Initialize version locks"""
-        self._versions: Dict[int, int] = {}  # account_id -> version
+        self._versions: dict[int, int] = {}  # account_id -> version
         self._lock = Lock()
 
     def get_version(self, account_id: int) -> int:
@@ -194,8 +190,8 @@ class TransactionCoordinator:
         self._lock = Lock()
 
         # Transaction tracking
-        self._transactions: Dict[str, TransactionContext] = {}
-        self._completed_transactions: Dict[str, TransactionContext] = {}
+        self._transactions: dict[str, TransactionContext] = {}
+        self._completed_transactions: dict[str, TransactionContext] = {}
 
         # Optimistic locking
         self._version_lock = AccountVersionLock()
@@ -204,9 +200,9 @@ class TransactionCoordinator:
         self._event_store = get_event_store()
 
         # Worker thread
-        self._worker_thread: Optional[Thread] = None
+        self._worker_thread: Thread | None = None
         self._stop_event = Event()
-        self._processing_handlers: Dict[str, Callable] = {}
+        self._processing_handlers: dict[str, Callable] = {}
 
         # Statistics
         self._stats = {
@@ -249,7 +245,7 @@ class TransactionCoordinator:
             transaction_id=context.transaction_id,
             user_id=context.user_id,
             event_type=TransactionEventType.TRANSFER_INITIATED,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             amount=context.amount,
             from_account_id=context.from_account_id,
             to_account_id=context.to_account_id,
@@ -264,7 +260,7 @@ class TransactionCoordinator:
         try:
             self._queue.put(context, block=False)
         except Exception as e:
-            context.mark_failed(f"Queue full: {str(e)}")
+            context.mark_failed(f"Queue full: {e!s}")
             self._record_failure_event(context, str(e))
             raise
 
@@ -274,7 +270,7 @@ class TransactionCoordinator:
 
         return context.transaction_id
 
-    def get_transaction_status(self, transaction_id: str) -> Optional[TransactionContext]:
+    def get_transaction_status(self, transaction_id: str) -> TransactionContext | None:
         """
         Get the status of a submitted transaction.
 
@@ -335,8 +331,8 @@ class TransactionCoordinator:
 
             except Empty:
                 continue
-            except Exception as e:
-                print(f"Worker error: {e}")
+            except Exception:
+                pass
 
     def _process_transaction(self, context: TransactionContext) -> None:
         """
@@ -356,7 +352,7 @@ class TransactionCoordinator:
             transaction_id=context.transaction_id,
             user_id=context.user_id,
             event_type=TransactionEventType.TRANSFER_INITIATED,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             amount=context.amount,
             from_account_id=context.from_account_id,
             to_account_id=context.to_account_id,
@@ -384,7 +380,7 @@ class TransactionCoordinator:
                 transaction_id=context.transaction_id,
                 user_id=context.user_id,
                 event_type=TransactionEventType.TRANSFER_COMPLETED,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 amount=context.amount,
                 from_account_id=context.from_account_id,
                 to_account_id=context.to_account_id,
@@ -420,7 +416,7 @@ class TransactionCoordinator:
             transaction_id=context.transaction_id,
             user_id=context.user_id,
             event_type=TransactionEventType.TRANSFER_FAILED,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             amount=context.amount,
             from_account_id=context.from_account_id,
             to_account_id=context.to_account_id,
@@ -429,7 +425,7 @@ class TransactionCoordinator:
         )
         self._event_store.append_event(failure_event)
 
-    def get_statistics(self) -> Dict[str, int]:
+    def get_statistics(self) -> dict[str, int]:
         """
         Get transaction processing statistics.
 
@@ -457,7 +453,7 @@ class TransactionCoordinator:
 
 
 # Global coordinator instance
-_coordinator: Optional[TransactionCoordinator] = None
+_coordinator: TransactionCoordinator | None = None
 
 
 def get_transaction_coordinator() -> TransactionCoordinator:

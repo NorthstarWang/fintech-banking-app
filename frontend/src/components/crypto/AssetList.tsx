@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { CryptoAsset } from '@/types';
 import { formatCurrency } from '@/lib/utils';
@@ -57,10 +58,12 @@ export const AssetList: React.FC<AssetListProps> = ({
             <div className="flex items-center gap-3">
               <div className="relative">
                 {asset.icon ? (
-                  <img 
-                    src={asset.icon} 
+                  <Image
+                    src={asset.icon}
                     alt={asset.symbol}
-                    className="w-10 h-10 rounded-full"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-[var(--primary-blue)]20 flex items-center justify-center text-lg">

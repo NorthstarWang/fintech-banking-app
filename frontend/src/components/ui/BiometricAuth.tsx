@@ -101,6 +101,7 @@ export const BiometricAuth: React.FC<BiometricAuthProps> = ({
       }, 500);
       return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
   const BiometricIcon = biometricType === 'face' ? Scan : Fingerprint;

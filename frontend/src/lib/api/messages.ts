@@ -16,7 +16,7 @@ export interface Message {
   folder_id?: number;
   sent_at: string;
   message_type: 'text' | 'transaction' | 'payment_request';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   attachments?: Array<{
     filename: string;
     file_type: string;
@@ -78,7 +78,7 @@ export interface ConversationMessage {
   recipient_id: number;
   message: string;
   message_type: 'text' | 'transaction' | 'payment_request';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   is_read: boolean;
   read_at?: string;
   sent_at: string;

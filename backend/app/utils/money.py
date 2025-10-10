@@ -8,10 +8,10 @@ from decimal import ROUND_HALF_UP, Decimal
 def format_money(amount: float | int | str | Decimal | None) -> float:
     """
     Format a monetary amount to exactly 2 decimal places.
-    
+
     Args:
         amount: The amount to format (can be float, int, string, Decimal, or None)
-        
+
     Returns:
         float: The amount rounded to 2 decimal places
     """
@@ -31,11 +31,11 @@ def format_money(amount: float | int | str | Decimal | None) -> float:
 def safe_add_money(amount1: float | int | None, amount2: float | int | None) -> float:
     """
     Safely add two monetary amounts and return result with 2 decimal places.
-    
+
     Args:
         amount1: First amount
         amount2: Second amount
-        
+
     Returns:
         float: Sum rounded to 2 decimal places
     """
@@ -47,11 +47,11 @@ def safe_add_money(amount1: float | int | None, amount2: float | int | None) -> 
 def safe_subtract_money(amount1: float | int | None, amount2: float | int | None) -> float:
     """
     Safely subtract two monetary amounts and return result with 2 decimal places.
-    
+
     Args:
         amount1: Amount to subtract from
         amount2: Amount to subtract
-        
+
     Returns:
         float: Difference rounded to 2 decimal places
     """
@@ -63,11 +63,11 @@ def safe_subtract_money(amount1: float | int | None, amount2: float | int | None
 def safe_multiply_money(amount: float | int | None, factor: float | int | None) -> float:
     """
     Safely multiply a monetary amount by a factor and return result with 2 decimal places.
-    
+
     Args:
         amount: The monetary amount
         factor: The multiplication factor
-        
+
     Returns:
         float: Product rounded to 2 decimal places
     """
@@ -79,14 +79,14 @@ def safe_multiply_money(amount: float | int | None, factor: float | int | None) 
 def validate_positive_amount(amount: float | int | None, field_name: str = "amount") -> float:
     """
     Validate that an amount is positive and properly formatted.
-    
+
     Args:
         amount: The amount to validate
         field_name: Name of the field for error messages
-        
+
     Returns:
         float: The validated and formatted amount
-        
+
     Raises:
         ValueError: If amount is negative or invalid
     """

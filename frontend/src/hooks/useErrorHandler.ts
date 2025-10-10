@@ -9,7 +9,7 @@ interface ErrorHandlerOptions {
 }
 
 export const useErrorHandler = () => {
-  const handleError = useCallback((error: any, options: ErrorHandlerOptions = {}) => {
+  const handleError = useCallback((error: unknown, options: ErrorHandlerOptions = {}) => {
     const {
       showNotification = true,
       customMessage,
@@ -39,13 +39,15 @@ export const useErrorHandler = () => {
 };
 
 // Helper function to extract user-friendly error messages
-function getErrorMessage(error: any, customMessage?: string): string {
+function getErrorMessage(error: unknown, customMessage?: string): string {
   if (customMessage) return customMessage;
 
   // Handle Axios errors
-  if (error?.response) {
-    const status = error.response.status;
-    const data = error.response.data;
+  const errorObj = error as { response?: { status: number; data?: { detail?: string; message?: string; error?: string } }; code?: string; message?: string; name?: string };
+
+  if (errorObj?.response) {
+    const status = errorObj.response.status;
+    const data = errorObj.response.data;
 
     // Check for specific error messages from backend
     if (data?.detail) return data.detail;
@@ -80,21 +82,21 @@ function getErrorMessage(error: any, customMessage?: string): string {
   }
 
   // Handle network errors
-  if (error?.code === 'ECONNABORTED') {
+  if (errorObj?.code === 'ECONNABORTED') {
     return 'Request timeout. Please check your connection and try again.';
   }
-  
-  if (error?.message === 'Network Error' || !window.navigator.onLine) {
+
+  if (errorObj?.message === 'Network Error' || !window.navigator.onLine) {
     return 'Network error. Please check your internet connection.';
   }
 
   // Handle validation errors
-  if (error?.name === 'ValidationError') {
+  if (errorObj?.name === 'ValidationError') {
     return 'Please check your input and try again.';
   }
 
   // Default error message
-  return error?.message || 'An unexpected error occurred. Please try again.';
+  return errorObj?.message || 'An unexpected error occurred. Please try again.';
 }
 
 export default useErrorHandler;

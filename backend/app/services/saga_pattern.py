@@ -12,11 +12,12 @@ span multiple services or accounts. It provides:
 """
 
 import uuid
-from datetime import datetime, timezone
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
-from dataclasses import dataclass, field
+from typing import Any
 
 
 class SagaStatus(str, Enum):
@@ -52,9 +53,9 @@ class SagaStep:
 
     status: StepStatus = StepStatus.PENDING
     attempt: int = 0
-    error: Optional[str] = None
-    result: Optional[Any] = None
-    timestamp: Optional[datetime] = None
+    error: str | None = None
+    result: Any | None = None
+    timestamp: datetime | None = None
 
 
 @dataclass
@@ -64,15 +65,15 @@ class SagaContext:
     user_id: int
     transaction_type: str
     amount: Decimal
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     status: SagaStatus = SagaStatus.PENDING
-    steps: List[SagaStep] = field(default_factory=list)
-    completed_steps: List[SagaStep] = field(default_factory=list)
+    steps: list[SagaStep] = field(default_factory=list)
+    completed_steps: list[SagaStep] = field(default_factory=list)
 
 
 class SagaOrchestrator:
@@ -88,15 +89,15 @@ class SagaOrchestrator:
 
     def __init__(self):
         """Initialize saga orchestrator"""
-        self._sagas: Dict[str, SagaContext] = {}
-        self._deadletter: List[SagaContext] = []
+        self._sagas: dict[str, SagaContext] = {}
+        self._deadletter: list[SagaContext] = []
 
     def create_saga(
         self,
         user_id: int,
         transaction_type: str,
         amount: Decimal,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> SagaContext:
         """
         Create a new saga.
@@ -175,7 +176,7 @@ class SagaOrchestrator:
 
         saga = self._sagas[saga_id]
         saga.status = SagaStatus.IN_PROGRESS
-        saga.started_at = datetime.now(timezone.utc)
+        saga.started_at = datetime.now(UTC)
 
         try:
             # Execute all steps in order
@@ -186,12 +187,12 @@ class SagaOrchestrator:
 
             # All steps completed successfully
             saga.status = SagaStatus.COMPLETED
-            saga.completed_at = datetime.now(timezone.utc)
+            saga.completed_at = datetime.now(UTC)
             return True
 
-        except Exception as e:
+        except Exception:
             saga.status = SagaStatus.FAILED
-            saga.completed_at = datetime.now(timezone.utc)
+            saga.completed_at = datetime.now(UTC)
             self._deadletter.append(saga)
             raise
 
@@ -207,7 +208,7 @@ class SagaOrchestrator:
             True if successful, False if all retries failed
         """
         step.status = StepStatus.EXECUTING
-        step.timestamp = datetime.now(timezone.utc)
+        step.timestamp = datetime.now(UTC)
 
         for attempt in range(step.max_retries):
             try:
@@ -251,21 +252,21 @@ class SagaOrchestrator:
                 step.compensation(saga)
                 step.status = StepStatus.COMPENSATED
 
-            except Exception as e:
+            except Exception:
                 # Compensation failed - go to dead letter queue
                 saga.status = SagaStatus.FAILED
                 self._deadletter.append(saga)
                 return False
 
         saga.status = SagaStatus.ROLLED_BACK
-        saga.completed_at = datetime.now(timezone.utc)
+        saga.completed_at = datetime.now(UTC)
         return False
 
-    def get_saga(self, saga_id: str) -> Optional[SagaContext]:
+    def get_saga(self, saga_id: str) -> SagaContext | None:
         """Get saga by ID"""
         return self._sagas.get(saga_id)
 
-    def get_deadletter(self) -> List[SagaContext]:
+    def get_deadletter(self) -> list[SagaContext]:
         """Get failed sagas"""
         return self._deadletter.copy()
 
@@ -293,7 +294,7 @@ class SagaOrchestrator:
         # Execute again
         return self.execute(saga_id)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get orchestrator statistics"""
         completed = sum(
             1 for s in self._sagas.values()
@@ -313,7 +314,7 @@ class SagaOrchestrator:
 
 
 # Global saga orchestrator instance
-_orchestrator: Optional[SagaOrchestrator] = None
+_orchestrator: SagaOrchestrator | None = None
 
 
 def get_saga_orchestrator() -> SagaOrchestrator:

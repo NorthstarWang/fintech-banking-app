@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { Transaction } from '../../types';
 
 export interface Goal {
   id: number;
@@ -118,12 +119,12 @@ class GoalsService {
   async getGoalTransactions(goalId: number, params?: {
     skip?: number;
     limit?: number;
-  }): Promise<any[]> {
+  }): Promise<Transaction[]> {
     const queryParams = new URLSearchParams();
     if (params?.skip) queryParams.append('skip', params.skip.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
-    return apiClient.get<any[]>(`/api/goals/${goalId}/transactions?${queryParams.toString()}`);
+
+    return apiClient.get<Transaction[]>(`/api/goals/${goalId}/transactions?${queryParams.toString()}`);
   }
 
   async getAllocationSummary(accountId: number): Promise<{

@@ -84,8 +84,8 @@ def log_security_event(
     device_id: str | None = None
 ):
     """Log a security event"""
-    # Get or create device info
-    device = get_or_create_device(db_session, user_id, request, device_id)
+    # Get or create device info (currently unused but may be needed in future)
+    _ = get_or_create_device(db_session, user_id, request, device_id)
 
     # Create security event
     security_event = SecurityEvent(

@@ -9,18 +9,17 @@ This allows gradual migration of existing code to use the new system.
 """
 
 import uuid
-from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional, Tuple, Dict, Any
+from typing import Any
 
+from app.services.event_store import get_event_store
 from app.services.transaction_coordinator import (
     TransactionContext,
     TransactionState,
     get_transaction_coordinator,
-    reset_transaction_coordinator
+    reset_transaction_coordinator,
 )
 from app.services.transaction_handler import get_transaction_handler
-from app.services.event_store import get_event_store
 
 
 class TransactionResult:
@@ -37,7 +36,7 @@ class TransactionResult:
         self.success = success
         self.message = message
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'transaction_id': self.transaction_id,
@@ -64,9 +63,11 @@ def safe_transfer(from_account_id: int,
     Usage:
         result = safe_transfer(from_acc, to_acc, 100.0, user_id)
         if result.success:
-            print("Transfer completed")
+            # Transfer completed successfully
+            pass
         else:
-            print(f"Transfer failed: {result.message}")
+            # Handle transfer failure
+            raise Exception(result.message)
 
     Args:
         from_account_id: Source account ID
@@ -218,7 +219,7 @@ def safe_investment_buy(account_id: int,
         )
 
 
-def get_transaction_status(transaction_id: str) -> Optional[Dict[str, Any]]:
+def get_transaction_status(transaction_id: str) -> dict[str, Any] | None:
     """
     Get the status of a transaction.
 
@@ -288,7 +289,7 @@ def get_account_transaction_history(account_id: int,
     return transactions
 
 
-def get_user_transaction_stats(user_id: int) -> Dict[str, Any]:
+def get_user_transaction_stats(user_id: int) -> dict[str, Any]:
     """
     Get transaction statistics for a user.
 

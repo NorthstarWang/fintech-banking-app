@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { Transaction } from '../../types';
 
 export interface Budget {
   id: number;
@@ -107,12 +108,12 @@ class BudgetsService {
   async getBudgetTransactions(budgetId: number, params?: {
     skip?: number;
     limit?: number;
-  }): Promise<any[]> {
+  }): Promise<Transaction[]> {
     const queryParams = new URLSearchParams();
     if (params?.skip) queryParams.append('skip', params.skip.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
-    return apiClient.get<any[]>(`/api/budgets/${budgetId}/transactions?${queryParams.toString()}`);
+
+    return apiClient.get<Transaction[]>(`/api/budgets/${budgetId}/transactions?${queryParams.toString()}`);
   }
 
   async recalculateBudget(budgetId: number): Promise<Budget> {

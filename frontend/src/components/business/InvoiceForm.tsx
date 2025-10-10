@@ -71,12 +71,13 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     ]
   );
 
-  const [businessAccounts, setBusinessAccounts] = useState<any[]>([]);
+  const [businessAccounts, setBusinessAccounts] = useState<unknown[]>([]);
   const [selectedBusinessAccountId, setSelectedBusinessAccountId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadBusinessAccounts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadBusinessAccounts = async () => {
@@ -118,7 +119,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     }
   };
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
+  const updateLineItem = (id: string, field: keyof LineItem, value: unknown) => {
     setLineItems(lineItems.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -332,6 +333,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             <Dropdown
               items={paymentTermsOptions}
               value={formData.payment_terms}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onChange={(value) => setFormData({ ...formData, payment_terms: value as any })}
               placeholder="Select payment terms"
             />

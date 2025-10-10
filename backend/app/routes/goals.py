@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Any
-from datetime import datetime, date
+from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
-from ..models import Goal, GoalContribution, Account, Transaction
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+
 from ..models import (
-    GoalCreate, GoalUpdate, GoalContribute, GoalResponse, GoalSummary
+    Goal,
+    GoalContribute,
+    GoalContribution,
+    GoalCreate,
+    GoalResponse,
+    GoalSummary,
+    GoalUpdate,
 )
 from ..models.enums import GoalStatus
+from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from ..utils.validators import ValidationError, Validators
 
 router = APIRouter()
 
@@ -39,17 +44,17 @@ async def create_goal(
 ):
     """Create a new financial goal"""
     try:
-        
+
         # Log incoming request data
-        
+
         # Validate account if linked
         if goal_data.account_id:
-            account = Validators.validate_account_ownership(
+            Validators.validate_account_ownership(
                 db_session,
                 goal_data.account_id,
                 current_user['user_id']
             )
-        
+
         # Validate allocation rules if account is linked
         if goal_data.account_id and goal_data.auto_allocate_percentage:
             from ..services.goal_update_service import GoalUpdateService
@@ -61,7 +66,7 @@ async def create_goal(
             )
             if not validation['is_valid']:
                 raise ValidationError(validation['message'])
-        
+
         # Create goal
         initial_amount = goal_data.initial_amount or 0.0
         new_goal = Goal(
@@ -83,20 +88,20 @@ async def create_goal(
             allocation_priority=goal_data.allocation_priority or 1,
             allocation_source_types=goal_data.allocation_source_types or ['income', 'deposit']
         )
-        
+
         db_session.add(new_goal)
         db_session.commit()
-        
+
         db_session.refresh(new_goal)
-        
+
         # Log goal creation
         # Get values safely with proper None handling
-        goal_id = str(getattr(new_goal, 'id', 'unknown'))
-        goal_name = getattr(new_goal, 'name', 'Unknown Goal') or 'Unknown Goal'
+        str(getattr(new_goal, 'id', 'unknown'))
+        getattr(new_goal, 'name', 'Unknown Goal') or 'Unknown Goal'
         target_amount_val = getattr(new_goal, 'target_amount', None)
-        target_amount = float(target_amount_val) if target_amount_val is not None else 0.0
+        float(target_amount_val) if target_amount_val is not None else 0.0
         target_date = getattr(new_goal, 'target_date', None)
-        target_date_str = target_date.isoformat() if target_date else "No target date"
+        target_date.isoformat() if target_date else "No target date"
 
         # Create response
         response = GoalResponse.from_orm(new_goal)
@@ -104,30 +109,30 @@ async def create_goal(
 
         return response
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
-@router.get("/", response_model=List[GoalResponse])
+@router.get("/", response_model=list[GoalResponse])
 async def get_goals(
-    status: Optional[GoalStatus] = None,
+    status: GoalStatus | None = None,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get all user goals"""
     query = db_session.query(Goal).filter(Goal.user_id == current_user['user_id'])
-    
+
     if status:
         query = query.filter(Goal.status == status)
-    
+
     goals = query.order_by(Goal.created_at.desc()).all()
-    
+
     results = []
     for goal in goals:
         response = GoalResponse.from_orm(goal)
         response.progress_percentage = calculate_goal_progress(goal)
         results.append(response)
-    
+
     return results
 
 @router.get("/summary", response_model=GoalSummary)
@@ -139,19 +144,19 @@ async def get_goals_summary(
     goals = db_session.query(Goal).filter(
         Goal.user_id == current_user['user_id']
     ).all()
-    
+
     total_goals = len(goals)
     active_goals = sum(1 for g in goals if g.status == GoalStatus.ACTIVE.value)
     completed_goals = sum(1 for g in goals if g.status == GoalStatus.COMPLETED.value)
     total_target = sum(g.target_amount for g in goals)
     total_saved = sum(g.current_amount for g in goals)
-    
+
     goal_responses = []
     for goal in goals:
         response = GoalResponse.from_orm(goal)
         response.progress_percentage = calculate_goal_progress(goal)
         goal_responses.append(response)
-    
+
     return GoalSummary(
         total_goals=total_goals,
         active_goals=active_goals,
@@ -172,16 +177,16 @@ async def get_goal(
         Goal.id == goal_id,
         Goal.user_id == current_user['user_id']
     ).first()
-    
+
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-    
+
     response = GoalResponse.from_orm(goal)
     response.progress_percentage = calculate_goal_progress(goal)
-    
+
     return response
 
 @router.put("/{goal_id}", response_model=GoalResponse)
@@ -194,20 +199,20 @@ async def update_goal(
 ):
     """Update goal details"""
     try:
-        
+
         # Log incoming request data
-        
+
         goal = db_session.query(Goal).filter(
             Goal.id == goal_id,
             Goal.user_id == current_user['user_id']
         ).first()
-        
+
         if not goal:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Goal not found"
             )
-        
+
         # Validate allocation rules if updating percentage allocation
         if 'auto_allocate_percentage' in update_data.dict(exclude_unset=True) and goal.account_id:
             from ..services.goal_update_service import GoalUpdateService
@@ -219,30 +224,30 @@ async def update_goal(
             )
             if not validation['is_valid']:
                 raise ValidationError(validation['message'])
-        
+
         # Update fields
         update_dict = update_data.dict(exclude_unset=True)
         for field, value in update_dict.items():
             if hasattr(goal, field) and value is not None:
                 setattr(goal, field, value)
-        
+
         # Check if goal is completed
         if goal.current_amount >= goal.target_amount and goal.status == GoalStatus.ACTIVE.value:
             goal.status = GoalStatus.COMPLETED.value
             goal.completed_at = datetime.utcnow()
-        
+
         goal.updated_at = datetime.utcnow()
         db_session.commit()
         db_session.refresh(goal)
 
         response = GoalResponse.from_orm(goal)
         response.progress_percentage = calculate_goal_progress(goal)
-        
+
         return response
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to update goal. Please try again.")
+        raise HTTPException(status_code=500, detail="Failed to update goal. Please try again.") from e
 
 @router.post("/{goal_id}/contribute", response_model=GoalResponse)
 async def contribute_to_goal(
@@ -253,21 +258,21 @@ async def contribute_to_goal(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Add contribution to a goal"""
-    
+
     goal = db_session.query(Goal).filter(
         Goal.id == goal_id,
         Goal.user_id == current_user['user_id']
     ).first()
-    
+
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-    
+
     if goal.status != GoalStatus.ACTIVE.value:
         raise ValidationError("Can only contribute to active goals")
-    
+
     # Create contribution record
     new_contribution = GoalContribution(
         goal_id=goal_id,
@@ -275,22 +280,22 @@ async def contribute_to_goal(
         contribution_date=datetime.utcnow(),
         notes=contribution.notes
     )
-    
+
     # Update goal current amount
     goal.current_amount += contribution.amount
-    
+
     # Check if goal is completed
     if goal.current_amount >= goal.target_amount:
         goal.status = GoalStatus.COMPLETED.value
         goal.completed_at = datetime.utcnow()
-    
+
     db_session.add(new_contribution)
     db_session.commit()
     db_session.refresh(goal)
 
     response = GoalResponse.from_orm(goal)
     response.progress_percentage = calculate_goal_progress(goal)
-    
+
     return response
 
 @router.get("/{goal_id}/contributions")
@@ -305,17 +310,17 @@ async def get_goal_contributions(
         Goal.id == goal_id,
         Goal.user_id == current_user['user_id']
     ).first()
-    
+
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-    
+
     contributions = db_session.query(GoalContribution).filter(
         GoalContribution.goal_id == goal_id
     ).order_by(GoalContribution.contribution_date.desc()).limit(limit).all()
-    
+
     return {
         "goal_id": goal_id,
         "goal_name": goal.name,
@@ -330,18 +335,18 @@ async def delete_goal(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Delete (cancel) a goal"""
-    
+
     goal = db_session.query(Goal).filter(
         Goal.id == goal_id,
         Goal.user_id == current_user['user_id']
     ).first()
-    
+
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-    
+
     # Cancel instead of hard delete
     goal.status = GoalStatus.CANCELLED.value
     goal.updated_at = datetime.utcnow()
@@ -357,13 +362,12 @@ async def get_allocation_summary(
 ):
     """Get automatic allocation summary for an account"""
     # Validate account ownership
-    account = Validators.validate_account_ownership(
+    Validators.validate_account_ownership(
         db_session,
         account_id,
         current_user['user_id']
     )
-    
+
     from ..services.goal_update_service import GoalUpdateService
-    summary = GoalUpdateService.get_allocation_summary(db_session, account_id)
-    
-    return summary
+    return GoalUpdateService.get_allocation_summary(db_session, account_id)
+

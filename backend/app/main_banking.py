@@ -8,23 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .core.logging import setup_logging
-from .middleware.error_handler import error_handler_middleware, register_exception_handlers
-from .middleware.request_id import request_id_middleware
-from .middleware.rate_limiter import rate_limit_middleware
-from .middleware.input_sanitizer import input_sanitization_middleware
 from .middleware.csrf_protection import csrf_protection_middleware
+from .middleware.error_handler import error_handler_middleware, register_exception_handlers
+from .middleware.input_sanitizer import input_sanitization_middleware
+from .middleware.rate_limiter import rate_limit_middleware
+from .middleware.request_id import request_id_middleware
 from .middleware.security_headers import security_headers_middleware
-from .storage.memory_adapter import db
-
-# Setup logging
-setup_logging(
-    log_level=os.getenv("LOG_LEVEL", "INFO"),
-    log_format=os.getenv("LOG_FORMAT", "json"),
-    log_file=os.getenv("LOG_FILE"),
-    app_name="bankflow"
-)
-
-logger = logging.getLogger(__name__)
 from .routes import (
     accounts,
     analytics,
@@ -63,6 +52,17 @@ from .routes import (
     uploads,
     users,
 )
+from .storage.memory_adapter import db
+
+# Setup logging
+setup_logging(
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    log_format=os.getenv("LOG_FORMAT", "json"),
+    log_file=os.getenv("LOG_FILE"),
+    app_name="bankflow"
+)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager

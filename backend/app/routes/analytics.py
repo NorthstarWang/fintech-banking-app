@@ -61,10 +61,7 @@ async def get_spending_by_category(
         Transaction.transaction_date <= datetime.combine(end_date, datetime.max.time())
     )
 
-    if income_only:
-        query = query.filter(Category.is_income == True)
-    else:
-        query = query.filter(Category.is_income == False)
+    query = query.filter(Category.is_income) if income_only else query.filter(not Category.is_income)
 
     # Group by category and order by total amount
     results = query.group_by(
@@ -299,7 +296,7 @@ async def get_budget_performance(
     # Get active budgets
     budgets = db_session.query(Budget).filter(
         Budget.user_id == current_user['user_id'],
-        Budget.is_active == True
+        Budget.is_active
     ).all()
 
     # Get user's account IDs

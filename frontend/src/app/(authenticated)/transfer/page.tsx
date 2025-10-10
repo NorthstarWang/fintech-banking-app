@@ -30,7 +30,7 @@ export default function TransferPage() {
   const [currentStep, setCurrentStep] = useState<TransferStep>('details');
   const [authMethod, setAuthMethod] = useState<AuthMethod>('biometric');
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<unknown[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<UserSearchResult | null>(null);
   const [isTransferConfirmed, setIsTransferConfirmed] = useState(false);
@@ -186,7 +186,7 @@ export default function TransferPage() {
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('refreshNotifications'));
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error.response?.data?.detail || error.message || 'Transfer failed. Please try again.';
       notificationService.error(errorMessage);
       setShowAuthModal(false);

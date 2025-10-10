@@ -6,7 +6,6 @@ import base64
 import io
 import secrets
 import time
-from typing import Dict, List, Optional, Tuple
 
 import pyotp
 import qrcode
@@ -18,16 +17,16 @@ class MFAManager:
 
     def __init__(self):
         # Store MFA data - in production, use database
-        self.mfa_data: Dict[int, Dict] = {}  # user_id -> mfa_config
-        self.pending_setups: Dict[str, Dict] = {}  # temp_token -> setup_data
-        self.trusted_devices: Dict[int, List[str]] = {}  # user_id -> device_fingerprints
-        self.backup_codes: Dict[int, List[str]] = {}  # user_id -> backup_codes
+        self.mfa_data: dict[int, dict] = {}  # user_id -> mfa_config
+        self.pending_setups: dict[str, dict] = {}  # temp_token -> setup_data
+        self.trusted_devices: dict[int, list[str]] = {}  # user_id -> device_fingerprints
+        self.backup_codes: dict[int, list[str]] = {}  # user_id -> backup_codes
 
     def _generate_secret(self) -> str:
         """Generate a new TOTP secret."""
         return pyotp.random_base32()
 
-    def _generate_backup_codes(self, count: int = 10) -> List[str]:
+    def _generate_backup_codes(self, count: int = 10) -> list[str]:
         """Generate backup codes for account recovery."""
         return [secrets.token_hex(4).upper() for _ in range(count)]
 
@@ -50,7 +49,7 @@ class MFAManager:
         trusted_devices = self.trusted_devices.get(user_id, [])
         return device_fingerprint in trusted_devices
 
-    def setup_mfa(self, user_id: int, username: str, email: str) -> Dict[str, str]:
+    def setup_mfa(self, user_id: int, username: str, email: str) -> dict[str, str]:
         """Initialize MFA setup for a user."""
         secret = self._generate_secret()
         backup_codes = self._generate_backup_codes()
@@ -214,7 +213,7 @@ class MFAManager:
         if user_id in self.trusted_devices:
             del self.trusted_devices[user_id]
 
-    def generate_new_backup_codes(self, user_id: int) -> List[str]:
+    def generate_new_backup_codes(self, user_id: int) -> list[str]:
         """Generate new backup codes, invalidating old ones."""
         if not self.is_mfa_enabled(user_id):
             raise HTTPException(
@@ -226,7 +225,7 @@ class MFAManager:
         self.backup_codes[user_id] = new_codes
         return new_codes
 
-    def get_mfa_status(self, user_id: int) -> Dict:
+    def get_mfa_status(self, user_id: int) -> dict:
         """Get MFA status and statistics for a user."""
         if not self.is_mfa_enabled(user_id):
             return {
@@ -253,7 +252,7 @@ class MFAManager:
             valid_devices = []
             for device_info in devices:
                 if ':' in device_info:
-                    fingerprint, expiration_str = device_info.rsplit(':', 1)
+                    _fingerprint, expiration_str = device_info.rsplit(':', 1)
                     try:
                         expiration = int(expiration_str)
                         if current_time < expiration:
@@ -270,10 +269,7 @@ class MFAManager:
             return False
 
         # Check if device is trusted
-        if self.is_device_trusted(user_id, user_agent, ip_address):
-            return False
-
-        return True
+        return not self.is_device_trusted(user_id, user_agent, ip_address)
 
 
 # Global MFA manager instance

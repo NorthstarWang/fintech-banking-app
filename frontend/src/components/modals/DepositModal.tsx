@@ -186,7 +186,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         setDescription('');
         setSuccess(false);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Deposit failed. Please try again.');
     } finally {
       setIsLoading(false);

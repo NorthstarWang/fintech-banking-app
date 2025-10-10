@@ -90,7 +90,7 @@ async def global_search(
     if "categories" in types:
         categories = db_session.query(Category).filter(
             or_(
-                Category.is_system == True,
+                Category.is_system,
                 Category.user_id == current_user['user_id']
             ),
             Category.name.ilike(search_term)
@@ -216,7 +216,7 @@ async def global_search(
         messages = db_session.query(Message).filter(
             Message.conversation_id.in_(user_conversations),
             Message.content.ilike(search_term),
-            Message.is_deleted == False
+            not Message.is_deleted
         ).order_by(Message.created_at.desc()).limit(limit).all()
 
         for msg in messages:
@@ -254,7 +254,7 @@ async def get_search_suggestions(
     # Get user's categories
     categories = db_session.query(Category.name).filter(
         or_(
-            Category.is_system == True,
+            Category.is_system,
             Category.user_id == current_user['user_id']
         ),
         Category.name.ilike(search_term)

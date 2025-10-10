@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   DollarSign,
   Calendar,
@@ -50,7 +51,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     date: new Date().toISOString().split('T')[0],
   });
 
-  const [businessAccounts, setBusinessAccounts] = useState<any[]>([]);
+  const [businessAccounts, setBusinessAccounts] = useState<unknown[]>([]);
   const [selectedBusinessAccountId, setSelectedBusinessAccountId] = useState<number | null>(
     businessAccountId || null
   );
@@ -69,6 +70,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (!businessAccountId) {
       loadBusinessAccounts();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessAccountId]);
 
   const loadBusinessAccounts = async () => {
@@ -377,9 +379,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           <div className="border-2 border-dashed border-[var(--border-1)] rounded-lg p-6 text-center">
             {receiptPreview ? (
               <div className="space-y-4">
-                <img
+                <Image
                   src={receiptPreview}
                   alt="Receipt preview"
+                  width={500}
+                  height={256}
                   className="max-w-full max-h-64 mx-auto rounded-lg"
                 />
                 <Button

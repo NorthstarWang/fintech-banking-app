@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Dict, Any
+import base64
+import io
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
-import qrcode
-import io
-import base64
+from typing import Any
 
+import qrcode
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
+
+from ..models import Transaction, TransactionStatus, TransactionType
 from ..storage.memory_adapter import db
-from ..models import Account, Transaction, TransactionType, TransactionStatus, User
 from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from ..utils.validators import Validators
 
 router = APIRouter()
 
@@ -22,22 +22,22 @@ class P2PContact(BaseModel):
     username: str
     email: str
     phone: str
-    avatar: Optional[str] = None
+    avatar: str | None = None
     is_favorite: bool = False
-    last_transaction: Optional[Dict[str, Any]] = None
+    last_transaction: dict[str, Any] | None = None
 
 class P2PTransferRequest(BaseModel):
     recipient_id: str
     amount: Decimal = Field(gt=0, decimal_places=2)
-    description: Optional[str] = None
+    description: str | None = None
     method: str = Field(default="instant", pattern="^(instant|standard)$")
     source_account_id: str
-    
+
 class P2PSplitPaymentRequest(BaseModel):
     total_amount: Decimal = Field(gt=0, decimal_places=2)
-    participants: List[str]  # List of user IDs
+    participants: list[str]  # List of user IDs
     split_type: str = Field(default="equal", pattern="^(equal|percentage|amount)$")
-    split_details: Optional[Dict[str, Decimal]] = None  # For percentage or amount splits
+    split_details: dict[str, Decimal] | None = None  # For percentage or amount splits
     description: str
     source_account_id: str
 
@@ -45,14 +45,14 @@ class P2PPaymentRequestModel(BaseModel):
     requester_id: str
     amount: Decimal = Field(gt=0, decimal_places=2)
     description: str
-    due_date: Optional[datetime] = None
+    due_date: datetime | None = None
 
 class P2PQRCodeResponse(BaseModel):
     qr_code: str  # Base64 encoded QR code image
     payment_link: str
     expires_at: datetime
 
-@router.get("/contacts", response_model=List[P2PContact])
+@router.get("/contacts", response_model=list[P2PContact])
 async def get_p2p_contacts(
     request: Request,
     current_user: dict = Depends(get_current_user),
@@ -61,7 +61,7 @@ async def get_p2p_contacts(
     """Get user's P2P contacts"""
     # In a real implementation, this would fetch from a contacts table
     # For now, return mock data
-    contacts = [
+    return [
         P2PContact(
             id="1",
             name="Sarah Johnson",
@@ -89,8 +89,7 @@ async def get_p2p_contacts(
             }
         )
     ]
-    
-    return contacts
+
 
 @router.post("/transfer")
 async def create_p2p_transfer(
@@ -100,7 +99,7 @@ async def create_p2p_transfer(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a P2P transfer"""
-    
+
     # Validate source account
     try:
         account_id = int(transfer_data.source_account_id)
@@ -116,7 +115,7 @@ async def create_p2p_transfer(
 
     # Convert balance to Decimal for comparison
     account_balance = Decimal(str(source_account.balance))
-    
+
     # Check sufficient balance
     if account_balance < transfer_data.amount:
         raise HTTPException(
@@ -128,9 +127,9 @@ async def create_p2p_transfer(
     fee = Decimal('0')
     if transfer_data.method == "instant":
         fee = transfer_data.amount * Decimal('0.01')  # 1% fee
-    
+
     total_amount = transfer_data.amount + fee
-    
+
     if account_balance < total_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -174,7 +173,7 @@ async def create_split_payment(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a split payment request"""
-    
+
     # Validate source account
     try:
         account_id = int(split_data.source_account_id)
@@ -184,21 +183,21 @@ async def create_split_payment(
             detail="Invalid account ID"
         )
 
-    source_account = Validators.validate_account_ownership(
+    Validators.validate_account_ownership(
         db_session, account_id, current_user['user_id']
     )
 
     # Calculate individual amounts
     participant_amounts = {}
-    
+
     if split_data.split_type == "equal":
         # Equal split among all participants (including initiator)
         total_participants = len(split_data.participants) + 1
         individual_amount = split_data.total_amount / total_participants
-        
+
         for participant_id in split_data.participants:
             participant_amounts[participant_id] = individual_amount
-            
+
     elif split_data.split_type == "percentage":
         # Percentage-based split
         if not split_data.split_details:
@@ -216,7 +215,7 @@ async def create_split_payment(
 
         for participant_id, percentage in split_data.split_details.items():
             participant_amounts[participant_id] = (split_data.total_amount * percentage) / 100
-            
+
     elif split_data.split_type == "amount":
         # Fixed amount split
         if not split_data.split_details:
@@ -265,9 +264,9 @@ async def create_payment_request(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a payment request"""
-    
+
     # Create payment request record
-    request_data = {
+    return {
         "id": f"req_{datetime.now().timestamp()}",
         "requester_id": current_user['user_id'],
         "payer_id": payment_request.requester_id,
@@ -278,19 +277,18 @@ async def create_payment_request(
         "created_at": datetime.now()
     }
 
-    return request_data
 
 @router.get("/qr-code")
 async def generate_qr_code(
     request: Request,
-    amount: Optional[Decimal] = Query(None, gt=0),
-    description: Optional[str] = Query(None),
+    amount: Decimal | None = Query(None, gt=0),
+    description: str | None = Query(None),
     current_user: dict = Depends(get_current_user)
 ):
     """Generate QR code for receiving payment"""
-    
+
     # Create payment link data
-    payment_data = {
+    {
         "recipient_id": current_user['user_id'],
         "recipient_name": current_user.get('name', 'User'),
         "amount": str(amount) if amount else None,
@@ -333,13 +331,13 @@ async def generate_qr_code(
 @router.post("/scan-qr")
 async def scan_qr_code(
     request: Request,
-    qr_data: Dict[str, Any],
+    qr_data: dict[str, Any],
     current_user: dict = Depends(get_current_user)
 ):
     """Process scanned QR code data"""
     # Parse QR code data and return payment details
     # In a real implementation, this would validate and parse the QR data
-    
+
     return {
         "recipient_id": qr_data.get("recipient_id"),
         "amount": qr_data.get("amount"),

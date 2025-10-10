@@ -400,7 +400,7 @@ class UnifiedManager:
     ) -> CollateralPosition:
         """Create a cross-asset collateral position."""
         # Validate collateral
-        is_valid, max_borrow, message = self.asset_converter.validate_collateral_value(
+        is_valid, _max_borrow, message = self.asset_converter.validate_collateral_value(
             collateral_assets,
             borrow_amount,
             ltv_ratio=0.5

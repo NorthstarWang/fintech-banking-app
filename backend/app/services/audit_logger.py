@@ -5,8 +5,8 @@ Tracks all financial activities, security events, and user actions for complianc
 import json
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 from enum import Enum
+from typing import Any
 
 from fastapi import Request
 
@@ -78,7 +78,7 @@ class AuditLogger:
 
     def __init__(self):
         # In production, this should write to a secure, tamper-proof database
-        self.audit_logs: List[Dict[str, Any]] = []
+        self.audit_logs: list[dict[str, Any]] = []
         self.max_logs = 10000  # Rotate logs after this many entries
 
         # Define severity mappings
@@ -99,7 +99,7 @@ class AuditLogger:
             "default": AuditSeverity.LOW
         }
 
-    def _get_client_info(self, request: Optional[Request] = None) -> Dict[str, Any]:
+    def _get_client_info(self, request: Request | None = None) -> dict[str, Any]:
         """Extract client information from request."""
         if not request:
             return {
@@ -120,7 +120,7 @@ class AuditLogger:
             "host": headers.get("host")
         }
 
-    def _sanitize_sensitive_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _sanitize_sensitive_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Remove or mask sensitive data from audit logs."""
         sensitive_fields = {
             "password", "password_hash", "secret", "token", "ssn", "tax_id",
@@ -150,16 +150,16 @@ class AuditLogger:
     def log_event(
         self,
         event_type: AuditEventType,
-        user_id: Optional[int] = None,
-        session_id: Optional[str] = None,
-        request: Optional[Request] = None,
-        details: Optional[Dict[str, Any]] = None,
-        severity: Optional[AuditSeverity] = None,
-        amount: Optional[float] = None,
-        account_id: Optional[int] = None,
-        target_user_id: Optional[int] = None,
+        user_id: int | None = None,
+        session_id: str | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
+        severity: AuditSeverity | None = None,
+        amount: float | None = None,
+        account_id: int | None = None,
+        target_user_id: int | None = None,
         success: bool = True,
-        error_message: Optional[str] = None
+        error_message: str | None = None
     ) -> str:
         """Log an audit event with comprehensive details."""
 
@@ -202,13 +202,9 @@ class AuditLogger:
 
         return audit_id
 
-    def _trigger_security_alert(self, audit_entry: Dict[str, Any]):
+    def _trigger_security_alert(self, audit_entry: dict[str, Any]):
         """Trigger immediate security alert for critical events."""
         # In production, this would send alerts to security team
-        print(f"🚨 CRITICAL SECURITY EVENT: {audit_entry['event_type']}")
-        print(f"   User: {audit_entry['user_id']}")
-        print(f"   IP: {audit_entry['client_info']['ip_address']}")
-        print(f"   Details: {audit_entry['details']}")
 
     def log_financial_transaction(
         self,
@@ -216,8 +212,8 @@ class AuditLogger:
         transaction_type: str,
         amount: float,
         account_id: int,
-        request: Optional[Request] = None,
-        details: Optional[Dict[str, Any]] = None
+        request: Request | None = None,
+        details: dict[str, Any] | None = None
     ) -> str:
         """Log financial transaction with enhanced details."""
         return self.log_event(
@@ -239,9 +235,9 @@ class AuditLogger:
         from_account_id: int,
         to_account_id: int,
         amount: float,
-        request: Optional[Request] = None,
+        request: Request | None = None,
         success: bool = True,
-        error_message: Optional[str] = None
+        error_message: str | None = None
     ) -> str:
         """Log money transfer operations."""
         event_type = AuditEventType.TRANSFER_COMPLETED if success else AuditEventType.TRANSFER_FAILED
@@ -265,11 +261,11 @@ class AuditLogger:
     def log_authentication(
         self,
         event_type: AuditEventType,
-        user_id: Optional[int] = None,
-        username: Optional[str] = None,
-        request: Optional[Request] = None,
+        user_id: int | None = None,
+        username: str | None = None,
+        request: Request | None = None,
         success: bool = True,
-        failure_reason: Optional[str] = None,
+        failure_reason: str | None = None,
         mfa_used: bool = False
     ) -> str:
         """Log authentication events."""
@@ -290,9 +286,9 @@ class AuditLogger:
     def log_security_event(
         self,
         event_type: AuditEventType,
-        user_id: Optional[int] = None,
-        request: Optional[Request] = None,
-        details: Optional[Dict[str, Any]] = None,
+        user_id: int | None = None,
+        request: Request | None = None,
+        details: dict[str, Any] | None = None,
         severity: AuditSeverity = AuditSeverity.HIGH
     ) -> str:
         """Log security-related events."""
@@ -308,11 +304,11 @@ class AuditLogger:
     def get_user_audit_trail(
         self,
         user_id: int,
-        start_time: Optional[float] = None,
-        end_time: Optional[float] = None,
-        event_types: Optional[List[AuditEventType]] = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
+        event_types: list[AuditEventType] | None = None,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get audit trail for a specific user."""
         events = []
 
@@ -336,7 +332,7 @@ class AuditLogger:
 
         return events
 
-    def get_security_summary(self, hours: int = 24) -> Dict[str, Any]:
+    def get_security_summary(self, hours: int = 24) -> dict[str, Any]:
         """Get security summary for the specified time period."""
         cutoff_time = time.time() - (hours * 3600)
 
@@ -375,9 +371,9 @@ class AuditLogger:
 
     def export_audit_logs(
         self,
-        start_time: Optional[float] = None,
-        end_time: Optional[float] = None,
-        user_id: Optional[int] = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
+        user_id: int | None = None,
         format: str = "json"
     ) -> str:
         """Export audit logs for compliance reporting."""
@@ -395,9 +391,8 @@ class AuditLogger:
 
         if format.lower() == "json":
             return json.dumps(filtered_logs, indent=2, default=str)
-        else:
-            # In production, support CSV, PDF formats
-            raise ValueError(f"Unsupported export format: {format}")
+        # In production, support CSV, PDF formats
+        raise ValueError(f"Unsupported export format: {format}")
 
 
 # Global audit logger instance

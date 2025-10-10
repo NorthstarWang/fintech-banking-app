@@ -29,7 +29,7 @@ interface QueryResult<T> {
 
 // Simple in-memory cache
 const queryCache = new Map<string, {
-  data: any;
+  data: unknown;
   timestamp: number;
   error?: Error;
 }>();
@@ -145,7 +145,7 @@ export function useOptimizedQuery<T>(options: QueryOptions<T>): QueryResult<T> {
       const duration = performance.now() - startTime;
       performanceMonitor.trackAPIRequest(cacheKey, duration, false);
 
-      if ((_err as any).name === 'AbortError') {
+      if ((_err as Error).name === 'AbortError') {
         return;
       }
 
@@ -194,6 +194,7 @@ export function useOptimizedQuery<T>(options: QueryOptions<T>): QueryResult<T> {
         abortControllerRef.current.abort();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]); // Only run on mount and when enabled changes
 
   // Set up refetch interval
@@ -254,9 +255,9 @@ export function useOptimizedQuery<T>(options: QueryOptions<T>): QueryResult<T> {
 // Mutation hook for optimistic updates
 interface MutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
-  onMutate?: (variables: TVariables) => Promise<any> | any;
+  onMutate?: (variables: TVariables) => Promise<unknown> | unknown;
   onSuccess?: (data: TData, variables: TVariables) => void;
-  onError?: (error: Error, variables: TVariables, context?: any) => void;
+  onError?: (error: Error, variables: TVariables, context?: unknown) => void;
   onSettled?: (data?: TData, error?: Error, variables?: TVariables) => void;
 }
 
@@ -288,7 +289,7 @@ export function useOptimizedMutation<TData = unknown, TVariables = void>(
     setIsLoading(true);
     setError(null);
 
-    let context: any;
+    let context: unknown;
     const startTime = performance.now();
 
     try {

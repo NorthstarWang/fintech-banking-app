@@ -1,10 +1,19 @@
 // Use Web Crypto API for browser compatibility
-let crypto: any;
+interface CryptoInterface {
+  randomBytes?: (size: number) => { toString: (encoding: string) => string };
+  pbkdf2Sync?: (password: string, salt: string, iterations: number, keylen: number, digest: string) => { toString: (encoding: string) => string };
+  createCipheriv?: (algorithm: string, key: Buffer, iv: Buffer) => { update: (data: string) => Buffer; final: () => Buffer };
+  createDecipheriv?: (algorithm: string, key: Buffer, iv: Buffer) => { update: (data: Buffer) => Buffer; final: () => Buffer };
+  createHash?: (algorithm: string) => { update: (data: string) => { digest: (encoding: string) => string } };
+  createHmac?: (algorithm: string, key: Buffer) => { update: (data: Buffer) => { digest: () => Buffer } };
+}
+
+let crypto: CryptoInterface | null;
 if (typeof window !== 'undefined' && window.crypto) {
-  crypto = window.crypto;
+  crypto = window.crypto as unknown as CryptoInterface;
 } else {
   // Dynamic import for Node.js environment
-  crypto = typeof global !== 'undefined' ? global.crypto : null;
+  crypto = typeof global !== 'undefined' ? (global.crypto as unknown as CryptoInterface) : null;
 }
 
 /**

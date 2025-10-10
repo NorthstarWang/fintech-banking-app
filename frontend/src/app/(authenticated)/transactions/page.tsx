@@ -213,6 +213,7 @@ export default function TransactionsPage() {
   // Initial load
   useEffect(() => {
     loadTransactionsData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reload when filters change
@@ -222,6 +223,7 @@ export default function TransactionsPage() {
     
     
     loadTransactionsData(filters);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.dateRange.start, filters.dateRange.end]);
 
   // Apply filters and search

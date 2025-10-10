@@ -88,7 +88,7 @@ describe('CurrencyConverterPage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetchApi.mockImplementation((url: string, options?: any) => {
+    mockFetchApi.mockImplementation((url: string, options?: unknown) => {
       if (url === '/api/currency-converter/currencies') {
         return Promise.resolve(mockCurrencies);
       }

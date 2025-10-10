@@ -33,7 +33,7 @@ class PasswordHasher:
                 salt = bcrypt.gensalt(rounds=self.rounds)
                 hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
                 return hashed.decode('utf-8')
-            except:
+            except (AttributeError, ValueError, TypeError):
                 # Fallback if bcrypt fails
                 pass
 
@@ -51,13 +51,14 @@ class PasswordHasher:
                     plain_password.encode('utf-8'),
                     hashed_password.encode('utf-8')
                 )
-            except:
+            except (AttributeError, ValueError, TypeError):
                 pass
 
         # Verify SHA256 hash
         if hashed_password.startswith('$sha256$'):
             parts = hashed_password.split('$')
-            if len(parts) == 4:
+            expected_parts_count = 4
+            if len(parts) == expected_parts_count:
                 salt = parts[2]
                 stored_hash = parts[3]
                 test_hash = hashlib.sha256((salt + plain_password).encode()).hexdigest()

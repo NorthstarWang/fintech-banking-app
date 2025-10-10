@@ -15,19 +15,19 @@ from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from ..models import (
-    TwoFactorAuth,
-    UserDevice,
-    SecurityAuditLog,
     DeviceTrustUpdate,
+    SecurityAuditLog,
     SecurityAuditLogResponse,
     SecurityEvent,
     SecurityEventType,
+    TwoFactorAuth,
     TwoFactorMethod,
     TwoFactorResponse,
     TwoFactorSetup,
     TwoFactorSetupResponse,
     TwoFactorVerify,
     User,
+    UserDevice,
     UserDeviceResponse,
 )
 from ..storage.memory_adapter import db
@@ -205,7 +205,7 @@ async def verify_two_factor(
     other_methods = db_session.query(TwoFactorAuth).filter(
         TwoFactorAuth.user_id == current_user['user_id'],
         TwoFactorAuth.id != two_factor.id,
-        TwoFactorAuth.is_enabled == True
+        TwoFactorAuth.is_enabled
     ).count()
 
     if other_methods == 0:
@@ -301,7 +301,7 @@ async def disable_two_factor(
         other_enabled = db_session.query(TwoFactorAuth).filter(
             TwoFactorAuth.user_id == current_user['user_id'],
             TwoFactorAuth.id != two_factor.id,
-            TwoFactorAuth.is_enabled == True
+            TwoFactorAuth.is_enabled
         ).first()
 
         if other_enabled:
@@ -333,7 +333,7 @@ async def get_user_devices(
     )
 
     if not include_inactive:
-        query = query.filter(UserDevice.is_active == True)
+        query = query.filter(UserDevice.is_active)
 
     devices = query.order_by(UserDevice.last_active_at.desc()).all()
 
@@ -463,13 +463,13 @@ async def get_security_summary(
     # Get active devices
     active_devices = db_session.query(UserDevice).filter(
         UserDevice.user_id == current_user['user_id'],
-        UserDevice.is_active == True
+        UserDevice.is_active
     ).count()
 
     # Get 2FA status
     two_factor_enabled = db_session.query(TwoFactorAuth).filter(
         TwoFactorAuth.user_id == current_user['user_id'],
-        TwoFactorAuth.is_enabled == True
+        TwoFactorAuth.is_enabled
     ).count() > 0
 
     return {
@@ -499,13 +499,13 @@ async def export_security_report_pdf(
     # Get active sessions/devices
     active_devices = db_session.query(UserDevice).filter(
         UserDevice.user_id == current_user['user_id'],
-        UserDevice.is_active == True
+        UserDevice.is_active
     ).order_by(UserDevice.last_active_at.desc()).all()
 
     # Get 2FA methods
     two_factor_methods = db_session.query(TwoFactorAuth).filter(
         TwoFactorAuth.user_id == current_user['user_id'],
-        TwoFactorAuth.is_enabled == True
+        TwoFactorAuth.is_enabled
     ).all()
 
     # Calculate security score
@@ -555,7 +555,6 @@ async def export_security_report_pdf(
     story.append(Paragraph("Security Overview", heading_style))
 
     score_label = "Excellent" if security_score >= 80 else "Good" if security_score >= 60 else "Fair" if security_score >= 40 else "Poor"
-    score_color = colors.green if security_score >= 80 else colors.orange if security_score >= 60 else colors.red
 
     overview_data = [
         ['Security Score:', f'{security_score}/100 ({score_label})'],

@@ -184,4 +184,5 @@ export const TabPanel: React.FC<TabPanelProps> = ({
   );
 };
 
-export default { TabGroup, TabList, Tab, TabPanel };
+const Tabs = { TabGroup, TabList, Tab, TabPanel };
+export default Tabs;

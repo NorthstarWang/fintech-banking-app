@@ -5,11 +5,10 @@ Each system can have its health checked separately to avoid cascading failures.
 import asyncio
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Dict, Optional, List
 
 import psutil
-from datetime import datetime
 
 
 class HealthStatus(str, Enum):
@@ -25,9 +24,9 @@ class SystemHealth:
     name: str
     status: HealthStatus
     response_time_ms: float
-    details: Dict[str, any] = None
-    error_message: Optional[str] = None
-    last_checked: Optional[str] = None
+    details: dict[str, any] = None
+    error_message: str | None = None
+    last_checked: str | None = None
 
     def to_dict(self):
         return {
@@ -194,14 +193,14 @@ class HealthMonitor:
     """
 
     def __init__(self):
-        self.adapters: Dict[str, HealthCheckAdapter] = {}
-        self.last_results: Dict[str, SystemHealth] = {}
+        self.adapters: dict[str, HealthCheckAdapter] = {}
+        self.last_results: dict[str, SystemHealth] = {}
 
     def register_adapter(self, adapter: HealthCheckAdapter) -> None:
         """Register a health check adapter"""
         self.adapters[adapter.__class__.__name__] = adapter
 
-    async def check_all_systems(self) -> Dict[str, SystemHealth]:
+    async def check_all_systems(self) -> dict[str, SystemHealth]:
         """Check health of all registered systems concurrently"""
         tasks = [
             self._check_system(adapter)
@@ -236,10 +235,10 @@ class HealthMonitor:
                 name=getattr(adapter, "name", "unknown"),
                 status=HealthStatus.UNHEALTHY,
                 response_time_ms=0,
-                error_message=f"Health check failed: {str(e)}"
+                error_message=f"Health check failed: {e!s}"
             )
 
-    def get_system_health(self, system_name: str) -> Optional[SystemHealth]:
+    def get_system_health(self, system_name: str) -> SystemHealth | None:
         """Get last known health status of a specific system"""
         return self.last_results.get(system_name)
 
@@ -254,7 +253,6 @@ class HealthMonitor:
 
         if HealthStatus.UNHEALTHY in statuses:
             return HealthStatus.UNHEALTHY
-        elif HealthStatus.DEGRADED in statuses:
+        if HealthStatus.DEGRADED in statuses:
             return HealthStatus.DEGRADED
-        else:
-            return HealthStatus.HEALTHY
+        return HealthStatus.HEALTHY

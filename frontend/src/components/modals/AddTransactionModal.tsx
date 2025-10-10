@@ -50,6 +50,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     if (isOpen) {
       loadAccountsAndCategories();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const loadAccountsAndCategories = async () => {

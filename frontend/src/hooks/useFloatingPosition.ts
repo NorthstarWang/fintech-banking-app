@@ -107,6 +107,7 @@ export const useFloatingPosition = ({
         resizeObserver.disconnect();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, calculatePosition]);
 
   return position;

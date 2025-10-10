@@ -85,6 +85,7 @@ export const ResponsiveChart: React.FC<ResponsiveChartProps> = ({
         <div className="w-full h-full">
           {React.Children.map(children, child => {
             if (React.isValidElement(child)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               return React.cloneElement(child as React.ReactElement<any>, {
                 width: dimensions.width,
                 height: dimensions.height,

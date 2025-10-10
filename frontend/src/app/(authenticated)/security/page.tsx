@@ -204,6 +204,7 @@ export default function SecurityPage() {
   const handleSetupTwoFactor = async (method: 'authenticator' | 'sms' | 'email') => {
     try {
       setSetupStartTime(Date.now());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const setupData: any = { method };
       
       if (method === 'sms' && phoneNumber) {

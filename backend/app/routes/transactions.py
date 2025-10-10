@@ -44,9 +44,8 @@ async def create_transaction(
     Validators.validate_transaction_amount(transaction_data.amount)
 
     # Validate category if provided
-    category = None
     if transaction_data.category_id:
-        category = Validators.validate_category_access(
+        Validators.validate_category_access(
             db_session,
             transaction_data.category_id,
             current_user['user_id']
@@ -69,7 +68,6 @@ async def create_transaction(
             db_session.flush()
 
     # Calculate new balance
-    old_balance = account.balance
     if transaction_data.transaction_type == TransactionType.DEBIT:
         Validators.validate_sufficient_funds(account, transaction_data.amount)
         new_balance = account.balance - transaction_data.amount
@@ -171,8 +169,6 @@ async def create_transfer(
     )
 
     # Update balances
-    old_from_balance = from_account.balance
-    old_to_balance = to_account.balance
 
     from_account.balance -= transfer_data.amount
     to_account.balance += transfer_data.amount
@@ -465,7 +461,7 @@ async def update_transaction(
     # Only allow updating certain fields
     if update_data.category_id is not None:
         if update_data.category_id:
-            category = Validators.validate_category_access(
+            Validators.validate_category_access(
                 db_session,
                 update_data.category_id,
                 current_user['user_id']
@@ -540,7 +536,7 @@ async def delete_transaction(
         )
 
     # Verify user owns the account
-    account = Validators.validate_account_ownership(
+    Validators.validate_account_ownership(
         db_session,
         transaction.account_id,
         current_user['user_id']
@@ -588,7 +584,6 @@ async def update_transaction_notes(
     )
 
     # Update notes
-    old_notes = transaction.notes
     transaction.notes = notes
     transaction.updated_at = datetime.utcnow()
     db_session.commit()

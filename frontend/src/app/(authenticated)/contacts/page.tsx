@@ -20,11 +20,9 @@ import Modal from '@/components/ui/Modal';
 import { contactsService } from '@/lib/api';
 import type { Contact, ContactSearchResult, PendingRequests } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-// import { useNotification } from '@/contexts/NotificationContext';
 
 export default function ContactsPage() {
   const router = useRouter();
-  // const { showSuccess, showError } = useNotification();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequests>({ 
     sent_requests: [], 

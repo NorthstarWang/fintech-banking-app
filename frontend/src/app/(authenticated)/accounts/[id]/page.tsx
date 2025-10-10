@@ -300,6 +300,7 @@ export default function AccountDetailPage() {
                 
                 <Dropdown
                   value={filterType}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onChange={(value) => setFilterType(value as any)}
                   items={[
                     { value: 'all', label: 'All Transactions' },

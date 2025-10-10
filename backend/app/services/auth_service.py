@@ -12,7 +12,7 @@ class AuthService:
     def __init__(self, user_repository: UserRepository):
         """
         Initialize with user repository.
-        
+
         Args:
             user_repository: Repository for user operations
         """
@@ -21,13 +21,13 @@ class AuthService:
     def register(self, user_data: dict[str, Any]) -> dict[str, Any]:
         """
         Register a new user.
-        
+
         Args:
             user_data: User registration data
-            
+
         Returns:
             Created user data
-            
+
         Raises:
             ValueError: If username or email already exists
         """
@@ -40,22 +40,21 @@ class AuthService:
             raise ValueError("Email already exists")
 
         # Create user
-        user = self.user_repository.create_user(user_data)
+        return self.user_repository.create_user(user_data)
 
-        return user
 
     def login(self, username: str, password: str, device_info: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Authenticate user and create session.
-        
+
         Args:
             username: Username or email
             password: User password
             device_info: Optional device/browser information
-            
+
         Returns:
             Dict with user data and session token
-            
+
         Raises:
             ValueError: If credentials are invalid
         """
@@ -86,10 +85,10 @@ class AuthService:
     def logout(self, token: str) -> bool:
         """
         Logout user by invalidating session.
-        
+
         Args:
             token: Session token
-            
+
         Returns:
             True if logged out successfully
         """
@@ -98,10 +97,10 @@ class AuthService:
     def logout_all_sessions(self, user_id: str) -> int:
         """
         Logout user from all sessions.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             Number of sessions invalidated
         """
@@ -110,10 +109,10 @@ class AuthService:
     def get_current_user(self, token: str) -> dict[str, Any] | None:
         """
         Get current user from session token.
-        
+
         Args:
             token: Session token
-            
+
         Returns:
             User data if valid session, None otherwise
         """
@@ -122,15 +121,15 @@ class AuthService:
     def change_password(self, user_id: str, current_password: str, new_password: str) -> bool:
         """
         Change user password.
-        
+
         Args:
             user_id: User ID
             current_password: Current password for verification
             new_password: New password
-            
+
         Returns:
             True if password changed successfully
-            
+
         Raises:
             ValueError: If current password is incorrect
         """
@@ -155,10 +154,10 @@ class AuthService:
     def get_active_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """
         Get all active sessions for a user.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             List of active sessions
         """
@@ -167,10 +166,10 @@ class AuthService:
     def validate_session(self, token: str) -> bool:
         """
         Validate if a session token is active and not expired.
-        
+
         Args:
             token: Session token
-            
+
         Returns:
             True if valid, False otherwise
         """

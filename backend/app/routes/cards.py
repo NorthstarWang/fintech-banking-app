@@ -1,84 +1,96 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, date
-from pydantic import BaseModel, Field
+import hashlib
 import random
 import string
-import hashlib
+from datetime import date, datetime, timedelta
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
+
 from ..models import (
-    Card, Account, Transaction, User, Category,
-    CardStatus, CardType, TransactionType, TransactionStatus,
-    Notification, NotificationType, AccountType,
-    CardFreezeRequest, CardLimitRequest, CardLimitResponse, CardAnalyticsResponse,
-    SpendingLimit, SpendingLimitPeriod
+    Account,
+    AccountType,
+    Card,
+    CardAnalyticsResponse,
+    CardFreezeRequest,
+    CardLimitRequest,
+    CardLimitResponse,
+    CardStatus,
+    CardType,
+    Category,
+    Notification,
+    NotificationType,
+    SpendingLimit,
+    SpendingLimitPeriod,
+    Transaction,
+    TransactionStatus,
+    TransactionType,
 )
+from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
 # Pydantic model for creating virtual card from parent card (no account_id needed)
 class CardFromParentCreate(BaseModel):
-    spending_limit: Optional[float] = None
-    merchant_restrictions: Optional[List[str]] = None
-    expires_in_days: Optional[int] = Field(default=30, ge=1, le=365)
+    spending_limit: float | None = None
+    merchant_restrictions: list[str] | None = None
+    expires_in_days: int | None = Field(default=30, ge=1, le=365)
     single_use: bool = False
-    name: Optional[str] = None
+    name: str | None = None
 
 # Additional Pydantic models for standard card operations
 class CardCreate(BaseModel):
     card_number: str
     card_type: str  # 'credit' or 'debit'
     card_name: str
-    issuer: Optional[str] = None
-    linked_account_id: Optional[int] = None  # For debit cards
-    credit_limit: Optional[float] = None  # For credit cards
-    current_balance: Optional[float] = 0.0  # For credit cards
-    billing_cycle_day: Optional[int] = None  # For credit cards
-    interest_rate: Optional[float] = None  # For credit cards
-    expiry_date: Optional[str] = None
-    rewards_program: Optional[str] = None
-    rewards_rate: Optional[float] = None
+    issuer: str | None = None
+    linked_account_id: int | None = None  # For debit cards
+    credit_limit: float | None = None  # For credit cards
+    current_balance: float | None = 0.0  # For credit cards
+    billing_cycle_day: int | None = None  # For credit cards
+    interest_rate: float | None = None  # For credit cards
+    expiry_date: str | None = None
+    rewards_program: str | None = None
+    rewards_rate: float | None = None
 
 class VirtualCardCreateRequest(BaseModel):
     account_id: int
-    spending_limit: Optional[float] = None
-    merchant_restrictions: Optional[List[str]] = None
-    expires_in_days: Optional[int] = Field(default=30, ge=1, le=365)
+    spending_limit: float | None = None
+    merchant_restrictions: list[str] | None = None
+    expires_in_days: int | None = Field(default=30, ge=1, le=365)
     single_use: bool = False
-    name: Optional[str] = None
+    name: str | None = None
 
 class CardUpdate(BaseModel):
-    card_name: Optional[str] = None
-    credit_limit: Optional[float] = None
-    is_active: Optional[bool] = None
-    billing_cycle_day: Optional[int] = None
-    interest_rate: Optional[float] = None
+    card_name: str | None = None
+    credit_limit: float | None = None
+    is_active: bool | None = None
+    billing_cycle_day: int | None = None
+    interest_rate: float | None = None
 
 class CardResponse(BaseModel):
     id: int
     user_id: int
     account_id: int
-    card_name: Optional[str] = None
+    card_name: str | None = None
     card_type: str
     last_four: str
-    issuer: Optional[str] = None
+    issuer: str | None = None
     is_active: bool
-    linked_account_id: Optional[int] = None
-    credit_limit: Optional[float] = None
-    current_balance: Optional[float] = None
-    available_credit: Optional[float] = None
-    billing_cycle_day: Optional[int] = None
-    interest_rate: Optional[float] = None
-    expiry_date: Optional[date] = None
-    rewards_program: Optional[str] = None
-    rewards_rate: Optional[float] = None
+    linked_account_id: int | None = None
+    credit_limit: float | None = None
+    current_balance: float | None = None
+    available_credit: float | None = None
+    billing_cycle_day: int | None = None
+    interest_rate: float | None = None
+    expiry_date: date | None = None
+    rewards_program: str | None = None
+    rewards_rate: float | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    
+    updated_at: datetime | None = None
+
     class Config:
         from_attributes = True
 
@@ -102,7 +114,7 @@ class CardStatementResponse(BaseModel):
     new_balance: float
     minimum_payment: float
     due_date: date
-    transactions: List[Dict[str, Any]]
+    transactions: list[dict[str, Any]]
 
 class VirtualCardResponse(BaseModel):
     id: int
@@ -110,36 +122,36 @@ class VirtualCardResponse(BaseModel):
     card_number_masked: str
     card_type: str
     status: str
-    spending_limit: Optional[float] = None
+    spending_limit: float | None = None
     spent_amount: float = 0.0
-    merchant_restrictions: Optional[List[str]] = None
+    merchant_restrictions: list[str] | None = None
     single_use: bool = False
-    name: Optional[str] = None
+    name: str | None = None
     created_at: datetime
-    expires_at: Optional[datetime] = None
-    last_used_at: Optional[datetime] = None
+    expires_at: datetime | None = None
+    last_used_at: datetime | None = None
     is_virtual: bool = True
-    parent_card_id: Optional[int] = None
+    parent_card_id: int | None = None
 
 class CardRewardsResponse(BaseModel):
     total_rewards: float
     pending_rewards: float
     available_rewards: float
-    rewards_history: List[Dict[str, Any]]
+    rewards_history: list[dict[str, Any]]
 
 class SpendingLimitRequest(BaseModel):
-    daily_limit: Optional[float] = None
-    monthly_limit: Optional[float] = None
-    category_limits: Optional[Dict[str, float]] = None
+    daily_limit: float | None = None
+    monthly_limit: float | None = None
+    category_limits: dict[str, float] | None = None
 
 class AlertConfigRequest(BaseModel):
-    payment_due_alert: Optional[bool] = None
-    high_balance_alert: Optional[bool] = None
-    high_balance_threshold: Optional[int] = None  # Percentage
-    unusual_activity_alert: Optional[bool] = None
+    payment_due_alert: bool | None = None
+    high_balance_alert: bool | None = None
+    high_balance_threshold: int | None = None  # Percentage
+    unusual_activity_alert: bool | None = None
 
 class FraudReportRequest(BaseModel):
-    transaction_ids: List[int]
+    transaction_ids: list[int]
     description: str
     contact_number: str
 
@@ -152,8 +164,7 @@ class FraudReportResponse(BaseModel):
 def generate_card_number():
     """Generate a mock card number"""
     # Mock card number starting with 4 (Visa-like)
-    number = "4" + ''.join(random.choices(string.digits, k=15))
-    return number
+    return "4" + ''.join(random.choices(string.digits, k=15))
 
 def generate_cvv():
     """Generate a mock CVV"""
@@ -168,7 +179,7 @@ def get_last_four(card_number: str) -> str:
     return card_number[-4:] if len(card_number) >= 4 else card_number
 
 # Standard Card CRUD Operations
-@router.post("", response_model=Dict[str, Any])
+@router.post("", response_model=dict[str, Any])
 async def create_card(
     request: Request,
     card_data: CardCreate,
@@ -176,27 +187,27 @@ async def create_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new credit or debit card"""
-    
+
     # Cards are physical by default (virtual cards use different endpoint)
     card_type = CardType.PHYSICAL
-    
+
     # For debit cards, use linked account. For credit cards, create/find credit account
     if card_data.card_type == "debit":
         if not card_data.linked_account_id:
             raise ValidationError("Debit cards must be linked to an account")
-        
+
         # Verify account ownership
         account = db_session.query(Account).filter(
             Account.id == card_data.linked_account_id,
             Account.user_id == current_user['user_id']
         ).first()
-        
+
         if not account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Account not found"
             )
-        
+
         account_id = account.id
     else:
         # For credit cards, find or create a credit account
@@ -205,7 +216,7 @@ async def create_card(
             Account.account_type == AccountType.CREDIT_CARD,
             Account.name == card_data.card_name
         ).first()
-        
+
         if not account:
             # Create a new credit account
             account = Account(
@@ -220,20 +231,20 @@ async def create_card(
             )
             db_session.add(account)
             db_session.flush()
-        
+
         account_id = account.id
-    
+
     # Parse expiry date
     expiry_date = None
     if card_data.expiry_date:
         try:
             expiry_date = datetime.strptime(card_data.expiry_date, "%Y-%m-%d").date()
         except ValueError:
-            raise ValidationError("Invalid expiry date format. Use YYYY-MM-DD")
+            raise ValidationError("Invalid expiry date format. Use YYYY-MM-DD") from None
     else:
         # Default to 4 years from now
         expiry_date = (datetime.utcnow() + timedelta(days=365 * 4)).date()
-    
+
     # Create card
     card = Card(
         user_id=current_user['user_id'],
@@ -247,7 +258,7 @@ async def create_card(
         is_online_enabled=True,
         is_international_enabled=True
     )
-    
+
     # Store additional metadata in a JSON column if available
     # For this example, we'll store in separate columns if they exist
     metadata = {
@@ -261,11 +272,11 @@ async def create_card(
         "rewards_program": card_data.rewards_program,
         "rewards_rate": card_data.rewards_rate
     }
-    
+
     # Store card name in the account name field since Card model doesn't have card_name
     if account:
         account.name = card_data.card_name
-    
+
     db_session.add(card)
     db_session.commit()
     db_session.refresh(card)
@@ -284,7 +295,7 @@ async def create_card(
         "created_at": card.created_at,
         "updated_at": card.updated_at
     }
-    
+
     # Add card type specific fields
     if card_data.card_type == "debit":
         response_data["linked_account_id"] = metadata["linked_account_id"]
@@ -297,10 +308,10 @@ async def create_card(
         response_data["interest_rate"] = metadata["interest_rate"]
         response_data["rewards_program"] = metadata["rewards_program"]
         response_data["rewards_rate"] = metadata["rewards_rate"]
-    
+
     return response_data
 
-@router.get("/analytics", response_model=Dict[str, Any])
+@router.get("/analytics", response_model=dict[str, Any])
 async def get_cards_analytics(
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -310,27 +321,27 @@ async def get_cards_analytics(
     cards = db_session.query(Card).filter(
         Card.user_id == current_user['user_id']
     ).all()
-    
+
     # Get all user accounts
     all_accounts = db_session.query(Account).filter(
         Account.user_id == current_user['user_id']
     ).all()
-    
+
     # Separate credit accounts
     credit_accounts = [a for a in all_accounts if a.account_type == AccountType.CREDIT_CARD]
-    
+
     # Calculate analytics
     total_credit_limit = sum(a.credit_limit or 0 for a in credit_accounts)
     total_balance = sum(-a.balance for a in credit_accounts if a.balance < 0)
     utilization_rate = (total_balance / total_credit_limit * 100) if total_credit_limit > 0 else 0
-    
+
     # Count cards by type
     cards_by_type = {
         "credit": sum(1 for c in cards if (c._data if hasattr(c, '_data') else c).get('card_type') == 'credit'),
         "debit": sum(1 for c in cards if (c._data if hasattr(c, '_data') else c).get('card_type') == 'debit'),
         "virtual": sum(1 for c in cards if (c._data if hasattr(c, '_data') else c).get('card_type') == 'virtual')
     }
-    
+
     # Get recent transactions for spending by category
     all_account_ids = [a.id for a in credit_accounts]
     if all_account_ids:
@@ -339,22 +350,22 @@ async def get_cards_analytics(
             Transaction.transaction_date >= datetime.utcnow() - timedelta(days=30),
             Transaction.transaction_type == TransactionType.DEBIT
         ).all()
-        
+
         spending_by_category = {}
         for t in recent_transactions:
             if t.category:
                 category_name = t.category.name
                 spending_by_category[category_name] = spending_by_category.get(category_name, 0) + t.amount
-        
+
         # Calculate average transaction size
         average_transaction_size = sum(t.amount for t in recent_transactions) / len(recent_transactions) if recent_transactions else 0
     else:
         spending_by_category = {}
         average_transaction_size = 0
-    
+
     # Count active cards - simplified logic
     active_count = sum(1 for c in cards if str(c.status).lower() == 'active')
-    
+
     return {
         "total_credit_limit": total_credit_limit,
         "total_balance": total_balance,
@@ -367,9 +378,9 @@ async def get_cards_analytics(
         "active_cards": active_count
     }
 
-@router.get("/virtual", response_model=List[VirtualCardResponse])
+@router.get("/virtual", response_model=list[VirtualCardResponse])
 async def list_virtual_cards(
-    account_id: Optional[int] = None,
+    account_id: int | None = None,
     include_expired: bool = False,
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -379,43 +390,43 @@ async def list_virtual_cards(
     user_accounts = db_session.query(Account).filter(
         Account.user_id == current_user['user_id']
     ).all()
-    
+
     user_account_ids = [acc.id for acc in user_accounts]
-    
+
     query = db_session.query(Card).filter(
         Card.account_id.in_(user_account_ids),
         Card.card_type == 'virtual'
     )
-    
+
     if account_id:
         # Verify account ownership
         account = db_session.query(Account).filter(
             Account.id == account_id,
             Account.user_id == current_user['user_id']
         ).first()
-        
+
         if not account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Account not found"
             )
-        
+
         query = query.filter(Card.account_id == account_id)
-    
+
     if not include_expired:
         query = query.filter(
             Card.status != 'expired',
             Card.status != 'cancelled'
         )
-    
+
     cards = query.order_by(Card.created_at.desc()).all()
-    
+
     # Convert cards to VirtualCardResponse
     responses = []
     for card in cards:
         # Access card data properly
         card_data = card._data if hasattr(card, '_data') else card
-        
+
         responses.append(VirtualCardResponse(
             id=card_data.get('id', card.id if hasattr(card, 'id') else 0),
             account_id=card_data.get('account_id', card.account_id if hasattr(card, 'account_id') else 0),
@@ -433,10 +444,10 @@ async def list_virtual_cards(
             is_virtual=True,
             parent_card_id=card_data.get('parent_card_id')
         ))
-    
+
     return responses
 
-@router.get("/{card_id}", response_model=Dict[str, Any])
+@router.get("/{card_id}", response_model=dict[str, Any])
 async def get_card(
     card_id: int,
     current_user: dict = Depends(get_current_user),
@@ -447,17 +458,17 @@ async def get_card(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Get card data - handle both dict and object formats
     card_data = card._data if hasattr(card, '_data') else card
     account = db_session.query(Account).filter(Account.id == card_data.get('account_id')).first() if card_data.get('account_id') else None
-    
+
     # Build response
     response_data = {
         "id": card_data.get('id'),
@@ -475,7 +486,7 @@ async def get_card(
         "created_at": card_data.get('created_at'),
         "updated_at": card_data.get('updated_at')
     }
-    
+
     # Add card type specific fields
     if card_data.get('card_type') == "debit":
         response_data["linked_account_id"] = card_data.get('account_id')
@@ -496,10 +507,10 @@ async def get_card(
         response_data["spent_amount"] = card_data.get('spent_amount')
         response_data["single_use"] = card_data.get('single_use')
         response_data["merchant_restrictions"] = card_data.get('merchant_restrictions', [])
-    
+
     return response_data
 
-@router.put("/{card_id}", response_model=Dict[str, Any])
+@router.put("/{card_id}", response_model=dict[str, Any])
 async def update_card(
     request: Request,
     card_id: int,
@@ -508,22 +519,22 @@ async def update_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Update card information"""
-    
+
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Update card status if is_active is provided
     if update_data.is_active is not None:
         card.status = CardStatus.ACTIVE if update_data.is_active else CardStatus.FROZEN
-    
+
     # Update account if credit limit or interest rate changed
     # Check if it's a credit card by looking at the account type
     account = db_session.query(Account).filter(Account.id == card.account_id).first()
@@ -531,21 +542,21 @@ async def update_card(
         # Update card name if provided
         if update_data.card_name is not None:
             account.name = update_data.card_name
-        
+
         # Update credit card specific fields
         if account.account_type == AccountType.CREDIT_CARD and (update_data.credit_limit is not None or update_data.interest_rate is not None):
             if update_data.credit_limit is not None:
                 account.credit_limit = update_data.credit_limit
             if update_data.interest_rate is not None:
                 account.interest_rate = update_data.interest_rate
-    
+
     db_session.commit()
     db_session.refresh(card)
 
     # Return updated card
     return await get_card(card_id, current_user, db_session)
 
-@router.post("/{card_id}/deactivate", response_model=Dict[str, Any])
+@router.post("/{card_id}/deactivate", response_model=dict[str, Any])
 async def deactivate_card(
     request: Request,
     card_id: int,
@@ -553,18 +564,18 @@ async def deactivate_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Deactivate a card"""
-    
+
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     card.status = CardStatus.FROZEN
     db_session.commit()
 
@@ -574,10 +585,10 @@ async def deactivate_card(
         "message": "Card deactivated successfully"
     }
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=list[dict[str, Any]])
 async def list_cards(
-    card_type: Optional[str] = Query(None, description="Filter by card type (credit/debit)"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    card_type: str | None = Query(None, description="Filter by card type (credit/debit)"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
@@ -585,27 +596,24 @@ async def list_cards(
     query = db_session.query(Card).filter(
         Card.user_id == current_user['user_id']
     )
-    
+
     # Filter by card type
     if card_type:
         query = query.filter(Card.card_type == card_type)
-    
+
     # Filter by active status
     if is_active is not None:
-        if is_active:
-            query = query.filter(Card.status == 'active')
-        else:
-            query = query.filter(Card.status != 'active')
-    
+        query = query.filter(Card.status == 'active') if is_active else query.filter(Card.status != 'active')
+
     cards = query.all()
-    
+
     # Build response list
     response_cards = []
     for card in cards:
         # Get card data - handle both dict and object formats
         card_data = card._data if hasattr(card, '_data') else card
         account = db_session.query(Account).filter(Account.id == card_data.get('account_id')).first() if card_data.get('account_id') else None
-        
+
         # Build response
         response_data = {
             "id": card_data.get('id'),
@@ -623,7 +631,7 @@ async def list_cards(
             "created_at": card_data.get('created_at'),
             "updated_at": card_data.get('updated_at')
         }
-        
+
         # Add card type specific fields
         if card_data.get('card_type') == "debit":
             response_data["linked_account_id"] = card_data.get('account_id')
@@ -644,13 +652,13 @@ async def list_cards(
             response_data["spent_amount"] = card_data.get('spent_amount')
             response_data["single_use"] = card_data.get('single_use')
             response_data["merchant_restrictions"] = card_data.get('merchant_restrictions', [])
-        
+
         response_cards.append(response_data)
-    
+
     return response_cards
 
 
-@router.get("/{card_id}/transactions", response_model=List[Dict[str, Any]])
+@router.get("/{card_id}/transactions", response_model=list[dict[str, Any]])
 async def get_card_transactions(
     card_id: int,
     limit: int = Query(100, description="Number of transactions to return"),
@@ -664,18 +672,18 @@ async def get_card_transactions(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Get transactions for the card's account
     transactions = db_session.query(Transaction).filter(
         Transaction.account_id == card.account_id
     ).order_by(Transaction.transaction_date.desc()).limit(limit).offset(offset).all()
-    
+
     # Format transactions
     result = []
     for t in transactions:
@@ -688,7 +696,7 @@ async def get_card_transactions(
             "category": t.category.name if t.category else "Uncategorized",
             "status": t.status.value
         })
-    
+
     return result
 
 @router.get("/{card_id}/statement/{year}/{month}", response_model=CardStatementResponse)
@@ -705,23 +713,23 @@ async def get_card_statement(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Check if it's a credit card by looking at the account type
     account = db_session.query(Account).filter(Account.id == card.account_id).first()
     if not account or account.account_type != AccountType.CREDIT_CARD:
         raise ValidationError("Statements are only available for credit cards")
-    
+
     # Get account
     account = db_session.query(Account).filter(Account.id == card.account_id).first()
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-    
+
     # Calculate statement period
     billing_day = 15  # Mock billing cycle day
     if month == 1:
@@ -730,29 +738,29 @@ async def get_card_statement(
     else:
         prev_month = month - 1
         prev_year = year
-    
+
     start_date = datetime(prev_year, prev_month, billing_day)
     end_date = datetime(year, month, billing_day)
-    
+
     # Get transactions for the period
     transactions = db_session.query(Transaction).filter(
         Transaction.account_id == card.account_id,
         Transaction.transaction_date >= start_date,
         Transaction.transaction_date < end_date
     ).all()
-    
+
     # Calculate statement details
     purchases = sum(t.amount for t in transactions if t.transaction_type == TransactionType.DEBIT)
     payments = sum(t.amount for t in transactions if t.transaction_type == TransactionType.CREDIT)
-    
+
     # Mock previous balance and interest
     previous_balance = 1000.0
     interest_rate = account.interest_rate or 18.99
     interest_charged = (previous_balance * (interest_rate / 100) / 12) if previous_balance > 0 else 0.0
-    
+
     new_balance = previous_balance + purchases - payments + interest_charged
     minimum_payment = max(25.0, new_balance * 0.02)  # 2% of balance or $25, whichever is greater
-    
+
     # Format transactions
     transaction_list = []
     for t in transactions:
@@ -762,7 +770,7 @@ async def get_card_statement(
             "amount": t.amount,
             "type": t.transaction_type.value
         })
-    
+
     return CardStatementResponse(
         statement_period=f"{start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}",
         previous_balance=previous_balance,
@@ -784,49 +792,49 @@ async def make_card_payment(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Make a payment on a credit card"""
-    
+
     # Verify card ownership and type
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Check if it's a credit card by looking at the account type
     credit_account = db_session.query(Account).filter(Account.id == card.account_id).first()
     if not credit_account or credit_account.account_type != AccountType.CREDIT_CARD:
         raise ValidationError("Payments can only be made on credit cards")
-    
+
     # Verify source account ownership
     source_account = db_session.query(Account).filter(
         Account.id == payment_data.from_account_id,
         Account.user_id == current_user['user_id']
     ).first()
-    
+
     if not source_account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Source account not found"
         )
-    
+
     # Check source account balance
     if source_account.balance < payment_data.amount:
         raise ValidationError("Insufficient funds in source account")
-    
+
     # Account is already fetched above, no need to query again
-    
+
     # Process payment
     # Debit from source account
     source_account.balance -= payment_data.amount
-    
+
     # Credit to credit card account (reduce negative balance)
     credit_account.balance += payment_data.amount
-    
+
     # Create transactions
     # Debit transaction from source account
     debit_transaction = Transaction(
@@ -838,18 +846,18 @@ async def make_card_payment(
         transaction_date=payment_data.payment_date,
         to_account_id=credit_account.id
     )
-    
+
     # Credit transaction to credit card account
     credit_transaction = Transaction(
         account_id=credit_account.id,
         amount=payment_data.amount,
         transaction_type=TransactionType.CREDIT,
         status=TransactionStatus.COMPLETED,
-        description=f"Payment received - Thank you",
+        description="Payment received - Thank you",
         transaction_date=payment_data.payment_date,
         from_account_id=source_account.id
     )
-    
+
     db_session.add(debit_transaction)
     db_session.add(credit_transaction)
     db_session.commit()
@@ -873,23 +881,23 @@ async def get_card_rewards(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Mock rewards data
     # In production, this would be calculated from transactions with rewards rates
     total_rewards = 1543.25
     pending_rewards = 123.50
     available_rewards = total_rewards - pending_rewards
-    
+
     # Mock rewards history
     rewards_history = [
     ]
-    
+
     return CardRewardsResponse(
         total_rewards=total_rewards,
         pending_rewards=pending_rewards,
@@ -897,7 +905,7 @@ async def get_card_rewards(
         rewards_history=rewards_history
     )
 
-@router.put("/{card_id}/spending-limit", response_model=Dict[str, Any])
+@router.put("/{card_id}/spending-limit", response_model=dict[str, Any])
 async def set_spending_limits(
     request: Request,
     card_id: int,
@@ -906,28 +914,28 @@ async def set_spending_limits(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set spending limits for a card"""
-    
+
     # Verify card ownership
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Create or update spending limits
     # Daily limit
     if limit_data.daily_limit is not None:
         daily_limit = db_session.query(SpendingLimit).filter(
             SpendingLimit.card_id == card_id,
             SpendingLimit.limit_period == SpendingLimitPeriod.DAILY,
-            SpendingLimit.is_active == True
+            SpendingLimit.is_active
         ).first()
-        
+
         if daily_limit:
             daily_limit.limit_amount = limit_data.daily_limit
             daily_limit.updated_at = datetime.utcnow()
@@ -942,15 +950,15 @@ async def set_spending_limits(
                 is_active=True
             )
             db_session.add(daily_limit)
-    
+
     # Monthly limit
     if limit_data.monthly_limit is not None:
         monthly_limit = db_session.query(SpendingLimit).filter(
             SpendingLimit.card_id == card_id,
             SpendingLimit.limit_period == SpendingLimitPeriod.MONTHLY,
-            SpendingLimit.is_active == True
+            SpendingLimit.is_active
         ).first()
-        
+
         if monthly_limit:
             monthly_limit.limit_amount = limit_data.monthly_limit
             monthly_limit.updated_at = datetime.utcnow()
@@ -961,7 +969,7 @@ async def set_spending_limits(
                 period_end = period_start.replace(year=now.year + 1, month=1) - timedelta(microseconds=1)
             else:
                 period_end = period_start.replace(month=now.month + 1) - timedelta(microseconds=1)
-            
+
             monthly_limit = SpendingLimit(
                 card_id=card_id,
                 limit_amount=limit_data.monthly_limit,
@@ -972,24 +980,24 @@ async def set_spending_limits(
                 is_active=True
             )
             db_session.add(monthly_limit)
-    
+
     # Category limits
     if limit_data.category_limits:
         for category, limit_amount in limit_data.category_limits.items():
-            # Since contains() is not available in memory adapter, 
+            # Since contains() is not available in memory adapter,
             # we need to fetch all category limits and check manually
             all_cat_limits = db_session.query(SpendingLimit).filter(
                 SpendingLimit.card_id == card_id,
-                SpendingLimit.is_active == True
+                SpendingLimit.is_active
             ).all()
-            
+
             # Find matching category limit
             cat_limit = None
             for limit in all_cat_limits:
                 if limit.merchant_categories and category in limit.merchant_categories:
                     cat_limit = limit
                     break
-            
+
             if cat_limit:
                 cat_limit.limit_amount = limit_amount
                 cat_limit.updated_at = datetime.utcnow()
@@ -1005,16 +1013,16 @@ async def set_spending_limits(
                     is_active=True
                 )
                 db_session.add(cat_limit)
-    
+
     db_session.commit()
-    
+
     # Get all active limits for response
     active_limits = db_session.query(SpendingLimit).filter(
         SpendingLimit.card_id == card_id,
-        SpendingLimit.is_active == True
+        SpendingLimit.is_active
     ).all()
-    
-    response = {
+
+    return {
         "card_id": card_id,
         "daily_limit": next((l.limit_amount for l in active_limits if l.limit_period == SpendingLimitPeriod.DAILY), None),
         "monthly_limit": next((l.limit_amount for l in active_limits if l.limit_period == SpendingLimitPeriod.MONTHLY and not l.merchant_categories), None),
@@ -1022,9 +1030,8 @@ async def set_spending_limits(
         "updated_at": datetime.utcnow().isoformat()
     }
 
-    return response
 
-@router.get("/{card_id}/spending-limit", response_model=Dict[str, Any])
+@router.get("/{card_id}/spending-limit", response_model=dict[str, Any])
 async def get_spending_limits(
     card_id: int,
     current_user: dict = Depends(get_current_user),
@@ -1036,19 +1043,19 @@ async def get_spending_limits(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Get all active limits
     active_limits = db_session.query(SpendingLimit).filter(
         SpendingLimit.card_id == card_id,
-        SpendingLimit.is_active == True
+        SpendingLimit.is_active
     ).all()
-    
+
     # Calculate current usage for each limit
     limits_with_usage = []
     for limit in active_limits:
@@ -1060,7 +1067,7 @@ async def get_spending_limits(
             Transaction.transaction_type == TransactionType.DEBIT,
             Transaction.status == TransactionStatus.COMPLETED
         )
-        
+
         # Filter by category if specified
         if limit.merchant_categories:
             # Get category IDs for the merchant categories
@@ -1068,15 +1075,15 @@ async def get_spending_limits(
                 Category.name.in_(limit.merchant_categories)
             ).all()
             category_ids = [c.id for c in categories]
-            
+
             # Filter transactions by category IDs
             if category_ids:
                 transactions = transactions.filter(
                     Transaction.category_id.in_(category_ids)
                 )
-        
+
         current_usage = sum(t.amount for t in transactions.all())
-        
+
         limits_with_usage.append({
             "id": limit.id,
             "limit_amount": limit.limit_amount,
@@ -1087,7 +1094,7 @@ async def get_spending_limits(
             "period_start": limit.period_start.isoformat(),
             "period_end": limit.period_end.isoformat()
         })
-    
+
     return {
         "card_id": card_id,
         "daily_limit": next((l["limit_amount"] for l in limits_with_usage if l["limit_period"] == "DAILY"), None),
@@ -1098,7 +1105,7 @@ async def get_spending_limits(
         "limits": limits_with_usage
     }
 
-@router.put("/{card_id}/alerts", response_model=Dict[str, Any])
+@router.put("/{card_id}/alerts", response_model=dict[str, Any])
 async def configure_card_alerts(
     request: Request,
     card_id: int,
@@ -1107,22 +1114,22 @@ async def configure_card_alerts(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Configure alert settings for a card"""
-    
+
     # Verify card ownership
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # In production, these settings would be stored in the database
     # For now, we'll just return the requested configuration
-    response = {
+    return {
         "card_id": card_id,
         "payment_due_alert": alert_config.payment_due_alert,
         "high_balance_alert": alert_config.high_balance_alert,
@@ -1130,9 +1137,8 @@ async def configure_card_alerts(
         "unusual_activity_alert": alert_config.unusual_activity_alert,
         "updated_at": datetime.utcnow().isoformat()
     }
-    
-    
-    return response
+
+
 
 @router.post("/{card_id}/fraud-report", response_model=FraudReportResponse)
 async def report_card_fraud(
@@ -1143,26 +1149,26 @@ async def report_card_fraud(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Report fraudulent transactions on a card"""
-    
+
     # Verify card ownership
     card = db_session.query(Card).filter(
         Card.id == card_id,
         Card.user_id == current_user['user_id']
     ).first()
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Block the card immediately
     card.status = CardStatus.FROZEN
     db_session.commit()
-    
+
     # Generate case number
     case_number = f"FRAUD-{datetime.utcnow().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
-    
+
     # Create notification
     notification = Notification(
         user_id=current_user['user_id'],
@@ -1174,8 +1180,8 @@ async def report_card_fraud(
     )
     db_session.add(notification)
     db_session.commit()
-    
-    
+
+
     return FraudReportResponse(
         case_number=case_number,
         card_blocked=True,
@@ -1194,27 +1200,27 @@ async def create_virtual_card_from_parent(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a virtual card linked to a parent physical card"""
-    
+
     # Verify parent card ownership
     parent_card = db_session.query(Card).filter(
         Card.id == parent_card_id,
         Card.user_id == current_user['user_id'],
         Card.card_type != CardType.VIRTUAL
     ).first()
-    
+
     if not parent_card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Parent card not found or is not a physical card"
         )
-    
+
     # Generate virtual card details
     card_number = generate_card_number()
     cvv = generate_cvv()
-    
+
     # Calculate expiry
     expires_at = datetime.utcnow() + timedelta(days=card_data.expires_in_days or 30)
-    
+
     # Create virtual card
     virtual_card = Card(
         user_id=current_user['user_id'],
@@ -1228,7 +1234,7 @@ async def create_virtual_card_from_parent(
         is_online_enabled=True,
         is_international_enabled=parent_card.is_international_enabled
     )
-    
+
     # Store virtual card specific data
     # In production, this would be in separate columns or JSON
     metadata = {
@@ -1243,12 +1249,12 @@ async def create_virtual_card_from_parent(
         "spent_amount": 0.0,
         "is_virtual": True
     }
-    
+
     db_session.add(virtual_card)
     db_session.commit()
     db_session.refresh(virtual_card)
-    
-    
+
+
     # Return CardResponse format
     return CardResponse(
         id=virtual_card.id,
@@ -1276,27 +1282,27 @@ async def create_virtual_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Generate a new virtual card"""
-    
+
     # Verify account ownership
     account = db_session.query(Account).filter(
         Account.id == card_data.account_id,
         Account.user_id == current_user['user_id'],
-        Account.is_active == True
+        Account.is_active
     ).first()
-    
+
     if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Account not found or inactive"
         )
-    
+
     # Generate card details
     card_number = generate_card_number()
     cvv = generate_cvv()
-    
+
     # Calculate expiry
     expires_at = datetime.utcnow() + timedelta(days=card_data.expires_in_days or 30)
-    
+
     # Create virtual card
     virtual_card = Card(
         user_id=current_user['user_id'],
@@ -1312,12 +1318,12 @@ async def create_virtual_card(
         name=card_data.name or f"Virtual Card {datetime.utcnow().strftime('%m/%d')}",
         expires_at=expires_at
     )
-    
+
     db_session.add(virtual_card)
     db_session.commit()
     db_session.refresh(virtual_card)
-    
-    
+
+
     # Return CardResponse with proper fields
     try:
         response_data = {
@@ -1341,7 +1347,7 @@ async def create_virtual_card(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating virtual card response: {str(e)}"
+            detail=f"Error creating virtual card response: {e!s}"
         )
 
 
@@ -1354,42 +1360,42 @@ async def freeze_unfreeze_card(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Freeze or unfreeze a virtual card"""
-    
+
     # Get card and verify ownership
     card = db_session.query(Card).filter(
         Card.id == card_id
     ).first()
-    
+
     if card:
         # Verify ownership through account
         account = db_session.query(Account).filter(
             Account.id == card.account_id,
             Account.user_id == current_user['user_id']
         ).first()
-        
+
         if not account:
             card = None
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     if card.status == CardStatus.EXPIRED:
         raise ValidationError("Cannot modify expired card")
-    
+
     if card.status == CardStatus.CANCELLED:
         raise ValidationError("Cannot modify cancelled card")
-    
+
     # Update status
     new_status = CardStatus.FROZEN if freeze_data.freeze else CardStatus.ACTIVE
     card.status = new_status
-    
+
     db_session.commit()
     db_session.refresh(card)
-    
-    
+
+
     # Return CardResponse with proper fields
     return CardResponse(
         id=card.id,
@@ -1422,28 +1428,28 @@ async def set_card_limit(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Set spending limits for a card"""
-    
+
     # Get card and verify ownership
     card = db_session.query(Card).filter(
         Card.id == card_id
     ).first()
-    
+
     if card:
         # Verify ownership through account
         account = db_session.query(Account).filter(
             Account.id == card.account_id,
             Account.user_id == current_user['user_id']
         ).first()
-        
+
         if not account:
             card = None
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Calculate period dates
     now = datetime.utcnow()
     if limit_data.limit_period == SpendingLimitPeriod.DAILY:
@@ -1463,7 +1469,7 @@ async def set_card_limit(
     else:  # PER_TRANSACTION
         period_start = now
         period_end = now + timedelta(days=365)  # Effectively no end
-    
+
     # Create card limit
     card_limit = SpendingLimit(
         card_id=card_id,
@@ -1475,7 +1481,7 @@ async def set_card_limit(
         current_usage=0.0,
         is_active=True
     )
-    
+
     db_session.add(card_limit)
     db_session.commit()
     db_session.refresh(card_limit)
@@ -1504,27 +1510,27 @@ async def get_card_analytics(
     card = db_session.query(Card).filter(
         Card.id == card_id
     ).first()
-    
+
     if card:
         # Verify ownership through account
         account = db_session.query(Account).filter(
             Account.id == card.account_id,
             Account.user_id == current_user['user_id']
         ).first()
-        
+
         if not account:
             card = None
-    
+
     if not card:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Card not found"
         )
-    
+
     # Calculate date range
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=days)
-    
+
     # Get transactions (mock data for now)
     # In production, you would track virtual card transactions
     transactions = db_session.query(Transaction).filter(
@@ -1533,50 +1539,50 @@ async def get_card_analytics(
         Transaction.transaction_date <= end_date,
         Transaction.transaction_type == TransactionType.DEBIT
     ).all()
-    
+
     # Calculate analytics
     total_transactions = len(transactions)
     total_spent = sum(t.amount for t in transactions)
     average_transaction = total_spent / total_transactions if total_transactions > 0 else 0
-    
+
     # Group by merchant (mock)
     merchant_spending = {}
     for t in transactions:
         merchant = t.description[:20]  # Mock merchant name
         merchant_spending[merchant] = merchant_spending.get(merchant, 0) + t.amount
-    
+
     top_merchants = sorted(
         [{"merchant": k, "amount": v} for k, v in merchant_spending.items()],
         key=lambda x: x["amount"],
         reverse=True
     )[:5]
-    
+
     # Group by category
     category_spending = {}
     for t in transactions:
         if t.category:
             category_name = t.category.name
             category_spending[category_name] = category_spending.get(category_name, 0) + t.amount
-    
+
     # Daily spending trend (last 7 days)
     daily_spending = []
     for i in range(7):
         day = end_date - timedelta(days=i)
         day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
-        
+
         day_total = sum(
             t.amount for t in transactions
             if day_start <= t.transaction_date < day_end
         )
-        
+
         daily_spending.append({
             "date": day_start.isoformat(),
             "amount": day_total
         })
-    
+
     daily_spending.reverse()
-    
+
     return CardAnalyticsResponse(
         card_id=card_id,
         total_transactions=total_transactions,
@@ -1591,7 +1597,7 @@ async def get_card_analytics(
     )
 
 
-@router.get("/analytics", response_model=Dict[str, Any])
+@router.get("/analytics", response_model=dict[str, Any])
 async def get_analytics(
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -1601,11 +1607,11 @@ async def get_analytics(
     cards = db_session.query(Card).filter(
         Card.user_id == current_user['user_id']
     ).all()
-    
+
     # Calculate totals
     total_cards = len(cards)
     active_cards = sum(1 for card in cards if card.status == CardStatus.ACTIVE)
-    
+
     # Initialize counters
     total_credit_limit = 0
     total_balance = 0
@@ -1614,7 +1620,7 @@ async def get_analytics(
         'debit': 0,
         'virtual': 0
     }
-    
+
     # Get associated accounts for credit cards
     for card in cards:
         # Count by type
@@ -1632,18 +1638,18 @@ async def get_analytics(
             cards_by_type['debit'] += 1
         elif card.card_type == CardType.VIRTUAL:
             cards_by_type['virtual'] += 1
-    
+
     # Calculate utilization rate
     utilization_rate = (total_balance / total_credit_limit * 100) if total_credit_limit > 0 else 0
-    
+
     # Get spending by category for all cards in the last 30 days
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=30)
-    
+
     spending_by_category = {}
     total_spent = 0
     transaction_count = 0
-    
+
     for card in cards:
         transactions = db_session.query(Transaction).filter(
             Transaction.account_id == card.account_id,
@@ -1651,11 +1657,11 @@ async def get_analytics(
             Transaction.transaction_date <= end_date,
             Transaction.transaction_type == TransactionType.DEBIT
         ).all()
-        
+
         for t in transactions:
             transaction_count += 1
             total_spent += t.amount
-            
+
             # Group by category
             if t.category:
                 category_name = t.category.name
@@ -1663,10 +1669,10 @@ async def get_analytics(
             else:
                 # Default category if none assigned
                 spending_by_category['Other'] = spending_by_category.get('Other', 0) + t.amount
-    
+
     # Calculate average transaction size
     average_transaction_size = total_spent / transaction_count if transaction_count > 0 else 0
-    
+
     return {
         "total_credit_limit": total_credit_limit,
         "total_balance": total_balance,
@@ -1679,9 +1685,9 @@ async def get_analytics(
     }
 
 
-@router.get("/virtual", response_model=List[Dict[str, Any]])
+@router.get("/virtual", response_model=list[dict[str, Any]])
 async def get_virtual_cards(
-    account_id: Optional[int] = Query(None, description="Filter by account ID"),
+    account_id: int | None = Query(None, description="Filter by account ID"),
     include_expired: bool = Query(False, description="Include expired virtual cards"),
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -1692,22 +1698,22 @@ async def get_virtual_cards(
         Card.user_id == current_user['user_id'],
         Card.card_type == CardType.VIRTUAL
     )
-    
+
     # Filter by account if specified
     if account_id:
         query = query.filter(Card.account_id == account_id)
-    
+
     # Filter out expired cards unless requested
     if not include_expired:
         query = query.filter(Card.status != CardStatus.EXPIRED)
-    
+
     virtual_cards = query.all()
-    
+
     # Build response
     response_cards = []
     for card in virtual_cards:
-        card_data = card._data if hasattr(card, '_data') else card
-        
+        card._data if hasattr(card, '_data') else card
+
         response_data = {
             "id": card.id,
             "account_id": card.account_id,
@@ -1725,7 +1731,7 @@ async def get_virtual_cards(
             "is_virtual": True,
             "parent_card_id": getattr(card, 'parent_card_id', None)
         }
-        
+
         response_cards.append(response_data)
-    
+
     return response_cards

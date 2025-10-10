@@ -10,24 +10,21 @@ This module extends the basic event store with production-ready features:
 - Complete event history with immutable ledger
 """
 
+import hashlib
 import json
 import uuid
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict
-import hashlib
+from typing import Any
 
 
 class EventSourceError(Exception):
     """Base exception for event sourcing errors"""
-    pass
 
 
 class ReplayError(EventSourceError):
     """Raised when event replay fails"""
-    pass
 
 
 class SnapshotType(str, Enum):
@@ -45,7 +42,7 @@ class EventSnapshot:
     user_id: int
     snapshot_type: SnapshotType
     timestamp: datetime
-    state: Dict[str, Any]
+    state: dict[str, Any]
     event_count: int  # Number of events up to this point
     checksum: str  # For integrity verification
 
@@ -70,9 +67,9 @@ class EventLog:
 
     def __init__(self):
         """Initialize event log"""
-        self._events: List[Dict[str, Any]] = []
-        self._snapshots: Dict[str, EventSnapshot] = {}
-        self._event_hashes: List[str] = []  # Chain for integrity
+        self._events: list[dict[str, Any]] = []
+        self._snapshots: dict[str, EventSnapshot] = {}
+        self._event_hashes: list[str] = []  # Chain for integrity
         self._indexes = {
             'by_transaction': {},
             'by_user': {},
@@ -80,7 +77,7 @@ class EventLog:
             'by_type': {},
         }
 
-    def append(self, event_dict: Dict[str, Any]) -> str:
+    def append(self, event_dict: dict[str, Any]) -> str:
         """
         Append event to log (immutable operation).
 
@@ -97,7 +94,7 @@ class EventLog:
             event_dict['event_id'] = str(uuid.uuid4())
 
         if not event_dict.get('timestamp'):
-            event_dict['timestamp'] = datetime.now(timezone.utc).isoformat()
+            event_dict['timestamp'] = datetime.now(UTC).isoformat()
 
         # Create hash chain for immutability verification
         previous_hash = self._event_hashes[-1] if self._event_hashes else '0'
@@ -115,7 +112,7 @@ class EventLog:
 
         return event_hash
 
-    def _update_indexes(self, event_dict: Dict[str, Any]) -> None:
+    def _update_indexes(self, event_dict: dict[str, Any]) -> None:
         """Update all indexes for efficient querying"""
         if 'transaction_id' in event_dict:
             tx_id = event_dict['transaction_id']
@@ -141,7 +138,7 @@ class EventLog:
                 self._indexes['by_type'][evt_type] = []
             self._indexes['by_type'][evt_type].append(len(self._events) - 1)
 
-    def get_events(self, transaction_id: str) -> List[Dict[str, Any]]:
+    def get_events(self, transaction_id: str) -> list[dict[str, Any]]:
         """Get all events for a transaction"""
         indexes = self._indexes['by_transaction'].get(transaction_id, [])
         return [self._events[i] for i in indexes]
@@ -150,7 +147,7 @@ class EventLog:
         self,
         transaction_id: str,
         apply_fn=None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Replay all events for a transaction to reconstruct state.
 
@@ -200,7 +197,7 @@ class EventLog:
                     apply_fn(event, state)
 
         except Exception as e:
-            raise ReplayError(f"Failed to replay transaction {transaction_id}: {e}")
+            raise ReplayError(f"Failed to replay transaction {transaction_id}: {e}") from e
 
         return state
 
@@ -209,7 +206,7 @@ class EventLog:
         transaction_id: str,
         user_id: int,
         snapshot_type: SnapshotType,
-        state: Dict[str, Any]
+        state: dict[str, Any]
     ) -> EventSnapshot:
         """
         Create a snapshot of current state for performance.
@@ -232,7 +229,7 @@ class EventLog:
             transaction_id=transaction_id,
             user_id=user_id,
             snapshot_type=snapshot_type,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             state=state,
             event_count=len(self._events),
             checksum=checksum,
@@ -241,11 +238,11 @@ class EventLog:
         self._snapshots[snapshot_id] = snapshot
         return snapshot
 
-    def get_snapshot(self, snapshot_id: str) -> Optional[EventSnapshot]:
+    def get_snapshot(self, snapshot_id: str) -> EventSnapshot | None:
         """Get a snapshot by ID"""
         return self._snapshots.get(snapshot_id)
 
-    def verify_integrity(self) -> Tuple[bool, List[str]]:
+    def verify_integrity(self) -> tuple[bool, list[str]]:
         """
         Verify event log integrity using hash chain.
 
@@ -271,8 +268,8 @@ class EventLog:
     def export_audit_trail(
         self,
         user_id: int,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> str:
         """Export audit trail as JSON"""
         indexes = self._indexes['by_user'].get(user_id, [])
@@ -287,7 +284,7 @@ class EventLog:
 
         return json.dumps(events, indent=2, default=str)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get event log statistics"""
         return {
             'total_events': len(self._events),
@@ -302,7 +299,7 @@ class EventLog:
 
 
 # Global event log instance
-_event_log: Optional[EventLog] = None
+_event_log: EventLog | None = None
 
 
 def get_event_log() -> EventLog:

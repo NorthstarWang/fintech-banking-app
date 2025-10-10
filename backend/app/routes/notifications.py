@@ -45,7 +45,7 @@ async def get_unread_count(
     """Get count of unread notifications"""
     count = db_session.query(Notification).filter(
         Notification.user_id == current_user['user_id'],
-        Notification.is_read == False
+        not Notification.is_read
     ).count()
 
     # Count by type
@@ -53,7 +53,7 @@ async def get_unread_count(
     for notif_type in NotificationType:
         type_count = db_session.query(Notification).filter(
             Notification.user_id == current_user['user_id'],
-            Notification.is_read == False,
+            not Notification.is_read,
             Notification.type == notif_type
         ).count()
         if type_count > 0:
@@ -107,7 +107,7 @@ async def mark_all_read(
 
     query = db_session.query(Notification).filter(
         Notification.user_id == current_user['user_id'],
-        Notification.is_read == False
+        not Notification.is_read
     )
 
     if notification_type:

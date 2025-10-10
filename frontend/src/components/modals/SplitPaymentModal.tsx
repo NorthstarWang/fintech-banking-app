@@ -54,6 +54,7 @@ export default function SplitPaymentModal({
     if (accounts.length > 0 && !selectedAccount) {
       setSelectedAccount(accounts[0].id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   const handleAddParticipant = (contactId: string) => {

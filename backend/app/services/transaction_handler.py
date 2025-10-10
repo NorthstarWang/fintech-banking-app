@@ -13,31 +13,19 @@ It implements:
 - Transaction state tracking
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Dict, Optional, Any
 
-from app.services.transaction_coordinator import (
-    TransactionContext,
-    TransactionCoordinator,
-    get_transaction_coordinator
-)
-from app.services.event_store import (
-    TransactionEvent,
-    TransactionEventType,
-    TransactionEventStatus,
-    get_event_store
-)
+from app.services.event_store import TransactionEvent, TransactionEventStatus, TransactionEventType, get_event_store
+from app.services.transaction_coordinator import TransactionContext, get_transaction_coordinator
 
 
 class InsufficientFundsError(Exception):
     """Raised when account has insufficient funds"""
-    pass
 
 
 class OptimisticLockError(Exception):
     """Raised when optimistic lock fails (version mismatch)"""
-    pass
 
 
 class TransactionHandler:
@@ -87,7 +75,7 @@ class TransactionHandler:
             )
 
         # Get optimistic lock version before update
-        version_before = self.coordinator._version_lock.get_version(context.from_account_id)
+        self.coordinator._version_lock.get_version(context.from_account_id)
 
         # Perform update
         new_from_balance = from_balance - context.amount
@@ -102,7 +90,7 @@ class TransactionHandler:
         self.coordinator._version_lock.increment_version(context.to_account_id)
 
         # Verify no concurrent modification occurred
-        version_after = self.coordinator._version_lock.get_version(context.from_account_id)
+        self.coordinator._version_lock.get_version(context.from_account_id)
 
         # Record detailed events
         self._record_balance_event(
@@ -213,7 +201,7 @@ class TransactionHandler:
             transaction_id=context.transaction_id,
             user_id=context.user_id,
             event_type=TransactionEventType.BUY_ORDER_FILLED,
-            timestamp=context.started_at or context.created_at or datetime.now(timezone.utc),
+            timestamp=context.started_at or context.created_at or datetime.now(UTC),
             amount=context.amount,
             from_account_id=context.from_account_id,
             description=f"Buy order: {context.description}",
@@ -244,7 +232,7 @@ class TransactionHandler:
             transaction_id=context.transaction_id,
             user_id=context.user_id,
             event_type=TransactionEventType.SELL_ORDER_FILLED,
-            timestamp=context.started_at or context.created_at or datetime.now(timezone.utc),
+            timestamp=context.started_at or context.created_at or datetime.now(UTC),
             amount=context.amount,
             from_account_id=context.from_account_id,
             description=f"Sell order: {context.description}",
@@ -361,7 +349,7 @@ class TransactionHandler:
 
 
 # Global handler instance
-_handler: Optional[TransactionHandler] = None
+_handler: TransactionHandler | None = None
 
 
 def get_transaction_handler() -> TransactionHandler:

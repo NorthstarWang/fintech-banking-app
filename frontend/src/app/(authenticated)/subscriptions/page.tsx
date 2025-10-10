@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   CreditCard,
   Calendar,
@@ -61,7 +61,7 @@ export interface Subscription {
 }
 
 export default function SubscriptionsPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [filteredSubscriptions, setFilteredSubscriptions] = useState<Subscription[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +73,7 @@ export default function SubscriptionsPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const categoryIcons: { [key: string]: React.ReactNode } = {
+  const categoryIcons = useMemo(() => ({
     'Entertainment': <Video className="w-5 h-5" />,
     'Music': <Music className="w-5 h-5" />,
     'Cloud Storage': <Cloud className="w-5 h-5" />,
@@ -84,9 +84,9 @@ export default function SubscriptionsPage() {
     'Gaming': <Gamepad2 className="w-5 h-5" />,
     'News': <Globe className="w-5 h-5" />,
     'Other': <Zap className="w-5 h-5" />,
-  };
+  }), []);
 
-  const categoryColors: { [key: string]: string } = {
+  const categoryColors = useMemo(() => ({
     'Entertainment': 'from-[var(--cat-pink)] to-[var(--cat-pink)]/80',
     'Music': 'from-[var(--cat-violet)] to-[var(--cat-violet)]/80',
     'Cloud Storage': 'from-[var(--cat-blue)] to-[var(--cat-blue)]/80',
@@ -97,7 +97,7 @@ export default function SubscriptionsPage() {
     'Gaming': 'from-[var(--cat-teal)] to-[var(--cat-teal)]/80',
     'News': 'from-[var(--cat-yellow)] to-[var(--cat-yellow)]/80',
     'Other': 'from-[var(--primary-blue)] to-[var(--primary-indigo)]/80',
-  };
+  }), []);
 
   const loadSubscriptions = useCallback(async () => {
     try {
@@ -143,7 +143,7 @@ export default function SubscriptionsPage() {
       // Fall back to mock data
       loadMockData();
     }
-  }, [categoryColors, categoryIcons]);
+  }, [categoryColors, categoryIcons, loadMockData]);
 
   useEffect(() => {
     // Enhanced page view logging
@@ -189,7 +189,7 @@ export default function SubscriptionsPage() {
     return statusMap[status] || 'active';
   };
 
-  const loadMockData = () => {
+  const loadMockData = useCallback(() => {
     const mockSubscriptions: Subscription[] = [
       {
         id: '1',
@@ -340,7 +340,7 @@ export default function SubscriptionsPage() {
     setSubscriptions(mockSubscriptions);
     setFilteredSubscriptions(mockSubscriptions);
     setIsLoading(false);
-  };
+  }, [categoryColors, categoryIcons]);
 
   // Apply filters and search
   useEffect(() => {

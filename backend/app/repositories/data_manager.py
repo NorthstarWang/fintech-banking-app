@@ -152,7 +152,7 @@ class DataManager:
 
     def reset(self, seed: int = 42, demo_mode: bool = True):
         """Reset all data and generate mock data.
-        
+
         Args:
             seed: Random seed for data generation
             demo_mode: If True, generates rich demo data. If False, generates minimal test data.
@@ -373,7 +373,7 @@ class DataManager:
 
             # Get user's accounts by type
             checking = next((a for a in user_accounts if a['account_type'] == 'checking'), None)
-            savings = next((a for a in user_accounts if a['account_type'] == 'savings'), None)
+            next((a for a in user_accounts if a['account_type'] == 'savings'), None)
             credit_card = next((a for a in user_accounts if a['account_type'] == 'credit_card'), None)
 
             if not checking:
@@ -400,10 +400,7 @@ class DataManager:
                 # Weekends have fewer transactions
                 is_weekend = date.weekday() >= 5
 
-                if is_weekend:
-                    base_transactions = 2
-                else:
-                    base_transactions = 3
+                base_transactions = 2 if is_weekend else 3
 
                 variation = random.randint(-1, 1)  # -1, 0, or 1
                 num_transactions = max(1, base_transactions + variation)
@@ -453,10 +450,7 @@ class DataManager:
                         merchant = random.choice(self.merchants) if self.merchants else None
 
                         # 60% chance to use credit card if available, otherwise checking
-                        if credit_card and random.random() < 0.6:
-                            account = credit_card
-                        else:
-                            account = checking
+                        account = credit_card if credit_card and random.random() < 0.6 else checking
 
                         transaction_type = 'debit'
 
@@ -613,7 +607,7 @@ class DataManager:
             num_budgets = random.randint(3, 5)
             selected_categories = random.sample(expense_categories, min(num_budgets, len(expense_categories)))
 
-            for i, category in enumerate(selected_categories):
+            for _i, category in enumerate(selected_categories):
                 # Vary budget periods - 60% monthly, 30% yearly, 10% weekly
                 period_choice = random.random()
                 if period_choice < 0.6:
@@ -861,7 +855,7 @@ class DataManager:
                     ]
 
                     num_messages = random.randint(2, 8)
-                    for j in range(num_messages):
+                    for _j in range(num_messages):
                         sender = random.choice([user, contact_user])
                         message = {
                             'id': len(self.messages) + 1,
@@ -1130,7 +1124,7 @@ class DataManager:
                 checking_account = next((a for a in user_accounts if a['account_type'] == 'checking'), None)
                 if checking_account:
                     num_virtual_cards = random.randint(1, 3)
-                    for i in range(num_virtual_cards):
+                    for _i in range(num_virtual_cards):
                         card = {
                             'id': card_id,
                             'user_id': user['id'],
@@ -1256,7 +1250,7 @@ class DataManager:
             # Generate 3-8 invoices per user
             num_invoices = random.randint(3, 8)
 
-            for i in range(num_invoices):
+            for _i in range(num_invoices):
                 template = random.choice(invoice_templates)
 
                 # Generate invoice date (within last 6 months)

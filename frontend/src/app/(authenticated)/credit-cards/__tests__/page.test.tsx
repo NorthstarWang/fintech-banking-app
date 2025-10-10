@@ -227,7 +227,7 @@ describe('CreditCardsPage', () => {
   });
 
   test('application submission works', async () => {
-    mockFetchApi.mockImplementation((url: string, options?: any) => {
+    mockFetchApi.mockImplementation((url: string, options?: unknown) => {
       if (url === '/api/credit-cards/apply' && options?.method === 'POST') {
         return Promise.resolve({
           status: 'approved',

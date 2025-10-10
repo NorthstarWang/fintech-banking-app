@@ -972,7 +972,7 @@ class InvestmentManager:
             sectors = ['Technology', 'Healthcare', 'Financials', 'Consumer Discretionary',
                       'Industrials', 'Consumer Staples', 'Energy', 'Materials', 'Utilities', 'Real Estate']
             remaining = 100.0
-            for i, sector in enumerate(sectors[:-1]):
+            for _i, sector in enumerate(sectors[:-1]):
                 allocation = random.uniform(5, 25) if remaining > 25 else remaining * 0.8
                 sector_allocation[sector] = round(allocation, 1)
                 remaining -= allocation

@@ -1,21 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+
 from ..models import (
-    UnifiedBalance, AssetBridge, ConversionRate, CollateralPosition,
-    UnifiedTransaction, AssetClass, ConversionType, UnifiedTransferStatus
+    AssetBridge,
+    AssetClass,
+    CollateralPosition,
+    UnifiedTransaction,
+    UnifiedTransferStatus,
 )
 from ..models.entities.unified_models import (
-    UnifiedBalanceResponse, AssetBridgeRequest, AssetBridgeResponse,
-    UnifiedTransferRequest, UnifiedTransferResponse, CollateralPositionResponse,
-    CrossAssetOpportunity, PortfolioOptimizationRequest, PortfolioOptimizationResponse,
-    UnifiedSearchRequest, UnifiedSearchResponse
+    AssetBridgeRequest,
+    AssetBridgeResponse,
+    CollateralPositionResponse,
+    CrossAssetOpportunity,
+    PortfolioOptimizationRequest,
+    PortfolioOptimizationResponse,
+    UnifiedBalanceResponse,
+    UnifiedSearchRequest,
+    UnifiedSearchResponse,
+    UnifiedTransferRequest,
+    UnifiedTransferResponse,
 )
 from ..repositories.unified_manager import UnifiedManager
+from ..storage.memory_adapter import db, desc
 from ..utils.auth import get_current_user
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
@@ -26,12 +36,12 @@ async def get_unified_balance(
 ):
     """Get unified balance across all asset types for the current user"""
     from ..repositories.data_manager import data_manager
-    
+
     unified_manager = UnifiedManager(data_manager)
-    
+
     # Calculate fresh unified balance
     balance = unified_manager.calculate_unified_balance(current_user['user_id'])
-    
+
     return UnifiedBalanceResponse.from_orm(balance)
 
 @router.post("/bridge", response_model=AssetBridgeResponse, status_code=status.HTTP_201_CREATED)
@@ -42,10 +52,10 @@ async def create_asset_bridge(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a bridge to convert between different asset types"""
-    
+
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
+
     try:
         # Create the bridge
         bridge = unified_manager.create_asset_bridge(
@@ -61,16 +71,16 @@ async def create_asset_bridge(
         # Log the bridge creation
 
         return AssetBridgeResponse.from_orm(bridge)
-        
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 
-@router.get("/bridges", response_model=List[AssetBridgeResponse])
+@router.get("/bridges", response_model=list[AssetBridgeResponse])
 async def get_asset_bridges(
-    status: Optional[str] = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, le=100),
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -81,9 +91,9 @@ async def get_asset_bridges(
     )
     if status:
         query = query.filter(AssetBridge.status == status)
-    
+
     bridges = query.order_by(desc(AssetBridge.initiated_at)).limit(limit).all()
-    
+
     return [AssetBridgeResponse.from_orm(b) for b in bridges]
 
 @router.post("/transfer/smart", response_model=UnifiedTransferResponse, status_code=status.HTTP_201_CREATED)
@@ -94,10 +104,10 @@ async def create_smart_transfer(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a smart transfer that finds the optimal route"""
-    
+
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
+
     # Find optimal route
     route_info = unified_manager.find_optimal_transfer_route(
         user_id=current_user['user_id'],
@@ -113,7 +123,7 @@ async def create_smart_transfer(
     # Create unified transaction
     recommended_route = route_info["recommended_route"]
     source_asset = recommended_route["source_asset"]
-    
+
     transaction = UnifiedTransaction(
         user_id=current_user['user_id'],
         transaction_type='smart_transfer',
@@ -135,11 +145,11 @@ async def create_smart_transfer(
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
-    
+
     # Log the transfer
-    
+
     # Create response
-    response = UnifiedTransferResponse(
+    return UnifiedTransferResponse(
         id=transaction.id,
         sender_id=current_user['user_id'],
         recipient_identifier=transfer_request.recipient_identifier,
@@ -155,9 +165,8 @@ async def create_smart_transfer(
         status=transaction.status,
         initiated_at=transaction.initiated_at
     )
-    return response
 
-@router.get("/collateral/positions", response_model=List[CollateralPositionResponse])
+@router.get("/collateral/positions", response_model=list[CollateralPositionResponse])
 async def get_collateral_positions(
     active_only: bool = Query(True),
     current_user: dict = Depends(get_current_user),
@@ -168,26 +177,26 @@ async def get_collateral_positions(
         CollateralPosition.user_id == current_user['user_id']
     )
     if active_only:
-        query = query.filter(CollateralPosition.is_active == True)
-    
+        query = query.filter(CollateralPosition.is_active)
+
     positions = query.all()
-    
+
     return [CollateralPositionResponse.from_orm(p) for p in positions]
 
 @router.post("/collateral/create", response_model=CollateralPositionResponse, status_code=status.HTTP_201_CREATED)
 async def create_collateral_position(
     request: Request,
-    collateral_assets: List[Dict[str, Any]],
+    collateral_assets: list[dict[str, Any]],
     borrow_amount: float,
     currency: str = "USD",
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Create a new collateral position"""
-    
+
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
+
     try:
         position = unified_manager.create_collateral_position(
             user_id=current_user['user_id'],
@@ -196,16 +205,16 @@ async def create_collateral_position(
             currency=currency
         )
         # Log the creation
-        
+
         return CollateralPositionResponse.from_orm(position)
-        
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 
-@router.get("/opportunities", response_model=List[CrossAssetOpportunity])
+@router.get("/opportunities", response_model=list[CrossAssetOpportunity])
 async def get_cross_asset_opportunities(
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -213,9 +222,9 @@ async def get_cross_asset_opportunities(
     """Get cross-asset optimization opportunities"""
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
+
     opportunities = unified_manager.identify_cross_asset_opportunities(current_user['user_id'])
-    
+
     return [
         CrossAssetOpportunity(
             opportunity_type=opp['type'],
@@ -242,10 +251,10 @@ async def optimize_portfolio(
     """Get portfolio optimization recommendations"""
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
+
     # Get current balance
     balance = unified_manager.calculate_unified_balance(current_user['user_id'])
-    
+
     # Calculate current allocation
     total = balance.total_net_worth_usd
     current_allocation = {
@@ -282,7 +291,7 @@ async def optimize_portfolio(
         }
         expected_return = 8.0
         risk_score = 5
-    
+
     # Generate action steps
     actions = []
     if current_allocation[AssetClass.CRYPTO.value] < recommended_allocation[AssetClass.CRYPTO.value]:
@@ -291,7 +300,7 @@ async def optimize_portfolio(
             "description": f"Convert ${(recommended_allocation[AssetClass.CRYPTO.value] - current_allocation[AssetClass.CRYPTO.value]) * total / 100:.2f} from fiat to crypto",
             "priority": "high"
         })
-    
+
     return PortfolioOptimizationResponse(
         current_allocation=current_allocation,
         recommended_allocation=recommended_allocation,
@@ -308,25 +317,25 @@ async def optimize_portfolio(
         estimated_fees=50.0  # Mock fee estimate
     )
 
-@router.get("/conversion-rates", response_model=Dict[str, Any])
+@router.get("/conversion-rates", response_model=dict[str, Any])
 async def get_conversion_rates(
-    from_asset: Optional[str] = Query(None),
-    to_asset: Optional[str] = Query(None),
+    from_asset: str | None = Query(None),
+    to_asset: str | None = Query(None),
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get current conversion rates"""
     from ..repositories.data_manager import data_manager
     from ..utils.asset_converter import AssetConverter
-    
+
     converter = AssetConverter(data_manager)
-    
+
     if from_asset and to_asset:
         # Get specific rate
         # Determine asset classes (simplified)
         from_class = AssetClass.FIAT if from_asset in converter.FIAT_RATES else AssetClass.CRYPTO
         to_class = AssetClass.FIAT if to_asset in converter.FIAT_RATES else AssetClass.CRYPTO
-        
+
         rate, valid_until = converter.get_conversion_rate(
             from_asset, to_asset, from_class, to_class
         )
@@ -341,11 +350,10 @@ async def get_conversion_rates(
                 converter._determine_conversion_type(from_class, to_class)
             )
         }
-    else:
-        # Get all rates
-        return converter.get_all_conversion_rates()
+    # Get all rates
+    return converter.get_all_conversion_rates()
 
-@router.get("/transactions/unified", response_model=List[Dict[str, Any]])
+@router.get("/transactions/unified", response_model=list[dict[str, Any]])
 async def get_unified_transactions(
     limit: int = Query(50, le=100),
     current_user: dict = Depends(get_current_user),
@@ -354,12 +362,11 @@ async def get_unified_transactions(
     """Get unified transaction history across all systems"""
     from ..repositories.data_manager import data_manager
     unified_manager = UnifiedManager(data_manager)
-    
-    transactions = unified_manager.get_unified_transaction_history(
+
+    return unified_manager.get_unified_transaction_history(
         current_user['user_id'],
         limit=limit
     )
-    return transactions
 
 @router.post("/search", response_model=UnifiedSearchResponse)
 async def search_unified_transactions(
@@ -369,12 +376,12 @@ async def search_unified_transactions(
 ):
     """Search across all transaction systems"""
     from ..repositories.data_manager import data_manager
-    
+
     results = []
     total_results = 0
     grouping = {}
     aggregations = {}
-    
+
     # Search traditional transactions
     if not search_request.asset_classes or AssetClass.FIAT in search_request.asset_classes:
         fiat_txs = [
@@ -382,21 +389,21 @@ async def search_unified_transactions(
             if t.get('user_id') == current_user['user_id']
             and (not search_request.query or search_request.query.lower() in str(t).lower())
         ]
-        
+
         for tx in fiat_txs:
             if search_request.min_amount and abs(tx['amount']) < search_request.min_amount:
                 continue
             if search_request.max_amount and abs(tx['amount']) > search_request.max_amount:
                 continue
-                
+
             results.append({
                 'type': 'fiat',
                 'data': tx
             })
-        
+
         grouping[AssetClass.FIAT.value] = fiat_txs
         total_results += len(fiat_txs)
-    
+
     # Search crypto transactions
     if not search_request.asset_classes or AssetClass.CRYPTO in search_request.asset_classes:
         crypto_txs = [
@@ -404,10 +411,10 @@ async def search_unified_transactions(
             if t.get('user_id') == current_user['user_id']
             and (not search_request.query or search_request.query.lower() in str(t).lower())
         ]
-        
+
         grouping[AssetClass.CRYPTO.value] = crypto_txs
         total_results += len(crypto_txs)
-    
+
     return UnifiedSearchResponse(
         results=results[:50],  # Limit results
         total_results=total_results,

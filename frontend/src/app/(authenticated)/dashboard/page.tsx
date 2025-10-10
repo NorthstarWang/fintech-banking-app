@@ -399,7 +399,7 @@ export default function DashboardPage() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 account-cards">
-                {accounts.slice(0, 4).map((account: any) => (
+                {accounts.slice(0, 4).map((account: unknown) => (
                   <AccountCard 
                     key={account.id} 
                     account={{

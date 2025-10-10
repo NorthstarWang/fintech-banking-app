@@ -16,14 +16,11 @@ import type { Conversation, ConversationMessage, Contact } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import ConversationView from '@/components/messaging/ConversationView';
 import { uploadService } from '@/lib/uploadService';
-// import { useNotification } from '@/contexts/NotificationContext';
 
 export default function MessagesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const targetUsername = searchParams.get('user');
-
-  // const { showError } = useNotification();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);

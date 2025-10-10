@@ -44,7 +44,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [limits, setLimits] = useState<any>(null);
+  const [limits, setLimits] = useState<string | null>(null);
 
   // External transfer fields
   const [recipientName, setRecipientName] = useState('');
@@ -171,7 +171,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         setRoutingNumber('');
         setSuccess(false);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Transfer failed. Please try again.');
     } finally {
       setIsLoading(false);

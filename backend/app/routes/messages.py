@@ -1,20 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from typing import List, Optional, Any
 from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, and_, desc, joinedload, or_
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+
 from ..models import (
-    DirectMessage, MessageAttachment, MessageFolder, BlockedUser, MessageSettings,
-    User, Notification, NotificationType
+    BlockedUser,
+    BlockUserRequest,
+    BulkMessageUpdate,
+    DirectMessage,
+    DirectMessageCreate,
+    DirectMessageReply,
+    DirectMessageResponse,
+    MessageAttachment,
+    MessageFolder,
+    MessageFolderCreate,
+    MessageFolderResponse,
+    MessageMoveRequest,
+    MessageSettings,
+    MessageSettingsResponse,
+    MessageSettingsUpdate,
+    Notification,
+    NotificationType,
+    User,
 )
-from ..models import (
-    DirectMessageCreate, DirectMessageReply, DirectMessageResponse,
-    MessageFolderCreate, MessageFolderResponse, MessageMoveRequest,
-    MessageSettingsUpdate, MessageSettingsResponse, BlockUserRequest,
-    BulkMessageUpdate
-)
+from ..storage.memory_adapter import and_, db, desc, joinedload, or_
 from ..utils.auth import get_current_user
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
@@ -33,7 +43,7 @@ def create_message_notification(db_session: Any, recipient_id: int, sender_usern
         type=NotificationType.NEW_MESSAGE,
         title=f"New message from {sender_username}",
         message=subject,
-        action_url=f"/messages"
+        action_url="/messages"
     )
     db_session.add(notification)
 
@@ -45,25 +55,25 @@ async def send_message(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Send a direct message to another user"""
-    
+
     # Get recipient user
     recipient = db_session.query(User).filter(
         User.username == message_data.recipient_username
     ).first()
-    
+
     if not recipient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipient user not found"
         )
-    
+
     # Check if sender is blocked
     if is_user_blocked(db_session, current_user['user_id'], recipient.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You cannot send messages to this user"
         )
-    
+
     # Create message
     message = DirectMessage(
         sender_id=current_user['user_id'],
@@ -75,10 +85,10 @@ async def send_message(
         is_read=False,
         sent_at=datetime.utcnow()
     )
-    
+
     db_session.add(message)
     db_session.flush()
-    
+
     # Add attachments if any
     if message_data.attachments:
         for attachment_data in message_data.attachments:
@@ -89,16 +99,16 @@ async def send_message(
                 file_size=attachment_data['file_size']
             )
             db_session.add(attachment)
-    
+
     db_session.commit()
     db_session.refresh(message)
-    
+
     # Create notification if not a draft
     if not message_data.is_draft:
         create_message_notification(
-            db_session, 
-            recipient.id, 
-            current_user['username'], 
+            db_session,
+            recipient.id,
+            current_user['username'],
             message_data.subject
         )
         db_session.commit()
@@ -110,15 +120,15 @@ async def send_message(
 
     # Load attachments properly
     if message.attachments:
-        response.attachments = [att for att in message.attachments]
+        response.attachments = list(message.attachments)
     elif message_data.attachments:
         response.attachments = message_data.attachments
-    
+
     return response
 
 # SPECIFIC ROUTES FIRST (before parameterized routes)
 
-@router.get("/inbox", response_model=List[DirectMessageResponse])
+@router.get("/inbox", response_model=list[DirectMessageResponse])
 async def get_inbox(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -131,22 +141,22 @@ async def get_inbox(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.deleted_by_recipient == False,
-        DirectMessage.is_draft == False
+        not DirectMessage.deleted_by_recipient,
+        not DirectMessage.is_draft
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
-    
+
     results = []
     for msg in messages:
         response = DirectMessageResponse.from_orm(msg)
         response.sender_username = msg.sender.username
         response.recipient_username = current_user['username']
         if msg.attachments:
-            response.attachments = [att for att in msg.attachments]
+            response.attachments = list(msg.attachments)
         results.append(response)
-    
+
     return results
 
-@router.get("/sent", response_model=List[DirectMessageResponse])
+@router.get("/sent", response_model=list[DirectMessageResponse])
 async def get_sent_messages(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -159,22 +169,22 @@ async def get_sent_messages(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        DirectMessage.deleted_by_sender == False,
-        DirectMessage.is_draft == False
+        not DirectMessage.deleted_by_sender,
+        not DirectMessage.is_draft
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
-    
+
     results = []
     for msg in messages:
         response = DirectMessageResponse.from_orm(msg)
         response.sender_username = current_user['username']
         response.recipient_username = msg.recipient.username
         if msg.attachments:
-            response.attachments = [att for att in msg.attachments]
+            response.attachments = list(msg.attachments)
         results.append(response)
-    
+
     return results
 
-@router.get("/search", response_model=List[DirectMessageResponse])
+@router.get("/search", response_model=list[DirectMessageResponse])
 async def search_messages(
     query: str,
     current_user: dict = Depends(get_current_user),
@@ -182,7 +192,7 @@ async def search_messages(
 ):
     """Search messages"""
     search_pattern = f"%{query}%"
-    
+
     messages = db_session.query(DirectMessage).options(
         joinedload(DirectMessage.sender),
         joinedload(DirectMessage.recipient)
@@ -190,31 +200,31 @@ async def search_messages(
         or_(
             and_(
                 DirectMessage.sender_id == current_user['user_id'],
-                DirectMessage.deleted_by_sender == False
+                not DirectMessage.deleted_by_sender
             ),
             and_(
                 DirectMessage.recipient_id == current_user['user_id'],
-                DirectMessage.deleted_by_recipient == False
+                not DirectMessage.deleted_by_recipient
             )
         ),
         or_(
             DirectMessage.subject.ilike(search_pattern),
             DirectMessage.message.ilike(search_pattern)
         ),
-        DirectMessage.is_draft == False
+        not DirectMessage.is_draft
     ).order_by(desc(DirectMessage.sent_at)).all()
-    
+
     results = []
     for msg in messages:
         # Load sender and recipient manually
         sender = db_session.query(User).filter(User.id == msg.sender_id).first()
         recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
-        
+
         response = DirectMessageResponse.from_orm(msg)
         response.sender_username = sender.username if sender else None
         response.recipient_username = recipient.username if recipient else None
         results.append(response)
-    
+
     return results
 
 @router.post("/drafts", response_model=DirectMessageResponse)
@@ -228,7 +238,7 @@ async def save_draft(
     draft_data.is_draft = True
     return await send_message(request, draft_data, current_user, db_session)
 
-@router.get("/drafts", response_model=List[DirectMessageResponse])
+@router.get("/drafts", response_model=list[DirectMessageResponse])
 async def get_drafts(
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -238,17 +248,17 @@ async def get_drafts(
         joinedload(DirectMessage.recipient)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        DirectMessage.is_draft == True,
-        DirectMessage.deleted_by_sender == False
+        DirectMessage.is_draft,
+        not DirectMessage.deleted_by_sender
     ).order_by(desc(DirectMessage.created_at)).all()
-    
+
     results = []
     for draft in drafts:
         response = DirectMessageResponse.from_orm(draft)
         response.sender_username = current_user['username']
         response.recipient_username = draft.recipient.username if draft.recipient else None
         results.append(response)
-    
+
     return results
 
 @router.post("/{message_id}/mark-read")
@@ -261,17 +271,17 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.is_read == False
+        not DirectMessage.is_read
     ).first()
-    
+
     if not message:
         # Either message doesn't exist, user is not the recipient, or already read
         return {"message": "No action needed"}
-    
+
     message.is_read = True
     message.read_at = datetime.utcnow()
     db_session.commit()
-    
+
     return {"message": "Message marked as read"}
 
 @router.put("/bulk/read")
@@ -284,14 +294,14 @@ async def bulk_mark_read(
     updated = db_session.query(DirectMessage).filter(
         DirectMessage.id.in_(bulk_data.message_ids),
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.is_read == False
+        not DirectMessage.is_read
     ).update({
         'is_read': True,
         'read_at': datetime.utcnow()
     }, synchronize_session=False)
-    
+
     db_session.commit()
-    
+
     return {"updated_count": updated}
 
 @router.post("/folders", response_model=MessageFolderResponse)
@@ -306,23 +316,23 @@ async def create_folder(
         MessageFolder.user_id == current_user['user_id'],
         MessageFolder.folder_name == folder_data.folder_name
     ).first()
-    
+
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Folder with this name already exists"
         )
-    
+
     folder = MessageFolder(
         user_id=current_user['user_id'],
         folder_name=folder_data.folder_name,
         color=folder_data.color
     )
-    
+
     db_session.add(folder)
     db_session.commit()
     db_session.refresh(folder)
-    
+
     return MessageFolderResponse.from_orm(folder)
 
 @router.get("/settings", response_model=MessageSettingsResponse)
@@ -334,7 +344,7 @@ async def get_message_settings(
     settings = db_session.query(MessageSettings).filter(
         MessageSettings.user_id == current_user['user_id']
     ).first()
-    
+
     if not settings:
         # Create default settings
         settings = MessageSettings(
@@ -347,7 +357,7 @@ async def get_message_settings(
         db_session.add(settings)
         db_session.commit()
         db_session.refresh(settings)
-    
+
     return MessageSettingsResponse.from_orm(settings)
 
 @router.put("/settings", response_model=MessageSettingsResponse)
@@ -360,19 +370,19 @@ async def update_message_settings(
     settings = db_session.query(MessageSettings).filter(
         MessageSettings.user_id == current_user['user_id']
     ).first()
-    
+
     if not settings:
         settings = MessageSettings(user_id=current_user['user_id'])
         db_session.add(settings)
-    
+
     # Update only provided fields
     update_data = settings_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
-    
+
     db_session.commit()
     db_session.refresh(settings)
-    
+
     return MessageSettingsResponse.from_orm(settings)
 
 @router.post("/block")
@@ -386,37 +396,37 @@ async def block_user(
     user_to_block = db_session.query(User).filter(
         User.username == block_data.username
     ).first()
-    
+
     if not user_to_block:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     # Check if already blocked
     existing = db_session.query(BlockedUser).filter(
         BlockedUser.user_id == current_user['user_id'],
         BlockedUser.blocked_user_id == user_to_block.id
     ).first()
-    
+
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already blocked"
         )
-    
+
     blocked = BlockedUser(
         user_id=current_user['user_id'],
         blocked_user_id=user_to_block.id,
         reason=block_data.reason
     )
-    
+
     db_session.add(blocked)
     db_session.commit()
-    
+
     return {"message": "User blocked successfully"}
 
-@router.get("/blocked", response_model=List[str])
+@router.get("/blocked", response_model=list[str])
 async def get_blocked_users(
     current_user: dict = Depends(get_current_user),
     db_session: Any = Depends(db.get_db_dependency)
@@ -426,16 +436,16 @@ async def get_blocked_users(
     blocked_users = db_session.query(BlockedUser).filter(
         BlockedUser.user_id == current_user['user_id']
     ).all()
-    
+
     result = []
     for blocked in blocked_users:
         user = db_session.query(User).filter(User.id == blocked.blocked_user_id).first()
         if user:
             result.append(user.username)
-    
+
     return result
 
-@router.get("/thread/{message_id}", response_model=List[DirectMessageResponse])
+@router.get("/thread/{message_id}", response_model=list[DirectMessageResponse])
 async def get_message_thread(
     message_id: int,
     current_user: dict = Depends(get_current_user),
@@ -450,18 +460,18 @@ async def get_message_thread(
             DirectMessage.recipient_id == current_user['user_id']
         )
     ).first()
-    
+
     if not message:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found"
         )
-    
+
     # Find root message
     root_id = message_id
     if message.parent_message_id:
         root_id = message.parent_message_id
-    
+
     # Get all messages in thread
     thread_messages = db_session.query(DirectMessage).options(
         joinedload(DirectMessage.sender),
@@ -476,18 +486,18 @@ async def get_message_thread(
             DirectMessage.recipient_id == current_user['user_id']
         )
     ).order_by(DirectMessage.sent_at).all()
-    
+
     results = []
     for msg in thread_messages:
         # Load sender and recipient manually
         sender = db_session.query(User).filter(User.id == msg.sender_id).first()
         recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
-        
+
         response = DirectMessageResponse.from_orm(msg)
         response.sender_username = sender.username if sender else None
         response.recipient_username = recipient.username if recipient else None
         results.append(response)
-    
+
     return results
 
 # PARAMETERIZED ROUTES LAST
@@ -506,35 +516,35 @@ async def get_message(
     ).filter(
         DirectMessage.id == message_id,
         or_(
-            and_(DirectMessage.sender_id == current_user['user_id'], 
-                 DirectMessage.deleted_by_sender == False),
+            and_(DirectMessage.sender_id == current_user['user_id'],
+                 not DirectMessage.deleted_by_sender),
             and_(DirectMessage.recipient_id == current_user['user_id'],
-                 DirectMessage.deleted_by_recipient == False)
+                 not DirectMessage.deleted_by_recipient)
         )
     ).first()
-    
+
     if not message:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found"
         )
-    
+
     # Load sender and recipient manually since memory adapter doesn't support relationship loading
     sender = db_session.query(User).filter(User.id == message.sender_id).first()
     recipient = db_session.query(User).filter(User.id == message.recipient_id).first()
-    
+
     response = DirectMessageResponse.from_orm(message)
     response.sender_username = sender.username if sender else None
     response.recipient_username = recipient.username if recipient else None
-    
+
     # Load attachments manually
     attachments = db_session.query(MessageAttachment).filter(
         MessageAttachment.message_id == message.id
     ).all()
-    
+
     if attachments:
-        response.attachments = [att for att in attachments]
-    
+        response.attachments = list(attachments)
+
     return response
 
 @router.put("/{message_id}/read", response_model=DirectMessageResponse)
@@ -547,29 +557,29 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.deleted_by_recipient == False
+        not DirectMessage.deleted_by_recipient
     ).first()
-    
+
     if not message:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found"
         )
-    
+
     message.is_read = True
     message.read_at = datetime.utcnow()
-    
+
     db_session.commit()
     db_session.refresh(message)
-    
+
     # Load relationships for response
     sender = db_session.query(User).filter(User.id == message.sender_id).first()
     recipient = db_session.query(User).filter(User.id == message.recipient_id).first()
-    
+
     response = DirectMessageResponse.from_orm(message)
     response.sender_username = sender.username if sender else None
     response.recipient_username = recipient.username if recipient else None
-    
+
     return response
 
 @router.post("/{message_id}/reply", response_model=DirectMessageResponse)
@@ -589,13 +599,13 @@ async def reply_to_message(
             DirectMessage.recipient_id == current_user['user_id']
         )
     ).first()
-    
+
     if not original:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Original message not found"
         )
-    
+
     # Determine recipient (reply to sender if we're the recipient, or to recipient if we're the sender)
     if original.recipient_id == current_user['user_id']:
         recipient_id = original.sender_id
@@ -603,14 +613,14 @@ async def reply_to_message(
     else:
         recipient_id = original.recipient_id
         recipient = db_session.query(User).filter(User.id == recipient_id).first()
-    
+
     # Check if blocked
     if is_user_blocked(db_session, current_user['user_id'], recipient_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You cannot send messages to this user"
         )
-    
+
     # Create reply
     reply = DirectMessage(
         sender_id=current_user['user_id'],
@@ -623,11 +633,11 @@ async def reply_to_message(
         is_read=False,
         sent_at=datetime.utcnow()
     )
-    
+
     db_session.add(reply)
     db_session.commit()
     db_session.refresh(reply)
-    
+
     # Create notification
     create_message_notification(
         db_session,
@@ -636,11 +646,11 @@ async def reply_to_message(
         reply.subject
     )
     db_session.commit()
-    
+
     response = DirectMessageResponse.from_orm(reply)
     response.sender_username = current_user['username']
     response.recipient_username = recipient.username if recipient else None
-    
+
     return response
 
 @router.delete("/{message_id}")
@@ -657,21 +667,21 @@ async def delete_message(
             DirectMessage.recipient_id == current_user['user_id']
         )
     ).first()
-    
+
     if not message:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found"
         )
-    
+
     # Mark as deleted for the appropriate user
     if message.sender_id == current_user['user_id']:
         message.deleted_by_sender = True
     if message.recipient_id == current_user['user_id']:
         message.deleted_by_recipient = True
-    
+
     db_session.commit()
-    
+
     return {"message": "Message deleted successfully"}
 
 @router.put("/{message_id}/move")
@@ -687,13 +697,13 @@ async def move_message_to_folder(
         MessageFolder.id == move_data.folder_id,
         MessageFolder.user_id == current_user['user_id']
     ).first()
-    
+
     if not folder:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Folder not found"
         )
-    
+
     # Update message
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
@@ -702,14 +712,14 @@ async def move_message_to_folder(
             DirectMessage.recipient_id == current_user['user_id']
         )
     ).first()
-    
+
     if not message:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Message not found"
         )
-    
+
     message.folder_id = move_data.folder_id
     db_session.commit()
-    
+
     return {"message": "Message moved successfully"}

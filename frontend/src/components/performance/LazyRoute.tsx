@@ -4,8 +4,10 @@ import { lazy, Suspense, ComponentType } from 'react';
 import LoadingSkeleton from './LoadingSkeleton';
 
 interface LazyRouteProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   loader: () => Promise<{ default: ComponentType<any> }>;
   loadingComponent?: React.ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -24,6 +26,7 @@ export function LazyRoute({
 }
 
 // Helper function to create lazy-loaded components with error boundary
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createLazyComponent<T extends ComponentType<any>>(
   loader: () => Promise<{ default: T }>,
   options?: {

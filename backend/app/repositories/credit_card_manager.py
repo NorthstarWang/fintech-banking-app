@@ -136,7 +136,7 @@ class CreditCardManager:
     def get_credit_factors(self, user_id: int) -> dict[str, Any]:
         """Analyze factors affecting credit score."""
         # Get user's financial data
-        user_accounts = [a for a in self.data_manager.accounts if a['user_id'] == user_id]
+        [a for a in self.data_manager.accounts if a['user_id'] == user_id]
         user_cards = [c for c in self.data_manager.cards if c['user_id'] == user_id]
         user_loans = [l for l in self.data_manager.loans if l['user_id'] == user_id and l['status'] == 'active']
 
@@ -192,7 +192,7 @@ class CreditCardManager:
     def get_card_recommendations(self, user_id: int) -> list[dict[str, Any]]:
         """Get personalized credit card recommendations."""
         credit_score = self.get_user_credit_score(user_id)
-        factors = self.get_credit_factors(user_id)
+        self.get_credit_factors(user_id)
 
         # Get user's spending patterns (mock)
         # First get user's account IDs
@@ -209,7 +209,7 @@ class CreditCardManager:
 
         # Determine user preferences
         high_travel = category_spending.get('Travel', 0) > 1000
-        high_dining = category_spending.get('Dining', 0) > 500
+        category_spending.get('Dining', 0) > 500
         is_student = any('student' in str(t.get('description', '')).lower()
                         for t in user_transactions)
 
@@ -441,10 +441,7 @@ class CreditCardManager:
         base_limit = min_limit + (max_limit - min_limit) * min(1, score_factor)
 
         # Consider requested amount
-        if requested:
-            approved = min(requested, base_limit)
-        else:
-            approved = base_limit
+        approved = min(requested, base_limit) if requested else base_limit
 
         # Round to nice number
         if approved < 1000:

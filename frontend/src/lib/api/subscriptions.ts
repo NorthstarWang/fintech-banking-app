@@ -85,9 +85,9 @@ export interface OptimizationSuggestion {
 export interface OptimizationResponse {
   total_potential_savings: number;
   suggestions: OptimizationSuggestion[];
-  bundling_opportunities: Array<Record<string, any>>;
-  unused_subscriptions: Array<Record<string, any>>;
-  duplicate_services: Array<Record<string, any>>;
+  bundling_opportunities: Array<Record<string, unknown>>;
+  unused_subscriptions: Array<Record<string, unknown>>;
+  duplicate_services: Array<Record<string, unknown>>;
 }
 
 class SubscriptionsService {

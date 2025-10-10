@@ -28,9 +28,6 @@ class SecurityHeaders:
             "Pragma": "no-cache",
             "Expires": "0",
 
-            # Prevent browser from inferring resource types
-            "X-Content-Type-Options": "nosniff",
-
             # Remove server information
             "Server": "BankFlow/1.0",
 

@@ -4,7 +4,6 @@ Implements per-IP and per-user rate limits with different tiers for different en
 """
 import time
 from collections import defaultdict
-from typing import Dict, Optional, Tuple
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -15,8 +14,8 @@ class RateLimiter:
 
     def __init__(self):
         # Store: {identifier: {"count": int, "window_start": float, "failures": int}}
-        self.requests: Dict[str, Dict[str, float]] = defaultdict(dict)
-        self.failed_attempts: Dict[str, Dict[str, float]] = defaultdict(dict)
+        self.requests: dict[str, dict[str, float]] = defaultdict(dict)
+        self.failed_attempts: dict[str, dict[str, float]] = defaultdict(dict)
 
         # Rate limits per endpoint type (requests per minute)
         self.rate_limits = {
@@ -30,7 +29,7 @@ class RateLimiter:
         self.base_lockout = 60  # Base lockout time in seconds
         self.max_lockout = 3600  # Max lockout time (1 hour)
 
-    def _get_identifier(self, request: Request, current_user: Optional[dict] = None) -> str:
+    def _get_identifier(self, request: Request, current_user: dict | None = None) -> str:
         """Get unique identifier for rate limiting (user_id if authenticated, else IP)."""
         if current_user and current_user.get('user_id'):
             return f"user_{current_user['user_id']}"
@@ -51,14 +50,13 @@ class RateLimiter:
         """Determine the endpoint type for rate limiting."""
         if any(auth_path in path for auth_path in ['/auth/', '/login', '/register', '/logout']):
             return "auth"
-        elif any(fin_path in path for fin_path in ['/transactions/', '/transfers/', '/accounts/', '/payments/']):
+        if any(fin_path in path for fin_path in ['/transactions/', '/transfers/', '/accounts/', '/payments/']):
             return "financial"
-        elif path in ['/health', '/', '/docs', '/redoc']:
+        if path in ['/health', '/', '/docs', '/redoc']:
             return "public"
-        else:
-            return "api"
+        return "api"
 
-    def _is_locked_out(self, identifier: str) -> Tuple[bool, Optional[int]]:
+    def _is_locked_out(self, identifier: str) -> tuple[bool, int | None]:
         """Check if identifier is currently locked out due to excessive failures."""
         if identifier not in self.failed_attempts:
             return False, None
@@ -76,10 +74,9 @@ class RateLimiter:
 
         if time.time() < lockout_end:
             return True, int(lockout_end - time.time())
-        else:
-            # Lockout expired, reset failure count
-            self.failed_attempts[identifier] = {"failures": 0, "last_failure": 0}
-            return False, None
+        # Lockout expired, reset failure count
+        self.failed_attempts[identifier] = {"failures": 0, "last_failure": 0}
+        return False, None
 
     def _record_failure(self, identifier: str):
         """Record a failed attempt for exponential backoff."""
@@ -94,7 +91,7 @@ class RateLimiter:
         if identifier in self.failed_attempts:
             self.failed_attempts[identifier] = {"failures": 0, "last_failure": 0}
 
-    async def check_rate_limit(self, request: Request, current_user: Optional[dict] = None) -> bool:
+    async def check_rate_limit(self, request: Request, current_user: dict | None = None) -> bool:
         """Check if request should be rate limited."""
         identifier = self._get_identifier(request, current_user)
         endpoint_type = self._get_endpoint_type(str(request.url.path), request.method)
@@ -166,8 +163,7 @@ async def rate_limit_middleware(request: Request, call_next):
         # For now, just check based on IP/session
         await rate_limiter.check_rate_limit(request)
 
-        response = await call_next(request)
-        return response
+        return await call_next(request)
 
     except HTTPException as e:
         return JSONResponse(
@@ -175,7 +171,6 @@ async def rate_limit_middleware(request: Request, call_next):
             content={"error": e.detail},
             headers=e.headers or {}
         )
-    except Exception as e:
+    except Exception:
         # Log error but don't break the request
-        print(f"Rate limiting error: {e}")
         return await call_next(request)

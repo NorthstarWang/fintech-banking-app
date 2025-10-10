@@ -17,12 +17,12 @@ class LoanCalculator:
     ) -> float:
         """
         Calculate monthly payment using standard amortization formula.
-        
+
         Args:
             principal: Loan amount
             annual_rate: Annual interest rate as percentage (e.g., 5.5 for 5.5%)
             term_months: Loan term in months
-            
+
         Returns:
             Monthly payment amount
         """
@@ -46,7 +46,7 @@ class LoanCalculator:
     ) -> list[dict[str, Any]]:
         """
         Generate complete amortization schedule with payment breakdown.
-        
+
         Args:
             principal: Loan amount
             annual_rate: Annual interest rate as percentage
@@ -54,7 +54,7 @@ class LoanCalculator:
             start_date: First payment date (defaults to next month)
             extra_payment: Additional payment amount
             extra_payment_frequency: How often to apply extra payment
-            
+
         Returns:
             List of payment schedule entries
         """
@@ -129,7 +129,7 @@ class LoanCalculator:
     ) -> dict[str, float]:
         """
         Calculate payoff amount including per-diem interest.
-        
+
         Returns:
             Dict with principal, interest, and total payoff amounts
         """
@@ -154,7 +154,7 @@ class LoanCalculator:
     ) -> dict[str, Any]:
         """
         Analyze the impact of making extra payments.
-        
+
         Returns:
             Analysis including time saved, interest saved, etc.
         """
@@ -202,13 +202,13 @@ class LoanCalculator:
     ) -> float:
         """
         Calculate Annual Percentage Rate (APR) including fees.
-        
+
         Args:
             loan_amount: Principal amount
             interest_rate: Nominal interest rate
             term_months: Loan term
             fees: Dict of fee_name -> amount
-            
+
         Returns:
             APR as percentage
         """
@@ -263,10 +263,10 @@ class LoanCalculator:
     def compare_loans(loans: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Compare multiple loan offers.
-        
+
         Args:
             loans: List of loan dicts with amount, rate, term_months, fees
-            
+
         Returns:
             Comparison including monthly payment, total cost, etc.
         """
@@ -322,12 +322,12 @@ class LoanCalculator:
     ) -> dict[str, Any]:
         """
         Calculate break-even point for refinancing.
-        
+
         Args:
             current_loan: Dict with balance, rate, remaining_months
             new_loan: Dict with rate, term_months
             closing_costs: Total refinancing costs
-            
+
         Returns:
             Break-even analysis
         """
@@ -352,10 +352,7 @@ class LoanCalculator:
         monthly_savings = current_payment - new_payment
 
         # Break-even in months
-        if monthly_savings > 0:
-            breakeven_months = math.ceil(closing_costs / monthly_savings)
-        else:
-            breakeven_months = float('inf')
+        breakeven_months = math.ceil(closing_costs / monthly_savings) if monthly_savings > 0 else float('inf')
 
         # Calculate total interest for both scenarios
         current_total_interest = (current_payment * current_remaining) - current_balance
@@ -385,7 +382,7 @@ class LoanCalculator:
     ) -> dict[str, float]:
         """
         Calculate debt-to-income ratio.
-        
+
         Returns:
             Current and projected DTI ratios
         """
@@ -424,7 +421,7 @@ class LoanCalculator:
     ) -> dict[str, Any]:
         """
         Calculate maximum affordable loan amount.
-        
+
         Returns:
             Maximum loan amount and related metrics
         """

@@ -23,7 +23,7 @@ async def get_categories(
     # Filter by ownership
     if include_system:
         query = query.filter(
-            (Category.is_system == True) | (Category.user_id == current_user['user_id'])
+            (Category.is_system) | (Category.user_id == current_user['user_id'])
         )
     else:
         query = query.filter(Category.user_id == current_user['user_id'])
@@ -47,7 +47,7 @@ async def get_system_categories(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get only system-defined categories"""
-    query = db_session.query(Category).filter(Category.is_system == True)
+    query = db_session.query(Category).filter(Category.is_system)
 
     if income_only is not None:
         query = query.filter(Category.is_income == income_only)
@@ -82,7 +82,7 @@ async def create_category(
     if category_data.parent_id:
         parent_category = db_session.query(Category).filter(
             Category.id == category_data.parent_id,
-            (Category.is_system == True) | (Category.user_id == current_user['user_id'])
+            (Category.is_system) | (Category.user_id == current_user['user_id'])
         ).first()
 
         if not parent_category:
@@ -122,7 +122,7 @@ async def get_category(
     """Get specific category details"""
     category = db_session.query(Category).filter(
         Category.id == category_id,
-        (Category.is_system == True) | (Category.user_id == current_user['user_id'])
+        (Category.is_system) | (Category.user_id == current_user['user_id'])
     ).first()
 
     if not category:
@@ -147,7 +147,7 @@ async def update_category(
     category = db_session.query(Category).filter(
         Category.id == category_id,
         Category.user_id == current_user['user_id'],
-        Category.is_system == False
+        not Category.is_system
     ).first()
 
     if not category:
@@ -183,7 +183,7 @@ async def update_category(
             # Validate parent category
             parent = db_session.query(Category).filter(
                 Category.id == update_data.parent_id,
-                (Category.is_system == True) | (Category.user_id == current_user['user_id'])
+                (Category.is_system) | (Category.user_id == current_user['user_id'])
             ).first()
 
             if not parent:
@@ -219,7 +219,7 @@ async def delete_category(
     category = db_session.query(Category).filter(
         Category.id == category_id,
         Category.user_id == current_user['user_id'],
-        Category.is_system == False
+        not Category.is_system
     ).first()
 
     if not category:
@@ -243,7 +243,7 @@ async def delete_category(
         # Validate reassignment category
         new_category = db_session.query(Category).filter(
             Category.id == reassign_to_category_id,
-            (Category.is_system == True) | (Category.user_id == current_user['user_id']),
+            (Category.is_system) | (Category.user_id == current_user['user_id']),
             Category.is_income == category.is_income  # Must be same type
         ).first()
 
@@ -284,7 +284,7 @@ async def get_category_transaction_count(
     # Verify category access
     category = db_session.query(Category).filter(
         Category.id == category_id,
-        (Category.is_system == True) | (Category.user_id == current_user['user_id'])
+        (Category.is_system) | (Category.user_id == current_user['user_id'])
     ).first()
 
     if not category:

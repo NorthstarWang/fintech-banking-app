@@ -96,6 +96,7 @@ export const SlideToConfirmTracked: React.FC<SlideToConfirmProps> = ({
     });
     
     return unsubscribe;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging, maxDrag, trackSlideToConfirm, transactionType, amount, fromAccount, toAccount, confirmationId]);
   
   const handleDragEnd = async () => {

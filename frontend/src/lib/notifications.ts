@@ -42,10 +42,11 @@ class NotificationsService {
     
     try {
       // Get recent transactions
-      const transactions = await apiClient.get<any[]>('/api/transactions?page_size=5') || [];
+      const transactions = await apiClient.get<unknown[]>('/api/transactions?page_size=5') || [];
       
       // Create notifications for large transactions
       if (Array.isArray(transactions)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transactions.forEach((txn: any, index: number) => {
           // Create notifications for different transaction types
           if (txn.transaction_type === 'CREDIT' && txn.amount > 500) {
@@ -87,6 +88,7 @@ class NotificationsService {
       }
       
       // Get budget status
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const budgetSummary = await apiClient.get<any>('/api/budgets/summary');
       
       if (budgetSummary && budgetSummary.total_spent && budgetSummary.total_budget && 
@@ -105,9 +107,9 @@ class NotificationsService {
       
       // Check for goal progress
       try {
-        const goals = await apiClient.get<any[]>('/api/goals');
+        const goals = await apiClient.get<unknown[]>('/api/goals');
         if (goals && goals.length > 0) {
-          const nearCompletionGoal = goals.find((goal: any) => 
+          const nearCompletionGoal = goals.find((goal: unknown) => 
             goal.progress_percentage >= 80 && goal.progress_percentage < 100
           );
           

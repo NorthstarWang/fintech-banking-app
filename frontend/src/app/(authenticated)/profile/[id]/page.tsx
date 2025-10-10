@@ -54,10 +54,7 @@ export default function ProfilePage() {
 
   const loadProfile = useCallback(async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await usersService.getProfile(userId);
-      
-      // Mock data for now
+      // Mock data - replace with actual API call when user profile service is available
       const mockProfile: UserProfile = {
         id: parseInt(userId),
         username: userId === '1' ? 'john_doe' : userId === '2' ? 'jane_smith' : 'user_' + userId,

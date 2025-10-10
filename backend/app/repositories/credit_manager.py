@@ -387,7 +387,7 @@ class CreditManager:
         # Generate 2-5 simulations
         num_simulations = random.randint(2, 5)
 
-        for i in range(num_simulations):
+        for _i in range(num_simulations):
             sim_template = random.choice(simulation_types)
             days_ago = random.randint(1, 90)
             simulation_date = datetime.utcnow() - timedelta(days=days_ago)

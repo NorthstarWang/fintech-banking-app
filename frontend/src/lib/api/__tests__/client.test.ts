@@ -14,7 +14,7 @@ describe('APIClient', () => {
     apiClient.setAuthToken(null)
     
     // Mock window.location
-    delete (window as any).location
+    delete (window as { location?: Location }).location
     window.location = { ...originalLocation, href: '' } as Location
   })
 

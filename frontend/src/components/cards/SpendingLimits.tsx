@@ -54,6 +54,7 @@ export default function SpendingLimits({ cardId }: SpendingLimitsProps) {
     if (cardId && !isNaN(cardId)) {
       fetchLimits();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardId]);
 
   const fetchLimits = async () => {

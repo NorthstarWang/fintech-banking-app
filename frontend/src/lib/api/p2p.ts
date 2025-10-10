@@ -1,5 +1,16 @@
 import { apiClient } from './client';
 
+export interface PaymentRequest {
+  id: string;
+  from_user_id: string;
+  to_user_id: string;
+  amount: number;
+  description?: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface P2PContact {
   id: string;
   name: string;
@@ -87,6 +98,7 @@ export const p2pApi = {
   },
 
   // Create payment request
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createPaymentRequest: async (data: P2PPaymentRequest): Promise<any> => {
     return await apiClient.post('/api/p2p/payment-request', data);
   },
@@ -101,17 +113,17 @@ export const p2pApi = {
   },
 
   // Scan QR code
-  scanQRCode: async (qrData: any): Promise<any> => {
+  scanQRCode: async (qrData: { code: string; type?: string }): Promise<{ recipient: string; amount?: number; description?: string }> => {
     return await apiClient.post('/api/p2p/scan-qr', qrData);
   },
 
   // Get payment requests
-  getPaymentRequests: async (): Promise<any[]> => {
+  getPaymentRequests: async (): Promise<PaymentRequest[]> => {
     return await apiClient.get('/api/p2p/payment-requests');
   },
 
   // Accept payment request
-  acceptPaymentRequest: async (requestId: string, accountId: string): Promise<any> => {
+  acceptPaymentRequest: async (requestId: string, accountId: string): Promise<{ success: boolean; transaction_id?: string }> => {
     const response = await apiClient.post(`/api/p2p/payment-requests/${requestId}/accept`, {
       source_account_id: accountId
     });
@@ -119,7 +131,7 @@ export const p2pApi = {
   },
 
   // Decline payment request
-  declinePaymentRequest: async (requestId: string): Promise<any> => {
+  declinePaymentRequest: async (requestId: string): Promise<{ success: boolean; message?: string }> => {
     const response = await apiClient.post(`/api/p2p/payment-requests/${requestId}/decline`);
     return response.data;
   }

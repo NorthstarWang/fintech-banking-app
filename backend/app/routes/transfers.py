@@ -1,18 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from typing import List, Optional, Any
 from datetime import datetime
-from decimal import Decimal
+from typing import Any
 
-from ..storage.memory_adapter import db, or_, and_
-from ..models import Account, Transaction, TransactionType, TransactionStatus, User, Notification, NotificationType, Contact, ContactStatus, DirectMessage
-from ..models import (
-    TransferRequest, TransferResponse, DepositRequest, WithdrawalRequest, 
-    TransactionResponse, BillPaymentRequest
-)
-from ..utils.auth import get_current_user
-from ..utils.validators import Validators, ValidationError
-from ..utils.session_manager import session_manager
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
+
+from ..models import (
+    Account,
+    BillPaymentRequest,
+    Contact,
+    ContactStatus,
+    DepositRequest,
+    DirectMessage,
+    Notification,
+    NotificationType,
+    Transaction,
+    TransactionResponse,
+    TransactionStatus,
+    TransactionType,
+    TransferRequest,
+    User,
+    WithdrawalRequest,
+)
+from ..storage.memory_adapter import and_, db, or_
+from ..utils.auth import get_current_user
+from ..utils.validators import Validators
 
 router = APIRouter()
 
@@ -21,8 +32,8 @@ class SendMoneyRequest(BaseModel):
     recipient_identifier: str  # username or email
     source_account_id: int
     amount: float = Field(gt=0)
-    description: Optional[str] = None
-    transfer_fee: Optional[float] = 0.0  # Fee to be deducted from amount
+    description: str | None = None
+    transfer_fee: float | None = 0.0  # Fee to be deducted from amount
 
 @router.post("/transfer", response_model=TransactionResponse)
 async def transfer_money(
@@ -32,7 +43,7 @@ async def transfer_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Transfer money between accounts"""
-    
+
     # Validate accounts exist and belong to user
     source_account = Validators.validate_account_ownership(
         db_session, transfer_data.source_account_id, current_user['user_id']
@@ -47,14 +58,14 @@ async def transfer_money(
         destination_account = db_session.query(Account).filter_by(
             id=transfer_data.destination_account_id
         ).first()
-        
+
         if not destination_account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Destination account not found"
             )
         destination_user_id = destination_account.user_id
-    
+
     # Check sufficient balance
     if source_account.balance < transfer_data.amount:
         raise HTTPException(
@@ -80,9 +91,9 @@ async def transfer_money(
     )
     # Update source account balance
     source_account.balance -= transfer_data.amount
-    
+
     db_session.add(debit_transaction)
-    
+
     # Create credit transaction if internal transfer
     if not transfer_data.is_external and destination_account:
         credit_transaction = Transaction(
@@ -103,9 +114,9 @@ async def transfer_money(
         )
         # Update destination account balance
         destination_account.balance += transfer_data.amount
-        
+
         db_session.add(credit_transaction)
-    
+
     # Create notification for sender
     sender_notification = Notification(
         user_id=current_user['user_id'],
@@ -121,13 +132,13 @@ async def transfer_money(
         }
     )
     db_session.add(sender_notification)
-    
+
     # Create notification for recipient if internal transfer
     if not transfer_data.is_external and destination_account and destination_user_id:
         # Get recipient user details
-        recipient_user = db_session.query(User).filter_by(id=destination_user_id).first()
+        db_session.query(User).filter_by(id=destination_user_id).first()
         sender_name = db_session.query(User).filter_by(id=current_user['user_id']).first()
-        
+
         recipient_notification = Notification(
             user_id=destination_user_id,
             type=NotificationType.TRANSACTION_ALERT,
@@ -142,9 +153,9 @@ async def transfer_money(
             }
         )
         db_session.add(recipient_notification)
-    
+
     db_session.commit()
-    
+
     # Create transaction message if users are contacts
     if not transfer_data.is_external and destination_account:
         contact = db_session.query(Contact).filter(
@@ -161,7 +172,7 @@ async def transfer_money(
                 )
             )
         ).first()
-        
+
         if contact:
             # Get conversation (create if needed)
             from ..routes.conversations import get_or_create_conversation
@@ -190,10 +201,10 @@ async def transfer_money(
                 sent_at=datetime.utcnow()
             )
             db_session.add(transaction_message)
-            
+
             # Update conversation last message time
             conversation.last_message_at = datetime.utcnow()
-            
+
             db_session.commit()
 
     # Instead of refreshing, create a response directly from the transaction object
@@ -229,7 +240,7 @@ async def deposit_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Deposit money to an account"""
-    
+
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
         db_session, deposit_data.account_id, current_user['user_id']
@@ -246,7 +257,7 @@ async def deposit_money(
     )
     # Update account balance
     account.balance += deposit_data.amount
-    
+
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
@@ -262,7 +273,7 @@ async def withdraw_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Withdraw money from an account"""
-    
+
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
         db_session, withdrawal_data.account_id, current_user['user_id']
@@ -288,7 +299,7 @@ async def withdraw_money(
     )
     # Update account balance
     account.balance -= withdrawal_data.amount
-    
+
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
@@ -304,7 +315,7 @@ async def pay_bill(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Pay a bill"""
-    
+
     # Validate account exists and belongs to user
     account = Validators.validate_account_ownership(
         db_session, payment_data.account_id, current_user['user_id']
@@ -334,7 +345,7 @@ async def pay_bill(
     )
     # Update account balance
     account.balance -= payment_data.amount
-    
+
     db_session.add(transaction)
     db_session.commit()
     db_session.refresh(transaction)
@@ -365,14 +376,14 @@ async def send_money(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Send money to another user by username or email"""
-    
+
     # Validate source account exists and belongs to sender
     source_account = Validators.validate_account_ownership(
         db_session, send_data.source_account_id, current_user['user_id']
     )
     # Find recipient user by username or email
     recipient_user = db_session.query(User).filter(
-        (User.username == send_data.recipient_identifier) | 
+        (User.username == send_data.recipient_identifier) |
         (User.email == send_data.recipient_identifier)
     ).first()
 
@@ -391,14 +402,14 @@ async def send_money(
     recipient_account = db_session.query(Account).filter(
         Account.user_id == recipient_user.id,
         Account.account_type == "CHECKING",
-        Account.is_active == True
+        Account.is_active
     ).first()
-    
+
     if not recipient_account:
         # Try to get any active account
         recipient_account = db_session.query(Account).filter(
             Account.user_id == recipient_user.id,
-            Account.is_active == True
+            Account.is_active
         ).first()
 
     if not recipient_account:
@@ -409,7 +420,7 @@ async def send_money(
     # Calculate total amount to deduct from sender (including fee)
     fee = send_data.transfer_fee or 0.0
     total_amount = send_data.amount + fee
-    
+
     # Check sufficient balance (including fee)
     if source_account.balance < total_amount:
         raise HTTPException(
@@ -417,9 +428,7 @@ async def send_money(
             detail="Insufficient balance"
         )
     # Store old balances for logging
-    old_source_balance = source_account.balance
-    old_recipient_balance = recipient_account.balance
-    
+
     # Create debit transaction for sender (including fee)
     debit_transaction = Transaction(
         user_id=current_user['user_id'],
@@ -461,11 +470,11 @@ async def send_money(
     # Update account balances
     source_account.balance -= total_amount  # Deduct full amount including fee
     recipient_account.balance += send_data.amount  # Credit only base amount
-    
+
     # Add transactions to database
     db_session.add(debit_transaction)
     db_session.add(credit_transaction)
-    
+
     # Create notifications for both users
     sender_notification = Notification(
         user_id=current_user['user_id'],
@@ -495,7 +504,7 @@ async def send_money(
     )
     db_session.add(sender_notification)
     db_session.add(recipient_notification)
-    
+
     # Commit all changes
     db_session.commit()
     db_session.refresh(debit_transaction)

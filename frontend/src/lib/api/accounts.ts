@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { Transaction } from '../../types';
 
 export interface Account {
   id: number;
@@ -79,7 +80,7 @@ class AccountsService {
     return apiClient.get<AccountSummary>('/api/accounts/summary');
   }
 
-  async transferFunds(fromAccountId: number, toAccountId: number, amount: number, description?: string): Promise<any> {
+  async transferFunds(fromAccountId: number, toAccountId: number, amount: number, description?: string): Promise<{ success: boolean; transaction_id?: number; message?: string }> {
     return apiClient.post('/api/transactions/transfer', {
       from_account_id: fromAccountId,
       to_account_id: toAccountId,
@@ -93,16 +94,16 @@ class AccountsService {
     limit?: number;
     start_date?: string;
     end_date?: string;
-  }): Promise<any[]> {
+  }): Promise<Transaction[]> {
     const queryParams = new URLSearchParams();
     if (params?.skip) queryParams.append('skip', params.skip.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
-    
+
     const queryString = queryParams.toString();
     const url = queryString ? `/api/accounts/${id}/transactions?${queryString}` : `/api/accounts/${id}/transactions`;
-    return apiClient.get<any[]>(url);
+    return apiClient.get<Transaction[]>(url);
   }
 }
 

@@ -16,7 +16,7 @@ import { useAlert } from '@/contexts/AlertContext';
 interface QRScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onScanSuccess?: (data: any) => void;
+  onScanSuccess?: (data: unknown) => void;
 }
 
 export const QRScannerModal: React.FC<QRScannerModalProps> = ({
@@ -41,6 +41,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     return () => {
       stopCamera();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, showManualInput]);
 
   const startCamera = async () => {

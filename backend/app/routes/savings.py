@@ -87,7 +87,7 @@ async def create_savings_goal(
     if goal_dict.get('target_date'):
         try:
             goal_dict['target_date'] = datetime.fromisoformat(goal_dict['target_date'].replace('Z', '+00:00')).date()
-        except:
+        except (ValueError, AttributeError):
             goal_dict['target_date'] = datetime.strptime(goal_dict['target_date'], '%Y-%m-%d').date()
     else:
         # Default to 1 year from now if not provided
@@ -108,7 +108,7 @@ async def create_savings_goal(
     db_session.refresh(goal)
 
     # Prepare response with additional fields
-    response_dict = {
+    return {
         "id": goal.id,
         "user_id": goal.user_id,
         "goal_name": goal.name,  # Map back for compatibility
@@ -128,7 +128,6 @@ async def create_savings_goal(
         "progress_percentage": (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
     }
 
-    return response_dict
 
 @router.get("/summary", response_model=dict)
 async def get_savings_summary(
@@ -168,7 +167,7 @@ async def get_savings_summary(
         goals_by_category[category]['total_saved'] += goal.current_amount or 0
         goals_by_category[category]['total_target'] += goal.target_amount
 
-    response = {
+    return {
         "total_saved": total_saved,
         "total_goals": total_goals,
         "active_goals": active_goals,
@@ -177,7 +176,6 @@ async def get_savings_summary(
         "goals_by_category": goals_by_category
     }
 
-    return response
 
 @router.get("/{goal_id}", response_model=dict)
 async def get_savings_goal(
@@ -208,7 +206,7 @@ async def get_savings_goal(
             months_remaining = days_remaining / 30.0
             monthly_contribution_needed = remaining_amount / months_remaining if months_remaining > 0 else 0
 
-    response = {
+    return {
         "id": goal.id,
         "user_id": goal.user_id,
         "goal_name": goal.name,
@@ -229,7 +227,6 @@ async def get_savings_goal(
         "monthly_contribution_needed": monthly_contribution_needed
     }
 
-    return response
 
 @router.put("/{goal_id}", response_model=dict)
 async def update_savings_goal(
@@ -259,7 +256,7 @@ async def update_savings_goal(
     if update_data.get('target_date'):
         try:
             update_data['target_date'] = datetime.fromisoformat(update_data['target_date'].replace('Z', '+00:00')).date()
-        except:
+        except (ValueError, AttributeError):
             update_data['target_date'] = datetime.strptime(update_data['target_date'], '%Y-%m-%d').date()
 
     for field, value in update_data.items():
@@ -269,7 +266,7 @@ async def update_savings_goal(
     db_session.commit()
     db_session.refresh(goal)
 
-    response = {
+    return {
         "id": goal.id,
         "user_id": goal.user_id,
         "goal_name": goal.name,
@@ -288,7 +285,6 @@ async def update_savings_goal(
         "progress_percentage": (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
     }
 
-    return response
 
 @router.post("/{goal_id}/contribute", response_model=dict)
 async def contribute_to_goal(
@@ -374,7 +370,7 @@ async def contribute_to_goal(
     db_session.add(contribution_record)
     db_session.commit()
 
-    response = {
+    return {
         "contribution_amount": amount,
         "new_balance": goal.current_amount,
         "new_progress_percentage": new_progress,
@@ -382,7 +378,6 @@ async def contribute_to_goal(
         "transaction_id": transaction_id
     }
 
-    return response
 
 @router.post("/{goal_id}/withdraw", response_model=dict)
 async def withdraw_from_goal(
@@ -407,7 +402,7 @@ async def withdraw_from_goal(
 
     amount = withdrawal.get('amount', 0)
     to_account_id = withdrawal.get('to_account_id')
-    reason = withdrawal.get('reason', '')
+    withdrawal.get('reason', '')
 
     if amount <= 0:
         raise ValidationError("Withdrawal amount must be positive")
@@ -449,13 +444,12 @@ async def withdraw_from_goal(
 
     db_session.commit()
 
-    response = {
+    return {
         "withdrawal_amount": amount,
         "new_balance": goal.current_amount,
         "new_progress_percentage": new_progress
     }
 
-    return response
 
 @router.delete("/{goal_id}", status_code=status.HTTP_200_OK)
 async def delete_savings_goal(
@@ -663,7 +657,7 @@ async def get_goal_projections(
         }
     ]
 
-    response = {
+    return {
         "monthly_contribution_needed": monthly_needed,
         "weekly_contribution_needed": weekly_needed,
         "projected_completion_date": projected_date,
@@ -671,7 +665,6 @@ async def get_goal_projections(
         "scenarios": scenarios
     }
 
-    return response
 
 @router.put("/{goal_id}/auto-transfer", response_model=dict)
 async def configure_auto_transfer(
@@ -716,7 +709,7 @@ async def configure_auto_transfer(
     db_session.commit()
     db_session.refresh(goal)
 
-    response = {
+    return {
         "id": goal.id,
         "goal_name": goal.name,
         "auto_transfer_enabled": goal.auto_transfer_enabled,
@@ -725,7 +718,6 @@ async def configure_auto_transfer(
         "account_id": goal.account_id
     }
 
-    return response
 
 @router.get("/{goal_id}/milestones", response_model=list[dict])
 async def get_goal_milestones(
@@ -747,7 +739,7 @@ async def get_goal_milestones(
 
     current_progress = (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
 
-    milestones = [
+    return [
         {
             "percentage": 10,
             "amount": goal.target_amount * 0.1,
@@ -780,7 +772,6 @@ async def get_goal_milestones(
         }
     ]
 
-    return milestones
 
 @router.post("/shared", response_model=dict)
 async def create_shared_goal(
@@ -818,7 +809,7 @@ async def create_shared_goal(
     elif isinstance(goal_dict['target_date'], str):
         try:
             goal_dict['target_date'] = datetime.fromisoformat(goal_dict['target_date'].replace('Z', '+00:00')).date()
-        except:
+        except (ValueError, AttributeError):
             goal_dict['target_date'] = datetime.strptime(goal_dict['target_date'], '%Y-%m-%d').date()
 
     # Extract fields for Goal creation
@@ -843,7 +834,7 @@ async def create_shared_goal(
     db_session.commit()
     db_session.refresh(goal1)
 
-    response = {
+    return {
         "id": goal1.id,
         "user_id": goal1.user_id,
         "goal_name": goal1.name,
@@ -863,7 +854,6 @@ async def create_shared_goal(
         "progress_percentage": (goal1.current_amount / goal1.target_amount * 100) if goal1.target_amount > 0 else 0
     }
 
-    return response
 
 # Existing round-up and rules endpoints below
 
@@ -1090,7 +1080,7 @@ async def list_savings_rules(
     )
 
     if active_only:
-        query = query.filter(SavingsRule.is_active == True)
+        query = query.filter(SavingsRule.is_active)
 
     rules = query.order_by(SavingsRule.created_at.desc()).all()
 
@@ -1129,7 +1119,7 @@ async def list_savings_challenges(
         ).count()
 
         # Calculate current amount for all participants
-        total_saved = db_session.query(
+        db_session.query(
             db.func.sum(ChallengeParticipant.current_amount)
         ).filter(
             ChallengeParticipant.challenge_id == challenge.id
@@ -1185,7 +1175,7 @@ async def join_savings_challenge(
             detail="Challenge not found"
         )
 
-    if challenge.status != ChallengeStatus.ACTIVE and challenge.status != ChallengeStatus.UPCOMING:
+    if challenge.status not in (ChallengeStatus.ACTIVE, ChallengeStatus.UPCOMING):
         raise ValidationError("Cannot join inactive challenge")
 
     # Check if already participating

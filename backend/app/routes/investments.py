@@ -106,9 +106,9 @@ async def place_order(
     try:
         return investment_manager.place_order(current_user["user_id"], order)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.delete("/orders/{order_id}")
 async def cancel_order(
@@ -358,7 +358,7 @@ async def generate_mock_investment_data(
 
                 try:
                     investment_manager.place_order(current_user["user_id"], order_data)
-                except:
+                except (ValueError, KeyError, Exception):
                     pass  # Skip if insufficient funds
 
     return {

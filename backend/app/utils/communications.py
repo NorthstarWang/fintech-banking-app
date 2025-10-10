@@ -1,8 +1,7 @@
-from typing import Optional
+import asyncio
 import random
 import string
 from datetime import datetime, timedelta
-import asyncio
 
 # In-memory storage for verification codes (in production, use Redis or database)
 verification_codes = {}
@@ -20,14 +19,12 @@ async def send_sms(phone_number: str, message: str) -> bool:
         # Mock delay to simulate SMS sending
         await asyncio.sleep(0.5)
 
-        # Log SMS sent event (in production, use proper logging)
-        print(f"SMS sent to {phone_number[:3]}****{phone_number[-4:]} at {datetime.utcnow().isoformat()}")
-
+        # SMS sent successfully (in production, integrate with Twilio/AWS SNS)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
-async def send_email(email: str, subject: str, body: str, html_body: Optional[str] = None) -> bool:
+async def send_email(email: str, subject: str, body: str, html_body: str | None = None) -> bool:
     """
     Send email message (mock implementation)
     In production, integrate with SendGrid, AWS SES, or similar service
@@ -36,12 +33,9 @@ async def send_email(email: str, subject: str, body: str, html_body: Optional[st
         # Mock delay to simulate email sending
         await asyncio.sleep(0.3)
 
-        # Log email sent event (in production, use proper logging)
-        masked_email = email.split('@')[0][:3] + "****@" + email.split('@')[1]
-        print(f"Email sent to {masked_email} with subject '{subject}' at {datetime.utcnow().isoformat()}")
-
+        # Email sent successfully (in production, integrate with SendGrid/AWS SES)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 def store_verification_code(user_id: int, method: str, code: str, expiry_minutes: int = 10):
@@ -56,35 +50,35 @@ def store_verification_code(user_id: int, method: str, code: str, expiry_minutes
 def verify_code(user_id: int, method: str, code: str) -> tuple[bool, str]:
     """Verify a code and return (success, error_message)"""
     key = f"{user_id}:{method}"
-    
+
     if key not in verification_codes:
         return False, "No verification code found"
-    
+
     stored = verification_codes[key]
-    
+
     # Check expiry
     if datetime.utcnow() > stored["expires_at"]:
         del verification_codes[key]
         return False, "Verification code expired"
-    
+
     # Check attempts
     stored["attempts"] += 1
     if stored["attempts"] > 3:
         del verification_codes[key]
         return False, "Too many attempts"
-    
+
     # Check code
     if stored["code"] == code:
         del verification_codes[key]
         return True, ""
-    
+
     return False, "Invalid verification code"
 
 async def send_2fa_sms(phone_number: str, user_id: int) -> bool:
     """Send 2FA code via SMS"""
     code = generate_verification_code()
     store_verification_code(user_id, "sms", code)
-    
+
     message = f"Your verification code is: {code}. This code expires in 10 minutes."
     return await send_sms(phone_number, message)
 
@@ -92,7 +86,7 @@ async def send_2fa_email(email: str, user_id: int) -> bool:
     """Send 2FA code via email"""
     code = generate_verification_code()
     store_verification_code(user_id, "email", code)
-    
+
     subject = "Your Verification Code"
     body = f"""Your verification code is: {code}
 
@@ -100,7 +94,7 @@ This code expires in 10 minutes.
 
 If you didn't request this code, please ignore this email.
 """
-    
+
     html_body = f"""
 <html>
 <body>
@@ -112,5 +106,5 @@ If you didn't request this code, please ignore this email.
 </body>
 </html>
 """
-    
+
     return await send_email(email, subject, body, html_body)

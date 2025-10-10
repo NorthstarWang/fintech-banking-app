@@ -128,7 +128,7 @@ class MockSession:
             data_store = self.data_manager.transactions
         elif model_name == 'category':
             data_store = self.data_manager.categories
-        elif model_name == 'card' or model_name == 'virtualcard':
+        elif model_name in {'card', 'virtualcard'}:
             data_store = self.data_manager.cards
         elif model_name == 'budget':
             data_store = self.data_manager.budgets
@@ -185,7 +185,7 @@ class MockSession:
                 self.data_manager.transactions.append(obj_dict)
             elif model_name_lower == 'category':
                 self.data_manager.categories.append(obj_dict)
-            elif model_name_lower == 'card' or model_name_lower == 'virtualcard':
+            elif model_name_lower in {'card', 'virtualcard'}:
                 self.data_manager.cards.append(obj_dict)
             elif model_name_lower == 'budget':
                 self.data_manager.budgets.append(obj_dict)

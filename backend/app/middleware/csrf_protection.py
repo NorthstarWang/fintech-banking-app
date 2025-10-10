@@ -2,12 +2,14 @@
 CSRF protection middleware for banking application.
 Implements CSRF tokens for state-changing operations.
 """
+import logging
 import secrets
 import time
-from typing import Optional
 
-from fastapi import HTTPException, Request, Response, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 
 class CSRFProtection:
@@ -17,7 +19,7 @@ class CSRFProtection:
         self.token_store = {}  # In production, use Redis or database
         self.token_ttl = 3600  # Token valid for 1 hour
 
-    def generate_csrf_token(self, session_id: Optional[str] = None) -> str:
+    def generate_csrf_token(self, session_id: str | None = None) -> str:
         """Generate a new CSRF token."""
         token = secrets.token_urlsafe(32)
         identifier = session_id or "anonymous"
@@ -29,7 +31,7 @@ class CSRFProtection:
 
         return token
 
-    def validate_csrf_token(self, token: str, session_id: Optional[str] = None) -> bool:
+    def validate_csrf_token(self, token: str, session_id: str | None = None) -> bool:
         """Validate CSRF token."""
         if not token or token not in self.token_store:
             return False
@@ -43,10 +45,7 @@ class CSRFProtection:
             return False
 
         # Verify token matches session
-        if token_data["session_id"] != identifier:
-            return False
-
-        return True
+        return token_data["session_id"] == identifier
 
     def _requires_csrf_protection(self, request: Request) -> bool:
         """Check if request requires CSRF protection."""
@@ -64,10 +63,7 @@ class CSRFProtection:
         ]
 
         path = str(request.url.path)
-        if any(skip_path in path for skip_path in skip_paths):
-            return False
-
-        return True
+        return not any(skip_path in path for skip_path in skip_paths)
 
     async def check_csrf_protection(self, request: Request) -> None:
         """Check CSRF protection for request."""
@@ -144,5 +140,5 @@ async def csrf_protection_middleware(request: Request, call_next):
             }
         )
     except Exception as e:
-        print(f"CSRF protection middleware error: {e}")
+        logger.error(f"CSRF protection middleware error: {e}")
         return await call_next(request)

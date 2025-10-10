@@ -29,6 +29,7 @@ export default function NetWorthTracker({ onExport }: NetWorthTrackerProps) {
 
   useEffect(() => {
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthsBack]);
 
   const loadData = async () => {

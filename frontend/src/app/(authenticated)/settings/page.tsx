@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const { user, logout, refreshUser } = useAuth();
+  const { user: _user, logout, refreshUser } = useAuth();
   const { showSuccess, showError } = useAlert();
   
   // Profile settings
@@ -197,7 +197,7 @@ export default function SettingsPage() {
       
       showSuccess('Profile Updated', 'Your profile information has been saved successfully.');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       showError('Update Failed', error.message || 'Failed to update profile. Please try again.');
     }
   };

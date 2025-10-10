@@ -63,7 +63,7 @@ async def create_conversion_quote(
     try:
         return converter_manager.create_conversion_quote(current_user["user_id"], request)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 @router.post("/orders", response_model=ConversionOrderResponse)
 async def create_conversion_order(
@@ -74,7 +74,7 @@ async def create_conversion_order(
     try:
         return converter_manager.create_conversion_order(current_user["user_id"], order)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 @router.get("/orders", response_model=list[ConversionOrderResponse])
 async def get_conversion_orders(
@@ -155,7 +155,7 @@ async def create_p2p_trade(
     try:
         return converter_manager.create_p2p_trade(current_user["user_id"], trade)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 @router.get("/p2p/trades", response_model=list[P2PTradeResponse])
 async def get_p2p_trades(
@@ -262,7 +262,7 @@ async def generate_mock_converter_data(
     currencies = ['USD', 'EUR', 'MXN', 'BRL', 'BTC', 'ETH']
     generated_offers = []
 
-    for i in range(num_offers):
+    for _i in range(num_offers):
         currency = random.choice(currencies)
         offer_data = PeerOfferCreate(
             currency=currency,

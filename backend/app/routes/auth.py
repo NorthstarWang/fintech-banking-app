@@ -4,12 +4,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..models import User, UserCreate, UserLogin, UserResponse, UserRole
+from ..services.audit_logger import AuditEventType, audit_logger
 from ..storage.memory_adapter import db
 from ..utils.auth import auth_handler, get_current_user, session_auth
-from ..utils.validators import ValidationError, validate_email
-from ..utils.mfa import mfa_manager, MFARequired
 from ..utils.enhanced_session_manager import enhanced_session_manager
-from ..services.audit_logger import audit_logger, AuditEventType
+from ..utils.mfa import mfa_manager
+from ..utils.validators import ValidationError, validate_email
 
 router = APIRouter()
 
@@ -367,22 +367,21 @@ async def verify_mfa(
                 "message": "MFA verification successful",
                 "device_trusted": trust_device
             }
-        else:
-            audit_logger.log_event(
-                event_type=AuditEventType.MFA_VERIFICATION,
-                user_id=user_id,
-                request=request,
-                success=False,
-                details={
-                    "method": method_used,
-                    "failure_reason": "invalid_code"
-                }
-            )
+        audit_logger.log_event(
+            event_type=AuditEventType.MFA_VERIFICATION,
+            user_id=user_id,
+            request=request,
+            success=False,
+            details={
+                "method": method_used,
+                "failure_reason": "invalid_code"
+            }
+        )
 
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid verification code"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid verification code"
+        )
 
     except Exception as e:
         audit_logger.log_event(

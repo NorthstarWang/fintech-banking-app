@@ -4,12 +4,19 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useRouter } from 'next/navigation';
 import { authService, UserResponse } from '@/lib/api/auth';
 
+interface RegisterData {
+  username: string;
+  password: string;
+  email: string;
+  full_name?: string;
+}
+
 interface AuthContextValue {
   user: UserResponse | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -64,7 +71,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const register = async (data: any) => {
+  const register = async (data: RegisterData) => {
     try {
       const _newUser = await authService.register(data);
       // After registration, log them in automatically

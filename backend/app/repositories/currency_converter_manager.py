@@ -499,7 +499,7 @@ class CurrencyConverterManager:
             pair_counts[key] = pair_counts.get(key, 0) + 1
 
         favorite_pairs = []
-        for pair_str, count in sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
+        for pair_str, _count in sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)[:3]:
             from_curr, to_curr = pair_str.split('/')
             from_type = next((c['type'] for c in self.data_manager.supported_currencies if c['code'] == from_curr), 'fiat')
             to_type = next((c['type'] for c in self.data_manager.supported_currencies if c['code'] == to_curr), 'fiat')

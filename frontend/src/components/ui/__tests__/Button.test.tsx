@@ -6,6 +6,7 @@ import { Button } from '../Button'
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     button: ({ children, whileTap, ...props }: any) => <button {...props}>{children}</button>,
   },
 }))
@@ -172,6 +173,7 @@ describe('Button', () => {
 
   it('should filter out isLoading prop', () => {
     // This tests the prop filtering logic that prevents isLoading from being passed to DOM
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     render(<Button {...{ isLoading: true } as any}>Button</Button>)
     
     const button = screen.getByRole('button')

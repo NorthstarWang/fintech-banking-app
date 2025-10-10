@@ -16,7 +16,7 @@ export default function CryptoPage() {
   const [wallets, setWallets] = useState<CryptoWallet[]>([]);
   const [assets, setAssets] = useState<CryptoAsset[]>([]);
   const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<any>(null);
+  const [portfolioSummary, setPortfolioSummary] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<CryptoWallet | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'wallets' | 'assets' | 'transactions'>('overview');

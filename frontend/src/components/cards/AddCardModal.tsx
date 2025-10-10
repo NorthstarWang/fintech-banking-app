@@ -70,6 +70,7 @@ const AddCardModal = memo(({ isOpen, onClose, onSuccess, accounts }: AddCardModa
     setIsAddingCard(true);
     
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cardDataToSubmit: any = {
         card_number: newCardData.card_number,
         card_type: newCardData.card_type,

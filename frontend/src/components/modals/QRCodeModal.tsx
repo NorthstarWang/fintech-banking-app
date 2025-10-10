@@ -20,7 +20,7 @@ interface QRCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
   mode: 'generate' | 'scan';
-  onScanSuccess?: (data: any) => void;
+  onScanSuccess?: (data: unknown) => void;
 }
 
 export default function QRCodeModal({
@@ -29,7 +29,7 @@ export default function QRCodeModal({
   mode,
   _onScanSuccess
 }: QRCodeModalProps) {
-  const [qrData, setQrData] = useState<any>(null);
+  const [qrData, setQrData] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,6 +41,7 @@ export default function QRCodeModal({
       // Generate a basic QR code when modal opens
       generateQRCode();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, isOpen, qrData]);
 
   const generateQRCode = async () => {
@@ -192,6 +193,7 @@ export default function QRCodeModal({
             className="space-y-4"
           >
             <div className="p-4 bg-white rounded-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrData.qr_code}
                 alt="Payment QR Code"

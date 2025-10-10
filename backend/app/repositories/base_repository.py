@@ -4,11 +4,11 @@ Base repository class providing common CRUD operations for in-memory data stores
 import uuid
 from abc import ABC
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar('T', bound=dict[str, Any])
 
-class BaseRepository(ABC, Generic[T]):
+class BaseRepository[T: dict[str, Any]](ABC):
     """
     Abstract base class for repositories providing common CRUD operations.
     Works directly on in-memory Python lists.
@@ -17,7 +17,7 @@ class BaseRepository(ABC, Generic[T]):
     def __init__(self, data_store: list[T]):
         """
         Initialize repository with a reference to the data store.
-        
+
         Args:
             data_store: List that holds the entities
         """
@@ -26,10 +26,10 @@ class BaseRepository(ABC, Generic[T]):
     def create(self, data: dict[str, Any]) -> T:
         """
         Create a new entity with auto-generated ID and timestamp.
-        
+
         Args:
             data: Entity data without id and created_at
-            
+
         Returns:
             Created entity with id and created_at
         """
@@ -51,10 +51,10 @@ class BaseRepository(ABC, Generic[T]):
     def find_by_id(self, entity_id: str) -> T | None:
         """
         Find an entity by its ID.
-        
+
         Args:
             entity_id: The ID to search for
-            
+
         Returns:
             Entity if found, None otherwise
         """
@@ -66,7 +66,7 @@ class BaseRepository(ABC, Generic[T]):
     def find_all(self) -> list[T]:
         """
         Get all entities.
-        
+
         Returns:
             List of all entities (copies)
         """
@@ -75,11 +75,11 @@ class BaseRepository(ABC, Generic[T]):
     def find_by_field(self, field: str, value: Any) -> list[T]:
         """
         Find entities by a specific field value.
-        
+
         Args:
             field: Field name to search by
             value: Value to match
-            
+
         Returns:
             List of matching entities (copies)
         """
@@ -92,11 +92,11 @@ class BaseRepository(ABC, Generic[T]):
     def find_one_by_field(self, field: str, value: Any) -> T | None:
         """
         Find first entity by a specific field value.
-        
+
         Args:
             field: Field name to search by
             value: Value to match
-            
+
         Returns:
             First matching entity or None
         """
@@ -108,15 +108,15 @@ class BaseRepository(ABC, Generic[T]):
     def update_by_id(self, entity_id: str, updates: dict[str, Any]) -> T | None:
         """
         Update an entity by ID.
-        
+
         Args:
             entity_id: ID of entity to update
             updates: Fields to update
-            
+
         Returns:
             Updated entity or None if not found
         """
-        for i, entity in enumerate(self.data_store):
+        for _i, entity in enumerate(self.data_store):
             if entity.get('id') == entity_id:
                 # Update fields
                 for key, value in updates.items():
@@ -132,10 +132,10 @@ class BaseRepository(ABC, Generic[T]):
     def delete_by_id(self, entity_id: str) -> bool:
         """
         Delete an entity by ID.
-        
+
         Args:
             entity_id: ID of entity to delete
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -148,11 +148,11 @@ class BaseRepository(ABC, Generic[T]):
     def delete_by_field(self, field: str, value: Any) -> int:
         """
         Delete all entities matching a field value.
-        
+
         Args:
             field: Field name to match
             value: Value to match
-            
+
         Returns:
             Number of entities deleted
         """
@@ -166,7 +166,7 @@ class BaseRepository(ABC, Generic[T]):
     def count(self) -> int:
         """
         Get total count of entities.
-        
+
         Returns:
             Number of entities
         """
@@ -175,11 +175,11 @@ class BaseRepository(ABC, Generic[T]):
     def count_by_field(self, field: str, value: Any) -> int:
         """
         Count entities by field value.
-        
+
         Args:
             field: Field name to match
             value: Value to match
-            
+
         Returns:
             Number of matching entities
         """
@@ -188,11 +188,11 @@ class BaseRepository(ABC, Generic[T]):
     def exists_by_field(self, field: str, value: Any) -> bool:
         """
         Check if any entity exists with field value.
-        
+
         Args:
             field: Field name to check
             value: Value to match
-            
+
         Returns:
             True if exists, False otherwise
         """
@@ -206,12 +206,12 @@ class BaseRepository(ABC, Generic[T]):
     ) -> dict[str, Any]:
         """
         Find entities with pagination support.
-        
+
         Args:
             page: Page number (1-indexed)
             page_size: Number of items per page
             filters: Optional field filters
-            
+
         Returns:
             Dict with items, total, page, page_size
         """

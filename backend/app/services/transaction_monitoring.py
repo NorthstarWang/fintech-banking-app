@@ -5,12 +5,12 @@ Tracks transaction metrics, performance, failures, and system health.
 Provides real-time dashboards and alerting capabilities.
 """
 
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
-from collections import defaultdict
 import statistics
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from typing import Any
 
 
 @dataclass
@@ -21,12 +21,12 @@ class TransactionMetrics:
     transaction_type: str
     amount: Decimal
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     status: str = "in_progress"
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
-    def duration_ms(self) -> Optional[float]:
+    def duration_ms(self) -> float | None:
         """Duration in milliseconds"""
         if self.completed_at:
             return (self.completed_at - self.started_at).total_seconds() * 1000
@@ -36,7 +36,7 @@ class TransactionMetrics:
 @dataclass
 class SystemHealthMetrics:
     """System-wide health metrics"""
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     queue_size: int = 0
     processing_rate: float = 0.0  # TPS
     failure_rate: float = 0.0  # percentage
@@ -58,11 +58,11 @@ class TransactionMonitor:
             window_size: Time window in seconds for metrics (default 1 hour)
         """
         self.window_size = window_size
-        self._metrics: Dict[str, TransactionMetrics] = {}
-        self._transaction_timings: List[float] = []
-        self._failure_log: List[Dict[str, Any]] = []
-        self._queue_history: List[tuple] = []
-        self._health_snapshots: List[SystemHealthMetrics] = []
+        self._metrics: dict[str, TransactionMetrics] = {}
+        self._transaction_timings: list[float] = []
+        self._failure_log: list[dict[str, Any]] = []
+        self._queue_history: list[tuple] = []
+        self._health_snapshots: list[SystemHealthMetrics] = []
 
     def record_transaction_start(
         self,
@@ -77,21 +77,21 @@ class TransactionMonitor:
             user_id=user_id,
             transaction_type=transaction_type,
             amount=amount,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
 
     def record_transaction_complete(
         self,
         transaction_id: str,
         status: str = "completed",
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Record transaction completion"""
         if transaction_id not in self._metrics:
             return
 
         metric = self._metrics[transaction_id]
-        metric.completed_at = datetime.now(timezone.utc)
+        metric.completed_at = datetime.now(UTC)
         metric.status = status
         metric.error = error
 
@@ -101,7 +101,7 @@ class TransactionMonitor:
         if status == "failed":
             self._failure_log.append({
                 'transaction_id': transaction_id,
-                'timestamp': datetime.now(timezone.utc),
+                'timestamp': datetime.now(UTC),
                 'error': error,
                 'type': metric.transaction_type,
             })
@@ -109,17 +109,17 @@ class TransactionMonitor:
     def record_queue_size(self, size: int) -> None:
         """Record queue size for history"""
         self._queue_history.append(
-            (datetime.now(timezone.utc), size)
+            (datetime.now(UTC), size)
         )
 
-    def get_transaction_metrics(self, transaction_id: str) -> Optional[TransactionMetrics]:
+    def get_transaction_metrics(self, transaction_id: str) -> TransactionMetrics | None:
         """Get metrics for a transaction"""
         return self._metrics.get(transaction_id)
 
     def get_health_snapshot(self) -> SystemHealthMetrics:
         """Get current system health"""
         # Clean old timing data
-        cutoff = datetime.now(timezone.utc) - timedelta(seconds=self.window_size)
+        cutoff = datetime.now(UTC) - timedelta(seconds=self.window_size)
         active_metrics = [
             m for m in self._metrics.values()
             if m.started_at > cutoff
@@ -149,9 +149,9 @@ class TransactionMonitor:
         self._health_snapshots.append(health)
         return health
 
-    def get_failure_report(self, hours: int = 24) -> Dict[str, Any]:
+    def get_failure_report(self, hours: int = 24) -> dict[str, Any]:
         """Get failure report for specified time window"""
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         recent_failures = [
             f for f in self._failure_log
             if f['timestamp'] > cutoff
@@ -171,7 +171,7 @@ class TransactionMonitor:
             ),
         }
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Get performance metrics report"""
         if not self._transaction_timings:
             return {
@@ -193,9 +193,9 @@ class TransactionMonitor:
             'p99_ms': sorted_timings[int(len(sorted_timings) * 0.99)],
         }
 
-    def get_throughput_report(self) -> Dict[str, Any]:
+    def get_throughput_report(self) -> dict[str, Any]:
         """Get throughput metrics"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Count by hour
         hourly = defaultdict(int)
@@ -212,7 +212,7 @@ class TransactionMonitor:
             ]) / 60,
         }
 
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> dict[str, Any]:
         """Get all dashboard data"""
         health = self.get_health_snapshot()
 
@@ -228,12 +228,12 @@ class TransactionMonitor:
             'performance': self.get_performance_report(),
             'throughput': self.get_throughput_report(),
             'failures': self.get_failure_report(hours=24),
-            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'timestamp': datetime.now(UTC).isoformat(),
         }
 
 
 # Global monitor instance
-_monitor: Optional[TransactionMonitor] = None
+_monitor: TransactionMonitor | None = None
 
 
 def get_transaction_monitor() -> TransactionMonitor:

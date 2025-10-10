@@ -165,13 +165,13 @@ async def get_accounts(
     """Get all user accounts (including joint accounts)"""
 
     # Get accounts where user is primary owner or joint owner
-    user = db_session.query(User).get(current_user['user_id'])
+    db_session.query(User).get(current_user['user_id'])
 
     # Get primary accounts
     primary_query = db_session.query(Account).filter(Account.user_id == current_user['user_id'])
 
     if not include_inactive:
-        primary_query = primary_query.filter(Account.is_active == True)
+        primary_query = primary_query.filter(Account.is_active)
 
     primary_accounts = primary_query.all()
 
@@ -181,7 +181,7 @@ async def get_accounts(
         Account.joint_owner_id == current_user['user_id']
     )
     if not include_inactive:
-        all_accounts_query = all_accounts_query.filter(Account.is_active == True)
+        all_accounts_query = all_accounts_query.filter(Account.is_active)
     joint_accounts = all_accounts_query.all()
 
     # Combine and deduplicate
@@ -199,18 +199,18 @@ async def get_account_summary(
 ):
     """Get financial summary across all accounts (including joint accounts)"""
     # Get user for joint accounts
-    user = db_session.query(User).get(current_user['user_id'])
+    db_session.query(User).get(current_user['user_id'])
 
     # Get primary accounts
     primary_accounts = db_session.query(Account).filter(
         Account.user_id == current_user['user_id'],
-        Account.is_active == True
+        Account.is_active
     ).all()
 
     # Get joint accounts - query for accounts where current user is joint owner
     joint_accounts = db_session.query(Account).filter(
         Account.joint_owner_id == current_user['user_id'],
-        Account.is_active == True
+        Account.is_active
     ).all()
 
     # Combine and deduplicate
@@ -261,7 +261,7 @@ async def get_account_transactions(
 ):
     """Get transactions for a specific account"""
     # Validate account ownership
-    account = Validators.validate_account_ownership(
+    Validators.validate_account_ownership(
         db_session,
         account_id,
         current_user['user_id']
@@ -275,14 +275,14 @@ async def get_account_transactions(
         try:
             start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
             query = query.filter(Transaction.transaction_date >= start_dt)
-        except:
+        except (ValueError, AttributeError):
             pass
 
     if end_date:
         try:
             end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
             query = query.filter(Transaction.transaction_date <= end_dt)
-        except:
+        except (ValueError, AttributeError):
             pass
 
     # Order by date descending and apply pagination

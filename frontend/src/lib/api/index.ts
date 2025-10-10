@@ -84,10 +84,10 @@ export type {
 } from './currencyConverter';
 
 // Utility function to handle API errors in components
-export function handleApiError(error: any): string {
+export function handleApiError(error: unknown): string {
   if (error instanceof Error) {
     if (error.name === 'APIError') {
-      const apiError = error as any;
+      const apiError = error as Error & { data?: { detail?: string } };
       return apiError.data?.detail || apiError.message || 'An error occurred';
     }
     return error.message;

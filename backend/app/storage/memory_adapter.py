@@ -70,10 +70,7 @@ class MemoryQuery:
                 field_name = arg.left.key if hasattr(arg.left, 'key') else str(arg.left)
                 value = arg.right
                 # Get operator - check for 'op' attribute first (ComparisonClause/InClause), then fall back to class name
-                if hasattr(arg, 'op'):
-                    op = arg.op
-                else:
-                    op = arg.__class__.__name__
+                op = arg.op if hasattr(arg, 'op') else arg.__class__.__name__
                 # Handle in_ clause
                 self.filters.append((field_name, op, value))
             elif hasattr(arg, '__class__') and arg.__class__.__name__ == 'BooleanClauseList':
@@ -195,7 +192,7 @@ class MemoryQuery:
 
     def join(self, model_class):
         """Simulate join operation.
-        
+
         Since we're using in-memory storage, we don't actually perform SQL joins.
         Instead, we'll handle the filtering logic in the filter methods.
         This method is here for SQLAlchemy API compatibility.
@@ -208,7 +205,7 @@ class MemoryQuery:
 
     def options(self, *args):
         """Simulate options for eager loading.
-        
+
         In SQLAlchemy, this is used for eager loading relationships.
         Since we're using in-memory storage, we ignore this but provide
         the method for API compatibility.
@@ -270,10 +267,7 @@ class MemoryQuery:
             if func_name == 'sum':
                 total = 0
                 for item in results:
-                    if hasattr(field, 'key'):
-                        value = item.get(field.key, 0)
-                    else:
-                        value = item.get(str(field), 0)
+                    value = item.get(field.key, 0) if hasattr(field, 'key') else item.get(str(field), 0)
                     total += value if value else 0
                 return total
 
@@ -285,20 +279,14 @@ class MemoryQuery:
                     return 0
                 total = 0
                 for item in results:
-                    if hasattr(field, 'key'):
-                        value = item.get(field.key, 0)
-                    else:
-                        value = item.get(str(field), 0)
+                    value = item.get(field.key, 0) if hasattr(field, 'key') else item.get(str(field), 0)
                     total += value if value else 0
                 return total / len(results)
 
             if func_name == 'max':
                 values = []
                 for item in results:
-                    if hasattr(field, 'key'):
-                        value = item.get(field.key)
-                    else:
-                        value = item.get(str(field))
+                    value = item.get(field.key) if hasattr(field, 'key') else item.get(str(field))
                     if value is not None:
                         values.append(value)
                 return max(values) if values else None
@@ -306,10 +294,7 @@ class MemoryQuery:
             if func_name == 'min':
                 values = []
                 for item in results:
-                    if hasattr(field, 'key'):
-                        value = item.get(field.key)
-                    else:
-                        value = item.get(str(field))
+                    value = item.get(field.key) if hasattr(field, 'key') else item.get(str(field))
                     if value is not None:
                         values.append(value)
                 return min(values) if values else None
@@ -318,7 +303,7 @@ class MemoryQuery:
         if results and results[0]:
             first_result = results[0]
             if isinstance(first_result, dict) and len(first_result) > 0:
-                return list(first_result.values())[0]
+                return next(iter(first_result.values()))
             return first_result
         return None
 
@@ -331,7 +316,7 @@ class MemoryQuery:
         for filter_item in self.filters:
             if isinstance(filter_item, tuple) and len(filter_item) == 3:
                 field, op, value = filter_item
-                if op == 'eq' or op == '__eq__':
+                if op in {'eq', '__eq__'}:
                     # Special handling for boolean fields that might be None
                     if value is False and field in ['deleted_by_sender', 'deleted_by_recipient', 'is_read', 'is_draft']:
                         results = [r for r in results if r.get(field) in [False, None]]
@@ -358,7 +343,7 @@ class MemoryQuery:
                     # Special handling for date comparisons
                     if field == 'transaction_date' and hasattr(self.model_class, '__name__') and self.model_class.__name__ == 'Transaction':
                         # Count before and after
-                        before_count = len(results)
+                        len(results)
 
                         # For date comparisons, ensure we're comparing dates correctly
                         from datetime import date, datetime
@@ -391,7 +376,7 @@ class MemoryQuery:
                                     filtered_results.append(r)
 
                         results = filtered_results
-                        after_count = len(results)
+                        len(results)
                     else:
                         # Handle potential datetime comparison issues
                         filtered_results = []
@@ -426,7 +411,7 @@ class MemoryQuery:
                     # Special handling for date comparisons
                     if field == 'transaction_date' and hasattr(self.model_class, '__name__') and self.model_class.__name__ == 'Transaction':
                         # Count before and after
-                        before_count = len(results)
+                        len(results)
 
                         # For date comparisons, ensure we're comparing dates correctly
                         from datetime import date, datetime
@@ -459,7 +444,7 @@ class MemoryQuery:
                                     filtered_results.append(r)
 
                         results = filtered_results
-                        after_count = len(results)
+                        len(results)
                     else:
                         # Handle potential datetime comparison issues
                         filtered_results = []
@@ -708,9 +693,8 @@ class MemorySession:
         if model_name == 'VirtualCard':
             model_name = 'Card'
 
-        data_store = store_map.get(model_name, [])
+        return store_map.get(model_name, [])
 
-        return data_store
 
     def commit(self):
         """Commit pending changes."""
@@ -721,7 +705,7 @@ class MemorySession:
             # Ensure object has an ID
             if 'id' not in obj_dict or obj_dict['id'] is None:
                 # Generate auto-incrementing ID based on the model type
-                model_name = obj.__class__.__name__ if hasattr(obj, '__class__') else 'Unknown'
+                obj.__class__.__name__ if hasattr(obj, '__class__') else 'Unknown'
 
                 # Get the appropriate store to find max ID
                 store = self._get_store_for_model(obj.__class__)
@@ -893,7 +877,7 @@ class MemorySession:
                     result[attr] = value
                 elif hasattr(value, 'value'):
                     result[attr] = value.value
-                elif isinstance(value, dict) or isinstance(value, datetime):
+                elif isinstance(value, (dict, datetime)):
                     result[attr] = value
 
         return result

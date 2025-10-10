@@ -193,8 +193,8 @@ async function getCanvasFingerprint(): Promise<string> {
 // Secure storage wrapper
 export class SecureStorage {
   private storageKey = 'secure_';
-  
-  async setItem(key: string, value: any): Promise<void> {
+
+  async setItem(key: string, value: unknown): Promise<void> {
     const stringValue = JSON.stringify(value);
     const hash = await hashData(stringValue);
     const data = {
@@ -204,22 +204,22 @@ export class SecureStorage {
     };
     localStorage.setItem(this.storageKey + key, JSON.stringify(data));
   }
-  
-  async getItem(key: string): Promise<any | null> {
+
+  async getItem<T = unknown>(key: string): Promise<T | null> {
     const stored = localStorage.getItem(this.storageKey + key);
     if (!stored) return null;
-    
+
     try {
       const data = JSON.parse(stored);
       const currentHash = await hashData(data.value);
-      
+
       // Verify integrity
       if (currentHash !== data.hash) {
         this.removeItem(key);
         return null;
       }
-      
-      return JSON.parse(data.value);
+
+      return JSON.parse(data.value) as T;
     } catch {
       return null;
     }

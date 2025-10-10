@@ -18,12 +18,12 @@ export const insuranceApi = {
     coverageAmount: number;
     deductible: number;
     term?: number;
-    details: Record<string, any>;
+    details: Record<string, unknown>;
   }) {
     return apiClient.post<{
       quoteId: string;
       premium: number;
-      coverage: Record<string, any>;
+      coverage: Record<string, unknown>;
       providers: Array<{
         providerId: string;
         name: string;
@@ -123,7 +123,7 @@ export const insuranceApi = {
   // Compare insurance plans
   async comparePlans(data: {
     policyType: string;
-    coverageNeeds: Record<string, any>;
+    coverageNeeds: Record<string, unknown>;
     budget?: number;
   }) {
     return apiClient.post<Array<{
@@ -131,7 +131,7 @@ export const insuranceApi = {
       planName: string;
       premium: number;
       deductible: number;
-      coverage: Record<string, any>;
+      coverage: Record<string, unknown>;
       pros: string[];
       cons: string[];
       rating: number;
@@ -191,7 +191,7 @@ export const insuranceApi = {
   // Check eligibility
   async checkEligibility(data: {
     policyType: string;
-    personalInfo: Record<string, any>;
+    personalInfo: Record<string, unknown>;
   }) {
     return apiClient.post<{
       eligible: boolean;

@@ -106,6 +106,7 @@ class AccountResponse(BaseResponse):
     is_active: bool
 
     @validator('balance', 'credit_limit', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -119,6 +120,7 @@ class AccountSummary(BaseModel):
     accounts: list[AccountResponse]
 
     @validator('total_assets', 'total_liabilities', 'net_worth', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -161,6 +163,7 @@ class TransactionCreate(BaseModel):
     transaction_date: datetime
 
     @validator('transaction_type', pre=True)
+    @classmethod
     def normalize_transaction_type(cls, v):
         if isinstance(v, str):
             # Convert to lowercase for enum matching
@@ -168,6 +171,7 @@ class TransactionCreate(BaseModel):
         return v
 
     @validator('transaction_date', pre=True)
+    @classmethod
     def parse_transaction_date(cls, v):
         if isinstance(v, str):
             try:
@@ -176,7 +180,7 @@ class TransactionCreate(BaseModel):
                     v = f"{v}T00:00:00"
                 return datetime.fromisoformat(v.replace('Z', '+00:00'))
             except ValueError:
-                raise ValueError(f"Invalid date format: {v}. Expected YYYY-MM-DD or ISO datetime string")
+                raise ValueError(f"Invalid date format: {v}. Expected YYYY-MM-DD or ISO datetime string") from None
         return v
 
 class TransactionUpdate(BaseModel):
@@ -214,6 +218,7 @@ class TransactionResponse(BaseResponse):
     recurring_rule_id: int | None = None
 
     @validator('amount', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -257,6 +262,7 @@ class BudgetResponse(BaseResponse):
     percentage_used: float | None = None  # Calculated field
 
     @validator('amount', 'spent_amount', 'remaining_amount', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -323,6 +329,7 @@ class GoalResponse(BaseResponse):
     allocation_source_types: list[str] | None = None
 
     @validator('target_amount', 'current_amount', 'auto_transfer_amount', 'auto_allocate_fixed_amount', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -415,6 +422,7 @@ class GoalSummary(BaseModel):
     goals: list[GoalResponse]
 
     @validator('total_target', 'total_saved', pre=True)
+    @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
         if v is None:
@@ -841,6 +849,76 @@ class BillPaymentRequest(BaseModel):
 
 class TransferResponse(TransactionResponse):
     """Transfer response is the same as TransactionResponse"""
+
+
+# Linked Account Models
+class LinkedAccountResponse(BaseModel):
+    """Response for a linked bank account"""
+    id: int
+    bank_link_id: int
+    plaid_account_id: str
+    name: str
+    type: str
+    subtype: str | None = None
+    mask: str | None = None
+    official_name: str | None = None
+    current_balance: float | None = None
+    available_balance: float | None = None
+    iso_currency_code: str = "USD"
+    created_at: datetime | None = None
+    last_synced_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+# Currency Models
+class CurrencyInfoResponse(BaseModel):
+    """Response for currency information"""
+    code: str
+    name: str
+    symbol: str
+    is_crypto: bool = False
+    exchange_rate_to_usd: float = 1.0
+    precision: int = 2
+    supported_for_conversion: bool = True
+
+    class Config:
+        from_attributes = True
+
+
+class CurrencyConversionRequest(BaseModel):
+    """Request for currency conversion"""
+    from_currency: str
+    to_currency: str
+    from_amount: float = Field(..., gt=0)
+    markup_percentage: float = Field(default=0, ge=0, le=100)
+
+
+class CurrencyConversionResponse(BaseResponse):
+    """Response for currency conversion transaction"""
+    from_currency: str
+    to_currency: str
+    from_amount: float
+    to_amount: float
+    exchange_rate: float
+    markup_percentage: float
+    fee: float
+    total_fee: float
+    conversion_date: datetime
+    status: str = "completed"
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Aliases for backwards compatibility (created in __init__.py after importing all models)
+# - CurrencyInfo = CurrencyInfoResponse
+# - ExpenseReport = ExpenseReportResponse
+# - Invoice = InvoiceResponse
+# - Receipt = ReceiptResponse
+
 
 # Import new feature models
 # Note: These are imported separately in each route file that needs them

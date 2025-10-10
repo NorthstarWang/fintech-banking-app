@@ -3,7 +3,7 @@ interface PerformanceMetric {
   name: string;
   value: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface PerformanceReport {
@@ -123,8 +123,9 @@ export class PerformanceMonitor {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+            if (entry.entryType === 'layout-shift' && !layoutShiftEntry.hadRecentInput) {
+              clsValue += layoutShiftEntry.value || 0;
               this.recordMetric('cls', clsValue);
             }
           }
@@ -139,7 +140,7 @@ export class PerformanceMonitor {
   /**
    * Record a performance metric
    */
-  recordMetric(name: string, value: number, metadata?: Record<string, any>): void {
+  recordMetric(name: string, value: number, metadata?: Record<string, unknown>): void {
     const metric: PerformanceMetric = {
       name,
       value,

@@ -1,22 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
-from typing import List, Optional, Dict, Any
-from datetime import datetime, date
 import csv
-import json
 import io
+import json
 import uuid
-import os
+from datetime import datetime
+from typing import Any
 
-from ..storage.memory_adapter import db, desc
-from ..models import (
-    Transaction, Account, Category, User,
-    TransactionType, ExportFormat
-, Any)
-from ..models import ExportRequest, ExportResponse
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import JSONResponse
+
+from ..models import Any, ExportFormat, ExportRequest, ExportResponse, Transaction
+from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError
-from ..utils.session_manager import session_manager
 
 router = APIRouter()
 
@@ -28,40 +23,38 @@ async def export_transactions(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Export transactions in various formats"""
-    
+
     # Query transactions with filters
     query = db_session.query(Transaction).filter(
         Transaction.user_id == current_user['user_id']
     )
-    
+
     # Apply date filters
     if export_data.start_date:
         query = query.filter(Transaction.transaction_date >= export_data.start_date)
     if export_data.end_date:
         query = query.filter(Transaction.transaction_date <= export_data.end_date)
-    
+
     # Apply account filter
     if export_data.account_ids:
         query = query.filter(Transaction.account_id.in_(export_data.account_ids))
-    
+
     # Apply category filter
     if export_data.category_ids:
         query = query.filter(Transaction.category_id.in_(export_data.category_ids))
-    
+
     transactions = query.order_by(Transaction.transaction_date.desc()).all()
-    
+
     # Generate export based on format
     export_id = str(uuid.uuid4())
     filename = f"transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+
     if export_data.format == ExportFormat.CSV:
         content = generate_csv(transactions)
         filename += ".csv"
-        content_type = "text/csv"
     elif export_data.format == ExportFormat.JSON:
         content = generate_json(transactions)
         filename += ".json"
-        content_type = "application/json"
     else:
         raise ValidationError(f"Export format {export_data.format} not yet implemented")
 
@@ -89,17 +82,17 @@ async def download_export(
         status_code=status.HTTP_501_NOT_IMPLEMENTED
     )
 
-def generate_csv(transactions: List[Transaction]) -> str:
+def generate_csv(transactions: list[Transaction]) -> str:
     """Generate CSV content from transactions"""
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # Write header
     writer.writerow([
-        "Date", "Description", "Amount", "Type", "Category", 
+        "Date", "Description", "Amount", "Type", "Category",
         "Account", "Status", "Notes"
     ])
-    
+
     # Write transactions
     for txn in transactions:
         writer.writerow([
@@ -112,10 +105,10 @@ def generate_csv(transactions: List[Transaction]) -> str:
             txn.status.value,
             txn.notes or ""
         ])
-    
+
     return output.getvalue()
 
-def generate_json(transactions: List[Transaction]) -> str:
+def generate_json(transactions: list[Transaction]) -> str:
     """Generate JSON content from transactions"""
     data = []
     for txn in transactions:
@@ -132,5 +125,5 @@ def generate_json(transactions: List[Transaction]) -> str:
             "status": txn.status.value,
             "notes": txn.notes
         })
-    
+
     return json.dumps(data, indent=2)
