@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fintech-services-network-policy
+  namespace: fintech-services
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from other services in same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: fintech-services
+    # Allow traffic from API Gateway
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow traffic within namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: fintech-services
+    # Allow external HTTPS (for external APIs)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32  # Block metadata service
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: fintech-services
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'fintech-prod'
+        environment: 'production'
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager:9093
+
+    rule_files:
+      - '/etc/prometheus/rules/*.yml'
+
+    scrape_configs:
+      # Scrape services in fintech-services namespace
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - fintech-services
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      # Scrape API Gateway
+      - job_name: 'api-gateway'
+        static_configs:
+          - targets: ['api-gateway:8000']
+
+      # Scrape services
+      - job_name: 'services'
+        static_configs:
+          - targets:
+              - 'auth-service:8001'
+              - 'notification-service:8002'
+              - 'analytics-service:8003'
+              - 'transaction-service:8004'
+              - 'account-service:8005'
+              - 'payment-service:8006'
+              - 'risk-service:8007'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: fintech-services
+data:
+  alert-rules.yml: |
+    groups:
+      - name: service_health
+        interval: 30s
+        rules:
+          # Service down
+          - alert: ServiceDown
+            expr: up{job=~"api-gateway|services"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "{{ $labels.job }} is down"
+              description: "{{ $labels.instance }} has been down for more than 2 minutes"
+
+          # High error rate
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate in {{ $labels.job }}"
+              description: "Error rate is {{ $value | humanizePercentage }}"
+
+          # High response time
+          - alert: HighResponseTime
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High response time in {{ $labels.job }}"
+              description: "P95 response time is {{ $value }}s"
+
+          # High memory usage
+          - alert: HighMemoryUsage
+            expr: container_memory_usage_bytes{pod=~".*-service.*"} / container_spec_memory_limit_bytes > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage in {{ $labels.pod_name }}"
+              description: "Memory usage is {{ $value | humanizePercentage }}"
+
+          # High CPU usage
+          - alert: HighCpuUsage
+            expr: rate(container_cpu_usage_seconds_total{pod=~".*-service.*"}[5m]) > 0.8
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage in {{ $labels.pod_name }}"
+              description: "CPU usage is {{ $value | humanizePercentage }}"
+
+          # Circuit breaker open
+          - alert: CircuitBreakerOpen
+            expr: circuit_breaker_state{state="open"} == 1
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Circuit breaker {{ $labels.service }} is OPEN"
+              description: "Circuit breaker has been open for more than 1 minute"
+
+          # High transaction failure rate
+          - alert: HighTransactionFailureRate
+            expr: rate(transactions_failed_total[5m]) / rate(transactions_total[5m]) > 0.01
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High transaction failure rate"
+              description: "Failure rate is {{ $value | humanizePercentage }}"
