@@ -133,9 +133,21 @@ class MemoryQuery:
             results = sorted(results, key=sort_key)
         elif self.order_by_field:
             # Single order by field (backward compatibility)
-            results = sorted(results,
-                           key=lambda x: x.get(self.order_by_field, ''),
-                           reverse=self.order_desc)
+            def sort_key_fn(x):
+                value = x.get(self.order_by_field, '')
+                # Normalize datetime/date for comparison
+                if isinstance(value, date) and not isinstance(value, datetime):
+                    # Convert date to datetime for consistent comparison
+                    value = datetime.combine(value, datetime.min.time())
+                elif isinstance(value, datetime):
+                    # Normalize datetime to be timezone-naive
+                    value = self.normalize_datetime_for_comparison(value)
+                # Handle None values - put them last
+                if value is None or value == '':
+                    return ('~' if not self.order_desc else '', value)  # '~' sorts after letters
+                return ('' if not self.order_desc else '~', value)
+
+            results = sorted(results, key=sort_key_fn, reverse=self.order_desc)
 
         if self.offset_value:
             results = results[self.offset_value:]
