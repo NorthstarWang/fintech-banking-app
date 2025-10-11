@@ -18,6 +18,8 @@ from .routes import (
     accounts,
     analytics,
     analytics_export,
+    analytics_intelligence,
+    analytics_websocket,
     auth,
     banking,
     budgets,
@@ -71,8 +73,16 @@ async def lifespan(app: FastAPI):
     db.create_database()
     # Populate with initial data using memory-based system
     db.populate_database(seed=42)
+
+    # Initialize event streaming service
+    from .services.event_streaming import event_streaming_service
+    await event_streaming_service.start_background_tasks()
+    logger.info("Event streaming service initialized")
+
     yield
+
     # Shutdown
+    logger.info("Application shutdown")
 
 app = FastAPI(
     title="Banking & Finance Application API",
@@ -151,6 +161,8 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["Not
 # Analytics & Insights
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(analytics_export.router, prefix="/api/analytics", tags=["Analytics Export"])
+app.include_router(analytics_intelligence.router, prefix="/api/analytics", tags=["Analytics Intelligence"])
+app.include_router(analytics_websocket.router, prefix="/api/analytics", tags=["Analytics WebSocket"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
 
 # User Management

@@ -48,9 +48,11 @@ class Validators:
     @staticmethod
     def validate_category_access(db: Any, category_id: int, user_id: int) -> Category:
         """Validate user has access to category (system or own)"""
+        from ..storage.memory_adapter import ORClause
+
         category = db.query(Category).filter(
             Category.id == category_id,
-            (Category.is_system) | (Category.user_id == user_id)
+            ORClause(Category.is_system == True, Category.user_id == user_id)
         ).first()
 
         if not category:

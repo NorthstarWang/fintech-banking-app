@@ -16,20 +16,32 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app.main_banking import app
 from app.repositories.data_manager import data_manager
 from app.storage import db
+from app.middleware.rate_limiter import rate_limiter
 
-@pytest.fixture(scope="function")
-def client() -> Generator[TestClient, None, None]:
-    """Create a test client for the FastAPI app"""
-    # Reset memory data before each test for clean state
-    data_manager.reset(seed=42)
-    
-    # Create test client - TestClient expects app as first positional argument
+@pytest.fixture(scope="function", autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter state before each test to prevent 429 errors"""
+    rate_limiter.requests.clear()
+    rate_limiter.failed_attempts.clear()
+    yield
+    # Clean up after test
+    rate_limiter.requests.clear()
+    rate_limiter.failed_attempts.clear()
+
+@pytest.fixture(scope="session")
+def _test_client() -> Generator[TestClient, None, None]:
+    """Create a test client for the FastAPI app (session-scoped for speed)"""
     test_client = TestClient(app)
     yield test_client
     test_client.close()
-    
-    # Clean up after test
-    data_manager.reset()
+
+@pytest.fixture(scope="function")
+def client(_test_client: TestClient) -> TestClient:
+    """Get test client and reset data before each test"""
+    # Reset memory data before each test for clean state
+    # Use demo_mode=False for faster test execution (minimal data generation)
+    data_manager.reset(seed=42, demo_mode=False)
+    return _test_client
 
 
 @pytest.fixture(scope="function")

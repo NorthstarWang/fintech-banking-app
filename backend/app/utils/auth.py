@@ -161,3 +161,21 @@ async def require_admin(current_user: dict = get_current_user):
         )
 
     return current_user
+
+
+# WebSocket authentication helper
+def verify_token(token: str) -> dict:
+    """Verify JWT token and return payload (for WebSocket authentication)"""
+    try:
+        payload = auth_handler.decode_token(token)
+        return {
+            'user_id': int(payload['sub']),
+            'username': payload['username']
+        }
+    except HTTPException as e:
+        raise ValueError(f"Token verification failed: {e.detail}")
+
+
+async def get_current_user_ws(token: str) -> dict:
+    """Get current user from WebSocket token"""
+    return verify_token(token)
