@@ -8,6 +8,24 @@ from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 
 
+@pytest.fixture(scope="function", autouse=True)
+def reset_budgets_for_test():
+    """Reset budget data before each budget test to ensure clean state"""
+    from app.repositories.data_manager import data_manager
+
+    # Save existing budgets
+    existing_budgets = data_manager.budgets.copy()
+
+    # Clear all budgets before test starts
+    data_manager.budgets.clear()
+
+    yield
+
+    # Restore original budgets after test
+    data_manager.budgets.clear()
+    data_manager.budgets.extend(existing_budgets)
+
+
 class TestBudgetManagement:
     """Test budget management endpoints"""
     
@@ -15,7 +33,7 @@ class TestBudgetManagement:
     def test_create_budget(self, client: TestClient, auth_headers: dict):
         """Test creating a new budget"""
         # First get existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets?active_only=false", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/?active_only=false", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets if b.get("period") == "monthly"}
         
@@ -32,7 +50,7 @@ class TestBudgetManagement:
             pytest.skip("No available category for monthly budget creation")
         category_id = category["id"]
         
-        response = client.post("/api/budgets", 
+        response = client.post("/api/budgets/", 
             headers=auth_headers,
             json={
                 "category_id": category_id,
@@ -65,7 +83,7 @@ class TestBudgetManagement:
         income_category = next((c for c in categories if c.get("is_income", True)), None)
         
         if income_category:
-            response = client.post("/api/budgets", 
+            response = client.post("/api/budgets/", 
                 headers=auth_headers,
                 json={
                     "category_id": income_category["id"],
@@ -81,7 +99,7 @@ class TestBudgetManagement:
     def test_cannot_create_duplicate_active_budget(self, client: TestClient, auth_headers: dict):
         """Test that duplicate active budgets for same category/period are not allowed"""
         # First get existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets if b.get("period") == "monthly"}
         
@@ -105,11 +123,11 @@ class TestBudgetManagement:
         }
         
         # Create first budget
-        response1 = client.post("/api/budgets", headers=auth_headers, json=budget_data)
+        response1 = client.post("/api/budgets/", headers=auth_headers, json=budget_data)
         assert response1.status_code == 201
         
         # Try to create duplicate
-        response2 = client.post("/api/budgets", headers=auth_headers, json=budget_data)
+        response2 = client.post("/api/budgets/", headers=auth_headers, json=budget_data)
         assert response2.status_code == 400
         assert "already exists" in response2.json()["detail"]
     
@@ -117,7 +135,7 @@ class TestBudgetManagement:
     def test_get_budget_by_id(self, client: TestClient, auth_headers: dict):
         """Test getting a specific budget"""
         # First get existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets if b.get("period") == "monthly"}
         
@@ -134,7 +152,7 @@ class TestBudgetManagement:
         category_id = category["id"]
         
         # First create a budget
-        create_response = client.post("/api/budgets", 
+        create_response = client.post("/api/budgets/", 
             headers=auth_headers,
             json={
                 "category_id": category_id,
@@ -165,7 +183,7 @@ class TestBudgetManagement:
     def test_update_budget(self, client: TestClient, auth_headers: dict):
         """Test updating a budget"""
         # First get existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets if b.get("period") == "monthly"}
         
@@ -182,7 +200,7 @@ class TestBudgetManagement:
         category_id = category["id"]
         
         # Create budget
-        create_response = client.post("/api/budgets", 
+        create_response = client.post("/api/budgets/", 
             headers=auth_headers,
             json={
                 "category_id": category_id,
@@ -212,7 +230,7 @@ class TestBudgetManagement:
     def test_deactivate_budget(self, client: TestClient, auth_headers: dict):
         """Test deactivating a budget"""
         # First get ALL existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets?active_only=false", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/?active_only=false", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets}
         
@@ -235,7 +253,7 @@ class TestBudgetManagement:
             category_id = category["id"]
             
             # Create budget
-            create_response = client.post("/api/budgets", 
+            create_response = client.post("/api/budgets/", 
                 headers=auth_headers,
                 json={
                     "category_id": category_id,
@@ -262,7 +280,7 @@ class TestBudgetManagement:
     @pytest.mark.timeout(10)
     def test_list_user_budgets(self, client: TestClient, auth_headers: dict):
         """Test listing all user budgets"""
-        response = client.get("/api/budgets", headers=auth_headers)
+        response = client.get("/api/budgets/", headers=auth_headers)
         assert response.status_code == 200
         budgets = response.json()
         assert isinstance(budgets, list)
@@ -287,7 +305,7 @@ class TestBudgetManagement:
     @pytest.mark.timeout(10)
     def test_list_all_budgets_including_inactive(self, client: TestClient, auth_headers: dict):
         """Test listing all budgets including inactive ones"""
-        response = client.get("/api/budgets?active_only=false", headers=auth_headers)
+        response = client.get("/api/budgets/?active_only=false", headers=auth_headers)
         assert response.status_code == 200
         budgets = response.json()
         assert isinstance(budgets, list)
@@ -296,7 +314,7 @@ class TestBudgetManagement:
     @pytest.mark.timeout(10)
     def test_list_budgets_by_period(self, client: TestClient, auth_headers: dict):
         """Test filtering budgets by period"""
-        response = client.get("/api/budgets?period=monthly", headers=auth_headers)
+        response = client.get("/api/budgets/?period=monthly", headers=auth_headers)
         assert response.status_code == 200
         budgets = response.json()
         assert all(b["period"] == "monthly" for b in budgets)
@@ -394,7 +412,7 @@ class TestBudgetManagement:
         category_id = category["id"]
 
         # Create budget as user1
-        budget_response = client.post("/api/budgets",
+        budget_response = client.post("/api/budgets/",
             headers=user1_headers,
             json={
                 "category_id": category_id,
@@ -426,7 +444,7 @@ class TestBudgetManagement:
     def test_update_budget_validation(self, client: TestClient, auth_headers: dict):
         """Test budget update validation"""
         # First get existing budgets to find an unused category
-        budgets_response = client.get("/api/budgets?active_only=false", headers=auth_headers)
+        budgets_response = client.get("/api/budgets/?active_only=false", headers=auth_headers)
         existing_budgets = budgets_response.json()
         used_category_ids = {b["category_id"] for b in existing_budgets if b.get("period") == "monthly"}
         
@@ -449,7 +467,7 @@ class TestBudgetManagement:
             category_id = category["id"]
             
             # Create budget
-            create_response = client.post("/api/budgets", 
+            create_response = client.post("/api/budgets/", 
                 headers=auth_headers,
                 json={
                     "category_id": category_id,
@@ -506,7 +524,7 @@ class TestBudgetManagement:
         today = date.today()
         start_date = today.replace(day=1)
         
-        budget_response = client.post("/api/budgets", 
+        budget_response = client.post("/api/budgets/", 
             headers=auth_headers,
             json={
                 "category_id": category_id,
