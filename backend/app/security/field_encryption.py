@@ -107,8 +107,8 @@ class FieldEncryption:
     def mask_ssn(ssn: str) -> str:
         """Return SSN with only last 4 digits visible."""
         if len(ssn) < 4:
-            return "***-**-****"
-        return f"***-**-{ssn[-4:]}"
+            return "***-***-****"
+        return f"***-***-{ssn[-4:]}"
 
     @staticmethod
     def mask_account_number(account_number: str) -> str:
@@ -129,41 +129,61 @@ class FieldEncryption:
             return False
 
     @staticmethod
-    def encrypt_dict(data: dict[str, Any], fields_to_encrypt: list[str]) -> dict[str, Any]:
+    def encrypt_dict(data: dict[str, Any], fields_to_encrypt: list[str] | None = None) -> dict[str, Any]:
         """
         Encrypt specific fields in a dictionary.
 
         Args:
             data: Dictionary containing PII
-            fields_to_encrypt: List of field names to encrypt
+            fields_to_encrypt: List of field names to encrypt. If None, encrypts all fields.
 
         Returns:
             Dictionary with specified fields encrypted
         """
         encrypted_data = data.copy()
+
+        # If no fields specified, encrypt all fields
+        if fields_to_encrypt is None:
+            fields_to_encrypt = list(data.keys())
+
         for field in fields_to_encrypt:
-            if encrypted_data.get(field):
-                encrypted_data[field] = FieldEncryption.encrypt_field(
-                    str(encrypted_data[field])
-                )
+            if field in encrypted_data and encrypted_data[field] is not None:
+                value = encrypted_data[field]
+                # Handle nested dictionaries
+                if isinstance(value, dict):
+                    encrypted_data[field] = FieldEncryption.encrypt_dict(value)
+                elif isinstance(value, str):
+                    # Only encrypt string values
+                    encrypted_data[field] = FieldEncryption.encrypt_field(value)
+                # Note: Non-string types (int, float, bool) are not encrypted to preserve type info
         return encrypted_data
 
     @staticmethod
-    def decrypt_dict(data: dict[str, Any], fields_to_decrypt: list[str]) -> dict[str, Any]:
+    def decrypt_dict(data: dict[str, Any], fields_to_decrypt: list[str] | None = None) -> dict[str, Any]:
         """
         Decrypt specific fields in a dictionary.
 
         Args:
             data: Dictionary with encrypted fields
-            fields_to_decrypt: List of field names to decrypt
+            fields_to_decrypt: List of field names to decrypt. If None, decrypts all fields.
 
         Returns:
             Dictionary with specified fields decrypted
         """
         decrypted_data = data.copy()
+
+        # If no fields specified, decrypt all fields
+        if fields_to_decrypt is None:
+            fields_to_decrypt = list(data.keys())
+
         for field in fields_to_decrypt:
-            if decrypted_data.get(field):
-                decrypted_data[field] = FieldEncryption.decrypt_field(
-                    str(decrypted_data[field])
-                )
+            if field in decrypted_data and decrypted_data[field] is not None:
+                value = decrypted_data[field]
+                # Handle nested dictionaries
+                if isinstance(value, dict):
+                    decrypted_data[field] = FieldEncryption.decrypt_dict(value)
+                elif isinstance(value, str) and FieldEncryption.is_encrypted(value):
+                    # Only decrypt if the value is actually encrypted (and a string)
+                    decrypted_data[field] = FieldEncryption.decrypt_field(value)
+                # Note: Non-string types (int, float, bool) pass through unchanged
         return decrypted_data

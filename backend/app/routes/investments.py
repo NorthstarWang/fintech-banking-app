@@ -65,8 +65,68 @@ async def get_investment_account(
         raise HTTPException(status_code=404, detail="Account not found")
     return account
 
+@router.get("/accounts/{account_id}/performance")
+async def get_performance_history(
+    account_id: int,
+    period: str = Query("1M", description="Period: 1D, 1W, 1M, 3M, 6M, 1Y, ALL"),
+    current_user = Depends(get_current_user)
+) -> dict:
+    """Get performance history for an account."""
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+    import random
+
+    # Verify account ownership
+    account = investment_manager.get_account(account_id, current_user["user_id"])
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    # Parse period
+    days_map = {
+        "1D": 1,
+        "1W": 7,
+        "1M": 30,
+        "3M": 90,
+        "6M": 180,
+        "1Y": 365,
+        "ALL": 730
+    }
+    days = days_map.get(period.upper(), 30)
+
+    # Generate performance data
+    dates = []
+    values = []
+    returns = []
+
+    base_value = float(account.balance)
+    current_value = base_value
+
+    for i in range(days, -1, -1):
+        date = datetime.utcnow() - timedelta(days=i)
+        dates.append(date.strftime("%Y-%m-%d"))
+
+        # Simulate value changes
+        if i > 0:
+            change = random.uniform(-0.02, 0.025)  # -2% to +2.5% daily change
+            current_value = current_value * (1 + change)
+        else:
+            current_value = base_value  # End with current value
+
+        values.append(round(current_value, 2))
+        return_pct = ((current_value - base_value) / base_value) * 100
+        returns.append(round(return_pct, 2))
+
+    return {
+        "dates": dates,
+        "values": values,
+        "returns": returns,
+        "period": period,
+        "total_return": returns[-1] if returns else 0,
+        "total_value": values[-1] if values else 0
+    }
+
 # Portfolio endpoints
-@router.get("/accounts/{account_id}/portfolio", response_model=PortfolioResponse)
+@router.get("/portfolio/{account_id}", response_model=PortfolioResponse)
 async def get_portfolio(
     account_id: int,
     current_user = Depends(get_current_user)
@@ -77,8 +137,20 @@ async def get_portfolio(
         raise HTTPException(status_code=404, detail="Portfolio not found")
     return portfolio
 
-@router.get("/portfolios/{portfolio_id}/positions", response_model=list[PositionResponse])
+@router.get("/accounts/{account_id}/positions", response_model=list[PositionResponse])
 async def get_positions(
+    account_id: int,
+    current_user = Depends(get_current_user)
+) -> list[PositionResponse]:
+    """Get all positions in an account."""
+    # Get portfolio for this account
+    portfolio = investment_manager.get_portfolio(account_id, current_user["user_id"])
+    if not portfolio:
+        return []
+    return investment_manager.get_positions(portfolio.id, current_user["user_id"])
+
+@router.get("/portfolios/{portfolio_id}/positions", response_model=list[PositionResponse])
+async def get_portfolio_positions(
     portfolio_id: int,
     current_user = Depends(get_current_user)
 ) -> list[PositionResponse]:
@@ -110,6 +182,20 @@ async def place_order(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+@router.get("/orders", response_model=list[TradeOrderResponse])
+async def get_all_orders(
+    status: OrderStatus | None = Query(None, description="Filter by order status"),
+    current_user = Depends(get_current_user)
+) -> list[TradeOrderResponse]:
+    """Get all orders for the current user."""
+    # Get all user's accounts
+    accounts = investment_manager.get_user_accounts(current_user["user_id"])
+    all_orders = []
+    for account in accounts:
+        orders = investment_manager.get_orders(account.id, current_user["user_id"], status)
+        all_orders.extend(orders)
+    return all_orders
+
 @router.delete("/orders/{order_id}")
 async def cancel_order(
     order_id: int,
@@ -120,6 +206,29 @@ async def cancel_order(
     if not success:
         raise HTTPException(status_code=404, detail="Order not found or cannot be cancelled")
     return {"message": "Order cancelled successfully"}
+
+@router.put("/orders/{order_id}/cancel", response_model=TradeOrderResponse)
+async def cancel_order_put(
+    order_id: int,
+    current_user = Depends(get_current_user)
+) -> TradeOrderResponse:
+    """Cancel a pending order (PUT method)."""
+    # Find the order
+    accounts = investment_manager.get_user_accounts(current_user["user_id"])
+    for account in accounts:
+        orders = investment_manager.get_orders(account.id, current_user["user_id"])
+        for order in orders:
+            if order.id == order_id:
+                # Cancel it
+                success = investment_manager.cancel_order(order_id, current_user["user_id"])
+                if not success:
+                    raise HTTPException(status_code=404, detail="Order cannot be cancelled")
+                # Get updated order
+                updated_orders = investment_manager.get_orders(account.id, current_user["user_id"])
+                for updated_order in updated_orders:
+                    if updated_order.id == order_id:
+                        return updated_order
+    raise HTTPException(status_code=404, detail="Order not found")
 
 @router.get("/accounts/{account_id}/orders", response_model=list[TradeOrderResponse])
 async def get_orders(
@@ -145,6 +254,65 @@ async def create_watchlist(
 ) -> WatchlistResponse:
     """Create a new watchlist."""
     return investment_manager.create_watchlist(current_user["user_id"], watchlist)
+
+@router.post("/watchlists/{watchlist_id}/assets", response_model=WatchlistResponse)
+async def add_to_watchlist(
+    watchlist_id: int,
+    asset_data: dict,
+    current_user = Depends(get_current_user)
+) -> WatchlistResponse:
+    """Add an asset to a watchlist."""
+    # Find watchlist
+    watchlist = next((w for w in data_manager.investment_watchlists
+                     if w['id'] == watchlist_id and w['user_id'] == current_user["user_id"]), None)
+
+    if not watchlist:
+        raise HTTPException(status_code=404, detail="Watchlist not found")
+
+    asset_id = asset_data.get('asset_id')
+    if not asset_id:
+        raise HTTPException(status_code=400, detail="asset_id required")
+
+    # Find asset
+    all_assets = data_manager.etf_assets + data_manager.stock_assets + data_manager.crypto_assets
+    asset = next((a for a in all_assets if a['id'] == asset_id), None)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    # Add asset to watchlist symbols
+    if 'symbols' not in watchlist:
+        watchlist['symbols'] = []
+    if asset['symbol'] not in watchlist['symbols']:
+        watchlist['symbols'].append(asset['symbol'])
+
+    # Return updated watchlist
+    return investment_manager._watchlist_to_response(watchlist)
+
+@router.delete("/watchlists/{watchlist_id}/assets/{asset_id}")
+async def remove_from_watchlist(
+    watchlist_id: int,
+    asset_id: int,
+    current_user = Depends(get_current_user)
+) -> dict:
+    """Remove an asset from a watchlist."""
+    # Find watchlist
+    watchlist = next((w for w in data_manager.investment_watchlists
+                     if w['id'] == watchlist_id and w['user_id'] == current_user["user_id"]), None)
+
+    if not watchlist:
+        raise HTTPException(status_code=404, detail="Watchlist not found")
+
+    # Find asset
+    all_assets = data_manager.etf_assets + data_manager.stock_assets + data_manager.crypto_assets
+    asset = next((a for a in all_assets if a['id'] == asset_id), None)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    # Remove asset from watchlist
+    if 'symbols' in watchlist and asset['symbol'] in watchlist['symbols']:
+        watchlist['symbols'].remove(asset['symbol'])
+
+    return {"message": "Asset removed from watchlist"}
 
 @router.put("/watchlists/{watchlist_id}")
 async def update_watchlist(
@@ -265,6 +433,67 @@ async def get_all_assets(
     return investment_manager.get_all_assets(asset_type)
 
 # Asset search endpoints
+@router.get("/assets/search")
+async def search_assets(
+    query: str = Query(None, description="Search query"),
+    asset_type: str | None = Query(None, description="Filter by asset type"),
+    current_user = Depends(get_current_user)
+) -> list:
+    """Search for investment assets."""
+    results = []
+
+    # Determine which asset types to search
+    search_etfs = asset_type is None or asset_type.lower() == 'etf'
+    search_stocks = asset_type is None or asset_type.lower() == 'stock'
+    search_crypto = asset_type is None or asset_type.lower() == 'crypto'
+
+    # Search ETFs
+    if search_etfs:
+        for etf in data_manager.etf_assets:
+            if query is None or query.lower() in etf['symbol'].lower() or query.lower() in etf['name'].lower():
+                results.append({
+                    'id': etf['id'],
+                    'symbol': etf['symbol'],
+                    'name': etf['name'],
+                    'asset_type': 'etf',
+                    'current_price': etf.get('price', 0),
+                    'change_percent': etf.get('change_percent', 0),
+                    'category': etf.get('category', ''),
+                    'expense_ratio': etf.get('expense_ratio', 0)
+                })
+
+    # Search stocks
+    if search_stocks:
+        for stock in data_manager.stock_assets:
+            if query is None or query.lower() in stock['symbol'].lower() or query.lower() in stock['name'].lower():
+                results.append({
+                    'id': stock['id'],
+                    'symbol': stock['symbol'],
+                    'name': stock['name'],
+                    'asset_type': 'stock',
+                    'current_price': stock.get('price', 0),
+                    'change_percent': stock.get('change_percent', 0),
+                    'sector': stock.get('sector', ''),
+                    'market_cap': stock.get('market_cap', 0),
+                    'pe_ratio': stock.get('pe_ratio', 0)
+                })
+
+    # Search crypto
+    if search_crypto:
+        for crypto in data_manager.crypto_assets:
+            if query is None or query.lower() in crypto['symbol'].lower() or query.lower() in crypto['name'].lower():
+                results.append({
+                    'id': crypto['id'],
+                    'symbol': crypto['symbol'],
+                    'name': crypto['name'],
+                    'asset_type': 'crypto',
+                    'current_price': crypto.get('price', 0),
+                    'change_percent': crypto.get('change_percent', 0),
+                    'market_cap': crypto.get('market_cap', 0)
+                })
+
+    return results[:20]  # Limit to 20 results
+
 @router.get("/search/etfs")
 async def search_etfs(
     query: str = Query(..., description="Search query"),

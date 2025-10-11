@@ -4,23 +4,25 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from ..models import (
-    BlockedUser,
     BlockUserRequest,
     BulkMessageUpdate,
-    DirectMessage,
     DirectMessageCreate,
     DirectMessageReply,
     DirectMessageResponse,
-    MessageAttachment,
-    MessageFolder,
     MessageFolderCreate,
     MessageFolderResponse,
     MessageMoveRequest,
-    MessageSettings,
     MessageSettingsResponse,
     MessageSettingsUpdate,
-    Notification,
     NotificationType,
+)
+from ..models.memory_models import (
+    BlockedUser,
+    DirectMessage,
+    MessageAttachment,
+    MessageFolder,
+    MessageSettings,
+    Notification,
     User,
 )
 from ..storage.memory_adapter import and_, db, desc, joinedload, or_
@@ -141,17 +143,25 @@ async def get_inbox(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.recipient_id == current_user['user_id'],
-        not DirectMessage.deleted_by_recipient,
-        not DirectMessage.is_draft
+        DirectMessage.deleted_by_recipient == False,
+        DirectMessage.is_draft == False
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
 
     results = []
     for msg in messages:
+        # Load sender manually
+        sender = db_session.query(User).filter(User.id == msg.sender_id).first()
+
         response = DirectMessageResponse.from_orm(msg)
-        response.sender_username = msg.sender.username
+        response.sender_username = sender.username if sender else None
         response.recipient_username = current_user['username']
-        if msg.attachments:
-            response.attachments = list(msg.attachments)
+
+        # Load attachments manually
+        attachments = db_session.query(MessageAttachment).filter(
+            MessageAttachment.message_id == msg.id
+        ).all()
+        if attachments:
+            response.attachments = list(attachments)
         results.append(response)
 
     return results
@@ -169,17 +179,25 @@ async def get_sent_messages(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        not DirectMessage.deleted_by_sender,
-        not DirectMessage.is_draft
+        DirectMessage.deleted_by_sender == False,
+        DirectMessage.is_draft == False
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
 
     results = []
     for msg in messages:
+        # Load recipient manually
+        recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
+
         response = DirectMessageResponse.from_orm(msg)
         response.sender_username = current_user['username']
-        response.recipient_username = msg.recipient.username
-        if msg.attachments:
-            response.attachments = list(msg.attachments)
+        response.recipient_username = recipient.username if recipient else None
+
+        # Load attachments manually
+        attachments = db_session.query(MessageAttachment).filter(
+            MessageAttachment.message_id == msg.id
+        ).all()
+        if attachments:
+            response.attachments = list(attachments)
         results.append(response)
 
     return results
@@ -200,18 +218,18 @@ async def search_messages(
         or_(
             and_(
                 DirectMessage.sender_id == current_user['user_id'],
-                not DirectMessage.deleted_by_sender
+                DirectMessage.deleted_by_sender == False
             ),
             and_(
                 DirectMessage.recipient_id == current_user['user_id'],
-                not DirectMessage.deleted_by_recipient
+                DirectMessage.deleted_by_recipient == False
             )
         ),
         or_(
             DirectMessage.subject.ilike(search_pattern),
             DirectMessage.message.ilike(search_pattern)
         ),
-        not DirectMessage.is_draft
+        DirectMessage.is_draft == False
     ).order_by(desc(DirectMessage.sent_at)).all()
 
     results = []
@@ -248,15 +266,18 @@ async def get_drafts(
         joinedload(DirectMessage.recipient)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        DirectMessage.is_draft,
-        not DirectMessage.deleted_by_sender
+        DirectMessage.is_draft == True,
+        DirectMessage.deleted_by_sender == False
     ).order_by(desc(DirectMessage.created_at)).all()
 
     results = []
     for draft in drafts:
+        # Load recipient manually
+        recipient = db_session.query(User).filter(User.id == draft.recipient_id).first() if draft.recipient_id else None
+
         response = DirectMessageResponse.from_orm(draft)
         response.sender_username = current_user['username']
-        response.recipient_username = draft.recipient.username if draft.recipient else None
+        response.recipient_username = recipient.username if recipient else None
         results.append(response)
 
     return results
@@ -271,7 +292,7 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        not DirectMessage.is_read
+        DirectMessage.is_read == False
     ).first()
 
     if not message:
@@ -294,7 +315,7 @@ async def bulk_mark_read(
     updated = db_session.query(DirectMessage).filter(
         DirectMessage.id.in_(bulk_data.message_ids),
         DirectMessage.recipient_id == current_user['user_id'],
-        not DirectMessage.is_read
+        DirectMessage.is_read == False
     ).update({
         'is_read': True,
         'read_at': datetime.utcnow()
@@ -517,9 +538,9 @@ async def get_message(
         DirectMessage.id == message_id,
         or_(
             and_(DirectMessage.sender_id == current_user['user_id'],
-                 not DirectMessage.deleted_by_sender),
+                 DirectMessage.deleted_by_sender == False),
             and_(DirectMessage.recipient_id == current_user['user_id'],
-                 not DirectMessage.deleted_by_recipient)
+                 DirectMessage.deleted_by_recipient == False)
         )
     ).first()
 
@@ -557,7 +578,7 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        not DirectMessage.deleted_by_recipient
+        DirectMessage.deleted_by_recipient == False
     ).first()
 
     if not message:

@@ -43,6 +43,7 @@ from .memory_models import (
     Budget,
     BudgetPeriod,
     Card,
+    CardSpendingLimit,
     CardStatus,
     CardType,
     Category,
@@ -71,9 +72,11 @@ from .memory_models import (
     DeFiPosition,
     DeFiProtocolType,
     DirectMessage,
+    ExpenseReport as ExpenseReportMemory,
     Goal,
     GoalContribution,
     GoalStatus,
+    Invoice as InvoiceMemory,
     LinkedAccount,
     Log,
     Merchant,
@@ -87,6 +90,7 @@ from .memory_models import (
     PaymentMethod,
     PaymentMethodStatus,
     PaymentMethodType,
+    Receipt as ReceiptMemory,
     RecurringRule,
     SecurityAuditLog,
     SecurityEvent,
@@ -376,9 +380,10 @@ from .entities.unified_models import (
 
 # Create backwards compatibility aliases (after all imports)
 CurrencyInfo = CurrencyInfoResponse
-ExpenseReport = ExpenseReportResponse
-Invoice = InvoiceResponse
-Receipt = ReceiptResponse
+# Use memory models for database operations
+ExpenseReport = ExpenseReportMemory
+Invoice = InvoiceMemory
+Receipt = ReceiptMemory
 
 # Add missing model aliases for route imports
 SpendingLimit = CardLimitResponse

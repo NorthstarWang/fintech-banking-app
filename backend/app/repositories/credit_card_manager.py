@@ -23,9 +23,9 @@ class CreditCardManager:
         card_offers = [
             {
                 'id': 1,
-                'name': 'Cash Rewards Plus',
+                'card_name': 'Cash Rewards Plus',
                 'issuer': 'MegaBank',
-                'type': 'cashback',
+                'category': 'cash_back',
                 'annual_fee': 0,
                 'min_credit_score': 650,
                 'cashback_rate': 2.0,
@@ -36,9 +36,9 @@ class CreditCardManager:
             },
             {
                 'id': 2,
-                'name': 'Travel Elite',
+                'card_name': 'Travel Elite',
                 'issuer': 'Premium Bank',
-                'type': 'travel',
+                'category': 'travel',
                 'annual_fee': 450,
                 'min_credit_score': 750,
                 'points_multiplier': 3,
@@ -49,9 +49,9 @@ class CreditCardManager:
             },
             {
                 'id': 3,
-                'name': 'Student Starter',
+                'card_name': 'Student Starter',
                 'issuer': 'EduBank',
-                'type': 'student',
+                'category': 'student',
                 'annual_fee': 0,
                 'min_credit_score': 0,
                 'cashback_rate': 1.0,
@@ -62,9 +62,9 @@ class CreditCardManager:
             },
             {
                 'id': 4,
-                'name': 'Business Platinum',
+                'card_name': 'Business Platinum',
                 'issuer': 'Corporate Bank',
-                'type': 'business',
+                'category': 'business',
                 'annual_fee': 250,
                 'min_credit_score': 700,
                 'cashback_rate': 3.0,
@@ -75,9 +75,9 @@ class CreditCardManager:
             },
             {
                 'id': 5,
-                'name': 'Premium Rewards',
+                'card_name': 'Premium Rewards',
                 'issuer': 'Elite Financial',
-                'type': 'rewards',
+                'category': 'rewards',
                 'annual_fee': 95,
                 'min_credit_score': 700,
                 'points_multiplier': 2,
@@ -88,9 +88,9 @@ class CreditCardManager:
             },
             {
                 'id': 6,
-                'name': 'Secured Builder',
+                'card_name': 'Secured Builder',
                 'issuer': 'BuildCredit Bank',
-                'type': 'secured',
+                'category': 'secured',
                 'annual_fee': 39,
                 'min_credit_score': 0,
                 'cashback_rate': 1.0,
@@ -101,9 +101,9 @@ class CreditCardManager:
             },
             {
                 'id': 7,
-                'name': 'Zero Interest Card',
+                'card_name': 'Zero Interest Card',
                 'issuer': 'Balance Bank',
-                'type': 'balance_transfer',
+                'category': 'balance_transfer',
                 'annual_fee': 0,
                 'min_credit_score': 680,
                 'intro_apr_period': 18,
@@ -233,16 +233,17 @@ class CreditCardManager:
                 reasons.append('Good credit score match')
 
             # Match based on card type and spending
-            if offer['type'] == 'travel' and high_travel:
+            card_type = offer.get('category', offer.get('type', 'unknown'))
+            if card_type == 'travel' and high_travel:
                 match_score += 40
                 reasons.append('High travel spending detected')
-            elif offer['type'] == 'cashback':
+            elif card_type in ['cash_back', 'cashback']:
                 match_score += 30
                 reasons.append('Great for everyday purchases')
-            elif offer['type'] == 'student' and is_student:
+            elif card_type == 'student' and is_student:
                 match_score += 50
                 reasons.append('Perfect for students')
-            elif offer['type'] == 'secured' and credit_score < 650:
+            elif card_type == 'secured' and credit_score < 650:
                 match_score += 40
                 reasons.append('Build your credit history')
 
@@ -255,9 +256,9 @@ class CreditCardManager:
             if match_score > 0:
                 recommendations.append({
                     'card_offer_id': offer['id'],
-                    'card_name': offer['name'],
+                    'card_name': offer.get('card_name', offer.get('name', 'Unknown')),
                     'issuer': offer['issuer'],
-                    'card_type': offer['type'],
+                    'card_type': offer.get('category', offer.get('type', 'unknown')),
                     'match_score': match_score,
                     'reasons': reasons,
                     'annual_fee': offer['annual_fee'],
@@ -300,8 +301,26 @@ class CreditCardManager:
 
         # Check eligibility
         if credit_score < offer['min_credit_score']:
+            # Still create an application record even if rejected
+            application_id = len(self.data_manager.card_applications) + 1
+            application = {
+                'id': application_id,
+                'user_id': user_id,
+                'card_offer_id': card_offer_id,
+                'status': 'rejected',
+                'credit_score_at_application': credit_score,
+                'requested_credit_limit': requested_credit_limit or 0,
+                'approved_credit_limit': 0,
+                'application_date': datetime.utcnow(),
+                'decision_date': datetime.utcnow(),
+                'rejection_reason': f"Credit score {credit_score} below minimum {offer['min_credit_score']}"
+            }
+            self.data_manager.card_applications.append(application)
+
             return {
-                'application_id': None,
+                'id': application_id,
+                'application_id': application_id,
+                'card_id': card_offer_id,
                 'status': 'rejected',
                 'reason': f"Credit score {credit_score} below minimum {offer['min_credit_score']}"
             }
@@ -340,7 +359,9 @@ class CreditCardManager:
             self._create_card_from_application(user_id, offer, approved_limit)
 
         return {
+            'id': application_id,
             'application_id': application_id,
+            'card_id': card_offer_id,
             'status': status,
             'approved_credit_limit': approved_limit,
             'next_steps': 'Card will arrive in 7-10 business days' if is_approved else 'Consider secured card options'
@@ -360,9 +381,9 @@ class CreditCardManager:
             if offer:
                 enhanced_apps.append({
                     **app,
-                    'card_name': offer['name'],
+                    'card_name': offer.get('card_name', offer.get('name', 'Unknown')),
                     'issuer': offer['issuer'],
-                    'card_type': offer['type']
+                    'card_type': offer.get('category', offer.get('type', 'unknown'))
                 })
 
         return enhanced_apps

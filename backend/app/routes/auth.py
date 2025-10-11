@@ -72,12 +72,27 @@ async def login(request: Request, response: Response, credentials: UserLogin,
     user = db_session.query(User).filter(User.username == credentials.username).first()
 
     if not user or not auth_handler.verify_password(credentials.password, user.password_hash):
+        # Log failed login attempt
+        audit_logger.log_event(
+            event_type=AuditEventType.LOGIN_FAILURE,
+            user_id=user.id if user else None,
+            request=request,
+            success=False,
+            details={"username": credentials.username}
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
         )
 
     if not user.is_active:
+        audit_logger.log_event(
+            event_type=AuditEventType.LOGIN_FAILURE,
+            user_id=user.id,
+            request=request,
+            success=False,
+            details={"reason": "account_deactivated"}
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is deactivated"
@@ -89,6 +104,23 @@ async def login(request: Request, response: Response, credentials: UserLogin,
 
     # Generate JWT token
     token = auth_handler.encode_token(user.id, user.username)
+
+    # Check for concurrent sessions
+    max_concurrent_sessions = 3
+    existing_sessions = [s for s in session_auth.sessions.values() if s.get('user_id') == user.id]
+    if len(existing_sessions) >= max_concurrent_sessions:
+        # Log concurrent session warning
+        audit_logger.log_event(
+            event_type=AuditEventType.LOGIN_SUCCESS,
+            user_id=user.id,
+            request=request,
+            success=True,
+            details={
+                "username": user.username,
+                "reason": "concurrent_login",
+                "active_sessions": len(existing_sessions)
+            }
+        )
 
     # Create session for dual auth support
     session_id = session_auth.create_session(user.id, user.username)
@@ -109,6 +141,15 @@ async def login(request: Request, response: Response, credentials: UserLogin,
         httponly=True,
         samesite="lax",
         max_age=86400  # 24 hours
+    )
+
+    # Log successful login
+    audit_logger.log_event(
+        event_type=AuditEventType.LOGIN_SUCCESS,
+        user_id=user.id,
+        request=request,
+        success=True,
+        details={"username": user.username}
     )
 
     return {

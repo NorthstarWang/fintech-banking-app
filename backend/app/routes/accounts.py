@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from ..models import (
     Account,
@@ -30,13 +31,11 @@ async def create_account(
     """Create a new account"""
 
     # Create new account
-    # Convert string to enum value
-    account_type_value = AccountType[account_data.account_type.upper()]
-
+    # account_data.account_type is already an AccountType enum from Pydantic
     new_account = Account(
         user_id=current_user['user_id'],
         name=account_data.name,
-        account_type=account_type_value,
+        account_type=account_data.account_type,
         account_number=account_data.account_number,
         institution_name=account_data.institution_name,
         balance=account_data.initial_balance,
@@ -84,12 +83,11 @@ async def create_joint_account(
         )
 
     # Create new account
-    account_type_value = AccountType[account_data.account_type.upper()]
-
+    # account_data.account_type is already an AccountType enum from Pydantic
     new_account = Account(
         user_id=current_user['user_id'],  # Primary owner
         name=account_data.name,
-        account_type=account_type_value,
+        account_type=account_data.account_type,
         account_number=account_data.account_number,
         institution_name=account_data.institution_name,
         balance=account_data.initial_balance,
@@ -247,6 +245,13 @@ async def get_account(
         current_user['user_id']
     )
 
+    # Check if account is active
+    if not account.is_active:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": "Access to inactive account is forbidden"}
+        )
+
     return AccountResponse.from_orm(account)
 
 @router.get("/{account_id}/transactions")
@@ -379,8 +384,9 @@ async def deactivate_account(
 
     # Check if account has non-zero balance
     if abs(account.balance) > 0.01:  # Small tolerance for floating point
-        raise ValidationError(
-            f"Cannot deactivate account with non-zero balance: ${account.balance:.2f}"
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": f"Cannot deactivate account with non-zero balance: ${account.balance:.2f}"}
         )
 
     # Deactivate account
@@ -419,7 +425,7 @@ async def get_account_balance(
             {
                 "id": tx.id,
                 "amount": tx.amount,
-                "type": tx.transaction_type.value,
+                "type": tx.transaction_type.value if hasattr(tx.transaction_type, 'value') else tx.transaction_type,
                 "description": tx.description,
                 "date": tx.transaction_date.isoformat()
             }

@@ -271,6 +271,7 @@ class ApplicationStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
     DENIED = "denied"
+    REJECTED = "rejected"
     UNDER_REVIEW = "under_review"
     WITHDRAWN = "withdrawn"
 
@@ -284,6 +285,8 @@ class EmploymentType(str, Enum):
 
 # Currency Converter Related Enums
 class TradeStatus(str, Enum):
+    PENDING = "pending"
+    IN_ESCROW = "in_escrow"
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"

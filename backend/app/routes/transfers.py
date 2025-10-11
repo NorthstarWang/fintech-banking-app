@@ -68,9 +68,10 @@ async def transfer_money(
 
     # Check sufficient balance
     if source_account.balance < transfer_data.amount:
-        raise HTTPException(
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Insufficient balance"
+            content={"detail": "Insufficient balance"}
         )
     # Create debit transaction
     debit_transaction = Transaction(

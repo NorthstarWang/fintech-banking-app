@@ -34,13 +34,7 @@ async def handle_exception(
     if isinstance(exc, StarletteHTTPException):
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "error": {
-                    "message": exc.detail,
-                    "type": "http_error",
-                    "status_code": exc.status_code
-                }
-            }
+            content={"detail": exc.detail}
         )
 
     # Pydantic validation error

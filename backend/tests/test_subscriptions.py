@@ -8,12 +8,12 @@ from datetime import datetime, timedelta, date
 from unittest.mock import patch, MagicMock
 
 
-@pytest.fixture(autouse=True)
-def mock_logger():
-    """Mock the logger to avoid validation errors in production code"""
-    with patch('app.routes.subscriptions.logger') as mock:
-        mock.log_action = MagicMock()
-        yield mock
+# @pytest.fixture(autouse=True)
+# def mock_logger():
+#     """Mock the logger to avoid validation errors in production code"""
+#     with patch('app.routes.subscriptions.logger') as mock:
+#         mock.log_action = MagicMock()
+#         yield mock
 
 
 # @pytest.fixture(autouse=True)

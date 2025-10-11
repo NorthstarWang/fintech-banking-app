@@ -3,7 +3,7 @@ Memory-based adapter to replace SQLAlchemy operations.
 This module provides compatibility layer for existing routes to use memory-based storage.
 """
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from app.repositories.data_manager import data_manager
@@ -157,7 +157,7 @@ class MemoryQuery:
         if len(fields) == 1:
             field = fields[0]
             if hasattr(field, 'element'):
-                # Handle desc()
+                # Handle asc() or desc()
                 self.order_by_field = field.element.key
                 self.order_desc = hasattr(field, 'modifier') and field.modifier == 'desc'
             else:
@@ -168,7 +168,7 @@ class MemoryQuery:
             self.order_by_fields = []
             for field in fields:
                 if hasattr(field, 'element'):
-                    # Handle desc()
+                    # Handle asc() or desc()
                     self.order_by_fields.append({
                         'field': field.element.key,
                         'desc': hasattr(field, 'modifier') and field.modifier == 'desc'
@@ -346,7 +346,6 @@ class MemoryQuery:
                         len(results)
 
                         # For date comparisons, ensure we're comparing dates correctly
-                        from datetime import date, datetime
                         filtered_results = []
                         for r in results:
                             item_value = r.get(field)
@@ -414,7 +413,6 @@ class MemoryQuery:
                         len(results)
 
                         # For date comparisons, ensure we're comparing dates correctly
-                        from datetime import date, datetime
                         filtered_results = []
                         for r in results:
                             item_value = r.get(field)
@@ -526,6 +524,8 @@ class MemoryQuery:
         # Import memory models
         from app.models.memory_models import (
             Account,
+            AccountLockout,
+            AuditLog,
             Budget,
             Card,
             Category,
@@ -533,9 +533,13 @@ class MemoryQuery:
             DirectMessage,
             Goal,
             Log,
+            LoginAttempt,
             Merchant,
             Notification,
+            SecurityIncident,
             Transaction,
+            TransactionAnomaly,
+            TrustedDevice,
             User,
         )
 
@@ -552,7 +556,13 @@ class MemoryQuery:
             'DirectMessage': DirectMessage,
             'Log': Log,
             'Merchant': Merchant,
-            'Card': Card
+            'Card': Card,
+            'AuditLog': AuditLog,
+            'LoginAttempt': LoginAttempt,
+            'TransactionAnomaly': TransactionAnomaly,
+            'SecurityIncident': SecurityIncident,
+            'AccountLockout': AccountLockout,
+            'TrustedDevice': TrustedDevice,
         }
 
         model_name = self.model_class.__name__ if hasattr(self.model_class, '__name__') else str(self.model_class)
@@ -670,6 +680,7 @@ class MemorySession:
             'UserDevice': data_manager.user_devices,
             'SecurityAuditLog': data_manager.security_audit_logs,
             'SpendingLimit': data_manager.spending_limits,
+            'CardSpendingLimit': data_manager.spending_limits,
             'RoundUpConfig': data_manager.round_up_configs,
             'RoundUpTransaction': data_manager.round_up_transactions,
             'SavingsRule': data_manager.savings_rules,
@@ -684,6 +695,13 @@ class MemorySession:
             'MessageFolder': data_manager.message_folders,
             'BlockedUser': data_manager.blocked_users,
             'MessageSettings': data_manager.message_settings,
+            # Security module models
+            'AuditLog': data_manager.audit_logs,
+            'LoginAttempt': data_manager.login_attempts,
+            'TransactionAnomaly': data_manager.transaction_anomalies,
+            'SecurityIncident': data_manager.security_incidents,
+            'AccountLockout': data_manager.account_lockouts,
+            'TrustedDevice': data_manager.trusted_devices,
             # Add more mappings as needed
         }
 
@@ -702,15 +720,11 @@ class MemorySession:
         for obj in self.pending_adds:
             obj_dict = self._model_to_dict(obj)
 
-            # Ensure object has an ID
-            if 'id' not in obj_dict or obj_dict['id'] is None:
-                # Generate auto-incrementing ID based on the model type
-                obj.__class__.__name__ if hasattr(obj, '__class__') else 'Unknown'
-
-                # Get the appropriate store to find max ID
-                store = self._get_store_for_model(obj.__class__)
-                max_id = max([item.get('id', 0) for item in store if isinstance(item.get('id'), int)], default=0)
-                obj_dict['id'] = max_id + 1
+            # Always generate a new ID based on the store to avoid conflicts with existing data
+            # Get the appropriate store to find max ID
+            store = self._get_store_for_model(obj.__class__)
+            max_id = max([item.get('id', 0) for item in store if isinstance(item.get('id'), int)], default=0)
+            obj_dict['id'] = max_id + 1
 
             if 'created_at' not in obj_dict:
                 obj_dict['created_at'] = datetime.utcnow()
@@ -763,7 +777,20 @@ class MemorySession:
 
     def flush(self):
         """Flush pending changes without committing."""
-        # Similar to commit but doesn't clear pending
+        # Process additions to assign IDs but keep in pending
+        for obj in self.pending_adds:
+            obj_dict = self._model_to_dict(obj)
+
+            # Ensure object has an ID
+            if 'id' not in obj_dict or obj_dict['id'] is None:
+                # Get the appropriate store to find max ID
+                store = self._get_store_for_model(obj.__class__)
+                max_id = max([item.get('id', 0) for item in store if isinstance(item.get('id'), int)], default=0)
+                obj_dict['id'] = max_id + 1
+
+                # Update the original object's _data with the new ID
+                if hasattr(obj, '_data'):
+                    obj._data['id'] = obj_dict['id']
 
     def refresh(self, obj):
         """Refresh object from database."""
@@ -779,8 +806,11 @@ class MemorySession:
                 for item in store:
                     if item.get('id') == obj_id:
                         # Update all attributes from the stored data
-                        obj._data.clear()
-                        obj._data.update(item)
+                        # Check if _data is already pointing to the store item
+                        if obj._data is not item:
+                            obj._data.clear()
+                            obj._data.update(item)
+                        # If _data IS the store item, no need to do anything
                         return
                 # If not found in stores, the object might have just been added
                 # In this case, do nothing as the object already has its data
@@ -839,7 +869,14 @@ class MemorySession:
             'message_folders': data_manager.message_folders,
             'blocked_users': data_manager.blocked_users,
             'message_settings': data_manager.message_settings,
-            'logs': data_manager.logs
+            'logs': data_manager.logs,
+            # Security module stores
+            'audit_logs': data_manager.audit_logs,
+            'login_attempts': data_manager.login_attempts,
+            'transaction_anomalies': data_manager.transaction_anomalies,
+            'security_incidents': data_manager.security_incidents,
+            'account_lockouts': data_manager.account_lockouts,
+            'trusted_devices': data_manager.trusted_devices,
         }
 
     def _model_to_dict(self, obj):
@@ -927,6 +964,7 @@ class MemorySession:
                 'user_devices': data_manager.user_devices,
                 'security_audit_logs': data_manager.security_audit_logs,
                 'spending_limits': data_manager.spending_limits,
+                'card_spending_limits': data_manager.spending_limits,
                 'round_up_configs': data_manager.round_up_configs,
                 'round_up_transactions': data_manager.round_up_transactions,
                 'savings_rules': data_manager.savings_rules,
@@ -942,6 +980,13 @@ class MemorySession:
                 'blocked_users': data_manager.blocked_users,
                 'message_settings': data_manager.message_settings,
                 'logs': data_manager.logs,
+                # Security module tables
+                'audit_logs': data_manager.audit_logs,
+                'login_attempts': data_manager.login_attempts,
+                'transaction_anomalies': data_manager.transaction_anomalies,
+                'security_incidents': data_manager.security_incidents,
+                'account_lockouts': data_manager.account_lockouts,
+                'trusted_devices': data_manager.trusted_devices,
             }
             if tablename in store_map:
                 store_map[tablename].append(obj_dict)
@@ -970,41 +1015,94 @@ class MemorySession:
         if not obj_id:
             return
 
-        # Remove from all stores
-        all_stores = [
-            data_manager.users, data_manager.accounts, data_manager.transactions,
-            data_manager.categories, data_manager.budgets, data_manager.goals,
-            data_manager.goal_contributions, data_manager.notifications,
-            data_manager.contacts, data_manager.conversations,
-            data_manager.conversation_participants, data_manager.messages,
-            data_manager.message_read_receipts, data_manager.recurring_rules,
-            data_manager.merchants, data_manager.notes, data_manager.cards,
-            data_manager.subscriptions, data_manager.security_events,
-            data_manager.payment_methods, data_manager.bills,
-            data_manager.credit_scores, data_manager.social_connections,
-            data_manager.p2p_transactions, data_manager.investment_accounts,
-            data_manager.holdings, data_manager.alerts, data_manager.analytics_events,
-            data_manager.bank_links, data_manager.plaid_accounts,
-            data_manager.transactions_sync_status, data_manager.linked_accounts,
-            data_manager.credit_simulations, data_manager.two_factor_auth,
-            data_manager.user_devices, data_manager.security_audit_logs,
-            data_manager.spending_limits, data_manager.round_up_configs,
-            data_manager.round_up_transactions, data_manager.savings_rules,
-            data_manager.savings_challenges, data_manager.challenge_participants,
-            data_manager.invoices, data_manager.expense_reports, data_manager.receipts,
-            data_manager.cancellation_reminders, data_manager.direct_messages,
-            data_manager.message_attachments, data_manager.message_folders,
-            data_manager.blocked_users, data_manager.message_settings,
-            data_manager.logs
-        ]
+        # Determine the correct store for this model type
+        model_class = obj.__class__ if not isinstance(obj, dict) else None
 
-        for store in all_stores:
-            if store:  # Check if store exists
+        if model_class:
+            # Get the specific store for this model
+            store = self._get_store_for_model(model_class)
+            if store:
+                # Remove only from the appropriate store
                 store[:] = [item for item in store if item.get('id') != obj_id]
+        else:
+            # For dict objects, we can't determine the model type reliably
+            # In this case, try to remove from all stores but this is less ideal
+            all_stores = [
+                data_manager.users, data_manager.accounts, data_manager.transactions,
+                data_manager.categories, data_manager.budgets, data_manager.goals,
+                data_manager.goal_contributions, data_manager.notifications,
+                data_manager.contacts, data_manager.conversations,
+                data_manager.conversation_participants, data_manager.messages,
+                data_manager.message_read_receipts, data_manager.recurring_rules,
+                data_manager.merchants, data_manager.notes, data_manager.cards,
+                data_manager.subscriptions, data_manager.security_events,
+                data_manager.payment_methods, data_manager.bills,
+                data_manager.credit_scores, data_manager.social_connections,
+                data_manager.p2p_transactions, data_manager.investment_accounts,
+                data_manager.holdings, data_manager.alerts, data_manager.analytics_events,
+                data_manager.bank_links, data_manager.plaid_accounts,
+                data_manager.transactions_sync_status, data_manager.linked_accounts,
+                data_manager.credit_simulations, data_manager.two_factor_auth,
+                data_manager.user_devices, data_manager.security_audit_logs,
+                data_manager.spending_limits, data_manager.round_up_configs,
+                data_manager.round_up_transactions, data_manager.savings_rules,
+                data_manager.savings_challenges, data_manager.challenge_participants,
+                data_manager.invoices, data_manager.expense_reports, data_manager.receipts,
+                data_manager.cancellation_reminders, data_manager.direct_messages,
+                data_manager.message_attachments, data_manager.message_folders,
+                data_manager.blocked_users, data_manager.message_settings,
+                data_manager.logs,
+                # Security module stores
+                data_manager.audit_logs, data_manager.login_attempts,
+                data_manager.transaction_anomalies, data_manager.security_incidents,
+                data_manager.account_lockouts, data_manager.trusted_devices,
+            ]
+
+            for store in all_stores:
+                if store:  # Check if store exists
+                    store[:] = [item for item in store if item.get('id') != obj_id]
 
 
 class MemoryDatabase:
     """Mock database object that provides SQLAlchemy-compatible interface."""
+
+    def __init__(self):
+        """Initialize with a default session for direct operations."""
+        self._default_session = None
+
+    def _get_session(self):
+        """Get or create the default session."""
+        if self._default_session is None:
+            self._default_session = MemorySession()
+        return self._default_session
+
+    def add(self, obj):
+        """Add object to session (delegates to default session)."""
+        return self._get_session().add(obj)
+
+    def query(self, model_or_aggregation):
+        """Create query (delegates to default session)."""
+        return self._get_session().query(model_or_aggregation)
+
+    def commit(self):
+        """Commit pending changes (delegates to default session)."""
+        return self._get_session().commit()
+
+    def rollback(self):
+        """Rollback pending changes (delegates to default session)."""
+        return self._get_session().rollback()
+
+    def flush(self):
+        """Flush pending changes (delegates to default session)."""
+        return self._get_session().flush()
+
+    def delete(self, obj):
+        """Delete object (delegates to default session)."""
+        return self._get_session().delete(obj)
+
+    def refresh(self, obj):
+        """Refresh object (delegates to default session)."""
+        return self._get_session().refresh(obj)
 
     @contextmanager
     def get_db(self):

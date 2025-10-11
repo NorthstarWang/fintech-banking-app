@@ -29,6 +29,10 @@ class ModelAttribute:
     def __ge__(self, other):
         return ComparisonClause(self, other, '__ge__')
 
+    def asc(self):
+        """Return a descriptor for ascending order."""
+        return AscOrder(self)
+
     def desc(self):
         """Return a descriptor for descending order."""
         return DescOrder(self)
@@ -40,6 +44,13 @@ class ModelAttribute:
     def ilike(self, pattern):
         """Create an ILIKE clause for case-insensitive pattern matching."""
         return ComparisonClause(self, pattern, 'ilike')
+
+
+class AscOrder:
+    """Represents an ascending order descriptor."""
+    def __init__(self, element):
+        self.element = element
+        self.modifier = 'asc'
 
 
 class DescOrder:
@@ -138,6 +149,7 @@ class BaseMemoryModel(metaclass=ModelMeta):
                 'Notification': data_manager.notifications,
                 'Subscription': data_manager.subscriptions,
                 'Card': data_manager.cards,
+                'CardSpendingLimit': data_manager.spending_limits,
                 'Contact': data_manager.contacts,
                 'CryptoWallet': data_manager.crypto_wallets,
                 'CryptoAsset': data_manager.crypto_assets,
@@ -154,6 +166,17 @@ class BaseMemoryModel(metaclass=ModelMeta):
                 'ConversionRate': data_manager.conversion_rates,
                 'CollateralPosition': data_manager.collateral_positions,
                 'UnifiedTransaction': data_manager.unified_transactions,
+                # Security models
+                'AuditLog': data_manager.audit_logs,
+                'LoginAttempt': data_manager.login_attempts,
+                'TransactionAnomaly': data_manager.transaction_anomalies,
+                'SecurityIncident': data_manager.security_incidents,
+                'AccountLockout': data_manager.account_lockouts,
+                'TrustedDevice': data_manager.trusted_devices,
+                # Business models
+                'Invoice': data_manager.invoices,
+                'ExpenseReport': data_manager.expense_reports,
+                'Receipt': data_manager.receipts,
                 # Add more as needed
             }
 
@@ -578,6 +601,35 @@ class CardStatus:
     EXPIRED = "expired"
     LOST = "lost"
     CANCELLED = "cancelled"
+
+
+class CardSpendingLimit(BaseMemoryModel):
+    """Card spending limit model."""
+    __tablename__ = "card_spending_limits"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        from ..utils.money import format_money
+
+        self._data.setdefault('limit_amount', 0.0)
+        self._data.setdefault('current_usage', 0.0)
+        self._data['limit_amount'] = format_money(self._data.get('limit_amount', 0.0))
+        self._data['current_usage'] = format_money(self._data.get('current_usage', 0.0))
+
+        self._data.setdefault('is_active', True)
+        self._data.setdefault('limit_period', 'daily')
+
+        if 'period_start' not in self._data:
+            self._data['period_start'] = datetime.utcnow()
+        if 'period_end' not in self._data:
+            self._data['period_end'] = datetime.utcnow() + timedelta(days=1)
+
+
+class SpendingLimitPeriod:
+    """Spending limit period enum."""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
 
 
 # Subscription Models
@@ -1302,18 +1354,233 @@ CurrencyInfo = CurrencyInfoMemory
 
 # Additional models as needed...
 
+
+class MessageAttachment(BaseMemoryModel):
+    """Message attachment model."""
+    __tablename__ = "message_attachments"
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'message_id',
+        'filename',
+        'file_type',
+        'file_size',
+        'file_url',
+        'uploaded_at',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'uploaded_at' not in self._data:
+            self._data['uploaded_at'] = datetime.utcnow()
+
+
+class MessageFolder(BaseMemoryModel):
+    """Message folder model."""
+    __tablename__ = "message_folders"
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'user_id',
+        'folder_name',
+        'color',
+        'created_at',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'created_at' not in self._data:
+            self._data['created_at'] = datetime.utcnow()
+
+
+class BlockedUser(BaseMemoryModel):
+    """Blocked user model."""
+    __tablename__ = "blocked_users"
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'user_id',
+        'blocked_user_id',
+        'reason',
+        'blocked_at',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'blocked_at' not in self._data:
+            self._data['blocked_at'] = datetime.utcnow()
+
+
+class MessageSettings(BaseMemoryModel):
+    """Message settings model."""
+    __tablename__ = "message_settings"
+    __key__ = 'id'
+    __attributes__ = [
+        'id',
+        'user_id',
+        'email_on_new_message',
+        'push_notifications',
+        'notification_sound',
+        'auto_mark_read',
+        'created_at',
+        'updated_at',
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'created_at' not in self._data:
+            self._data['created_at'] = datetime.utcnow()
+        if 'updated_at' not in self._data:
+            self._data['updated_at'] = datetime.utcnow()
+
+
+# Security Models
+class AuditLog(BaseMemoryModel):
+    """Audit log model for tamper-resistant logging."""
+    __tablename__ = "audit_logs"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('event_type', 'action')
+        self._data.setdefault('status', 'success')
+        self._data.setdefault('timestamp', datetime.utcnow())
+        self._data.setdefault('encrypted', 1)
+
+
+class LoginAttempt(BaseMemoryModel):
+    """Login attempt model for anomaly detection."""
+    __tablename__ = "login_attempts"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('timestamp', datetime.utcnow())
+        self._data.setdefault('success', False)
+
+
+class TransactionAnomaly(BaseMemoryModel):
+    """Transaction anomaly model for security monitoring."""
+    __tablename__ = "transaction_anomalies"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('detected_at', datetime.utcnow())
+        self._data.setdefault('risk_score', 0.0)
+
+
+class SecurityIncident(BaseMemoryModel):
+    """Security incident model."""
+    __tablename__ = "security_incidents"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('created_at', datetime.utcnow())
+        self._data.setdefault('severity', 'medium')
+        self._data.setdefault('status', 'open')
+
+
+class AccountLockout(BaseMemoryModel):
+    """Account lockout model."""
+    __tablename__ = "account_lockouts"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('locked_at', datetime.utcnow())
+        self._data.setdefault('is_active', True)
+
+
+class TrustedDevice(BaseMemoryModel):
+    """Trusted device model."""
+    __tablename__ = "trusted_devices"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('first_seen', datetime.utcnow())
+        self._data.setdefault('last_seen', datetime.utcnow())
+        self._data.setdefault('is_trusted', False)
+
+
+# Business Models
+class Invoice(BaseMemoryModel):
+    """Invoice model."""
+    __tablename__ = "invoices"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        from ..utils.money import format_money
+
+        self._data.setdefault('status', 'draft')
+        self._data.setdefault('amount_paid', 0.0)
+        self._data.setdefault('subtotal', 0.0)
+        self._data.setdefault('tax_amount', 0.0)
+        self._data.setdefault('discount_amount', 0.0)
+        self._data.setdefault('total_amount', 0.0)
+        self._data.setdefault('line_items', [])
+        self._data.setdefault('extra_data', {})
+
+        # Format money fields
+        money_fields = ['amount_paid', 'subtotal', 'tax_amount', 'discount_amount', 'total_amount']
+        for field in money_fields:
+            self._data[field] = format_money(self._data.get(field, 0.0))
+
+        self._data.setdefault('sent_at', None)
+        self._data.setdefault('paid_at', None)
+
+
+class ExpenseReport(BaseMemoryModel):
+    """Expense report model."""
+    __tablename__ = "expense_reports"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        from ..utils.money import format_money
+
+        self._data.setdefault('status', 'draft')
+        self._data.setdefault('total_amount', 0.0)
+        self._data.setdefault('reimbursable_amount', 0.0)
+        self._data.setdefault('expense_items', [])
+
+        # Format money fields
+        self._data['total_amount'] = format_money(self._data.get('total_amount', 0.0))
+        self._data['reimbursable_amount'] = format_money(self._data.get('reimbursable_amount', 0.0))
+
+        self._data.setdefault('submitted_at', None)
+        self._data.setdefault('approved_at', None)
+
+
+class Receipt(BaseMemoryModel):
+    """Receipt model."""
+    __tablename__ = "receipts"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        from ..utils.money import format_money
+
+        self._data.setdefault('amount', 0.0)
+        self._data['amount'] = format_money(self._data.get('amount', 0.0))
+
+        self._data.setdefault('tax_deductible', False)
+        self._data.setdefault('category', 'other')
+
+        if 'receipt_date' not in self._data:
+            self._data['receipt_date'] = datetime.utcnow()
+
+
 # Export all models and enums
 __all__ = [
     'Account',
+    'AccountLockout',
     'AccountType',
     'AssetBridge',
     'AssetClass',
+    'AuditLog',
     'BaseMemoryModel',
     'BillingCycle',
     'BlockchainNetwork',
+    'BlockedUser',
     'Budget',
     'BudgetPeriod',
     'Card',
+    'CardSpendingLimit',
     'CardStatus',
     'CardType',
     'Category',
@@ -1344,14 +1611,20 @@ __all__ = [
     'DeFiPosition',
     'DeFiProtocolType',
     'DirectMessage',
+    'ExpenseReport',
     'Goal',
     'GoalContribution',
     'GoalStatus',
+    'Invoice',
     'LinkedAccount',
     'Log',
+    'LoginAttempt',
     'Merchant',
     'Message',
+    'MessageAttachment',
+    'MessageFolder',
     'MessageReadReceipt',
+    'MessageSettings',
     'MessageStatus',
     'NFTAsset',
     'Note',
@@ -1360,16 +1633,21 @@ __all__ = [
     'PaymentMethod',
     'PaymentMethodStatus',
     'PaymentMethodType',
+    'Receipt',
     'RecurringRule',
     'SecurityEvent',
     'SecurityEventType',
+    'SecurityIncident',
+    'SpendingLimitPeriod',
     'Subscription',
     'SubscriptionCategory',
     'SubscriptionStatus',
     'Transaction',
+    'TransactionAnomaly',
     'TransactionDirection',
     'TransactionStatus',
     'TransactionType',
+    'TrustedDevice',
     'UnifiedBalance',
     'UnifiedTransaction',
     'UnifiedTransferStatus',

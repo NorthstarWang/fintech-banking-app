@@ -56,8 +56,11 @@ from ..utils.validators import ValidationError
 
 router = APIRouter()
 
-def log_business_action(session_id: str, description: str, table_name: str, values: dict):
+def log_business_action(*args, action: str = None, user_id: int = None, details: dict = None, **kwargs):
     """Helper function to log business actions using DB_UPDATE action type"""
+    # This function can be called with either positional args or keyword args
+    # For now, we'll just pass - logging can be implemented later if needed
+    pass
 
 def generate_invoice_number() -> str:
     """Generate unique invoice number"""

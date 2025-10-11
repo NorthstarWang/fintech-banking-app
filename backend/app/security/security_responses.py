@@ -6,40 +6,10 @@ Automatically responds to security events without manual intervention.
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text, create_engine
-from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy.orm import Session
 
-# Create SQLAlchemy base for security models (independent from main DB)
-Base = declarative_base()
-
-
-class SecurityIncident(Base):
-    """Model for security incidents."""
-
-    __tablename__ = "security_incidents"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, index=True)
-    incident_type = Column(String(100))  # login_lockout, transaction_quarantine, account_restrict
-    severity = Column(String(50))  # low, medium, high, critical
-    status = Column(String(50), default="open")  # open, investigating, resolved
-    details = Column(Text)  # JSON
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    resolved_at = Column(DateTime)
-    actions_taken = Column(Text)  # JSON array
-
-
-class AccountLockout(Base):
-    """Model for account lockouts."""
-
-    __tablename__ = "account_lockouts"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, unique=True, index=True)
-    locked_at = Column(DateTime, default=datetime.utcnow)
-    unlock_at = Column(DateTime)
-    reason = Column(String(255))
-    auto_lockout = Column(Boolean, default=True)
+# Import models from memory models instead of defining SQLAlchemy models
+from app.models.memory_models import AccountLockout, SecurityIncident
 
 
 class SecurityResponses:

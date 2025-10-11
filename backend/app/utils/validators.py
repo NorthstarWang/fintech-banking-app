@@ -13,7 +13,7 @@ MAX_PAGE_SIZE = 100
 MAX_DATE_RANGE_DAYS = 365
 MIN_PHONE_DIGITS = 10
 MAX_PHONE_DIGITS = 15
-EMAIL_PATTERN = r'^[\w\.-]+@[\w\.-]+ \.\w+$'
+EMAIL_PATTERN = r'^[\w\.-]+@[\w\.-]+\.\w+$'
 PHONE_PATTERN = r'^\d{10,15}$'
 
 

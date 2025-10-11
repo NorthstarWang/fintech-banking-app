@@ -353,22 +353,32 @@ class TestBudgetManagement:
         """Test budget access permissions"""
         # Create two users with unique usernames
         import time
+        from app.middleware.rate_limiter import rate_limiter
+
         timestamp = str(int(time.time()))
-        
+
+        # Clear rate limiter to avoid 429 errors
+        rate_limiter.requests.clear()
+        rate_limiter.failed_attempts.clear()
+
         user1_response = client.post("/api/auth/register", json={
             "username": f"user1_budget_{timestamp}",
             "email": f"user1budget_{timestamp}@example.com",
             "password": "password123",
             "full_name": "User One"
         })
-        
+
         user2_response = client.post("/api/auth/register", json={
             "username": f"user2_budget_{timestamp}",
             "email": f"user2budget_{timestamp}@example.com",
             "password": "password123",
             "full_name": "User Two"
         })
-        
+
+        # Clear rate limiter again before logins
+        rate_limiter.requests.clear()
+        rate_limiter.failed_attempts.clear()
+
         # Login as user1
         login1 = client.post("/api/auth/login", json={
             "username": f"user1_budget_{timestamp}",
@@ -376,15 +386,15 @@ class TestBudgetManagement:
         })
         user1_token = login1.json()["access_token"]
         user1_headers = {"Authorization": f"Bearer {user1_token}"}
-        
+
         # Get a valid category ID for user1
         categories_response = client.get("/api/categories", headers=user1_headers)
         categories = categories_response.json()
         category = next((c for c in categories if not c.get("is_income", False)), categories[0])
         category_id = category["id"]
-        
+
         # Create budget as user1
-        budget_response = client.post("/api/budgets", 
+        budget_response = client.post("/api/budgets",
             headers=user1_headers,
             json={
                 "category_id": category_id,
@@ -394,7 +404,11 @@ class TestBudgetManagement:
             }
         )
         budget_id = budget_response.json()["id"]
-        
+
+        # Clear rate limiter before second login
+        rate_limiter.requests.clear()
+        rate_limiter.failed_attempts.clear()
+
         # Login as user2
         login2 = client.post("/api/auth/login", json={
             "username": f"user2_budget_{timestamp}",
@@ -402,9 +416,9 @@ class TestBudgetManagement:
         })
         user2_token = login2.json()["access_token"]
         user2_headers = {"Authorization": f"Bearer {user2_token}"}
-        
+
         # User2 should not be able to access user1's budget
-        response = client.get(f"/api/budgets/{budget_id}", 
+        response = client.get(f"/api/budgets/{budget_id}",
                             headers=user2_headers)
         assert response.status_code == 404  # Not found for other users
     

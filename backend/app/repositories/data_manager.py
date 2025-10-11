@@ -62,6 +62,15 @@ class DataManager:
         self.two_factor_auth: list[dict[str, Any]] = []
         self.user_devices: list[dict[str, Any]] = []
         self.security_audit_logs: list[dict[str, Any]] = []
+
+        # Security module stores
+        self.audit_logs: list[dict[str, Any]] = []
+        self.login_attempts: list[dict[str, Any]] = []
+        self.transaction_anomalies: list[dict[str, Any]] = []
+        self.security_incidents: list[dict[str, Any]] = []
+        self.account_lockouts: list[dict[str, Any]] = []
+        self.trusted_devices: list[dict[str, Any]] = []
+
         self.spending_limits: list[dict[str, Any]] = []
         self.round_up_configs: list[dict[str, Any]] = []
         self.round_up_transactions: list[dict[str, Any]] = []
@@ -161,6 +170,11 @@ class DataManager:
         for attr in dir(self):
             if isinstance(getattr(self, attr), list):
                 getattr(self, attr).clear()
+
+        # Reset BaseMemoryModel ID counters so they reinitialize
+        from app.models.memory_models import BaseMemoryModel
+        BaseMemoryModel._id_counter.clear()
+        BaseMemoryModel._initialized = False
 
         # Generate data based on mode
         self._generate_test_users()
@@ -1156,14 +1170,14 @@ class DataManager:
         regular_users = [u for u in self.users if not u.get('is_admin', False)]
 
         subscription_data = [
-            ("Netflix", 15.99, "entertainment", "monthly"),
-            ("Spotify", 9.99, "entertainment", "monthly"),
-            ("Amazon Prime", 139.00, "shopping", "yearly"),
-            ("Gym Membership", 49.99, "health_fitness", "monthly"),
+            ("Netflix", 15.99, "streaming", "monthly"),
+            ("Spotify", 9.99, "music", "monthly"),
+            ("Amazon Prime", 139.00, "other", "annual"),
+            ("Gym Membership", 49.99, "fitness", "monthly"),
             ("Cloud Storage", 9.99, "cloud_storage", "monthly"),
-            ("News Subscription", 19.99, "news_media", "monthly"),
+            ("News Subscription", 19.99, "news", "monthly"),
             ("Meal Kit Service", 79.99, "food_delivery", "weekly"),
-            ("Software License", 299.00, "productivity", "yearly")
+            ("Software License", 299.00, "software", "annual")
         ]
 
         for user in regular_users:
@@ -1171,22 +1185,42 @@ class DataManager:
             num_subs = random.randint(2, 5)
             selected_subs = random.sample(subscription_data, num_subs)
 
-            for name, amount, category, cycle in selected_subs:
+            for merchant_name, amount, category, cycle in selected_subs:
                 # Find a payment method for this user
                 payment_method = next((pm for pm in self.payment_methods if pm['user_id'] == user['id']), None)
+
+                # Calculate proper start_date and next_billing_date
+                start_date = datetime.utcnow().date() - timedelta(days=random.randint(30, 365))
+
+                # Calculate next billing date based on cycle
+                if cycle == "weekly":
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=7)
+                elif cycle == "monthly":
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=30)
+                elif cycle == "quarterly":
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=90)
+                elif cycle == "semi_annual":
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=180)
+                elif cycle == "annual":
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=365)
+                else:
+                    next_billing_date = datetime.utcnow().date() + timedelta(days=30)
 
                 subscription = {
                     'id': len(self.subscriptions) + 1,
                     'user_id': user['id'],
-                    'name': name,
+                    'name': f"{merchant_name} Subscription",
+                    'merchant_name': merchant_name,
                     'amount': amount,
                     'billing_cycle': cycle,
                     'category': category,
                     'status': 'active',
-                    'next_billing_date': (datetime.utcnow() + timedelta(days=random.randint(1, 30))),
+                    'start_date': start_date,
+                    'next_billing_date': next_billing_date,
                     'payment_method_id': payment_method['id'] if payment_method else None,
                     'detected_automatically': random.random() < 0.3,
-                    'created_at': (datetime.utcnow() - timedelta(days=random.randint(30, 365)))
+                    'created_at': datetime.utcnow(),
+                    'updated_at': datetime.utcnow()
                 }
                 self.subscriptions.append(subscription)
 
@@ -1808,9 +1842,9 @@ class DataManager:
         # Credit card offers
         card_offers = [
             {
-                'name': 'Cash Rewards Plus',
+                'card_name': 'Cash Rewards Plus',
                 'issuer': 'MegaBank',
-                'type': 'cashback',
+                'category': 'cash_back',
                 'annual_fee': 0,
                 'min_credit_score': 650,
                 'cashback_rate': 2.0,
@@ -1818,9 +1852,9 @@ class DataManager:
                 'benefits': ['2% cashback on all purchases', '$200 signup bonus', 'No annual fee']
             },
             {
-                'name': 'Travel Elite',
+                'card_name': 'Travel Elite',
                 'issuer': 'Premium Bank',
-                'type': 'travel',
+                'category': 'travel',
                 'annual_fee': 450,
                 'min_credit_score': 750,
                 'points_multiplier': 3,
@@ -1828,9 +1862,9 @@ class DataManager:
                 'benefits': ['3x points on travel', 'Airport lounge access', 'Travel insurance']
             },
             {
-                'name': 'Student Starter',
+                'card_name': 'Student Starter',
                 'issuer': 'EduBank',
-                'type': 'student',
+                'category': 'student',
                 'annual_fee': 0,
                 'min_credit_score': 0,
                 'cashback_rate': 1.0,
@@ -1838,9 +1872,9 @@ class DataManager:
                 'benefits': ['1% cashback', 'No credit history required', 'Financial education resources']
             },
             {
-                'name': 'Business Platinum',
+                'card_name': 'Business Platinum',
                 'issuer': 'Corporate Bank',
-                'type': 'business',
+                'category': 'business',
                 'annual_fee': 250,
                 'min_credit_score': 700,
                 'cashback_rate': 3.0,
@@ -1996,23 +2030,29 @@ class DataManager:
             buyer = random.choice([u for u in self.users[:5] if u['id'] != offer['user_id']])
 
             trade_amount = random.uniform(offer['min_amount'], offer['max_amount'])
+            status = random.choice(['completed', 'pending', 'processing'])
+            completed_at = datetime.utcnow() - timedelta(days=random.randint(0, 29)) if status == 'completed' else None
 
             self.p2p_trades.append({
                 'id': i + 1,
+                'trade_number': f"P2P-{datetime.utcnow().strftime('%Y%m%d')}-{i+1:06d}",
                 'offer_id': offer['id'],
                 'buyer_id': buyer['id'],
                 'seller_id': offer['user_id'],
                 'amount': round(trade_amount, 2),
-                'exchange_rate': offer['exchange_rate'],
-                'from_currency': offer['from_currency'],
-                'to_currency': offer['to_currency'],
-                'from_amount': round(trade_amount, 2),
-                'to_amount': round(trade_amount * offer['exchange_rate'], 2),
-                'payment_method': random.choice(offer['payment_methods']),
-                'status': random.choice(['completed', 'in_escrow', 'pending']),
-                'escrow_released': random.choice([True, False]),
+                'currency': offer['from_currency'],
+                'rate': offer['exchange_rate'],
+                'total_cost': round(trade_amount * offer['exchange_rate'], 2),
+                'fee_amount': round(trade_amount * 0.01, 2),
+                'transfer_method': random.choice(offer['payment_methods']),
+                'payment_details': {},
+                'chat_enabled': True,
+                'status': status,
+                'escrow_released': status == 'completed',
+                'dispute_id': None,
                 'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 30)),
-                'completed_at': datetime.utcnow() - timedelta(days=random.randint(0, 29))
+                'expires_at': datetime.utcnow() + timedelta(hours=2),
+                'completed_at': completed_at
             })
 
         # Generate conversion quotes for recent activity

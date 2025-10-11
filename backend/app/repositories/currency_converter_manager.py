@@ -134,7 +134,7 @@ class CurrencyConverterManager:
                 name=curr['name'],
                 type=CurrencyType(curr['type']),
                 symbol=curr['symbol'],
-                decimal_places=curr['decimals'],
+                decimal_places=curr.get('decimal_places', curr.get('decimals', 2)),
                 min_amount=Decimal('10'),
                 max_amount=Decimal('100000'),
                 is_active=True,
@@ -166,24 +166,20 @@ class CurrencyConverterManager:
         if from_curr['type'] == 'crypto' or to_curr['type'] == 'crypto':
             base_spread = 0.015  # 1.5% for crypto
 
-        fee_percentage = self._calculate_fee_percentage(from_currency, to_currency)
+        # Calculate bid/ask with spread
+        spread = rate * base_spread
+        bid = rate - spread
+        ask = rate + spread
 
         return ExchangeRateResponse(
-            currency_pair=CurrencyPair(
-                from_currency=from_currency,
-                to_currency=to_currency,
-                from_type=CurrencyType(from_curr['type']),
-                to_type=CurrencyType(to_curr['type'])
-            ),
+            from_currency=from_currency,
+            to_currency=to_currency,
             rate=Decimal(str(rate)),
-            spread=Decimal(str(base_spread)),
-            effective_rate=Decimal(str(rate * (1 - base_spread))),
-            fee_percentage=Decimal(str(fee_percentage)),
-            minimum_amount=Decimal('10'),
-            maximum_amount=Decimal('50000'),
-            estimated_arrival=self._estimate_arrival_time(from_curr['type'], to_curr['type']),
-            last_updated=datetime.utcnow(),
-            is_available=True
+            bid=Decimal(str(bid)),
+            ask=Decimal(str(ask)),
+            spread_percentage=Decimal(str(base_spread * 100)),
+            timestamp=datetime.utcnow(),
+            source="market"
         )
 
     def create_conversion_quote(self, user_id: int, request: ConversionQuoteRequest) -> ConversionQuoteResponse:
@@ -195,16 +191,17 @@ class CurrencyConverterManager:
 
         # Calculate amounts
         from_amount = Decimal(str(request.amount))
-        exchange_rate = rate_info.effective_rate
+        exchange_rate = rate_info.rate  # Use the rate field
         raw_to_amount = from_amount * exchange_rate
 
-        # Calculate fees
-        fee_percentage = rate_info.fee_percentage
+        # Calculate fees (use spread_percentage as fee)
+        fee_percentage = rate_info.spread_percentage
         fee_amount = from_amount * fee_percentage / 100
         total_cost = from_amount + fee_amount
 
-        # Final amount user receives
-        to_amount = raw_to_amount * (1 - fee_percentage / 100)
+        # Final amount user receives (apply spread to rate)
+        effective_rate = (rate_info.bid + rate_info.ask) / 2  # Use mid-price
+        to_amount = from_amount * effective_rate
 
         quote_id = self._generate_quote_id()
 
@@ -214,6 +211,7 @@ class CurrencyConverterManager:
 
         quote_data = {
             'id': quote_id,
+            'quote_id': quote_id,  # Add both for compatibility
             'user_id': user_id,
             'from_currency': request.from_currency,
             'to_currency': request.to_currency,
@@ -230,6 +228,11 @@ class CurrencyConverterManager:
 
         self.data_manager.conversion_quotes.append(quote_data)
 
+        # Determine estimated completion time
+        is_crypto = any(c['code'] == request.from_currency and c['type'] == 'crypto'
+                       for c in self.data_manager.supported_currencies)
+        estimated_completion = "1-2 hours" if is_crypto else "1-3 business days"
+
         return ConversionQuoteResponse(
             quote_id=quote_id,
             from_currency=request.from_currency,
@@ -242,13 +245,13 @@ class CurrencyConverterManager:
             total_cost=total_cost,
             you_receive=to_amount,
             transfer_method=request.transfer_method,
-            estimated_completion=rate_info.estimated_arrival,
+            estimated_completion=estimated_completion,
             expires_at=quote_data['expires_at'],
             breakdown={
                 'exchange_rate': float(exchange_rate),
-                'spread': float(rate_info.spread),
+                'spread': float(rate_info.spread_percentage),
                 'platform_fee': float(fee_amount),
-                'network_fee': 0 if rate_info.currency_pair.from_type != CurrencyType.CRYPTO else 5.0
+                'network_fee': 0
             }
         )
 
@@ -390,13 +393,15 @@ class CurrencyConverterManager:
 
         offer = next((o for o in self.data_manager.peer_offers if o['id'] == trade_request.offer_id), None)
 
-        if not offer or not offer['is_active']:
+        if not offer or not offer.get('is_active', True):
             raise ValueError("Offer not found or inactive")
 
-        if trade_request.amount > offer['amount_remaining']:
+        # Handle amount_remaining which may not exist in all offers
+        amount_remaining = offer.get('amount_remaining', offer.get('amount', offer.get('max_amount', 0)))
+        if trade_request.amount > amount_remaining:
             raise ValueError("Insufficient amount available")
 
-        if user_id == offer['peer_id']:
+        if user_id == offer.get('peer_id', offer.get('user_id')):
             raise ValueError("Cannot trade with yourself")
 
         # Create trade
@@ -406,24 +411,41 @@ class CurrencyConverterManager:
         trade_id = len(self.data_manager.p2p_trades) + 1
         trade_number = self._generate_trade_number()
 
+        # Get currency from offer
+        currency = offer.get('from_currency', offer.get('currency', 'USD'))
+
         # Calculate rate with adjustment
-        base_rate = self.data_manager.exchange_rates.get(f"{offer['currency']}/USD", 1.0)
-        adjusted_rate = base_rate * (1 + offer['rate_adjustment'] / 100)
+        base_rate = self.data_manager.exchange_rates.get(f"{currency}/USD", 1.0)
+        rate_adjustment = offer.get('rate_adjustment', 0)
+        adjusted_rate = base_rate * (1 + rate_adjustment / 100)
+
+        # Handle payment method - accept both string and TransferMethod
+        if trade_request.payment_method:
+            # Convert string payment method to TransferMethod enum
+            try:
+                transfer_method = TransferMethod(trade_request.payment_method)
+            except ValueError:
+                # If not a valid enum, use a default
+                transfer_method = TransferMethod.BANK_TRANSFER
+        elif trade_request.transfer_method:
+            transfer_method = trade_request.transfer_method
+        else:
+            transfer_method = TransferMethod.BANK_TRANSFER
 
         trade = {
             'id': trade_id,
             'trade_number': trade_number,
             'buyer_id': user_id,
-            'seller_id': offer['peer_id'],
+            'seller_id': offer.get('peer_id', offer.get('user_id', 1)),
             'offer_id': offer['id'],
             'status': TransferStatus.PENDING.value,
             'amount': float(trade_request.amount),
-            'currency': offer['currency'],
+            'currency': currency,
             'rate': adjusted_rate,
             'total_cost': float(trade_request.amount) * adjusted_rate,
             'fee_amount': float(trade_request.amount) * 0.01,  # 1% platform fee
-            'transfer_method': trade_request.transfer_method.value,
-            'payment_details': trade_request.payment_details,
+            'transfer_method': transfer_method.value,
+            'payment_details': trade_request.payment_details or {},
             'chat_enabled': True,
             'escrow_released': False,
             'dispute_id': None,
@@ -435,7 +457,8 @@ class CurrencyConverterManager:
         self.data_manager.p2p_trades.append(trade)
 
         # Update offer
-        offer['amount_remaining'] -= float(trade_request.amount)
+        if 'amount_remaining' in offer:
+            offer['amount_remaining'] -= float(trade_request.amount)
         offer['updated_at'] = datetime.utcnow()
 
         return self._trade_to_response(trade)
@@ -456,6 +479,7 @@ class CurrencyConverterManager:
                 'currency_type': CurrencyType.FIAT.value,
                 'balance': 1000.0,  # Start with $1000
                 'available_balance': 1000.0,
+                'locked_balance': 0.0,
                 'pending_balance': 0.0,
                 'total_converted': 0.0,
                 'last_activity': datetime.utcnow()
@@ -692,12 +716,14 @@ class CurrencyConverterManager:
 
     def _balance_to_response(self, balance: dict[str, Any]) -> CurrencyBalanceResponse:
         """Convert balance dict to response model."""
+        locked = Decimal(str(balance.get('locked_balance', balance.get('pending_balance', 0))))
         return CurrencyBalanceResponse(
             currency=balance['currency'],
             currency_type=CurrencyType(balance['currency_type']),
-            balance=Decimal(str(balance['balance'])),
-            available_balance=Decimal(str(balance['available_balance'])),
-            pending_balance=Decimal(str(balance['pending_balance'])),
-            total_converted=Decimal(str(balance['total_converted'])),
+            balance=Decimal(str(balance.get('balance', 0))),
+            available_balance=Decimal(str(balance.get('available_balance', 0))),
+            locked_balance=locked,
+            pending_balance=locked,  # Same value for compatibility
+            total_converted=Decimal(str(balance.get('total_converted', 0))),
             last_activity=balance.get('last_activity')
         )

@@ -132,7 +132,7 @@ class InvestmentManager:
         positions = [p for p in self.data_manager.investment_positions
                     if p['portfolio_id'] == portfolio['id']]
 
-        asset_allocation = self._calculate_asset_allocation(positions, account.balance)
+        asset_allocation = self._calculate_asset_allocation(positions, float(account.balance))
         portfolio['asset_allocation'] = asset_allocation
         portfolio['positions_count'] = len(positions)
 
@@ -579,7 +579,7 @@ class InvestmentManager:
     def _calculate_asset_allocation(self, positions: list[dict[str, Any]],
                                   cash_balance: float) -> dict[str, float]:
         """Calculate asset allocation percentages."""
-        total_value = sum(p['current_value'] for p in positions) + cash_balance
+        total_value = sum(p['current_value'] for p in positions) + float(cash_balance)
 
         if total_value == 0:
             return {'cash': 100.0}
@@ -742,14 +742,14 @@ class InvestmentManager:
         return PortfolioResponse(
             id=portfolio['id'],
             account_id=portfolio['account_id'],
-            name=portfolio['name'],
-            total_value=Decimal(str(portfolio['total_value'])),
-            total_cost_basis=Decimal(str(portfolio['total_cost_basis'])),
-            total_gain_loss=Decimal(str(portfolio['total_gain_loss'])),
-            total_gain_loss_percent=Decimal(str(portfolio['total_gain_loss_percent'])),
-            positions_count=portfolio['positions_count'],
-            asset_allocation=portfolio['asset_allocation'],
-            risk_score=portfolio['risk_score']
+            name=portfolio.get('name', f"Portfolio {portfolio['id']}"),
+            total_value=Decimal(str(portfolio.get('total_value', 0))),
+            total_cost_basis=Decimal(str(portfolio.get('total_cost_basis', 0))),
+            total_gain_loss=Decimal(str(portfolio.get('total_gain_loss', 0))),
+            total_gain_loss_percent=Decimal(str(portfolio.get('total_gain_loss_percent', 0))),
+            positions_count=portfolio.get('positions_count', 0),
+            asset_allocation=portfolio.get('asset_allocation', {}),
+            risk_score=portfolio.get('risk_score', 0)
         )
 
     def _position_to_response(self, position: dict[str, Any]) -> PositionResponse:
@@ -774,24 +774,31 @@ class InvestmentManager:
 
     def _order_to_response(self, order: dict[str, Any]) -> TradeOrderResponse:
         """Convert order dict to response model."""
+        # Map old status values to new ones
+        status = order.get('status', 'submitted')
+        if status == 'completed':
+            status = 'filled'
+        elif status == 'open':
+            status = 'submitted'
+
         return TradeOrderResponse(
             id=order['id'],
             account_id=order['account_id'],
-            order_number=order['order_number'],
-            symbol=order['symbol'],
-            asset_type=AssetType(order['asset_type']),
-            order_type=OrderType(order['order_type']),
-            order_side=OrderSide(order['order_side']),
-            quantity=Decimal(str(order['quantity'])),
-            filled_quantity=Decimal(str(order['filled_quantity'])),
+            order_number=order.get('order_number', self._generate_order_number()),
+            symbol=order.get('symbol', ''),
+            asset_type=AssetType(order.get('asset_type', 'stock')),
+            order_type=OrderType(order.get('order_type', 'market')),
+            order_side=OrderSide(order.get('order_side', 'buy')),
+            quantity=Decimal(str(order.get('quantity', 0))),
+            filled_quantity=Decimal(str(order.get('filled_quantity', 0))),
             limit_price=Decimal(str(order['limit_price'])) if order.get('limit_price') else None,
             stop_price=Decimal(str(order['stop_price'])) if order.get('stop_price') else None,
             average_fill_price=Decimal(str(order['average_fill_price'])) if order.get('average_fill_price') else None,
-            status=OrderStatus(order['status']),
-            time_in_force=order['time_in_force'],
-            extended_hours=order['extended_hours'],
-            commission=Decimal(str(order['commission'])),
-            submitted_at=order['submitted_at'],
+            status=OrderStatus(status),
+            time_in_force=order.get('time_in_force', 'day'),
+            extended_hours=order.get('extended_hours', False),
+            commission=Decimal(str(order.get('commission', 0))),
+            submitted_at=order.get('submitted_at', datetime.utcnow()),
             filled_at=order.get('filled_at'),
             cancelled_at=order.get('cancelled_at')
         )

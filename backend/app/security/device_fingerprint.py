@@ -8,92 +8,85 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
-from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy.orm import Session
 
-# Create SQLAlchemy base for security models
-Base = declarative_base()
-
-
-class TrustedDevice(Base):
-    """Model for storing trusted devices."""
-
-    __tablename__ = "trusted_devices"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, index=True)
-    device_fingerprint = Column(String(256), unique=True, index=True)
-    device_name = Column(String(255))
-    device_info = Column(Text)  # JSON string
-    browser_fingerprint = Column(String(256))
-    screen_resolution = Column(String(50))
-    timezone = Column(String(100))
-    is_trusted = Column(Boolean, default=False)
-    last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    ip_address = Column(String(45), index=True)  # IPv4 or IPv6
+# Import models from memory models instead of defining SQLAlchemy models
+from app.models.memory_models import TrustedDevice
 
 
 class DeviceFingerprint:
     """Device fingerprinting service."""
 
     @staticmethod
-    def generate_fingerprint(
-        user_agent: str,
-        ip_address: str,
-        browser_data: dict[str, Any] | None = None,
-    ) -> str:
+    def generate_fingerprint(device_data: dict[str, Any]) -> str:
         """
         Generate a device fingerprint from browser and system data.
 
         Args:
-            user_agent: User agent string
-            ip_address: Client IP address
-            browser_data: Additional browser fingerprint data
+            device_data: Dictionary containing device characteristics like
+                        user_agent, browser, os, screen_resolution, timezone, etc.
 
         Returns:
-            Hash of combined fingerprint data
+            Hash of combined fingerprint data (SHA256 hex digest - 64 chars)
         """
-        fingerprint_data = {
-            "user_agent": user_agent,
-            "ip_address": ip_address,
-            "browser_info": browser_data or {},
-        }
-
-        fingerprint_string = json.dumps(fingerprint_data, sort_keys=True)
+        # Sort keys to ensure consistent hashing
+        fingerprint_string = json.dumps(device_data, sort_keys=True)
         return hashlib.sha256(fingerprint_string.encode()).hexdigest()
 
     @staticmethod
     def get_or_create_device(
         db: Session,
         user_id: int,
-        fingerprint: str,
-        device_info: dict[str, Any],
-        ip_address: str,
+        fingerprint_hash: str,
+        device_name: str,
     ) -> TrustedDevice:
-        """Get or create a device record."""
+        """
+        Get or create a device record.
+
+        Args:
+            db: Database session
+            user_id: User ID
+            fingerprint_hash: Device fingerprint hash
+            device_name: Human-readable device name
+
+        Returns:
+            TrustedDevice object
+        """
         device = db.query(TrustedDevice).filter(
             TrustedDevice.user_id == user_id,
-            TrustedDevice.device_fingerprint == fingerprint,
+            TrustedDevice.fingerprint_hash == fingerprint_hash,
         ).first()
 
         if not device:
             device = TrustedDevice(
                 user_id=user_id,
-                device_fingerprint=fingerprint,
-                device_name=device_info.get("name", "Unknown Device"),
-                device_info=json.dumps(device_info),
-                browser_fingerprint=device_info.get("browser_fingerprint", ""),
-                screen_resolution=device_info.get("screen_resolution", ""),
-                timezone=device_info.get("timezone", ""),
-                ip_address=ip_address,
+                fingerprint_hash=fingerprint_hash,
+                device_name=device_name,
+                first_seen=datetime.utcnow(),
+                last_seen_at=datetime.utcnow(),
+                is_trusted=False,
             )
             db.add(device)
             db.commit()
 
         # Update last seen
-        device.last_seen = datetime.utcnow()
+        device.last_seen_at = datetime.utcnow()
         db.commit()
+
+        # Ensure the device object is properly tracked for future updates
+        # by setting its session reference and making it point to the actual store dict
+        if hasattr(device, '_data') and hasattr(db, '_get_session'):
+            session = db._get_session()
+            device._session = session
+
+            # Make device._data point to the actual dict in the store
+            # so that updates to the store are reflected in this object
+            store = session._get_store_for_model(TrustedDevice)
+            for item in store:
+                if item.get('id') == device.id:
+                    device._data = item
+                    device._original_data = item.copy()
+                    break
 
         return device
 
@@ -105,51 +98,75 @@ class DeviceFingerprint:
     @staticmethod
     def mark_device_trusted(db: Session, device_id: int) -> None:
         """Mark a device as trusted."""
-        device = db.query(TrustedDevice).filter(TrustedDevice.id == device_id).first()
-        if device:
-            device.is_trusted = True
-            db.commit()
+        # Update the device directly in the data store to ensure
+        # all references to this device see the update
+        if hasattr(db, '_get_session'):
+            session = db._get_session()
+            store = session._get_store_for_model(TrustedDevice)
+            for item in store:
+                if item.get('id') == device_id:
+                    # Update the dict in place, not replace it
+                    item['is_trusted'] = True
+                    item['last_seen_at'] = datetime.utcnow()
+                    break
 
     @staticmethod
     def detect_device_changes(
-        current_device: TrustedDevice,
-        new_device_info: dict[str, Any],
-    ) -> list[str]:
+        db: Session,
+        user_id: int,
+        fingerprint_hash: str,
+    ) -> tuple[bool, list[str]]:
         """
         Detect changes in device characteristics that might indicate compromise.
 
+        Args:
+            db: Database session
+            user_id: User ID
+            fingerprint_hash: Current device fingerprint hash
+
         Returns:
-            List of detected changes
+            Tuple of (is_changed, indicators) where is_changed is True if device
+            is new or untrusted, and indicators is list of change indicators
         """
-        changes = []
-        current_info = json.loads(current_device.device_info)
+        indicators = []
 
-        # Check screen resolution change
-        if (current_info.get("screen_resolution") !=
-                new_device_info.get("screen_resolution")):
-            changes.append("screen_resolution")
+        # Get user's trusted devices
+        trusted_devices = db.query(TrustedDevice).filter(
+            TrustedDevice.user_id == user_id,
+            TrustedDevice.is_trusted == True,
+        ).all()
 
-        # Check timezone change
-        if current_info.get("timezone") != new_device_info.get("timezone"):
-            changes.append("timezone")
+        # Check if this fingerprint matches any trusted device
+        matching_device = None
+        for device in trusted_devices:
+            if device.fingerprint_hash == fingerprint_hash:
+                matching_device = device
+                break
 
-        # Check browser fingerprint change
-        if (current_info.get("browser_fingerprint") !=
-                new_device_info.get("browser_fingerprint")):
-            changes.append("browser_fingerprint")
+        if not matching_device:
+            # Check if device exists but is not trusted
+            untrusted_device = db.query(TrustedDevice).filter(
+                TrustedDevice.user_id == user_id,
+                TrustedDevice.fingerprint_hash == fingerprint_hash,
+                TrustedDevice.is_trusted == False,
+            ).first()
 
-        # Check OS change
-        if current_info.get("os") != new_device_info.get("os"):
-            changes.append("os")
+            if untrusted_device:
+                indicators.append("untrusted_device")
+                return True, indicators
+            else:
+                indicators.append("new_device")
+                return True, indicators
 
-        return changes
+        # Device matches a trusted device - no change
+        return False, indicators
 
     @staticmethod
     def get_user_devices(db: Session, user_id: int) -> list[TrustedDevice]:
         """Get all devices for a user."""
         return db.query(TrustedDevice).filter(
             TrustedDevice.user_id == user_id
-        ).order_by(TrustedDevice.last_seen.desc()).all()
+        ).order_by(TrustedDevice.last_seen_at.desc()).all()
 
     @staticmethod
     def remove_device(db: Session, device_id: int, user_id: int) -> bool:
@@ -170,8 +187,20 @@ class DeviceFingerprint:
     def cleanup_old_devices(db: Session, days: int = 90) -> int:
         """Remove devices not seen in specified days."""
         cutoff_date = datetime.utcnow() - timedelta(days=days)
-        devices = db.query(TrustedDevice).filter(
-            TrustedDevice.last_seen < cutoff_date
-        ).delete()
-        db.commit()
-        return devices
+
+        # Get all devices and filter manually to ensure we catch all old ones
+        all_devices = db.query(TrustedDevice).all()
+        devices_to_delete = []
+
+        for device in all_devices:
+            if device.last_seen_at and device.last_seen_at < cutoff_date:
+                devices_to_delete.append(device)
+
+        count = len(devices_to_delete)
+        for device in devices_to_delete:
+            db.delete(device)
+
+        if count > 0:
+            db.commit()
+
+        return count

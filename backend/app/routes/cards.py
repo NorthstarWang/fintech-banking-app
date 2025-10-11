@@ -15,12 +15,12 @@ from ..models import (
     CardFreezeRequest,
     CardLimitRequest,
     CardLimitResponse,
+    CardSpendingLimit,
     CardStatus,
     CardType,
     Category,
     Notification,
     NotificationType,
-    SpendingLimit,
     SpendingLimitPeriod,
     Transaction,
     TransactionStatus,
@@ -210,27 +210,20 @@ async def create_card(
 
         account_id = account.id
     else:
-        # For credit cards, find or create a credit account
-        account = db_session.query(Account).filter(
-            Account.user_id == current_user['user_id'],
-            Account.account_type == AccountType.CREDIT_CARD,
-            Account.name == card_data.card_name
-        ).first()
-
-        if not account:
-            # Create a new credit account
-            account = Account(
-                user_id=current_user['user_id'],
-                name=card_data.card_name,
-                account_type=AccountType.CREDIT_CARD,
-                balance=-card_data.current_balance if card_data.current_balance else 0.0,
-                credit_limit=card_data.credit_limit,
-                interest_rate=card_data.interest_rate,
-                institution_name=card_data.issuer,
-                is_active=True
-            )
-            db_session.add(account)
-            db_session.flush()
+        # For credit cards, always create a new credit account
+        # Each card should have its own account to avoid state conflicts
+        account = Account(
+            user_id=current_user['user_id'],
+            name=card_data.card_name,
+            account_type=AccountType.CREDIT_CARD,
+            balance=-card_data.current_balance if card_data.current_balance else 0.0,
+            credit_limit=card_data.credit_limit,
+            interest_rate=card_data.interest_rate,
+            institution_name=card_data.issuer,
+            is_active=True
+        )
+        db_session.add(account)
+        db_session.flush()
 
         account_id = account.id
 
@@ -807,8 +800,10 @@ async def make_card_payment(
 
     # Check if it's a credit card by looking at the account type
     credit_account = db_session.query(Account).filter(Account.id == card.account_id).first()
-    if not credit_account or credit_account.account_type != AccountType.CREDIT_CARD:
-        raise ValidationError("Payments can only be made on credit cards")
+    if not credit_account:
+        raise ValidationError(f"Credit card account not found (account_id={card.account_id})")
+    if credit_account.account_type != AccountType.CREDIT_CARD:
+        raise ValidationError(f"Payments can only be made on credit cards (account_type={credit_account.account_type}, expected={AccountType.CREDIT_CARD})")
 
     # Verify source account ownership
     source_account = db_session.query(Account).filter(
@@ -930,17 +925,17 @@ async def set_spending_limits(
     # Create or update spending limits
     # Daily limit
     if limit_data.daily_limit is not None:
-        daily_limit = db_session.query(SpendingLimit).filter(
-            SpendingLimit.card_id == card_id,
-            SpendingLimit.limit_period == SpendingLimitPeriod.DAILY,
-            SpendingLimit.is_active
+        daily_limit = db_session.query(CardSpendingLimit).filter(
+            CardSpendingLimit.card_id == card_id,
+            CardSpendingLimit.limit_period == SpendingLimitPeriod.DAILY,
+            CardSpendingLimit.is_active
         ).first()
 
         if daily_limit:
             daily_limit.limit_amount = limit_data.daily_limit
             daily_limit.updated_at = datetime.utcnow()
         else:
-            daily_limit = SpendingLimit(
+            daily_limit = CardSpendingLimit(
                 card_id=card_id,
                 limit_amount=limit_data.daily_limit,
                 limit_period=SpendingLimitPeriod.DAILY,
@@ -953,10 +948,10 @@ async def set_spending_limits(
 
     # Monthly limit
     if limit_data.monthly_limit is not None:
-        monthly_limit = db_session.query(SpendingLimit).filter(
-            SpendingLimit.card_id == card_id,
-            SpendingLimit.limit_period == SpendingLimitPeriod.MONTHLY,
-            SpendingLimit.is_active
+        monthly_limit = db_session.query(CardSpendingLimit).filter(
+            CardSpendingLimit.card_id == card_id,
+            CardSpendingLimit.limit_period == SpendingLimitPeriod.MONTHLY,
+            CardSpendingLimit.is_active
         ).first()
 
         if monthly_limit:
@@ -970,7 +965,7 @@ async def set_spending_limits(
             else:
                 period_end = period_start.replace(month=now.month + 1) - timedelta(microseconds=1)
 
-            monthly_limit = SpendingLimit(
+            monthly_limit = CardSpendingLimit(
                 card_id=card_id,
                 limit_amount=limit_data.monthly_limit,
                 limit_period=SpendingLimitPeriod.MONTHLY,
@@ -986,9 +981,9 @@ async def set_spending_limits(
         for category, limit_amount in limit_data.category_limits.items():
             # Since contains() is not available in memory adapter,
             # we need to fetch all category limits and check manually
-            all_cat_limits = db_session.query(SpendingLimit).filter(
-                SpendingLimit.card_id == card_id,
-                SpendingLimit.is_active
+            all_cat_limits = db_session.query(CardSpendingLimit).filter(
+                CardSpendingLimit.card_id == card_id,
+                CardSpendingLimit.is_active
             ).all()
 
             # Find matching category limit
@@ -1002,7 +997,7 @@ async def set_spending_limits(
                 cat_limit.limit_amount = limit_amount
                 cat_limit.updated_at = datetime.utcnow()
             else:
-                cat_limit = SpendingLimit(
+                cat_limit = CardSpendingLimit(
                     card_id=card_id,
                     limit_amount=limit_amount,
                     limit_period=SpendingLimitPeriod.MONTHLY,
@@ -1017,9 +1012,9 @@ async def set_spending_limits(
     db_session.commit()
 
     # Get all active limits for response
-    active_limits = db_session.query(SpendingLimit).filter(
-        SpendingLimit.card_id == card_id,
-        SpendingLimit.is_active
+    active_limits = db_session.query(CardSpendingLimit).filter(
+        CardSpendingLimit.card_id == card_id,
+        CardSpendingLimit.is_active
     ).all()
 
     return {
@@ -1051,9 +1046,9 @@ async def get_spending_limits(
         )
 
     # Get all active limits
-    active_limits = db_session.query(SpendingLimit).filter(
-        SpendingLimit.card_id == card_id,
-        SpendingLimit.is_active
+    active_limits = db_session.query(CardSpendingLimit).filter(
+        CardSpendingLimit.card_id == card_id,
+        CardSpendingLimit.is_active
     ).all()
 
     # Calculate current usage for each limit

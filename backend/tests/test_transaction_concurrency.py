@@ -160,8 +160,8 @@ class TestTransactionCoordinator:
 
     def setup_method(self):
         """Reset coordinator before each test"""
-        reset_transaction_coordinator()
         reset_event_store()
+        reset_transaction_coordinator()
         self.coordinator = get_transaction_coordinator()
 
     def teardown_method(self):
@@ -234,6 +234,10 @@ class TestTransactionCoordinator:
         )
 
         self.coordinator.submit_transaction(context)
+
+        # Give coordinator a moment to record events
+        import time
+        time.sleep(0.1)
 
         # Check event store
         event_store = get_event_store()

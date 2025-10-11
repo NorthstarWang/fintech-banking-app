@@ -80,6 +80,7 @@ class InvestmentAccountResponse(BaseModel):
     account_number: str
     account_name: str
     balance: Decimal
+    cash_balance: Decimal | None = None  # Alias for balance
     buying_power: Decimal
     portfolio_value: Decimal
     total_return: Decimal
@@ -88,6 +89,11 @@ class InvestmentAccountResponse(BaseModel):
     risk_tolerance: PortfolioRiskLevel
     created_at: datetime
     updated_at: datetime
+
+    def model_post_init(self, __context: Any) -> None:
+        """Set cash_balance to balance if not set."""
+        if self.cash_balance is None:
+            self.cash_balance = self.balance
 
 class PortfolioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -221,7 +227,7 @@ class TradeHistoryResponse(BaseModel):
 class WatchlistCreate(BaseModel):
     name: str
     description: str | None = None
-    symbols: list[str]
+    symbols: list[str] = []
 
 class WatchlistResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -231,8 +237,14 @@ class WatchlistResponse(BaseModel):
     name: str
     description: str | None = None
     symbols: list[str]
+    assets: list[dict] | None = None  # Asset details
     created_at: datetime
     updated_at: datetime
+
+    def model_post_init(self, __context: Any) -> None:
+        """Set assets from symbols if not set."""
+        if self.assets is None:
+            self.assets = [{"symbol": symbol} for symbol in self.symbols]
 
 class MarketDataResponse(BaseModel):
     """Real-time market data"""

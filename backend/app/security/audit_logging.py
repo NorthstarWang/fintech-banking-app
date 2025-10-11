@@ -8,30 +8,10 @@ import json
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
-from sqlalchemy.orm import Session, declarative_base
+from sqlalchemy.orm import Session
 
-# Create SQLAlchemy base for security models
-Base = declarative_base()
-
-
-class AuditLog(Base):
-    """Model for tamper-resistant audit logging."""
-
-    __tablename__ = "audit_logs"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, index=True)
-    action = Column(String(100), index=True)
-    resource_type = Column(String(100))
-    resource_id = Column(Integer, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    details = Column(Text)  # JSON string
-    ip_address = Column(String(45))
-    user_agent = Column(String(512))
-    previous_hash = Column(String(256), index=True)  # Hash of previous log
-    current_hash = Column(String(256), unique=True, index=True)  # Hash of this log
-    encrypted = Column(Integer, default=1)  # Whether log is encrypted
+# Import AuditLog from memory models instead of defining SQLAlchemy model
+from app.models.memory_models import AuditLog
 
 
 class AuditLogger:
@@ -47,6 +27,8 @@ class AuditLogger:
         details: dict[str, Any] | None = None,
         ip_address: str | None = None,
         user_agent: str | None = None,
+        event_type: str = "action",
+        resource: str | None = None,
     ) -> AuditLog:
         """
         Log an action with cryptographic chaining.
@@ -60,6 +42,8 @@ class AuditLogger:
             details: Additional details as dict
             ip_address: Client IP address
             user_agent: Client user agent
+            event_type: Type of event (action, security, data_access, etc)
+            resource: Resource identifier string (e.g., "transaction:999")
 
         Returns:
             Created AuditLog entry
@@ -97,6 +81,8 @@ class AuditLogger:
             user_agent=user_agent,
             previous_hash=previous_hash,
             current_hash=current_hash,
+            event_type=event_type,
+            resource=resource or f"{resource_type}:{resource_id}",
         )
 
         db.add(audit_log)
@@ -132,7 +118,7 @@ class AuditLogger:
     def log_security_event(
         db: Session,
         user_id: int | None,
-        event_type: str,
+        event_name: str,
         severity: str,
         details: dict[str, Any] | None = None,
         ip_address: str | None = None,
@@ -143,11 +129,13 @@ class AuditLogger:
         return AuditLogger.log_action(
             db,
             user_id or 0,
-            f"SECURITY_{event_type}",
+            event_name,
             "SECURITY_EVENT",
             0,
             details,
             ip_address,
+            event_type="security",
+            resource="security_event",
         )
 
     @staticmethod
@@ -238,3 +226,100 @@ class AuditLogger:
         return query.order_by(
             AuditLog.timestamp.desc()
         ).limit(limit).all()
+
+
+# Create alias for backward compatibility with tests
+class AuditLogging:
+    """Alias for AuditLogger to match test imports."""
+
+    @staticmethod
+    def log_action(
+        db: Session,
+        user_id: int,
+        action: str,
+        resource: str,
+        details: dict[str, Any],
+    ) -> AuditLog:
+        """Log an action."""
+        # Parse resource string to extract type and ID
+        resource_parts = resource.split(":")
+        resource_type = resource_parts[0] if resource_parts else "unknown"
+        resource_id = int(resource_parts[1]) if len(resource_parts) > 1 and resource_parts[1].isdigit() else 0
+
+        # Delegate to AuditLogger to get proper hash chaining
+        return AuditLogger.log_action(
+            db,
+            user_id,
+            action,
+            resource_type,
+            resource_id,
+            details,
+        )
+
+    @staticmethod
+    def log_security_event(
+        db: Session,
+        user_id: int,
+        event: str,
+        severity: str,
+        details: dict[str, Any],
+    ) -> AuditLog:
+        """Log a security event."""
+        # Delegate to AuditLogger to get proper hash chaining
+        return AuditLogger.log_security_event(
+            db,
+            user_id,
+            event,
+            severity,
+            details,
+        )
+
+    @staticmethod
+    def log_data_access(
+        db: Session,
+        user_id: int,
+        resource: str,
+        action: str,
+        resource_type: str,
+    ) -> AuditLog:
+        """Log data access."""
+        # Parse resource string to extract resource_id
+        resource_parts = resource.split(":")
+        resource_id = int(resource_parts[1]) if len(resource_parts) > 1 and resource_parts[1].isdigit() else 0
+
+        # Delegate to AuditLogger to get proper hash chaining
+        return AuditLogger.log_action(
+            db,
+            user_id,
+            action,
+            resource_type,
+            resource_id,
+            {},
+            event_type="data_access",
+            resource=resource,
+        )
+
+    @staticmethod
+    def verify_chain_integrity(
+        db: Session,
+        user_id: int | None = None,
+    ) -> tuple[bool, list[str]]:
+        """Verify audit log chain integrity."""
+        if user_id:
+            logs = db.query(AuditLog).filter(
+                AuditLog.user_id == user_id
+            ).order_by(AuditLog.id.asc()).all()
+        else:
+            logs = db.query(AuditLog).order_by(AuditLog.id.asc()).all()
+
+        broken = []
+        previous_hash = ""
+        for log in logs:
+            # Verify chain link if current_hash exists
+            if log.previous_hash != previous_hash and log.current_hash:
+                broken.append(str(log.id))
+
+            if log.current_hash:
+                previous_hash = log.current_hash
+
+        return len(broken) == 0, broken

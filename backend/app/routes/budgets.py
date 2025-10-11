@@ -85,7 +85,10 @@ async def create_budget(
 
     # Validate it's an expense category
     if category.is_income:
-        raise ValidationError("Budgets can only be created for expense categories")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Budgets can only be created for expense categories"
+        )
 
     # Validate budget period
     Validators.validate_budget_period(budget_data.start_date, budget_data.end_date)
@@ -99,8 +102,9 @@ async def create_budget(
     ).first()
 
     if existing:
-        raise ValidationError(
-            f"Active {budget_data.period.value} budget already exists for {category.name}"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Active {budget_data.period.value} budget already exists for {category.name}"
         )
 
     # Create new budget

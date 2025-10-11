@@ -1,39 +1,14 @@
 import pytest
-from fastapi.testclient import TestClient
 from datetime import datetime
-from app.main_banking import app
-from app.repositories.data_manager import data_manager
 from app.models.enums import (
     CardCategory, ApplicationStatus, EmploymentType
 )
 
-client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def setup_and_teardown():
-    """Reset data before each test."""
-    data_manager.reset(demo_mode=True)
-    yield
-    data_manager.reset(demo_mode=True)
-
-
-@pytest.fixture
-def auth_headers():
-    """Get authentication headers for test user."""
-    response = client.post("/api/auth/login", json={
-        "username": "john_doe",
-        "password": "password123"
-    })
-    assert response.status_code == 200
-    token = response.json()["token"]
-    return {"Authorization": f"Bearer {token}"}
-
 
 class TestCreditScore:
     """Test credit score endpoints."""
-    
-    def test_get_credit_score(self, auth_headers):
+
+    def test_get_credit_score(self, client, auth_headers):
         """Test getting user's credit score."""
         response = client.get("/api/credit-cards/credit-score", headers=auth_headers)
         assert response.status_code == 200
@@ -44,7 +19,7 @@ class TestCreditScore:
         assert 300 <= score_info["score"] <= 850
         assert score_info["rating"] in ["poor", "fair", "good", "very_good", "excellent"]
     
-    def test_update_credit_score(self, auth_headers):
+    def test_update_credit_score(self, client, auth_headers):
         """Test updating credit score (simulation)."""
         new_score = 750
         response = client.put("/api/credit-cards/credit-score", 
@@ -59,7 +34,7 @@ class TestCreditScore:
 class TestCreditCardOffers:
     """Test credit card offer endpoints."""
     
-    def test_get_all_cards(self, auth_headers):
+    def test_get_all_cards(self, client, auth_headers):
         """Test getting all available credit cards."""
         response = client.get("/api/credit-cards", headers=auth_headers)
         assert response.status_code == 200
@@ -74,7 +49,7 @@ class TestCreditCardOffers:
             assert "annual_fee" in card
             assert "benefits" in card
     
-    def test_get_cards_by_category(self, auth_headers):
+    def test_get_cards_by_category(self, client, auth_headers):
         """Test filtering cards by category."""
         response = client.get("/api/credit-cards?category=cash_back", 
                             headers=auth_headers)
@@ -84,7 +59,7 @@ class TestCreditCardOffers:
         for card in cards:
             assert card["category"] == CardCategory.CASH_BACK.value
     
-    def test_get_card_details(self, auth_headers):
+    def test_get_card_details(self, client, auth_headers):
         """Test getting specific card details."""
         # Get all cards first
         cards = client.get("/api/credit-cards", headers=auth_headers).json()
@@ -97,7 +72,7 @@ class TestCreditCardOffers:
             card = response.json()
             assert card["id"] == card_id
     
-    def test_get_featured_cards(self, auth_headers):
+    def test_get_featured_cards(self, client, auth_headers):
         """Test getting featured cards."""
         response = client.get("/api/credit-cards/featured", headers=auth_headers)
         assert response.status_code == 200
@@ -110,7 +85,7 @@ class TestCreditCardOffers:
 class TestCreditCardRecommendations:
     """Test recommendation endpoints."""
     
-    def test_get_recommendations(self, auth_headers):
+    def test_get_recommendations(self, client, auth_headers):
         """Test getting card recommendations."""
         response = client.get("/api/credit-cards/recommendations", 
                             headers=auth_headers)
@@ -125,7 +100,7 @@ class TestCreditCardRecommendations:
             assert "estimated_approval_odds" in rec
             assert 0 <= rec["match_score"] <= 1
     
-    def test_get_personalized_recommendations(self, auth_headers):
+    def test_get_personalized_recommendations(self, client, auth_headers):
         """Test getting personalized recommendations."""
         response = client.get("/api/credit-cards/recommendations/personalized", 
                             headers=auth_headers)
@@ -133,7 +108,7 @@ class TestCreditCardRecommendations:
         recommendations = response.json()
         assert isinstance(recommendations, list)
     
-    def test_recommendations_with_params(self, auth_headers):
+    def test_recommendations_with_params(self, client, auth_headers):
         """Test recommendations with specific parameters."""
         params = {
             "income_level": "high",
@@ -152,7 +127,7 @@ class TestCreditCardRecommendations:
 class TestCreditCardApplications:
     """Test application endpoints."""
     
-    def test_submit_application(self, auth_headers):
+    def test_submit_application(self, client, auth_headers):
         """Test submitting a credit card application."""
         # Get a card to apply for
         cards = client.get("/api/credit-cards", headers=auth_headers).json()
@@ -182,14 +157,14 @@ class TestCreditCardApplications:
             ApplicationStatus.REJECTED.value
         ]
     
-    def test_get_applications(self, auth_headers):
+    def test_get_applications(self, client, auth_headers):
         """Test getting user's applications."""
         response = client.get("/api/credit-cards/applications", headers=auth_headers)
         assert response.status_code == 200
         applications = response.json()
         assert isinstance(applications, list)
     
-    def test_get_application_details(self, auth_headers):
+    def test_get_application_details(self, client, auth_headers):
         """Test getting specific application details."""
         # Submit an application first
         cards = client.get("/api/credit-cards", headers=auth_headers).json()
@@ -216,7 +191,7 @@ class TestCreditCardApplications:
         application = response.json()
         assert application["id"] == app_id
     
-    def test_withdraw_application(self, auth_headers):
+    def test_withdraw_application(self, client, auth_headers):
         """Test withdrawing an application."""
         # Submit an application
         cards = client.get("/api/credit-cards", headers=auth_headers).json()
@@ -247,7 +222,7 @@ class TestCreditCardApplications:
 class TestCreditCardComparison:
     """Test card comparison endpoints."""
     
-    def test_compare_cards(self, auth_headers):
+    def test_compare_cards(self, client, auth_headers):
         """Test comparing multiple cards."""
         # Get some cards to compare
         cards = client.get("/api/credit-cards?limit=3", headers=auth_headers).json()
@@ -277,7 +252,7 @@ class TestCreditCardComparison:
 class TestCreditCardEligibility:
     """Test eligibility check endpoints."""
     
-    def test_check_eligibility(self, auth_headers):
+    def test_check_eligibility(self, client, auth_headers):
         """Test checking eligibility for a card."""
         # Get a card
         cards = client.get("/api/credit-cards", headers=auth_headers).json()
@@ -300,7 +275,7 @@ class TestCreditCardEligibility:
 class TestCreditCardAnalytics:
     """Test analytics endpoints."""
     
-    def test_get_application_stats(self, auth_headers):
+    def test_get_application_stats(self, client, auth_headers):
         """Test getting application statistics."""
         response = client.get("/api/credit-cards/applications/stats", 
                             headers=auth_headers)

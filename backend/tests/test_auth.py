@@ -9,7 +9,23 @@ from datetime import datetime, timedelta
 
 class TestAuthentication:
     """Test authentication endpoints"""
-    
+
+    @pytest.fixture(autouse=True)
+    def setup_auth(self):
+        """Ensure john_doe password is correct before each test"""
+        from app.repositories.data_manager import data_manager
+        from app.utils.auth import auth_handler
+
+        john = next((u for u in data_manager.users if u['username'] == 'john_doe'), None)
+        if john:
+            john['password_hash'] = auth_handler.get_password_hash('password123')
+        elif not data_manager.users:
+            # If users list is empty, reinitialize data
+            print("WARNING: data_manager.users is empty, reinitializing...")
+            data_manager.reset(seed=42, demo_mode=True)
+        else:
+            print(f"WARNING: john_doe not found, available users: {[u['username'] for u in data_manager.users[:5]]}")
+
     def test_register_new_user(self, client: TestClient):
         """Test user registration"""
         response = client.post("/api/auth/register", json={

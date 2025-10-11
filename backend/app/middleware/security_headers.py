@@ -64,7 +64,6 @@ class SecurityHeaders:
         # Headers that should only be set for HTML responses
         self.html_only_headers = {
             "Content-Security-Policy",
-            "X-Frame-Options",
             "X-XSS-Protection"
         }
 

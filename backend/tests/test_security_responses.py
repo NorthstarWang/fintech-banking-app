@@ -16,7 +16,9 @@ from app.storage.memory_adapter import db
 @pytest.fixture
 def db_session():
     """Provide a database session for testing."""
-    return db
+    # Return the db object which has session-like methods
+    # For memory adapter, db itself acts as a session
+    return db._get_session()
 
 
 class TestFailedLoginHandling:
@@ -239,6 +241,11 @@ class TestAccountLockout:
 
         # Lock account
         lockout = SecurityResponses.lock_account(db_session, user_id, "test_lock")
+
+        # Re-query the lockout to ensure it's tracked for updates
+        lockout = db_session.query(AccountLockout).filter(
+            AccountLockout.user_id == user_id
+        ).first()
 
         # Set unlock time to past
         lockout.unlock_at = datetime.utcnow() - timedelta(minutes=1)

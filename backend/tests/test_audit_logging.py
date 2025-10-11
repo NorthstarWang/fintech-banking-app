@@ -17,7 +17,15 @@ from app.storage.memory_adapter import db
 @pytest.fixture
 def db_session():
     """Provide a database session for testing."""
-    return db
+    # Clear audit logs before each test to avoid shared state issues
+    from app.repositories.data_manager import data_manager
+    from app.storage.memory_adapter import MemorySession
+    data_manager.audit_logs.clear()
+
+    # Create a fresh session for each test
+    # This avoids interference with the session-scoped test client
+    session = MemorySession()
+    return session
 
 
 class TestAuditLogCreation:
