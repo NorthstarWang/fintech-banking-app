@@ -6,10 +6,20 @@ A comprehensive personal finance and banking platform built with Next.js and Fas
 
 For comprehensive documentation about the platform, please refer to:
 
-- **[Feature Overview](docs/project-feature-overview.md)** - Complete feature inventory and implementation status
-- **[User Flow Documentation](docs/user-flow-documentation.md)** - Detailed user interaction flows and workflows
-- **[Backend API Specification](docs/backend-api-specification.md)** - Complete API endpoint documentation
-- **[Frontend Architecture Guide](docs/frontend-architecture-guide.md)** - Frontend components and structure
+- **[Complete Platform Documentation](docs/README.md)** - Comprehensive guide covering all aspects of the platform including:
+  - Project Feature Overview
+  - User Flow Documentation
+  - Frontend Architecture Guide
+  - Backend API Specification
+  - Security Architecture
+  - Production Hardening
+  - Incident Response
+  - Operational Runbooks
+  - SLO & SLI Guide
+
+- **[Backend Documentation](backend/README.md)** - Backend API documentation, security tests, and development guide
+
+- **[Frontend Documentation](frontend/README.md)** - Frontend architecture, components, and development guide
 
 ## Getting Started
 
