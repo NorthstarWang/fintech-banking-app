@@ -4,11 +4,12 @@ AML Case Models
 Defines data structures for AML investigation cases.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class CaseStatus(str, Enum):
@@ -52,23 +53,23 @@ class InvestigationFinding(BaseModel):
     finding_type: str
     description: str
     severity: str
-    evidence_refs: List[UUID] = Field(default_factory=list)
+    evidence_refs: list[UUID] = Field(default_factory=list)
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     validated: bool = False
-    validated_by: Optional[str] = None
-    validated_at: Optional[datetime] = None
+    validated_by: str | None = None
+    validated_at: datetime | None = None
 
 
 class CaseTimeline(BaseModel):
     """Timeline entry for case activity"""
     entry_id: UUID = Field(default_factory=uuid4)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     activity_type: str
     description: str
     actor_id: str
     actor_name: str
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class CaseDocument(BaseModel):
@@ -80,9 +81,9 @@ class CaseDocument(BaseModel):
     file_size: int
     mime_type: str
     uploaded_by: str
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
-    description: Optional[str] = None
-    tags: List[str] = Field(default_factory=list)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    description: str | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class RelatedEntity(BaseModel):
@@ -91,8 +92,8 @@ class RelatedEntity(BaseModel):
     entity_type: str  # customer, account, transaction, organization
     entity_name: str
     relationship_type: str
-    added_at: datetime = Field(default_factory=datetime.utcnow)
-    notes: Optional[str] = None
+    added_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    notes: str | None = None
 
 
 class CaseAssignment(BaseModel):
@@ -100,10 +101,10 @@ class CaseAssignment(BaseModel):
     assignment_id: UUID = Field(default_factory=uuid4)
     assigned_to: str
     assigned_by: str
-    assigned_at: datetime = Field(default_factory=datetime.utcnow)
+    assigned_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     role: str
     is_primary: bool = False
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class SARReference(BaseModel):
@@ -112,7 +113,7 @@ class SARReference(BaseModel):
     sar_number: str
     filing_date: datetime
     filing_status: str
-    acknowledgment_number: Optional[str] = None
+    acknowledgment_number: str | None = None
 
 
 class AMLCase(BaseModel):
@@ -126,7 +127,7 @@ class AMLCase(BaseModel):
     status: CaseStatus = CaseStatus.DRAFT
     priority: CasePriority = CasePriority.MEDIUM
     category: CaseCategory
-    subcategory: Optional[str] = None
+    subcategory: str | None = None
 
     # Subject information
     primary_subject_id: str
@@ -134,55 +135,55 @@ class AMLCase(BaseModel):
     primary_subject_name: str
 
     # Related entities
-    related_entities: List[RelatedEntity] = Field(default_factory=list)
+    related_entities: list[RelatedEntity] = Field(default_factory=list)
 
     # Alerts linked to this case
-    alert_ids: List[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
 
     # Financial summary
     total_suspicious_amount: float = 0.0
     transaction_count: int = 0
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
-    currencies_involved: List[str] = Field(default_factory=list)
-    countries_involved: List[str] = Field(default_factory=list)
+    period_start: datetime | None = None
+    period_end: datetime | None = None
+    currencies_involved: list[str] = Field(default_factory=list)
+    countries_involved: list[str] = Field(default_factory=list)
 
     # Investigation
-    findings: List[InvestigationFinding] = Field(default_factory=list)
-    timeline: List[CaseTimeline] = Field(default_factory=list)
-    documents: List[CaseDocument] = Field(default_factory=list)
+    findings: list[InvestigationFinding] = Field(default_factory=list)
+    timeline: list[CaseTimeline] = Field(default_factory=list)
+    documents: list[CaseDocument] = Field(default_factory=list)
 
     # Assignment
-    assignments: List[CaseAssignment] = Field(default_factory=list)
-    lead_investigator: Optional[str] = None
-    review_team: List[str] = Field(default_factory=list)
+    assignments: list[CaseAssignment] = Field(default_factory=list)
+    lead_investigator: str | None = None
+    review_team: list[str] = Field(default_factory=list)
 
     # SAR information
     sar_required: bool = False
-    sar_deadline: Optional[datetime] = None
-    sar_references: List[SARReference] = Field(default_factory=list)
+    sar_deadline: datetime | None = None
+    sar_references: list[SARReference] = Field(default_factory=list)
 
     # Risk assessment
     initial_risk_score: float = 0.0
     current_risk_score: float = 0.0
-    risk_factors: List[str] = Field(default_factory=list)
+    risk_factors: list[str] = Field(default_factory=list)
 
     # Resolution
-    resolution_type: Optional[str] = None
-    resolution_summary: Optional[str] = None
-    resolved_by: Optional[str] = None
+    resolution_type: str | None = None
+    resolution_summary: str | None = None
+    resolved_by: str | None = None
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    opened_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
-    due_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    opened_at: datetime | None = None
+    closed_at: datetime | None = None
+    due_date: datetime | None = None
 
     # Metadata
     source_system: str = "aml_case_management"
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CaseSummary(BaseModel):
@@ -196,18 +197,18 @@ class CaseSummary(BaseModel):
     primary_subject_name: str
     alert_count: int
     total_suspicious_amount: float
-    lead_investigator: Optional[str] = None
+    lead_investigator: str | None = None
     created_at: datetime
-    due_date: Optional[datetime] = None
+    due_date: datetime | None = None
     sar_required: bool
 
 
 class CaseStatistics(BaseModel):
     """Case statistics for dashboards"""
     total_cases: int = 0
-    by_status: Dict[str, int] = Field(default_factory=dict)
-    by_priority: Dict[str, int] = Field(default_factory=dict)
-    by_category: Dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_priority: dict[str, int] = Field(default_factory=dict)
+    by_category: dict[str, int] = Field(default_factory=dict)
     average_resolution_days: float = 0.0
     sar_filing_rate: float = 0.0
     overdue_count: int = 0
@@ -225,38 +226,38 @@ class CaseCreateRequest(BaseModel):
     primary_subject_id: str
     primary_subject_type: str
     primary_subject_name: str
-    alert_ids: List[UUID] = Field(default_factory=list)
-    tags: List[str] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
 
 
 class CaseUpdateRequest(BaseModel):
     """Request model for updating a case"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[CaseStatus] = None
-    priority: Optional[CasePriority] = None
-    category: Optional[CaseCategory] = None
-    lead_investigator: Optional[str] = None
-    sar_required: Optional[bool] = None
-    sar_deadline: Optional[datetime] = None
-    due_date: Optional[datetime] = None
-    tags: Optional[List[str]] = None
+    title: str | None = None
+    description: str | None = None
+    status: CaseStatus | None = None
+    priority: CasePriority | None = None
+    category: CaseCategory | None = None
+    lead_investigator: str | None = None
+    sar_required: bool | None = None
+    sar_deadline: datetime | None = None
+    due_date: datetime | None = None
+    tags: list[str] | None = None
 
 
 class CaseSearchCriteria(BaseModel):
     """Search criteria for cases"""
-    statuses: Optional[List[CaseStatus]] = None
-    priorities: Optional[List[CasePriority]] = None
-    categories: Optional[List[CaseCategory]] = None
-    investigators: Optional[List[str]] = None
-    subject_ids: Optional[List[str]] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    min_amount: Optional[float] = None
-    max_amount: Optional[float] = None
-    sar_required: Optional[bool] = None
+    statuses: list[CaseStatus] | None = None
+    priorities: list[CasePriority] | None = None
+    categories: list[CaseCategory] | None = None
+    investigators: list[str] | None = None
+    subject_ids: list[str] | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
+    sar_required: bool | None = None
     overdue_only: bool = False
-    tags: Optional[List[str]] = None
+    tags: list[str] | None = None
     page: int = 1
     page_size: int = 50
     sort_by: str = "created_at"

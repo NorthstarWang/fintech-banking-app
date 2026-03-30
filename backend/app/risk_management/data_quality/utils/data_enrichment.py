@@ -1,9 +1,9 @@
 """Data Enrichment Utilities"""
 
-from typing import List, Dict, Any, Optional, Callable
-from decimal import Decimal
-from datetime import datetime, date
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from typing import Any
 from uuid import uuid4
 
 
@@ -12,17 +12,17 @@ class EnrichmentResult:
     record_id: str
     original_fields: int
     enriched_fields: int
-    added_fields: List[str]
+    added_fields: list[str]
     enrichment_source: str
     enriched_at: datetime
 
 
 class DataEnrichmentUtilities:
     def __init__(self):
-        self._enrichment_sources: Dict[str, Callable] = {}
-        self._lookup_tables: Dict[str, Dict[str, Any]] = {}
+        self._enrichment_sources: dict[str, Callable] = {}
+        self._lookup_tables: dict[str, dict[str, Any]] = {}
 
-    def register_lookup_table(self, table_name: str, data: Dict[str, Any]) -> None:
+    def register_lookup_table(self, table_name: str, data: dict[str, Any]) -> None:
         self._lookup_tables[table_name] = data
 
     def register_enrichment_source(self, source_name: str, enrichment_func: Callable) -> None:
@@ -30,12 +30,12 @@ class DataEnrichmentUtilities:
 
     def enrich_with_lookup(
         self,
-        record: Dict[str, Any],
+        record: dict[str, Any],
         lookup_table_name: str,
         lookup_key_field: str,
-        fields_to_add: List[str],
+        fields_to_add: list[str],
         prefix: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         enriched = record.copy()
         lookup_table = self._lookup_tables.get(lookup_table_name, {})
 
@@ -51,9 +51,9 @@ class DataEnrichmentUtilities:
 
     def enrich_with_calculated_fields(
         self,
-        record: Dict[str, Any],
-        calculations: Dict[str, Callable],
-    ) -> Dict[str, Any]:
+        record: dict[str, Any],
+        calculations: dict[str, Callable],
+    ) -> dict[str, Any]:
         enriched = record.copy()
 
         for field_name, calculation in calculations.items():
@@ -66,9 +66,9 @@ class DataEnrichmentUtilities:
 
     def enrich_with_derived_fields(
         self,
-        record: Dict[str, Any],
-        derivations: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        record: dict[str, Any],
+        derivations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         enriched = record.copy()
 
         for derivation in derivations:
@@ -149,13 +149,13 @@ class DataEnrichmentUtilities:
 
     def add_metadata_fields(
         self,
-        record: Dict[str, Any],
+        record: dict[str, Any],
         source_system: str = "",
         batch_id: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         enriched = record.copy()
         enriched["_record_id"] = str(uuid4())
-        enriched["_ingestion_timestamp"] = datetime.utcnow().isoformat()
+        enriched["_ingestion_timestamp"] = datetime.now(UTC).isoformat()
         enriched["_source_system"] = source_system
         enriched["_batch_id"] = batch_id
         enriched["_version"] = 1
@@ -163,9 +163,9 @@ class DataEnrichmentUtilities:
 
     def enrich_dataset(
         self,
-        data: List[Dict[str, Any]],
-        enrichment_configs: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        data: list[dict[str, Any]],
+        enrichment_configs: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         enriched_data = []
 
         for record in data:
@@ -200,10 +200,10 @@ class DataEnrichmentUtilities:
 
         return enriched_data
 
-    def get_lookup_tables(self) -> List[str]:
+    def get_lookup_tables(self) -> list[str]:
         return list(self._lookup_tables.keys())
 
-    def get_enrichment_sources(self) -> List[str]:
+    def get_enrichment_sources(self) -> list[str]:
         return list(self._enrichment_sources.keys())
 
 

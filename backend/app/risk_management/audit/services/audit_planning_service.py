@@ -1,12 +1,19 @@
 """Audit Planning Service - Business logic for audit planning and resource management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.audit_planning_models import (
-    AuditUniverse, AnnualAuditPlan, PlannedAudit, RiskAssessment,
-    AuditResource, ResourceAllocation, AuditBudget, QualityAssurance
+    AnnualAuditPlan,
+    AuditBudget,
+    AuditResource,
+    AuditUniverse,
+    PlannedAudit,
+    QualityAssurance,
+    ResourceAllocation,
+    RiskAssessment,
 )
 from ..repositories.audit_planning_repository import audit_planning_repository
 
@@ -18,8 +25,8 @@ class AuditPlanningService:
     async def add_to_universe(
         self, entity_code: str, entity_name: str, entity_type: str,
         description: str, owner: str, risk_rating: str,
-        audit_frequency: str, regulatory_coverage: List[str],
-        key_risks: List[str], key_controls: List[str]
+        audit_frequency: str, regulatory_coverage: list[str],
+        key_risks: list[str], key_controls: list[str]
     ) -> AuditUniverse:
         entity = AuditUniverse(
             entity_code=entity_code, entity_name=entity_name, entity_type=entity_type,
@@ -32,8 +39,8 @@ class AuditPlanningService:
 
     async def assess_risk(
         self, universe_entity_id: UUID, assessor: str, assessment_type: str,
-        risk_factors: List[Dict[str, Any]], factor_weights: Dict[str, Decimal],
-        factor_scores: Dict[str, Decimal], control_factors: List[Dict[str, Any]],
+        risk_factors: list[dict[str, Any]], factor_weights: dict[str, Decimal],
+        factor_scores: dict[str, Decimal], control_factors: list[dict[str, Any]],
         control_score: Decimal
     ) -> RiskAssessment:
         inherent_risk = sum(
@@ -70,8 +77,8 @@ class AuditPlanningService:
 
     async def create_annual_plan(
         self, plan_year: int, plan_name: str, prepared_by: str,
-        total_hours: int, total_budget: Decimal, assumptions: List[str],
-        constraints: List[str]
+        total_hours: int, total_budget: Decimal, assumptions: list[str],
+        constraints: list[str]
     ) -> AnnualAuditPlan:
         plan = AnnualAuditPlan(
             plan_year=plan_year, plan_name=plan_name, version="1.0",
@@ -86,7 +93,7 @@ class AuditPlanningService:
         self, plan_id: UUID, universe_entity_id: UUID, audit_name: str,
         audit_type: str, risk_rating: str, priority: int, planned_quarter: int,
         planned_start_date: date, planned_end_date: date, estimated_hours: int,
-        scope_summary: str, objectives: List[str]
+        scope_summary: str, objectives: list[str]
     ) -> PlannedAudit:
         audit = PlannedAudit(
             plan_id=plan_id, universe_entity_id=universe_entity_id, audit_name=audit_name,
@@ -105,7 +112,7 @@ class AuditPlanningService:
 
     async def register_resource(
         self, employee_id: str, employee_name: str, role: str, department: str,
-        certifications: List[str], expertise_areas: List[str],
+        certifications: list[str], expertise_areas: list[str],
         availability_percentage: Decimal, cost_rate: Decimal, total_hours_available: int
     ) -> AuditResource:
         resource = AuditResource(
@@ -152,8 +159,8 @@ class AuditPlanningService:
 
     async def conduct_qa_review(
         self, qa_type: str, review_period: str, reviewer: str,
-        areas_reviewed: List[str], standards_assessed: List[str],
-        findings: List[Dict[str, Any]], recommendations: List[str],
+        areas_reviewed: list[str], standards_assessed: list[str],
+        findings: list[dict[str, Any]], recommendations: list[str],
         overall_rating: str, conforms_to_standards: bool
     ) -> QualityAssurance:
         qa = QualityAssurance(
@@ -167,7 +174,7 @@ class AuditPlanningService:
         await self.repository.save_qa(qa)
         return qa
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

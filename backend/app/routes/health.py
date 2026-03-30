@@ -3,7 +3,7 @@ Health check endpoints for monitoring and load balancers.
 Provides comprehensive health monitoring for all backend systems independently.
 """
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
@@ -62,7 +62,7 @@ async def health_check():
         status_code=status_code,
         content={
             "status": overall_status.value,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "service": "bankflow-api",
             "version": os.getenv("APP_VERSION", "1.0.0"),
             "systems": systems_health,
@@ -101,7 +101,7 @@ async def readiness_check():
         status_code=status.HTTP_200_OK if is_ready else status.HTTP_503_SERVICE_UNAVAILABLE,
         content={
             "status": "ready" if is_ready else "not ready",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "systems": systems_health,
             "critical_systems": {
                 system: systems_health.get(system, {}).get("status", "unknown")
@@ -133,7 +133,7 @@ async def liveness_check():
         status_code=status.HTTP_200_OK,
         content={
             "status": "alive",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "metrics": system_resources.get("details", {}) if hasattr(system_resources, "details") else
                        systems_health.get("system_resources", {}).get("details", {}),
             "systems": systems_health
@@ -157,7 +157,7 @@ async def system_health_check(system_name: str):
             content={
                 "error": f"System '{system_name}' not found",
                 "available_systems": list(_health_monitor.last_results.keys()),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
 
@@ -171,6 +171,6 @@ async def system_health_check(system_name: str):
         status_code=status_code,
         content={
             "system": system_health.to_dict(),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     )

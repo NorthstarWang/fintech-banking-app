@@ -1,13 +1,23 @@
 """Control Service - Business logic for control management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.control_models import (
-    Control, ControlTest, ControlException, ControlGap, ControlFramework,
-    ControlMapping, ControlMetrics, ControlType, ControlNature, ControlCategory,
-    ControlStatus, TestResult
+    Control,
+    ControlCategory,
+    ControlException,
+    ControlFramework,
+    ControlGap,
+    ControlMapping,
+    ControlMetrics,
+    ControlNature,
+    ControlStatus,
+    ControlTest,
+    ControlType,
+    TestResult,
 )
 from ..repositories.control_repository import control_repository
 
@@ -63,20 +73,20 @@ class ControlService:
         await self.repository.save_control(control)
         return control
 
-    async def get_control(self, control_id: UUID) -> Optional[Control]:
+    async def get_control(self, control_id: UUID) -> Control | None:
         return await self.repository.find_control_by_id(control_id)
 
-    async def get_control_by_code(self, control_code: str) -> Optional[Control]:
+    async def get_control_by_code(self, control_code: str) -> Control | None:
         return await self.repository.find_control_by_code(control_code)
 
     async def list_controls(
         self,
-        status: Optional[ControlStatus] = None,
-        control_type: Optional[ControlType] = None,
-        business_unit: Optional[str] = None,
-        key_control: Optional[bool] = None,
-        sox_control: Optional[bool] = None
-    ) -> List[Control]:
+        status: ControlStatus | None = None,
+        control_type: ControlType | None = None,
+        business_unit: str | None = None,
+        key_control: bool | None = None,
+        sox_control: bool | None = None
+    ) -> list[Control]:
         controls = await self.repository.find_all_controls()
 
         if status:
@@ -96,13 +106,13 @@ class ControlService:
         self,
         control_id: UUID,
         new_status: ControlStatus
-    ) -> Optional[Control]:
+    ) -> Control | None:
         control = await self.repository.find_control_by_id(control_id)
         if not control:
             return None
 
         control.status = new_status
-        control.last_modified = datetime.utcnow()
+        control.last_modified = datetime.now(UTC)
 
         await self.repository.update_control(control)
         return control
@@ -120,8 +130,8 @@ class ControlService:
         population_size: int,
         exceptions_found: int,
         test_procedure: str,
-        findings: List[str] = None,
-        recommendations: List[str] = None
+        findings: list[str] | None = None,
+        recommendations: list[str] | None = None
     ) -> ControlTest:
         exception_rate = Decimal(str(exceptions_found / sample_size)) if sample_size > 0 else Decimal("0")
 
@@ -174,7 +184,7 @@ class ControlService:
 
         return test
 
-    async def get_control_tests(self, control_id: UUID) -> List[ControlTest]:
+    async def get_control_tests(self, control_id: UUID) -> list[ControlTest]:
         return await self.repository.find_tests_by_control(control_id)
 
     async def record_exception(
@@ -186,9 +196,9 @@ class ControlService:
         root_cause: str,
         impact: str,
         severity: str,
-        remediation_action: Optional[str] = None,
-        remediation_owner: Optional[str] = None,
-        remediation_due_date: Optional[date] = None
+        remediation_action: str | None = None,
+        remediation_owner: str | None = None,
+        remediation_due_date: date | None = None
     ) -> ControlException:
         exception = ControlException(
             control_id=control_id,
@@ -210,7 +220,7 @@ class ControlService:
         self,
         exception_id: UUID,
         verified_by: str
-    ) -> Optional[ControlException]:
+    ) -> ControlException | None:
         exception = await self.repository.find_exception_by_id(exception_id)
         if not exception:
             return None
@@ -234,7 +244,7 @@ class ControlService:
         remediation_plan: str,
         remediation_owner: str,
         target_remediation_date: date,
-        control_id: Optional[UUID] = None
+        control_id: UUID | None = None
     ) -> ControlGap:
         gap = ControlGap(
             control_id=control_id,
@@ -258,7 +268,7 @@ class ControlService:
         self,
         gap_id: UUID,
         validated_by: str
-    ) -> Optional[ControlGap]:
+    ) -> ControlGap | None:
         gap = await self.repository.find_gap_by_id(gap_id)
         if not gap:
             return None
@@ -272,8 +282,8 @@ class ControlService:
 
     async def get_open_gaps(
         self,
-        business_unit: Optional[str] = None
-    ) -> List[ControlGap]:
+        business_unit: str | None = None
+    ) -> list[ControlGap]:
         gaps = await self.repository.find_all_gaps()
         gaps = [g for g in gaps if g.status == "open"]
 
@@ -289,7 +299,7 @@ class ControlService:
         description: str,
         issuing_body: str,
         effective_date: date,
-        domains: List[str],
+        domains: list[str],
         total_controls: int
     ) -> ControlFramework:
         framework = ControlFramework(
@@ -330,7 +340,7 @@ class ControlService:
 
     async def generate_metrics(
         self,
-        business_unit: Optional[str] = None
+        business_unit: str | None = None
     ) -> ControlMetrics:
         controls = await self.list_controls(business_unit=business_unit)
 
@@ -346,7 +356,7 @@ class ControlService:
             control_ids = {c.control_id for c in controls}
             tests = [t for t in tests if t.control_id in control_ids]
 
-        tested = len(set(t.control_id for t in tests))
+        tested = len({t.control_id for t in tests})
         passed = len([t for t in tests if t.test_result == TestResult.PASS])
         failed = len([t for t in tests if t.test_result == TestResult.FAIL])
 
@@ -391,7 +401,7 @@ class ControlService:
         await self.repository.save_metrics(metrics)
         return metrics
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

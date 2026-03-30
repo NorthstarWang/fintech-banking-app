@@ -2,11 +2,11 @@
 Comprehensive event schemas for analytics and data intelligence.
 Supports 25+ event types across all platform features.
 """
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class EventType(str, Enum):
@@ -84,7 +84,7 @@ class BaseEvent(BaseModel):
     """Base event model with common fields."""
     event_id: str = Field(..., description="Unique event identifier")
     event_type: EventType
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     user_id: int
     session_id: str | None = None
     device_id: str | None = None
@@ -93,10 +93,9 @@ class BaseEvent(BaseModel):
     correlation_id: str | None = Field(None, description="For grouping related events")
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    @field_serializer('timestamp')
+    def serialize_datetime(self, v: datetime) -> str:
+        return v.isoformat()
 
 
 class TransactionEvent(BaseEvent):

@@ -5,11 +5,11 @@ import asyncio
 import hashlib
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
-from .event_schemas import BaseEvent, EVENT_SCHEMA_MAP, EventType
+from .event_schemas import EVENT_SCHEMA_MAP, BaseEvent, EventType
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class EventBuffer:
         user_id = event.user_id
 
         # Check if event is too old (beyond window)
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         if event.timestamp < now - timedelta(seconds=self.window_seconds * 2):
             return False, "event_too_old"
 
@@ -65,7 +65,7 @@ class EventBuffer:
 
     def cleanup_old_events(self):
         """Remove events older than the window."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         cutoff = now - timedelta(seconds=self.window_seconds * 2)
 
         for user_id in list(self.buffer.keys()):
@@ -90,7 +90,7 @@ class EventDeduplicator:
         Check if event is a duplicate.
         Returns (is_duplicate, reason)
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Check by event ID
         if event.event_id in self.seen_events:
@@ -131,7 +131,7 @@ class EventDeduplicator:
 
     def cleanup_old_entries(self):
         """Remove old entries beyond TTL."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         cutoff = now - timedelta(seconds=self.ttl_seconds)
 
         self.seen_events = {
@@ -151,12 +151,12 @@ class EventStore:
         self.detailed_events: list[dict[str, Any]] = []  # Last 90 days
         self.daily_aggregates: dict[str, dict[str, Any]] = {}  # Last 1 year
         self.monthly_aggregates: dict[str, dict[str, Any]] = {}  # Indefinite
-        self.last_cleanup = datetime.utcnow()
+        self.last_cleanup = datetime.now(UTC)
 
     def store_event(self, event: BaseEvent):
         """Store event with timestamp."""
         event_dict = event.model_dump()
-        event_dict['stored_at'] = datetime.utcnow()
+        event_dict['stored_at'] = datetime.now(UTC)
         self.detailed_events.append(event_dict)
 
     def get_events(
@@ -191,7 +191,7 @@ class EventStore:
 
     def apply_retention_policy(self):
         """Apply retention policies: 90 days detailed, 1 year daily, indefinite monthly."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Only run cleanup every hour
         if (now - self.last_cleanup).total_seconds() < 3600:

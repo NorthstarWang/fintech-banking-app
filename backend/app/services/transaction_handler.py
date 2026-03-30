@@ -328,7 +328,7 @@ class TransactionHandler:
             transaction_id=transaction_id,
             user_id=user_id,
             event_type=TransactionEventType.BALANCE_MODIFIED,
-            timestamp=self.context.started_at if hasattr(self, 'context') else datetime.utcnow(),
+            timestamp=self.context.started_at if hasattr(self, 'context') else datetime.now(UTC),
             amount=amount,
             from_account_id=account_id if operation == "DEBIT" else None,
             to_account_id=account_id if operation == "CREDIT" else None,

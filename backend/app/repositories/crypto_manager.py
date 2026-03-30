@@ -3,7 +3,7 @@ Crypto manager for handling digital asset data generation and management.
 """
 import hashlib
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from ..models import (
     BlockchainNetwork,
@@ -174,7 +174,7 @@ class CryptoManager:
                 name=f"{network.value.capitalize()} Wallet {i+1}",
                 network=network.value,
                 is_primary=(i == 0),
-                last_synced=datetime.utcnow() - timedelta(hours=random.randint(1, 24))
+                last_synced=datetime.now(UTC) - timedelta(hours=random.randint(1, 24))
             )
             self.data_manager.crypto_wallets.append(wallet.to_dict())
             wallets.append(wallet)
@@ -235,7 +235,7 @@ class CryptoManager:
                 usd_value=usd_value,
                 price_usd=price,
                 change_24h=change_24h,
-                last_updated=datetime.utcnow()
+                last_updated=datetime.now(UTC)
             )
             self.data_manager.crypto_assets.append(asset.to_dict())
 
@@ -278,7 +278,7 @@ class CryptoManager:
                 contract_address=collection["contract_address"],
                 floor_price_usd=floor_price,
                 estimated_value_usd=estimated_value,
-                acquired_at=datetime.utcnow() - timedelta(days=random.randint(30, 365))
+                acquired_at=datetime.now(UTC) - timedelta(days=random.randint(30, 365))
             )
             self.data_manager.nft_assets.append(nft.to_dict())
 
@@ -344,7 +344,7 @@ class CryptoManager:
                 apy=apy,
                 rewards_earned=rewards_earned,
                 rewards_usd=total_rewards,
-                started_at=datetime.utcnow() - timedelta(days=days_active)
+                started_at=datetime.now(UTC) - timedelta(days=days_active)
             )
             self.data_manager.defi_positions.append(position.to_dict())
 
@@ -396,7 +396,7 @@ class CryptoManager:
                 gas_fee_usd = random.uniform(0.01, 0.1)
 
             # Transaction timing
-            created_at = datetime.utcnow() - timedelta(
+            created_at = datetime.now(UTC) - timedelta(
                 days=random.randint(0, 180),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59)
@@ -443,4 +443,4 @@ class CryptoManager:
 
                 # Calculate 24h change
                 asset["change_24h"] = ((new_price - old_price) / old_price) * 100
-                asset["last_updated"] = datetime.utcnow()
+                asset["last_updated"] = datetime.now(UTC)

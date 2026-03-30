@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -93,7 +93,7 @@ async def create_transaction(
 
     # Update account balance
     account.balance = new_balance
-    account.updated_at = datetime.utcnow()
+    account.updated_at = datetime.now(UTC)
 
     db_session.add(new_transaction)
     db_session.commit()
@@ -112,7 +112,7 @@ async def create_transaction(
             new_transaction
         )
 
-    return TransactionResponse.from_orm(new_transaction)
+    return TransactionResponse.model_validate(new_transaction)
 
 @router.post("/transfer", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_transfer(
@@ -173,8 +173,8 @@ async def create_transfer(
     from_account.balance -= transfer_data.amount
     to_account.balance += transfer_data.amount
 
-    from_account.updated_at = datetime.utcnow()
-    to_account.updated_at = datetime.utcnow()
+    from_account.updated_at = datetime.now(UTC)
+    to_account.updated_at = datetime.now(UTC)
 
     db_session.add(transfer_out)
     db_session.add(transfer_in)
@@ -393,7 +393,7 @@ async def get_transactions(
         if hasattr(tx, 'merchant_id') and tx.merchant_id and tx.merchant_id in merchants_map:
             tx.merchant = merchants_map[tx.merchant_id]
 
-    return [TransactionResponse.from_orm(tx) for tx in transactions]
+    return [TransactionResponse.model_validate(tx) for tx in transactions]
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
 async def get_transaction(
@@ -428,7 +428,7 @@ async def get_transaction(
         if merchant:
             transaction.merchant = merchant.name
 
-    return TransactionResponse.from_orm(transaction)
+    return TransactionResponse.model_validate(transaction)
 
 @router.put("/{transaction_id}", response_model=TransactionResponse)
 async def update_transaction(
@@ -500,7 +500,7 @@ async def update_transaction(
     if update_data.attachments is not None:
         transaction.attachments = update_data.attachments
 
-    transaction.updated_at = datetime.utcnow()
+    transaction.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(transaction)
 
@@ -513,7 +513,7 @@ async def update_transaction(
             # Add merchant name to transaction for response
             transaction.merchant = merchant.name
 
-    return TransactionResponse.from_orm(transaction)
+    return TransactionResponse.model_validate(transaction)
 
 @router.delete("/{transaction_id}")
 async def delete_transaction(
@@ -585,7 +585,7 @@ async def update_transaction_notes(
 
     # Update notes
     transaction.notes = notes
-    transaction.updated_at = datetime.utcnow()
+    transaction.updated_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Notes updated successfully", "notes": notes}

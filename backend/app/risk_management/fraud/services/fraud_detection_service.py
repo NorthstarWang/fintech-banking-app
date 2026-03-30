@@ -1,9 +1,9 @@
 """Fraud Detection Service - Real-time fraud detection engine"""
 
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from uuid import UUID
-from ..models.fraud_alert_models import FraudType, FraudAlertSeverity, FraudIndicator
+from typing import Any
+
+from ..models.fraud_alert_models import FraudAlertSeverity, FraudIndicator, FraudType
 
 
 class FraudDetectionService:
@@ -16,7 +16,7 @@ class FraudDetectionService:
             "geo_time_minutes": 30,
         }
 
-    async def analyze_transaction(self, transaction: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze_transaction(self, transaction: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         indicators = []
         fraud_score = 0.0
 
@@ -92,13 +92,13 @@ class FraudDetectionService:
     def _score_to_severity(self, score: float) -> FraudAlertSeverity:
         if score >= 80:
             return FraudAlertSeverity.CRITICAL
-        elif score >= 60:
+        if score >= 60:
             return FraudAlertSeverity.HIGH
-        elif score >= 40:
+        if score >= 40:
             return FraudAlertSeverity.MEDIUM
         return FraudAlertSeverity.LOW
 
-    def _determine_fraud_type(self, indicators: List[FraudIndicator]) -> FraudType:
+    def _determine_fraud_type(self, indicators: list[FraudIndicator]) -> FraudType:
         indicator_types = {i.indicator_type for i in indicators}
         if "geographic" in indicator_types and "device" in indicator_types:
             return FraudType.ACCOUNT_TAKEOVER
@@ -106,11 +106,11 @@ class FraudDetectionService:
             return FraudType.CARD_NOT_PRESENT
         return FraudType.CARD_NOT_PRESENT
 
-    async def check_velocity(self, customer_id: str, time_window_minutes: int = 60) -> Dict[str, Any]:
+    async def check_velocity(self, customer_id: str, time_window_minutes: int = 60) -> dict[str, Any]:
         # In production, would query actual transaction history
         return {"count": 0, "total_amount": 0.0, "is_anomaly": False}
 
-    async def check_geo_anomaly(self, customer_id: str, current_location: Dict, current_time: datetime) -> Dict[str, Any]:
+    async def check_geo_anomaly(self, customer_id: str, current_location: dict, current_time: datetime) -> dict[str, Any]:
         return {"is_anomaly": False, "distance_km": 0, "time_diff_minutes": 0}
 
 

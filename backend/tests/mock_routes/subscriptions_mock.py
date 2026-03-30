@@ -3,7 +3,7 @@ Mock implementation for subscriptions routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -86,7 +86,7 @@ async def create_subscription(data: Dict[str, Any], current_user: Dict[str, Any]
         "shareable": data.get("shareable", False),
         "max_users": data.get("max_users", 1),
         "shared_users": [],
-        "created_at": datetime.utcnow().isoformat() + 'Z'
+        "created_at": datetime.now(timezone.utc).isoformat() + 'Z'
     }
     
     # Calculate days until billing for trials
@@ -216,7 +216,7 @@ async def import_subscriptions(data: Dict[str, Any], current_user: Dict[str, Any
             "payment_method_id": sub_data.get("payment_method_id", 1),
             "auto_renew": sub_data.get("auto_renew", True),
             "description": sub_data.get("description"),
-            "created_at": datetime.utcnow().isoformat() + 'Z'
+            "created_at": datetime.now(timezone.utc).isoformat() + 'Z'
         }
         
         data_manager.subscription_counter += 1
@@ -297,7 +297,7 @@ async def update_subscription(subscription_id: str, data: Dict[str, Any], curren
     if "billing_cycle" in data:
         sub["next_billing_date"] = calculate_next_billing_date(sub["start_date"], data["billing_cycle"])
     
-    sub["updated_at"] = datetime.utcnow().isoformat() + 'Z'
+    sub["updated_at"] = datetime.now(timezone.utc).isoformat() + 'Z'
     return sub
 
 @router.post("/{subscription_id}/cancel")
@@ -316,7 +316,7 @@ async def cancel_subscription(subscription_id: str, data: Dict[str, Any], curren
         sub["cancellation_date"] = sub["next_billing_date"]
     else:
         sub["status"] = "cancelled"
-        sub["cancellation_date"] = datetime.utcnow().isoformat() + 'Z'
+        sub["cancellation_date"] = datetime.now(timezone.utc).isoformat() + 'Z'
     
     return sub
 
@@ -337,7 +337,7 @@ async def pause_subscription(subscription_id: str, data: Dict[str, Any], current
         # Default pause for 30 days
         sub["resume_date"] = (datetime.now() + timedelta(days=30)).isoformat() + 'Z'
     
-    sub["paused_at"] = datetime.utcnow().isoformat() + 'Z'
+    sub["paused_at"] = datetime.now(timezone.utc).isoformat() + 'Z'
     return sub
 
 @router.get("/{subscription_id}/payments")
@@ -403,7 +403,7 @@ async def track_usage(subscription_id: str, data: Dict[str, Any], current_user: 
         "usage_date": data.get("usage_date"),
         "duration_minutes": data.get("duration_minutes"),
         "notes": data.get("notes"),
-        "tracked_at": datetime.utcnow().isoformat() + 'Z'
+        "tracked_at": datetime.now(timezone.utc).isoformat() + 'Z'
     })
     
     return {"message": "Usage tracked successfully"}
@@ -431,7 +431,7 @@ async def share_subscription(subscription_id: str, data: Dict[str, Any], current
     sub["shared_users"].append({
         "username": data.get("share_with_username"),
         "cost_split_percentage": data.get("cost_split_percentage", 0),
-        "shared_at": datetime.utcnow().isoformat() + 'Z'
+        "shared_at": datetime.now(timezone.utc).isoformat() + 'Z'
     })
     
     return sub

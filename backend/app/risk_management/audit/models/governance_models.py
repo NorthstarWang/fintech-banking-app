@@ -1,10 +1,10 @@
 """Corporate Governance Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import date
 from decimal import Decimal
-from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -14,10 +14,10 @@ class GovernanceFramework(BaseModel):
     framework_version: str
     effective_date: date
     description: str
-    principles: List[str] = Field(default_factory=list)
-    governance_structure: Dict[str, Any] = Field(default_factory=dict)
-    roles_responsibilities: Dict[str, List[str]] = Field(default_factory=dict)
-    reporting_lines: Dict[str, str] = Field(default_factory=dict)
+    principles: list[str] = Field(default_factory=list)
+    governance_structure: dict[str, Any] = Field(default_factory=dict)
+    roles_responsibilities: dict[str, list[str]] = Field(default_factory=dict)
+    reporting_lines: dict[str, str] = Field(default_factory=dict)
     approved_by: str
     approval_date: date
     next_review_date: date
@@ -30,15 +30,15 @@ class BoardMember(BaseModel):
     position: str
     member_type: str  # independent, executive, non-executive
     appointment_date: date
-    term_end_date: Optional[date] = None
-    committees: List[str] = Field(default_factory=list)
-    qualifications: List[str] = Field(default_factory=list)
-    expertise_areas: List[str] = Field(default_factory=list)
-    other_directorships: List[str] = Field(default_factory=list)
+    term_end_date: date | None = None
+    committees: list[str] = Field(default_factory=list)
+    qualifications: list[str] = Field(default_factory=list)
+    expertise_areas: list[str] = Field(default_factory=list)
+    other_directorships: list[str] = Field(default_factory=list)
     annual_fee: Decimal = Decimal("0")
     attendance_rate: Decimal = Decimal("100")
     is_active: bool = True
-    conflict_of_interest: List[Dict[str, Any]] = Field(default_factory=list)
+    conflict_of_interest: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class BoardMeeting(BaseModel):
@@ -47,14 +47,14 @@ class BoardMeeting(BaseModel):
     meeting_date: date
     meeting_time: str
     location: str
-    agenda_items: List[Dict[str, Any]] = Field(default_factory=list)
-    attendees: List[str] = Field(default_factory=list)
-    absentees: List[str] = Field(default_factory=list)
+    agenda_items: list[dict[str, Any]] = Field(default_factory=list)
+    attendees: list[str] = Field(default_factory=list)
+    absentees: list[str] = Field(default_factory=list)
     quorum_present: bool = True
     minutes_prepared_by: str = ""
-    minutes_approved_date: Optional[date] = None
-    resolutions: List[Dict[str, Any]] = Field(default_factory=list)
-    action_items: List[Dict[str, Any]] = Field(default_factory=list)
+    minutes_approved_date: date | None = None
+    resolutions: list[dict[str, Any]] = Field(default_factory=list)
+    action_items: list[dict[str, Any]] = Field(default_factory=list)
     status: str = "scheduled"
 
 
@@ -71,9 +71,9 @@ class GovernancePolicy(BaseModel):
     review_date: date
     version: str
     status: str = "active"
-    key_provisions: List[str] = Field(default_factory=list)
-    related_policies: List[str] = Field(default_factory=list)
-    compliance_requirements: List[str] = Field(default_factory=list)
+    key_provisions: list[str] = Field(default_factory=list)
+    related_policies: list[str] = Field(default_factory=list)
+    compliance_requirements: list[str] = Field(default_factory=list)
 
 
 class ConflictOfInterest(BaseModel):
@@ -85,9 +85,9 @@ class ConflictOfInterest(BaseModel):
     description: str
     related_party: str
     nature_of_interest: str
-    mitigation_measures: List[str] = Field(default_factory=list)
+    mitigation_measures: list[str] = Field(default_factory=list)
     review_committee: str
-    review_date: Optional[date] = None
+    review_date: date | None = None
     decision: str = ""
     status: str = "pending"
     annual_declaration: bool = False
@@ -99,9 +99,9 @@ class GovernanceAssessment(BaseModel):
     assessment_type: str
     assessor: str
     assessment_date: date
-    areas_assessed: List[str] = Field(default_factory=list)
-    findings: List[Dict[str, Any]] = Field(default_factory=list)
-    recommendations: List[Dict[str, Any]] = Field(default_factory=list)
+    areas_assessed: list[str] = Field(default_factory=list)
+    findings: list[dict[str, Any]] = Field(default_factory=list)
+    recommendations: list[dict[str, Any]] = Field(default_factory=list)
     overall_rating: str
     board_effectiveness_score: Decimal = Decimal("0")
     compliance_score: Decimal = Decimal("0")

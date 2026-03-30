@@ -4,13 +4,10 @@ AML Workflow Service
 Orchestrates AML workflows and processes.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-
-from ..models.alert_models import AlertType, AlertSeverity, AlertStatus, AlertCreateRequest
-from ..models.case_models import CaseStatus, CasePriority, CaseCategory, CaseCreateRequest
+from typing import Any
+from uuid import UUID, uuid4
 
 
 class WorkflowType(str, Enum):
@@ -47,9 +44,9 @@ class WorkflowStep:
         self.required = required
         self.order = order
         self.status = "pending"
-        self.completed_at: Optional[datetime] = None
-        self.completed_by: Optional[str] = None
-        self.result: Optional[Dict[str, Any]] = None
+        self.completed_at: datetime | None = None
+        self.completed_by: str | None = None
+        self.result: dict[str, Any] | None = None
 
 
 class Workflow:
@@ -62,23 +59,23 @@ class Workflow:
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.status = WorkflowStatus.PENDING
-        self.steps: List[WorkflowStep] = []
+        self.steps: list[WorkflowStep] = []
         self.current_step_index = 0
         self.created_by = created_by
-        self.created_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        self.completed_at: Optional[datetime] = None
-        self.due_date: Optional[datetime] = None
-        self.assigned_to: Optional[str] = None
-        self.metadata: Dict[str, Any] = {}
+        self.created_at = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
+        self.completed_at: datetime | None = None
+        self.due_date: datetime | None = None
+        self.assigned_to: str | None = None
+        self.metadata: dict[str, Any] = {}
 
 
 class AMLWorkflowService:
     """Service for orchestrating AML workflows"""
 
     def __init__(self):
-        self._workflows: Dict[UUID, Workflow] = {}
-        self._workflow_templates: Dict[WorkflowType, List[Dict[str, Any]]] = {}
+        self._workflows: dict[UUID, Workflow] = {}
+        self._workflow_templates: dict[WorkflowType, list[dict[str, Any]]] = {}
         self._initialize_templates()
 
     def _initialize_templates(self):
@@ -157,11 +154,11 @@ class AMLWorkflowService:
 
     async def create_workflow(
         self, workflow_type: WorkflowType, entity_id: str, entity_type: str, created_by: str,
-        due_date: Optional[datetime] = None, assigned_to: Optional[str] = None
+        due_date: datetime | None = None, assigned_to: str | None = None
     ) -> Workflow:
         """Create a new workflow"""
         workflow = Workflow(workflow_type, entity_id, entity_type, created_by)
-        workflow.due_date = due_date or datetime.utcnow() + timedelta(days=30)
+        workflow.due_date = due_date or datetime.now(UTC) + timedelta(days=30)
         workflow.assigned_to = assigned_to
 
         # Add steps from template
@@ -178,11 +175,11 @@ class AMLWorkflowService:
         self._workflows[workflow.workflow_id] = workflow
         return workflow
 
-    async def get_workflow(self, workflow_id: UUID) -> Optional[Workflow]:
+    async def get_workflow(self, workflow_id: UUID) -> Workflow | None:
         """Get workflow by ID"""
         return self._workflows.get(workflow_id)
 
-    async def start_workflow(self, workflow_id: UUID, started_by: str) -> Optional[Workflow]:
+    async def start_workflow(self, workflow_id: UUID, started_by: str) -> Workflow | None:
         """Start a workflow"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -192,12 +189,12 @@ class AMLWorkflowService:
         if workflow.steps:
             workflow.steps[0].status = "in_progress"
 
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = datetime.now(UTC)
         return workflow
 
     async def complete_step(
-        self, workflow_id: UUID, step_id: str, completed_by: str, result: Optional[Dict[str, Any]] = None
-    ) -> Optional[Workflow]:
+        self, workflow_id: UUID, step_id: str, completed_by: str, result: dict[str, Any] | None = None
+    ) -> Workflow | None:
         """Complete a workflow step"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -206,7 +203,7 @@ class AMLWorkflowService:
         for i, step in enumerate(workflow.steps):
             if step.step_id == step_id:
                 step.status = "completed"
-                step.completed_at = datetime.utcnow()
+                step.completed_at = datetime.now(UTC)
                 step.completed_by = completed_by
                 step.result = result
 
@@ -217,16 +214,16 @@ class AMLWorkflowService:
                 else:
                     # All steps completed
                     workflow.status = WorkflowStatus.COMPLETED
-                    workflow.completed_at = datetime.utcnow()
+                    workflow.completed_at = datetime.now(UTC)
 
-                workflow.updated_at = datetime.utcnow()
+                workflow.updated_at = datetime.now(UTC)
                 return workflow
 
         return workflow
 
     async def skip_step(
         self, workflow_id: UUID, step_id: str, skipped_by: str, reason: str
-    ) -> Optional[Workflow]:
+    ) -> Workflow | None:
         """Skip a workflow step"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -245,14 +242,14 @@ class AMLWorkflowService:
                     workflow.current_step_index = i + 1
                     workflow.steps[i + 1].status = "in_progress"
 
-                workflow.updated_at = datetime.utcnow()
+                workflow.updated_at = datetime.now(UTC)
                 return workflow
 
         return workflow
 
     async def request_approval(
-        self, workflow_id: UUID, requested_by: str, approvers: List[str]
-    ) -> Optional[Workflow]:
+        self, workflow_id: UUID, requested_by: str, approvers: list[str]
+    ) -> Workflow | None:
         """Request approval for current workflow step"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -261,14 +258,14 @@ class AMLWorkflowService:
         workflow.status = WorkflowStatus.AWAITING_APPROVAL
         workflow.metadata["pending_approvers"] = approvers
         workflow.metadata["approval_requested_by"] = requested_by
-        workflow.metadata["approval_requested_at"] = datetime.utcnow().isoformat()
-        workflow.updated_at = datetime.utcnow()
+        workflow.metadata["approval_requested_at"] = datetime.now(UTC).isoformat()
+        workflow.updated_at = datetime.now(UTC)
 
         return workflow
 
     async def approve_step(
-        self, workflow_id: UUID, approver: str, comments: Optional[str] = None
-    ) -> Optional[Workflow]:
+        self, workflow_id: UUID, approver: str, comments: str | None = None
+    ) -> Workflow | None:
         """Approve a workflow step"""
         workflow = self._workflows.get(workflow_id)
         if not workflow or workflow.status != WorkflowStatus.AWAITING_APPROVAL:
@@ -283,7 +280,7 @@ class AMLWorkflowService:
 
             workflow.metadata["approvals"].append({
                 "approver": approver,
-                "approved_at": datetime.utcnow().isoformat(),
+                "approved_at": datetime.now(UTC).isoformat(),
                 "comments": comments
             })
 
@@ -298,12 +295,12 @@ class AMLWorkflowService:
 
             workflow.metadata["pending_approvers"] = pending_approvers
 
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = datetime.now(UTC)
         return workflow
 
     async def reject_step(
         self, workflow_id: UUID, rejected_by: str, reason: str
-    ) -> Optional[Workflow]:
+    ) -> Workflow | None:
         """Reject a workflow step"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -312,15 +309,15 @@ class AMLWorkflowService:
         workflow.status = WorkflowStatus.REJECTED
         workflow.metadata["rejection"] = {
             "rejected_by": rejected_by,
-            "rejected_at": datetime.utcnow().isoformat(),
+            "rejected_at": datetime.now(UTC).isoformat(),
             "reason": reason
         }
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = datetime.now(UTC)
         return workflow
 
     async def cancel_workflow(
         self, workflow_id: UUID, cancelled_by: str, reason: str
-    ) -> Optional[Workflow]:
+    ) -> Workflow | None:
         """Cancel a workflow"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -329,15 +326,15 @@ class AMLWorkflowService:
         workflow.status = WorkflowStatus.CANCELLED
         workflow.metadata["cancellation"] = {
             "cancelled_by": cancelled_by,
-            "cancelled_at": datetime.utcnow().isoformat(),
+            "cancelled_at": datetime.now(UTC).isoformat(),
             "reason": reason
         }
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = datetime.now(UTC)
         return workflow
 
     async def reassign_workflow(
         self, workflow_id: UUID, new_assignee: str, reassigned_by: str
-    ) -> Optional[Workflow]:
+    ) -> Workflow | None:
         """Reassign a workflow to a different user"""
         workflow = self._workflows.get(workflow_id)
         if not workflow:
@@ -353,22 +350,22 @@ class AMLWorkflowService:
             "from": old_assignee,
             "to": new_assignee,
             "by": reassigned_by,
-            "at": datetime.utcnow().isoformat()
+            "at": datetime.now(UTC).isoformat()
         })
 
-        workflow.updated_at = datetime.utcnow()
+        workflow.updated_at = datetime.now(UTC)
         return workflow
 
     async def get_workflows_by_entity(
         self, entity_id: str, entity_type: str
-    ) -> List[Workflow]:
+    ) -> list[Workflow]:
         """Get all workflows for an entity"""
         return [
             w for w in self._workflows.values()
             if w.entity_id == entity_id and w.entity_type == entity_type
         ]
 
-    async def get_assigned_workflows(self, assignee: str) -> List[Workflow]:
+    async def get_assigned_workflows(self, assignee: str) -> list[Workflow]:
         """Get all workflows assigned to a user"""
         return [
             w for w in self._workflows.values()
@@ -377,9 +374,9 @@ class AMLWorkflowService:
             ]
         ]
 
-    async def get_overdue_workflows(self) -> List[Workflow]:
+    async def get_overdue_workflows(self) -> list[Workflow]:
         """Get all overdue workflows"""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         return [
             w for w in self._workflows.values()
             if w.due_date and w.due_date < now and w.status not in [
@@ -387,7 +384,7 @@ class AMLWorkflowService:
             ]
         ]
 
-    async def get_workflow_statistics(self) -> Dict[str, Any]:
+    async def get_workflow_statistics(self) -> dict[str, Any]:
         """Get workflow statistics"""
         stats = {
             "total": len(self._workflows),
@@ -397,7 +394,7 @@ class AMLWorkflowService:
             "awaiting_approval": 0
         }
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         for workflow in self._workflows.values():
             # By status

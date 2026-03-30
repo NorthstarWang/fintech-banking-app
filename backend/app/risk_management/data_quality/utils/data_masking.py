@@ -1,10 +1,11 @@
 """Data Masking Utilities for PII Protection"""
 
-from typing import List, Dict, Any, Optional, Callable
+import hashlib
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-import re
-import hashlib
+from typing import Any
 from uuid import uuid4
 
 
@@ -25,7 +26,7 @@ class MaskingRule:
     rule_name: str
     field_pattern: str
     masking_type: MaskingType
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     is_active: bool = True
 
 
@@ -39,10 +40,10 @@ class MaskingResult:
 
 class DataMaskingUtilities:
     def __init__(self):
-        self._rules: Dict[str, MaskingRule] = {}
-        self._token_vault: Dict[str, str] = {}
-        self._reverse_vault: Dict[str, str] = {}
-        self._masking_handlers: Dict[MaskingType, Callable] = {}
+        self._rules: dict[str, MaskingRule] = {}
+        self._token_vault: dict[str, str] = {}
+        self._reverse_vault: dict[str, str] = {}
+        self._masking_handlers: dict[MaskingType, Callable] = {}
         self._register_handlers()
 
     def _register_handlers(self) -> None:
@@ -58,7 +59,7 @@ class DataMaskingUtilities:
         rule_name: str,
         field_pattern: str,
         masking_type: MaskingType,
-        parameters: Dict[str, Any] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> MaskingRule:
         rule = MaskingRule(
             rule_id=str(uuid4()),
@@ -74,7 +75,7 @@ class DataMaskingUtilities:
         self,
         value: Any,
         masking_type: MaskingType,
-        parameters: Dict[str, Any] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> MaskingResult:
         if value is None:
             return MaskingResult(
@@ -103,9 +104,9 @@ class DataMaskingUtilities:
 
     def mask_record(
         self,
-        record: Dict[str, Any],
-        field_rules: Dict[str, MaskingRule],
-    ) -> Dict[str, Any]:
+        record: dict[str, Any],
+        field_rules: dict[str, MaskingRule],
+    ) -> dict[str, Any]:
         masked = record.copy()
 
         for field_name, rule in field_rules.items():
@@ -121,15 +122,15 @@ class DataMaskingUtilities:
 
     def mask_dataset(
         self,
-        data: List[Dict[str, Any]],
-        field_rules: Dict[str, MaskingRule],
-    ) -> List[Dict[str, Any]]:
+        data: list[dict[str, Any]],
+        field_rules: dict[str, MaskingRule],
+    ) -> list[dict[str, Any]]:
         return [self.mask_record(record, field_rules) for record in data]
 
     def auto_detect_and_mask(
         self,
-        record: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        record: dict[str, Any],
+    ) -> dict[str, Any]:
         masked = record.copy()
         pii_patterns = {
             "email": (r"email|e_mail|e-mail", MaskingType.PARTIAL_MASK),
@@ -147,7 +148,7 @@ class DataMaskingUtilities:
                 continue
 
             field_lower = field_name.lower()
-            for pii_type, (pattern, mask_type) in pii_patterns.items():
+            for _pii_type, (pattern, mask_type) in pii_patterns.items():
                 if re.search(pattern, field_lower, re.IGNORECASE):
                     result = self.mask_value(value, mask_type)
                     masked[field_name] = result.masked_value
@@ -155,11 +156,10 @@ class DataMaskingUtilities:
 
         return masked
 
-    def _mask_redact(self, value: Any, params: Dict[str, Any]) -> str:
-        replacement = params.get("replacement", "***REDACTED***")
-        return replacement
+    def _mask_redact(self, value: Any, params: dict[str, Any]) -> str:
+        return params.get("replacement", "***REDACTED***")
 
-    def _mask_partial(self, value: Any, params: Dict[str, Any]) -> str:
+    def _mask_partial(self, value: Any, params: dict[str, Any]) -> str:
         str_value = str(value)
         visible_start = params.get("visible_start", 2)
         visible_end = params.get("visible_end", 2)
@@ -175,7 +175,7 @@ class DataMaskingUtilities:
 
         return start + middle + end
 
-    def _mask_hash(self, value: Any, params: Dict[str, Any]) -> str:
+    def _mask_hash(self, value: Any, params: dict[str, Any]) -> str:
         algorithm = params.get("algorithm", "sha256")
         salt = params.get("salt", "")
 
@@ -183,14 +183,14 @@ class DataMaskingUtilities:
 
         if algorithm == "sha256":
             return hashlib.sha256(salted_value.encode()).hexdigest()
-        elif algorithm == "md5":
+        if algorithm == "md5":
             return hashlib.md5(salted_value.encode()).hexdigest()
-        elif algorithm == "sha512":
+        if algorithm == "sha512":
             return hashlib.sha512(salted_value.encode()).hexdigest()
 
         return hashlib.sha256(salted_value.encode()).hexdigest()
 
-    def _mask_tokenize(self, value: Any, params: Dict[str, Any]) -> str:
+    def _mask_tokenize(self, value: Any, params: dict[str, Any]) -> str:
         str_value = str(value)
 
         if str_value in self._token_vault:
@@ -202,14 +202,13 @@ class DataMaskingUtilities:
 
         return token
 
-    def detokenize(self, token: str) -> Optional[str]:
+    def detokenize(self, token: str) -> str | None:
         return self._reverse_vault.get(token)
 
-    def _mask_substitute(self, value: Any, params: Dict[str, Any]) -> Any:
-        substitute_value = params.get("substitute_value", "SUBSTITUTE")
-        return substitute_value
+    def _mask_substitute(self, value: Any, params: dict[str, Any]) -> Any:
+        return params.get("substitute_value", "SUBSTITUTE")
 
-    def _mask_nullify(self, value: Any, params: Dict[str, Any]) -> None:
+    def _mask_nullify(self, value: Any, params: dict[str, Any]) -> None:
         return None
 
     def mask_email(self, email: str) -> str:
@@ -235,7 +234,7 @@ class DataMaskingUtilities:
             return "*" * (len(digits) - 4) + digits[-4:]
         return "*" * len(digits)
 
-    def get_rules(self) -> Dict[str, MaskingRule]:
+    def get_rules(self) -> dict[str, MaskingRule]:
         return self._rules.copy()
 
     def clear_token_vault(self) -> None:

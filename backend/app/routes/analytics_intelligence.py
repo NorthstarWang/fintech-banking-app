@@ -3,15 +3,14 @@ Enhanced analytics and data intelligence API endpoints.
 Provides comprehensive financial insights and real-time metrics.
 """
 import logging
-from datetime import datetime
-from typing import Any
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query
 
 from ..repositories.data_manager import data_manager
 from ..services.analytics_engine import AnalyticsEngine
-from ..services.event_streaming import event_streaming_service
 from ..services.event_schemas import EventType
+from ..services.event_streaming import event_streaming_service
 from ..utils.auth import get_current_user
 
 router = APIRouter()
@@ -27,11 +26,10 @@ async def get_transaction_velocity(
     current_user: dict = Depends(get_current_user)
 ):
     """Get transaction velocity and patterns."""
-    result = analytics_engine.calculate_transaction_velocity(
+    return analytics_engine.calculate_transaction_velocity(
         user_id=current_user['user_id'],
         days=days
     )
-    return result
 
 
 @router.get("/intelligence/cash-flow")
@@ -40,11 +38,10 @@ async def get_cash_flow_intelligence(
     current_user: dict = Depends(get_current_user)
 ):
     """Get cash flow analysis with categorization and trends."""
-    result = analytics_engine.calculate_cash_flow(
+    return analytics_engine.calculate_cash_flow(
         user_id=current_user['user_id'],
         period_days=period_days
     )
-    return result
 
 
 @router.get("/intelligence/investment-performance")
@@ -52,10 +49,9 @@ async def get_investment_performance(
     current_user: dict = Depends(get_current_user)
 ):
     """Get comprehensive investment portfolio performance metrics."""
-    result = analytics_engine.calculate_investment_performance(
+    return analytics_engine.calculate_investment_performance(
         user_id=current_user['user_id']
     )
-    return result
 
 
 @router.get("/intelligence/anomalies")
@@ -80,10 +76,9 @@ async def get_subscription_insights(
     current_user: dict = Depends(get_current_user)
 ):
     """Get subscription cost optimization and recommendations."""
-    result = analytics_engine.calculate_subscription_insights(
+    return analytics_engine.calculate_subscription_insights(
         user_id=current_user['user_id']
     )
-    return result
 
 
 @router.get("/intelligence/loan-risk")
@@ -91,10 +86,9 @@ async def get_loan_risk_score(
     current_user: dict = Depends(get_current_user)
 ):
     """Get loan payment analysis and delinquency risk scoring."""
-    result = analytics_engine.calculate_loan_risk_score(
+    return analytics_engine.calculate_loan_risk_score(
         user_id=current_user['user_id']
     )
-    return result
 
 
 @router.get("/intelligence/budget-adherence")
@@ -102,10 +96,9 @@ async def get_budget_adherence(
     current_user: dict = Depends(get_current_user)
 ):
     """Get budget adherence tracking with predictive alerts."""
-    result = analytics_engine.calculate_budget_adherence(
+    return analytics_engine.calculate_budget_adherence(
         user_id=current_user['user_id']
     )
-    return result
 
 
 @router.get("/intelligence/spending-trends")
@@ -114,11 +107,10 @@ async def get_spending_trends(
     current_user: dict = Depends(get_current_user)
 ):
     """Get category-wise spending trends with seasonal adjustments."""
-    result = analytics_engine.calculate_spending_trends(
+    return analytics_engine.calculate_spending_trends(
         user_id=current_user['user_id'],
         months=months
     )
-    return result
 
 
 @router.get("/intelligence/financial-health")
@@ -126,10 +118,9 @@ async def get_financial_health_score(
     current_user: dict = Depends(get_current_user)
 ):
     """Get comprehensive financial health score (0-100)."""
-    result = analytics_engine.calculate_financial_health_score(
+    return analytics_engine.calculate_financial_health_score(
         user_id=current_user['user_id']
     )
-    return result
 
 
 @router.get("/intelligence/dashboard-summary")
@@ -195,7 +186,7 @@ async def get_dashboard_summary(
                 "count": len(anomalies),
                 "recent": anomalies[:5]
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     except Exception as e:
@@ -233,10 +224,10 @@ async def get_event_statistics(
     current_user: dict = Depends(get_current_user)
 ):
     """Get event statistics for the user."""
-    from datetime import timedelta
     from collections import Counter
+    from datetime import timedelta
 
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(UTC) - timedelta(days=days)
 
     events = event_streaming_service.get_events(
         user_id=current_user['user_id'],

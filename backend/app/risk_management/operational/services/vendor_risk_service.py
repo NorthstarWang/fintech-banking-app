@@ -1,13 +1,23 @@
 """Vendor Risk Service - Business logic for third-party risk management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.vendor_risk_models import (
-    Vendor, VendorContract, VendorAssessment, VendorDueDiligence,
-    VendorIncident, VendorPerformance, VendorRiskMetrics,
-    VendorTier, VendorStatus, ServiceCategory, RiskRating, AssessmentType
+    AssessmentType,
+    RiskRating,
+    ServiceCategory,
+    Vendor,
+    VendorAssessment,
+    VendorContract,
+    VendorDueDiligence,
+    VendorIncident,
+    VendorPerformance,
+    VendorRiskMetrics,
+    VendorStatus,
+    VendorTier,
 )
 from ..repositories.vendor_risk_repository import vendor_risk_repository
 
@@ -42,7 +52,7 @@ class VendorRiskService:
         vendor_name: str,
         legal_name: str,
         service_category: ServiceCategory,
-        services_provided: List[str],
+        services_provided: list[str],
         primary_contact: str,
         contact_email: str,
         contact_phone: str,
@@ -84,19 +94,19 @@ class VendorRiskService:
         await self.repository.save_vendor(vendor)
         return vendor
 
-    async def get_vendor(self, vendor_id: UUID) -> Optional[Vendor]:
+    async def get_vendor(self, vendor_id: UUID) -> Vendor | None:
         return await self.repository.find_vendor_by_id(vendor_id)
 
-    async def get_vendor_by_code(self, vendor_code: str) -> Optional[Vendor]:
+    async def get_vendor_by_code(self, vendor_code: str) -> Vendor | None:
         return await self.repository.find_vendor_by_code(vendor_code)
 
     async def list_vendors(
         self,
-        status: Optional[VendorStatus] = None,
-        tier: Optional[VendorTier] = None,
-        category: Optional[ServiceCategory] = None,
+        status: VendorStatus | None = None,
+        tier: VendorTier | None = None,
+        category: ServiceCategory | None = None,
         critical_only: bool = False
-    ) -> List[Vendor]:
+    ) -> list[Vendor]:
         vendors = await self.repository.find_all_vendors()
 
         if status:
@@ -114,7 +124,7 @@ class VendorRiskService:
         self,
         vendor_id: UUID,
         new_status: VendorStatus
-    ) -> Optional[Vendor]:
+    ) -> Vendor | None:
         vendor = await self.repository.find_vendor_by_id(vendor_id)
         if not vendor:
             return None
@@ -174,10 +184,10 @@ class VendorRiskService:
 
         return contract
 
-    async def get_vendor_contracts(self, vendor_id: UUID) -> List[VendorContract]:
+    async def get_vendor_contracts(self, vendor_id: UUID) -> list[VendorContract]:
         return await self.repository.find_contracts_by_vendor(vendor_id)
 
-    async def get_expiring_contracts(self, days: int = 90) -> List[VendorContract]:
+    async def get_expiring_contracts(self, days: int = 90) -> list[VendorContract]:
         contracts = await self.repository.find_all_contracts()
         cutoff = date.today()
         cutoff_end = date(cutoff.year, cutoff.month, cutoff.day)
@@ -199,11 +209,11 @@ class VendorRiskService:
         reputational_risk_rating: RiskRating,
         financial_stability: str,
         years_in_business: int,
-        certifications: List[str],
-        audit_reports: List[str],
-        insurance_coverage: Dict[str, Decimal],
-        findings: List[str] = None,
-        recommendations: List[str] = None
+        certifications: list[str],
+        audit_reports: list[str],
+        insurance_coverage: dict[str, Decimal],
+        findings: list[str] | None = None,
+        recommendations: list[str] | None = None
     ) -> VendorAssessment:
         ratings = [
             financial_risk_rating, operational_risk_rating,
@@ -262,13 +272,13 @@ class VendorRiskService:
         from datetime import timedelta
         if tier == VendorTier.TIER_1:
             return date.today() + timedelta(days=180)
-        elif tier == VendorTier.TIER_2:
+        if tier == VendorTier.TIER_2:
             return date.today() + timedelta(days=365)
-        elif tier == VendorTier.TIER_3:
+        if tier == VendorTier.TIER_3:
             return date.today() + timedelta(days=730)
         return date.today() + timedelta(days=1095)
 
-    async def get_vendor_assessments(self, vendor_id: UUID) -> List[VendorAssessment]:
+    async def get_vendor_assessments(self, vendor_id: UUID) -> list[VendorAssessment]:
         return await self.repository.find_assessments_by_vendor(vendor_id)
 
     async def initiate_due_diligence(
@@ -304,11 +314,11 @@ class VendorRiskService:
     async def complete_due_diligence(
         self,
         dd_id: UUID,
-        findings: Dict[str, Any],
-        risk_flags: List[str],
+        findings: dict[str, Any],
+        risk_flags: list[str],
         recommendation: str,
         reviewed_by: str
-    ) -> Optional[VendorDueDiligence]:
+    ) -> VendorDueDiligence | None:
         dd = await self.repository.find_due_diligence_by_id(dd_id)
         if not dd:
             return None
@@ -334,8 +344,8 @@ class VendorRiskService:
     ) -> VendorIncident:
         incident = VendorIncident(
             vendor_id=vendor_id,
-            incident_date=datetime.utcnow(),
-            reported_date=datetime.utcnow(),
+            incident_date=datetime.now(UTC),
+            reported_date=datetime.now(UTC),
             incident_type=incident_type,
             severity=severity,
             description=description,
@@ -352,9 +362,9 @@ class VendorRiskService:
         incident_id: UUID,
         root_cause: str,
         vendor_response: str,
-        remediation_actions: List[str],
-        credit_applied: Optional[Decimal] = None
-    ) -> Optional[VendorIncident]:
+        remediation_actions: list[str],
+        credit_applied: Decimal | None = None
+    ) -> VendorIncident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
@@ -362,13 +372,13 @@ class VendorRiskService:
         incident.root_cause = root_cause
         incident.vendor_response = vendor_response
         incident.remediation_actions = remediation_actions
-        incident.resolution_date = datetime.utcnow()
+        incident.resolution_date = datetime.now(UTC)
         incident.status = "resolved"
         incident.credit_applied = credit_applied
 
         return incident
 
-    async def get_vendor_incidents(self, vendor_id: UUID) -> List[VendorIncident]:
+    async def get_vendor_incidents(self, vendor_id: UUID) -> list[VendorIncident]:
         return await self.repository.find_incidents_by_vendor(vendor_id)
 
     async def record_performance(
@@ -377,15 +387,15 @@ class VendorRiskService:
         review_period: str,
         period_start: date,
         period_end: date,
-        sla_metrics: Dict[str, Decimal],
+        sla_metrics: dict[str, Decimal],
         quality_score: Decimal,
         delivery_score: Decimal,
         responsiveness_score: Decimal,
         cost_performance: Decimal,
         issues_reported: int,
         issues_resolved: int,
-        strengths: List[str],
-        areas_for_improvement: List[str],
+        strengths: list[str],
+        areas_for_improvement: list[str],
         reviewer: str
     ) -> VendorPerformance:
         overall_sla = sum(sla_metrics.values()) / len(sla_metrics) if sla_metrics else Decimal("0")
@@ -419,7 +429,7 @@ class VendorRiskService:
         await self.repository.save_performance(performance)
         return performance
 
-    async def get_vendor_performance(self, vendor_id: UUID) -> List[VendorPerformance]:
+    async def get_vendor_performance(self, vendor_id: UUID) -> list[VendorPerformance]:
         return await self.repository.find_performance_by_vendor(vendor_id)
 
     async def generate_metrics(self) -> VendorRiskMetrics:
@@ -481,7 +491,7 @@ class VendorRiskService:
         await self.repository.save_metrics(metrics)
         return metrics
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

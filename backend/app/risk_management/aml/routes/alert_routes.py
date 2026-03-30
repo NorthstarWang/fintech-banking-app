@@ -4,14 +4,17 @@ AML Alert Routes
 API endpoints for AML alert management.
 """
 
-from typing import List, Optional
-from datetime import datetime
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Query
+
+from fastapi import APIRouter, HTTPException
 
 from ..models.alert_models import (
-    AMLAlert, AlertSummary, AlertStatistics, AlertStatus, AlertSeverity,
-    AlertType, AlertCreateRequest, AlertUpdateRequest, AlertSearchCriteria
+    AlertCreateRequest,
+    AlertSearchCriteria,
+    AlertStatistics,
+    AlertSummary,
+    AlertUpdateRequest,
+    AMLAlert,
 )
 from ..services.alert_service import alert_service
 
@@ -82,7 +85,7 @@ async def close_alert(
     return alert
 
 
-@router.post("/search", response_model=List[AlertSummary])
+@router.post("/search", response_model=list[AlertSummary])
 async def search_alerts(criteria: AlertSearchCriteria):
     """Search alerts based on criteria"""
     return await alert_service.search_alerts(criteria)
@@ -94,13 +97,13 @@ async def get_statistics():
     return await alert_service.get_statistics()
 
 
-@router.get("/customer/{customer_id}", response_model=List[AMLAlert])
+@router.get("/customer/{customer_id}", response_model=list[AMLAlert])
 async def get_alerts_for_customer(customer_id: str):
     """Get all alerts for a customer"""
     return await alert_service.get_alerts_for_customer(customer_id)
 
 
-@router.get("/open", response_model=List[AMLAlert])
+@router.get("/open", response_model=list[AMLAlert])
 async def get_open_alerts():
     """Get all open alerts"""
     return await alert_service.get_open_alerts()

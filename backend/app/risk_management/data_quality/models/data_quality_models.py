@@ -1,10 +1,11 @@
 """Data Quality Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -35,26 +36,26 @@ class DataQualityRule(BaseModel):
     severity: RuleSeverity
     data_domain: str
     table_name: str
-    column_name: Optional[str] = None
+    column_name: str | None = None
     rule_expression: str
     threshold_percentage: Decimal = Decimal("100")
     owner: str
     is_active: bool = True
-    created_date: datetime = Field(default_factory=datetime.utcnow)
-    last_modified: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_modified: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataQualityCheck(BaseModel):
     check_id: UUID = Field(default_factory=uuid4)
     rule_id: UUID
-    check_date: datetime = Field(default_factory=datetime.utcnow)
+    check_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     total_records: int
     passed_records: int
     failed_records: int
     pass_percentage: Decimal
     status: str = "completed"
     execution_time_ms: int = 0
-    error_samples: List[Dict[str, Any]] = Field(default_factory=list)
+    error_samples: list[dict[str, Any]] = Field(default_factory=list)
     check_query: str = ""
     environment: str = "production"
 
@@ -65,7 +66,7 @@ class DataQualityScore(BaseModel):
     data_domain: str
     table_name: str
     overall_score: Decimal
-    dimension_scores: Dict[str, Decimal] = Field(default_factory=dict)
+    dimension_scores: dict[str, Decimal] = Field(default_factory=dict)
     rules_evaluated: int = 0
     rules_passed: int = 0
     rules_failed: int = 0
@@ -85,10 +86,10 @@ class DataQualityIssue(BaseModel):
     root_cause: str = ""
     remediation_plan: str = ""
     assigned_to: str = ""
-    due_date: Optional[date] = None
+    due_date: date | None = None
     status: str = "open"
     priority: str = "medium"
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataQualityReport(BaseModel):
@@ -96,16 +97,16 @@ class DataQualityReport(BaseModel):
     report_date: date
     report_period: str
     generated_by: str
-    domains_covered: List[str] = Field(default_factory=list)
+    domains_covered: list[str] = Field(default_factory=list)
     overall_quality_score: Decimal = Decimal("0")
     rules_executed: int = 0
     checks_passed: int = 0
     checks_failed: int = 0
     issues_identified: int = 0
     issues_resolved: int = 0
-    dimension_summary: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    trend_analysis: Dict[str, Any] = Field(default_factory=dict)
-    recommendations: List[str] = Field(default_factory=list)
+    dimension_summary: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    trend_analysis: dict[str, Any] = Field(default_factory=dict)
+    recommendations: list[str] = Field(default_factory=list)
     status: str = "draft"
 
 

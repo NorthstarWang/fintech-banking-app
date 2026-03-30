@@ -1,13 +1,21 @@
 """Sanctions Service - Business logic for sanctions compliance"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.sanctions_models import (
-    SanctionsListEntry, ScreeningRequest, ScreeningAlert, SanctionsCase,
-    BlockedTransaction, SanctionsListUpdate, SanctionsReport,
-    SanctionsList, ScreeningType, AlertStatus, MatchStrength
+    AlertStatus,
+    BlockedTransaction,
+    MatchStrength,
+    SanctionsCase,
+    SanctionsList,
+    SanctionsListUpdate,
+    SanctionsReport,
+    ScreeningAlert,
+    ScreeningRequest,
+    ScreeningType,
 )
 from ..repositories.sanctions_repository import sanctions_repository
 
@@ -20,7 +28,7 @@ class SanctionsService:
 
     async def screen_entity(
         self, screening_type: ScreeningType, subject_type: str, subject_name: str,
-        requestor: str, lists_to_screen: List[SanctionsList], **kwargs
+        requestor: str, lists_to_screen: list[SanctionsList], **kwargs
     ) -> ScreeningRequest:
         self._request_counter += 1
         request = ScreeningRequest(
@@ -41,7 +49,7 @@ class SanctionsService:
 
         request.matches_found = len(matches)
         request.status = "completed"
-        request.completed_date = datetime.utcnow()
+        request.completed_date = datetime.now(UTC)
 
         await self.repository.save_request(request)
 
@@ -50,13 +58,13 @@ class SanctionsService:
                 request_id=request.request_id, alert_reference=f"ALT-{self._request_counter:06d}-{len(matches)}",
                 list_source=entry.list_source, list_entry_id=entry.list_entry_id, matched_name=entry.name,
                 subject_name=subject_name, match_strength=strength, match_score=score, match_fields=["name"],
-                sla_due_date=datetime.utcnow()
+                sla_due_date=datetime.now(UTC)
             )
             await self.repository.save_alert(alert)
 
         return request
 
-    def _calculate_match_score(self, query: str, name: str, aliases: List[str]) -> Decimal:
+    def _calculate_match_score(self, query: str, name: str, aliases: list[str]) -> Decimal:
         query_lower = query.lower()
         if query_lower == name.lower():
             return Decimal("100")
@@ -69,25 +77,25 @@ class SanctionsService:
 
     async def review_alert(
         self, alert_id: UUID, decision: str, decision_rationale: str, decided_by: str
-    ) -> Optional[ScreeningAlert]:
+    ) -> ScreeningAlert | None:
         alert = await self.repository.find_alert_by_id(alert_id)
         if alert:
             alert.decision = decision
             alert.decision_rationale = decision_rationale
             alert.decided_by = decided_by
-            alert.decision_date = datetime.utcnow()
+            alert.decision_date = datetime.now(UTC)
             alert.status = AlertStatus.TRUE_MATCH if decision == "match" else AlertStatus.FALSE_POSITIVE
         return alert
 
     async def create_case(
-        self, case_type: str, source_alert_ids: List[UUID], assigned_to: str, priority: str,
-        customer_id: Optional[str] = None, transaction_ids: List[str] = None
+        self, case_type: str, source_alert_ids: list[UUID], assigned_to: str, priority: str,
+        customer_id: str | None = None, transaction_ids: list[str] | None = None
     ) -> SanctionsCase:
         self._case_counter += 1
         case = SanctionsCase(
             case_reference=f"CASE-{date.today().strftime('%Y%m')}-{self._case_counter:05d}",
             case_type=case_type, source_alert_ids=source_alert_ids, customer_id=customer_id,
-            transaction_ids=transaction_ids or [], assigned_to=assigned_to, assigned_date=datetime.utcnow(),
+            transaction_ids=transaction_ids or [], assigned_to=assigned_to, assigned_date=datetime.now(UTC),
             priority=priority
         )
         await self.repository.save_case(case)
@@ -95,13 +103,13 @@ class SanctionsService:
 
     async def close_case(
         self, case_id: UUID, final_decision: str, closed_by: str
-    ) -> Optional[SanctionsCase]:
+    ) -> SanctionsCase | None:
         case = await self.repository.find_case_by_id(case_id)
         if case:
             case.final_decision = final_decision
-            case.decision_date = datetime.utcnow()
+            case.decision_date = datetime.now(UTC)
             case.closed_by = closed_by
-            case.closed_date = datetime.utcnow()
+            case.closed_date = datetime.now(UTC)
             case.case_status = "closed"
         return case
 
@@ -111,22 +119,22 @@ class SanctionsService:
         blocking_reason: str, list_source: SanctionsList, matched_entry: str
     ) -> BlockedTransaction:
         blocked = BlockedTransaction(
-            transaction_id=transaction_id, transaction_type=transaction_type, transaction_date=datetime.utcnow(),
+            transaction_id=transaction_id, transaction_type=transaction_type, transaction_date=datetime.now(UTC),
             amount=amount, currency=currency, originator=originator, originator_account=originator_account,
             beneficiary=beneficiary, beneficiary_account=beneficiary_account, blocking_reason=blocking_reason,
-            blocked_date=datetime.utcnow(), list_source=list_source, matched_entry=matched_entry
+            blocked_date=datetime.now(UTC), list_source=list_source, matched_entry=matched_entry
         )
         await self.repository.save_blocked_transaction(blocked)
         return blocked
 
     async def release_transaction(
         self, blocked_id: UUID, release_authorization: str
-    ) -> Optional[BlockedTransaction]:
+    ) -> BlockedTransaction | None:
         blocked = await self.repository.find_blocked_by_id(blocked_id)
         if blocked:
             blocked.release_authorized = True
             blocked.release_authorization = release_authorization
-            blocked.release_date = datetime.utcnow()
+            blocked.release_date = datetime.now(UTC)
             blocked.status = "released"
         return blocked
 
@@ -137,7 +145,7 @@ class SanctionsService:
         update = SanctionsListUpdate(
             list_source=list_source, update_date=date.today(), update_type=update_type,
             entries_added=entries_added, entries_removed=entries_removed, entries_modified=entries_modified,
-            file_reference=file_reference, processed_date=datetime.utcnow(), processed_by=processed_by
+            file_reference=file_reference, processed_date=datetime.now(UTC), processed_by=processed_by
         )
         await self.repository.save_list_update(update)
         return update
@@ -173,7 +181,7 @@ class SanctionsService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

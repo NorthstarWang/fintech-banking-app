@@ -1,9 +1,10 @@
 """Risk Parameter Models - PD, LGD, EAD modeling"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -34,20 +35,20 @@ class PDModel(BaseModel):
     point_in_time_pd: float
     long_run_average_pd: float
     economic_cycle_adjustment: float = 0.0
-    model_factors: List[Dict[str, Any]] = []
-    validation_results: Dict[str, float] = {}
+    model_factors: list[dict[str, Any]] = []
+    validation_results: dict[str, float] = {}
     regulatory_floor: float = 0.0003
     status: str = "active"
     created_by: str
-    approved_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LGDModel(BaseModel):
     model_id: UUID = Field(default_factory=uuid4)
     model_name: str
     segment: str
-    collateral_type: Optional[str] = None
+    collateral_type: str | None = None
     model_approach: ModelApproach
     version: str
     methodology: str
@@ -60,13 +61,13 @@ class LGDModel(BaseModel):
     collateral_recovery_rate: float = 0.0
     time_to_resolution_months: int = 12
     discount_rate: float = 0.05
-    model_factors: List[Dict[str, Any]] = []
-    validation_results: Dict[str, float] = {}
+    model_factors: list[dict[str, Any]] = []
+    validation_results: dict[str, float] = {}
     regulatory_floor: float = 0.0
     status: str = "active"
     created_by: str
-    approved_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EADModel(BaseModel):
@@ -82,12 +83,12 @@ class EADModel(BaseModel):
     limit_at_default: float
     undrawn_at_default: float
     additional_drawdown_factor: float = 0.0
-    model_factors: List[Dict[str, Any]] = []
-    validation_results: Dict[str, float] = {}
+    model_factors: list[dict[str, Any]] = []
+    validation_results: dict[str, float] = {}
     status: str = "active"
     created_by: str
-    approved_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RiskParameterEstimate(BaseModel):
@@ -103,17 +104,17 @@ class RiskParameterEstimate(BaseModel):
     estimation_date: date
     model_id: UUID
     model_version: str
-    input_factors: Dict[str, Any] = {}
-    adjustment_factors: Dict[str, float] = {}
+    input_factors: dict[str, Any] = {}
+    adjustment_factors: dict[str, float] = {}
     regulatory_adjustment: float = 0.0
     final_estimate: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExpectedLossCalculation(BaseModel):
     calculation_id: UUID = Field(default_factory=uuid4)
     entity_id: str
-    facility_id: Optional[UUID] = None
+    facility_id: UUID | None = None
     calculation_date: date
     exposure_at_default: float
     probability_of_default: float
@@ -125,13 +126,13 @@ class ExpectedLossCalculation(BaseModel):
     risk_weighted_assets: float
     capital_requirement: float
     calculation_approach: ModelApproach
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class UnexpectedLossCalculation(BaseModel):
     calculation_id: UUID = Field(default_factory=uuid4)
     entity_id: str
-    portfolio_id: Optional[UUID] = None
+    portfolio_id: UUID | None = None
     calculation_date: date
     unexpected_loss: float
     value_at_risk: float
@@ -143,7 +144,7 @@ class UnexpectedLossCalculation(BaseModel):
     economic_capital: float
     regulatory_capital: float
     capital_buffer: float = 0.0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ParameterBacktest(BaseModel):
@@ -152,18 +153,18 @@ class ParameterBacktest(BaseModel):
     parameter_type: ParameterType
     backtest_period_start: date
     backtest_period_end: date
-    predicted_values: List[float] = []
-    actual_values: List[float] = []
+    predicted_values: list[float] = []
+    actual_values: list[float] = []
     accuracy_ratio: float
     binomial_test_result: str
-    hosmer_lemeshow_stat: Optional[float] = None
-    kolmogorov_smirnov_stat: Optional[float] = None
-    gini_coefficient: Optional[float] = None
-    information_value: Optional[float] = None
+    hosmer_lemeshow_stat: float | None = None
+    kolmogorov_smirnov_stat: float | None = None
+    gini_coefficient: float | None = None
+    information_value: float | None = None
     pass_fail: str
     observations: str
     backtested_by: str
-    backtest_date: datetime = Field(default_factory=datetime.utcnow)
+    backtest_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ParameterStressTest(BaseModel):
@@ -173,10 +174,10 @@ class ParameterStressTest(BaseModel):
     base_value: float
     stressed_value: float
     stress_multiplier: float
-    stress_factors: Dict[str, float] = {}
-    economic_variables: Dict[str, float] = {}
+    stress_factors: dict[str, float] = {}
+    economic_variables: dict[str, float] = {}
     impact_assessment: str
-    test_date: datetime = Field(default_factory=datetime.utcnow)
+    test_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     tested_by: str
 
 

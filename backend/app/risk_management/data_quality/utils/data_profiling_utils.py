@@ -1,11 +1,11 @@
 """Data Profiling Utilities"""
 
-from typing import List, Dict, Any, Optional, Tuple
-from decimal import Decimal
-from datetime import datetime
-from collections import Counter
 import re
+from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
 
 @dataclass
@@ -15,12 +15,12 @@ class ColumnStatistics:
     total_count: int
     null_count: int
     distinct_count: int
-    min_value: Optional[str]
-    max_value: Optional[str]
-    avg_value: Optional[Decimal]
-    std_dev: Optional[Decimal]
-    median_value: Optional[str]
-    mode_value: Optional[str]
+    min_value: str | None
+    max_value: str | None
+    avg_value: Decimal | None
+    std_dev: Decimal | None
+    median_value: str | None
+    mode_value: str | None
     empty_string_count: int
 
 
@@ -30,7 +30,7 @@ class PatternDetectionResult:
     pattern_regex: str
     match_count: int
     match_percentage: Decimal
-    sample_matches: List[str]
+    sample_matches: list[str]
 
 
 class DataProfilingUtilities:
@@ -50,13 +50,13 @@ class DataProfilingUtilities:
             "url": r"^https?://[^\s]+$",
         }
 
-    def profile_column(self, data: List[Any], column_name: str) -> ColumnStatistics:
+    def profile_column(self, data: list[Any], column_name: str) -> ColumnStatistics:
         total_count = len(data)
         null_count = sum(1 for v in data if v is None)
         empty_count = sum(1 for v in data if v == "")
         non_null_data = [v for v in data if v is not None and v != ""]
 
-        distinct_count = len(set(str(v) for v in non_null_data))
+        distinct_count = len({str(v) for v in non_null_data})
 
         min_val = None
         max_val = None
@@ -111,7 +111,7 @@ class DataProfilingUtilities:
             empty_string_count=empty_count,
         )
 
-    def detect_patterns(self, data: List[str], max_samples: int = 5) -> List[PatternDetectionResult]:
+    def detect_patterns(self, data: list[str], max_samples: int = 5) -> list[PatternDetectionResult]:
         results = []
         total_count = len(data)
 
@@ -134,7 +134,7 @@ class DataProfilingUtilities:
 
         return sorted(results, key=lambda x: x.match_count, reverse=True)
 
-    def detect_data_type(self, data: List[Any]) -> str:
+    def detect_data_type(self, data: list[Any]) -> str:
         non_null_data = [v for v in data if v is not None and v != ""]
         if not non_null_data:
             return "unknown"
@@ -159,7 +159,7 @@ class DataProfilingUtilities:
         most_common = type_counts.most_common(1)
         return most_common[0][0] if most_common else "unknown"
 
-    def calculate_cardinality_ratio(self, distinct_count: int, total_count: int) -> Tuple[str, Decimal]:
+    def calculate_cardinality_ratio(self, distinct_count: int, total_count: int) -> tuple[str, Decimal]:
         if total_count == 0:
             return "empty", Decimal("0")
 
@@ -167,16 +167,15 @@ class DataProfilingUtilities:
 
         if ratio == 1:
             return "unique", ratio
-        elif ratio > Decimal("0.9"):
+        if ratio > Decimal("0.9"):
             return "high_cardinality", ratio
-        elif ratio > Decimal("0.5"):
+        if ratio > Decimal("0.5"):
             return "medium_cardinality", ratio
-        elif ratio > Decimal("0.1"):
+        if ratio > Decimal("0.1"):
             return "low_cardinality", ratio
-        else:
-            return "categorical", ratio
+        return "categorical", ratio
 
-    def detect_outliers_iqr(self, data: List[float], multiplier: float = 1.5) -> List[float]:
+    def detect_outliers_iqr(self, data: list[float], multiplier: float = 1.5) -> list[float]:
         if len(data) < 4:
             return []
 
@@ -196,7 +195,7 @@ class DataProfilingUtilities:
     def add_custom_pattern(self, pattern_name: str, pattern_regex: str) -> None:
         self._common_patterns[pattern_name] = pattern_regex
 
-    def get_available_patterns(self) -> Dict[str, str]:
+    def get_available_patterns(self) -> dict[str, str]:
         return self._common_patterns.copy()
 
 

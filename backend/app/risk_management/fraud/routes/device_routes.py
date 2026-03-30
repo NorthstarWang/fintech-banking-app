@@ -1,30 +1,32 @@
 """Device Routes - API endpoints for device fingerprinting and trust management"""
 
-from typing import Optional, List, Dict, Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..models.device_models import (
-    DeviceFingerprint, DeviceProfile, DeviceSession,
-    DeviceTrustLevel, DeviceType, DeviceRiskAssessment
+    DeviceFingerprint,
+    DeviceProfile,
+    DeviceRiskAssessment,
+    DeviceSession,
+    DeviceTrustLevel,
 )
 from ..services.device_service import device_service
-
 
 router = APIRouter(prefix="/fraud/devices", tags=["Fraud Devices"])
 
 
 class RegisterFingerprintRequest(BaseModel):
     device_type: str = "unknown"
-    os_name: Optional[str] = None
-    os_version: Optional[str] = None
-    browser_name: Optional[str] = None
-    browser_version: Optional[str] = None
+    os_name: str | None = None
+    os_version: str | None = None
+    browser_name: str | None = None
+    browser_version: str | None = None
     user_agent: str
-    screen_resolution: Optional[str] = None
-    timezone: Optional[str] = None
-    language: Optional[str] = None
+    screen_resolution: str | None = None
+    timezone: str | None = None
+    language: str | None = None
 
 
 class CreateProfileRequest(BaseModel):
@@ -51,18 +53,16 @@ class CreateSessionRequest(BaseModel):
 async def register_fingerprint(request: RegisterFingerprintRequest):
     """Register a new device fingerprint"""
     fingerprint_data = request.model_dump()
-    fingerprint = await device_service.register_fingerprint(fingerprint_data)
-    return fingerprint
+    return await device_service.register_fingerprint(fingerprint_data)
 
 
 @router.post("/profiles", response_model=DeviceProfile)
 async def create_profile(request: CreateProfileRequest):
     """Create a device profile for a customer"""
-    profile = await device_service.create_profile(
+    return await device_service.create_profile(
         request.fingerprint_id,
         request.customer_id
     )
-    return profile
 
 
 @router.get("/profiles/{device_id}", response_model=DeviceProfile)
@@ -118,12 +118,11 @@ async def assess_device_risk(device_id: UUID):
 @router.post("/sessions", response_model=DeviceSession)
 async def create_session(request: CreateSessionRequest):
     """Create a new device session"""
-    session = await device_service.create_session(
+    return await device_service.create_session(
         request.device_id,
         request.customer_id,
         request.ip_address
     )
-    return session
 
 
 @router.get("/customer/{customer_id}/devices")

@@ -1,9 +1,10 @@
 """Policy Management Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -37,9 +38,9 @@ class Policy(BaseModel):
     purpose: str
     scope: str
     policy_statement: str
-    definitions: Dict[str, str] = Field(default_factory=dict)
-    roles_responsibilities: Dict[str, List[str]] = Field(default_factory=dict)
-    procedures: List[Dict[str, Any]] = Field(default_factory=list)
+    definitions: dict[str, str] = Field(default_factory=dict)
+    roles_responsibilities: dict[str, list[str]] = Field(default_factory=dict)
+    procedures: list[dict[str, Any]] = Field(default_factory=list)
     exceptions_process: str = ""
     owner: str
     approver: str
@@ -47,9 +48,9 @@ class Policy(BaseModel):
     review_date: date
     next_review_date: date
     status: PolicyStatus = PolicyStatus.DRAFT
-    related_policies: List[str] = Field(default_factory=list)
-    regulatory_references: List[str] = Field(default_factory=list)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    related_policies: list[str] = Field(default_factory=list)
+    regulatory_references: list[str] = Field(default_factory=list)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     created_by: str = ""
 
 
@@ -58,13 +59,13 @@ class PolicyVersion(BaseModel):
     policy_id: UUID
     version_number: str
     change_summary: str
-    changes_made: List[str] = Field(default_factory=list)
+    changes_made: list[str] = Field(default_factory=list)
     changed_by: str
     change_date: date
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    approved_by: str | None = None
+    approval_date: date | None = None
     effective_date: date
-    supersedes_version: Optional[str] = None
+    supersedes_version: str | None = None
     document_reference: str = ""
 
 
@@ -79,14 +80,14 @@ class PolicyException(BaseModel):
     description: str
     justification: str
     risk_assessment: str
-    compensating_controls: List[str] = Field(default_factory=list)
+    compensating_controls: list[str] = Field(default_factory=list)
     duration: str
     expiry_date: date
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    approved_by: str | None = None
+    approval_date: date | None = None
     status: str = "pending"
     review_required: bool = True
-    review_date: Optional[date] = None
+    review_date: date | None = None
 
 
 class PolicyAttestation(BaseModel):
@@ -100,7 +101,7 @@ class PolicyAttestation(BaseModel):
     acknowledged: bool = False
     understood: bool = False
     compliant: bool = False
-    exceptions_noted: List[str] = Field(default_factory=list)
+    exceptions_noted: list[str] = Field(default_factory=list)
     comments: str = ""
 
 
@@ -113,8 +114,8 @@ class PolicyReview(BaseModel):
     current_relevance: str
     regulatory_alignment: str
     operational_effectiveness: str
-    gaps_identified: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    gaps_identified: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     changes_required: bool = False
     priority: str = "normal"
     status: str = "completed"
@@ -127,12 +128,12 @@ class Procedure(BaseModel):
     procedure_name: str
     version: str
     description: str
-    steps: List[Dict[str, Any]] = Field(default_factory=list)
+    steps: list[dict[str, Any]] = Field(default_factory=list)
     responsible_role: str
-    inputs_required: List[str] = Field(default_factory=list)
-    outputs_produced: List[str] = Field(default_factory=list)
-    controls: List[str] = Field(default_factory=list)
-    systems_used: List[str] = Field(default_factory=list)
+    inputs_required: list[str] = Field(default_factory=list)
+    outputs_produced: list[str] = Field(default_factory=list)
+    controls: list[str] = Field(default_factory=list)
+    systems_used: list[str] = Field(default_factory=list)
     sla: str = ""
     owner: str
     effective_date: date

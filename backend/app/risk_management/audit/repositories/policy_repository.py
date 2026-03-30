@@ -1,86 +1,92 @@
 """Policy Repository - Data access for policy management"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from ..models.policy_models import (
-    Policy, PolicyVersion, PolicyException, PolicyAttestation, PolicyReview,
-    Procedure, PolicyStatus
+    Policy,
+    PolicyAttestation,
+    PolicyException,
+    PolicyReview,
+    PolicyStatus,
+    PolicyVersion,
+    Procedure,
 )
 
 
 class PolicyRepository:
     def __init__(self):
-        self._policies: Dict[UUID, Policy] = {}
-        self._versions: Dict[UUID, PolicyVersion] = {}
-        self._exceptions: Dict[UUID, PolicyException] = {}
-        self._attestations: Dict[UUID, PolicyAttestation] = {}
-        self._reviews: Dict[UUID, PolicyReview] = {}
-        self._procedures: Dict[UUID, Procedure] = {}
+        self._policies: dict[UUID, Policy] = {}
+        self._versions: dict[UUID, PolicyVersion] = {}
+        self._exceptions: dict[UUID, PolicyException] = {}
+        self._attestations: dict[UUID, PolicyAttestation] = {}
+        self._reviews: dict[UUID, PolicyReview] = {}
+        self._procedures: dict[UUID, Procedure] = {}
 
     async def save_policy(self, policy: Policy) -> None:
         self._policies[policy.policy_id] = policy
 
-    async def find_policy_by_id(self, policy_id: UUID) -> Optional[Policy]:
+    async def find_policy_by_id(self, policy_id: UUID) -> Policy | None:
         return self._policies.get(policy_id)
 
-    async def find_all_policies(self) -> List[Policy]:
+    async def find_all_policies(self) -> list[Policy]:
         return list(self._policies.values())
 
-    async def find_active_policies(self) -> List[Policy]:
+    async def find_active_policies(self) -> list[Policy]:
         return [p for p in self._policies.values() if p.status == PolicyStatus.ACTIVE]
 
-    async def find_policies_by_category(self, category: str) -> List[Policy]:
+    async def find_policies_by_category(self, category: str) -> list[Policy]:
         return [p for p in self._policies.values() if p.policy_category.value == category]
 
     async def save_version(self, version: PolicyVersion) -> None:
         self._versions[version.version_id] = version
 
-    async def find_version_by_id(self, version_id: UUID) -> Optional[PolicyVersion]:
+    async def find_version_by_id(self, version_id: UUID) -> PolicyVersion | None:
         return self._versions.get(version_id)
 
-    async def find_versions_by_policy(self, policy_id: UUID) -> List[PolicyVersion]:
+    async def find_versions_by_policy(self, policy_id: UUID) -> list[PolicyVersion]:
         return [v for v in self._versions.values() if v.policy_id == policy_id]
 
     async def save_exception(self, exception: PolicyException) -> None:
         self._exceptions[exception.exception_id] = exception
 
-    async def find_exception_by_id(self, exception_id: UUID) -> Optional[PolicyException]:
+    async def find_exception_by_id(self, exception_id: UUID) -> PolicyException | None:
         return self._exceptions.get(exception_id)
 
-    async def find_all_exceptions(self) -> List[PolicyException]:
+    async def find_all_exceptions(self) -> list[PolicyException]:
         return list(self._exceptions.values())
 
-    async def find_active_exceptions(self) -> List[PolicyException]:
+    async def find_active_exceptions(self) -> list[PolicyException]:
         return [e for e in self._exceptions.values() if e.status == "approved"]
 
     async def save_attestation(self, attestation: PolicyAttestation) -> None:
         self._attestations[attestation.attestation_id] = attestation
 
-    async def find_attestation_by_id(self, attestation_id: UUID) -> Optional[PolicyAttestation]:
+    async def find_attestation_by_id(self, attestation_id: UUID) -> PolicyAttestation | None:
         return self._attestations.get(attestation_id)
 
-    async def find_attestations_by_policy(self, policy_id: UUID) -> List[PolicyAttestation]:
+    async def find_attestations_by_policy(self, policy_id: UUID) -> list[PolicyAttestation]:
         return [a for a in self._attestations.values() if a.policy_id == policy_id]
 
     async def save_review(self, review: PolicyReview) -> None:
         self._reviews[review.review_id] = review
 
-    async def find_review_by_id(self, review_id: UUID) -> Optional[PolicyReview]:
+    async def find_review_by_id(self, review_id: UUID) -> PolicyReview | None:
         return self._reviews.get(review_id)
 
-    async def find_reviews_by_policy(self, policy_id: UUID) -> List[PolicyReview]:
+    async def find_reviews_by_policy(self, policy_id: UUID) -> list[PolicyReview]:
         return [r for r in self._reviews.values() if r.policy_id == policy_id]
 
     async def save_procedure(self, procedure: Procedure) -> None:
         self._procedures[procedure.procedure_id] = procedure
 
-    async def find_procedure_by_id(self, procedure_id: UUID) -> Optional[Procedure]:
+    async def find_procedure_by_id(self, procedure_id: UUID) -> Procedure | None:
         return self._procedures.get(procedure_id)
 
-    async def find_procedures_by_policy(self, policy_id: UUID) -> List[Procedure]:
+    async def find_procedures_by_policy(self, policy_id: UUID) -> list[Procedure]:
         return [p for p in self._procedures.values() if p.policy_id == policy_id]
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return {
             "total_policies": len(self._policies),
             "active_policies": len([p for p in self._policies.values() if p.status == PolicyStatus.ACTIVE]),

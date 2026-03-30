@@ -4,11 +4,12 @@ Watchlist Models
 Defines data structures for internal and external watchlist management.
 """
 
+from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class WatchlistType(str, Enum):
@@ -39,7 +40,7 @@ class EntityIdentifier(BaseModel):
     """Entity identifier for matching"""
     identifier_type: str  # ssn, ein, passport, account_number, phone, email
     identifier_value: str
-    issuing_country: Optional[str] = None
+    issuing_country: str | None = None
     is_primary: bool = False
 
 
@@ -51,17 +52,17 @@ class WatchlistEntry(BaseModel):
     # Entity information
     entity_type: str  # individual, organization
     primary_name: str
-    aliases: List[str] = Field(default_factory=list)
-    identifiers: List[EntityIdentifier] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
+    identifiers: list[EntityIdentifier] = Field(default_factory=list)
 
     # Personal details (for individuals)
-    date_of_birth: Optional[date] = None
-    nationalities: List[str] = Field(default_factory=list)
-    countries_of_residence: List[str] = Field(default_factory=list)
+    date_of_birth: date | None = None
+    nationalities: list[str] = Field(default_factory=list)
+    countries_of_residence: list[str] = Field(default_factory=list)
 
     # Organization details
-    registration_number: Optional[str] = None
-    incorporation_country: Optional[str] = None
+    registration_number: str | None = None
+    incorporation_country: str | None = None
 
     # Category and risk
     category: WatchlistCategory
@@ -70,45 +71,45 @@ class WatchlistEntry(BaseModel):
 
     # Reason
     reason: str
-    reason_code: Optional[str] = None
-    evidence_summary: Optional[str] = None
+    reason_code: str | None = None
+    evidence_summary: str | None = None
 
     # Source
     source: str
-    source_reference: Optional[str] = None
-    source_date: Optional[datetime] = None
+    source_reference: str | None = None
+    source_date: datetime | None = None
 
     # Related records
-    related_case_ids: List[UUID] = Field(default_factory=list)
-    related_alert_ids: List[UUID] = Field(default_factory=list)
-    related_customer_ids: List[str] = Field(default_factory=list)
+    related_case_ids: list[UUID] = Field(default_factory=list)
+    related_alert_ids: list[UUID] = Field(default_factory=list)
+    related_customer_ids: list[str] = Field(default_factory=list)
 
     # Status
     is_active: bool = True
     status: str = "active"  # active, inactive, under_review, removed
 
     # Review information
-    last_reviewed_by: Optional[str] = None
-    last_reviewed_at: Optional[datetime] = None
-    next_review_date: Optional[date] = None
+    last_reviewed_by: str | None = None
+    last_reviewed_at: datetime | None = None
+    next_review_date: date | None = None
 
     # Validity
-    effective_from: datetime = Field(default_factory=datetime.utcnow)
-    effective_until: Optional[datetime] = None
+    effective_from: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    effective_until: datetime | None = None
 
     # Created/Updated
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_by: Optional[str] = None
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_by: str | None = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Notes
-    notes: Optional[str] = None
-    internal_notes: Optional[str] = None
+    notes: str | None = None
+    internal_notes: str | None = None
 
     # Metadata
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    tags: List[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
 
 
 class Watchlist(BaseModel):
@@ -126,8 +127,8 @@ class Watchlist(BaseModel):
 
     # Access control
     owner_team: str
-    view_teams: List[str] = Field(default_factory=list)
-    edit_teams: List[str] = Field(default_factory=list)
+    view_teams: list[str] = Field(default_factory=list)
+    edit_teams: list[str] = Field(default_factory=list)
 
     # Screening configuration
     include_in_screening: bool = True
@@ -140,8 +141,8 @@ class Watchlist(BaseModel):
 
     # External source
     is_external: bool = False
-    external_source_url: Optional[str] = None
-    last_sync_date: Optional[datetime] = None
+    external_source_url: str | None = None
+    last_sync_date: datetime | None = None
     sync_frequency_hours: int = 24
 
     # Status
@@ -149,8 +150,8 @@ class Watchlist(BaseModel):
 
     # Timestamps
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WatchlistMatch(BaseModel):
@@ -161,7 +162,7 @@ class WatchlistMatch(BaseModel):
     screened_entity_type: str
     screened_entity_id: str
     screened_entity_name: str
-    screened_identifiers: List[EntityIdentifier] = Field(default_factory=list)
+    screened_identifiers: list[EntityIdentifier] = Field(default_factory=list)
 
     # Matched entry
     watchlist_id: UUID
@@ -173,7 +174,7 @@ class WatchlistMatch(BaseModel):
     # Match quality
     match_score: float
     match_type: str  # exact, fuzzy, partial
-    matching_fields: List[str] = Field(default_factory=list)
+    matching_fields: list[str] = Field(default_factory=list)
 
     # Field-level scores
     name_score: float = 0.0
@@ -183,16 +184,16 @@ class WatchlistMatch(BaseModel):
 
     # Status
     status: str = "pending"  # pending, confirmed, false_positive, escalated
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[datetime] = None
-    review_notes: Optional[str] = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    review_notes: str | None = None
 
     # Alert linkage
-    alert_id: Optional[UUID] = None
-    case_id: Optional[UUID] = None
+    alert_id: UUID | None = None
+    case_id: UUID | None = None
 
     # Timestamps
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WatchlistScreeningRequest(BaseModel):
@@ -201,24 +202,24 @@ class WatchlistScreeningRequest(BaseModel):
 
     # Entity to screen
     entity_type: str
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     entity_name: str
-    aliases: List[str] = Field(default_factory=list)
-    identifiers: List[EntityIdentifier] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
+    identifiers: list[EntityIdentifier] = Field(default_factory=list)
 
     # Additional information
-    date_of_birth: Optional[date] = None
-    nationalities: List[str] = Field(default_factory=list)
+    date_of_birth: date | None = None
+    nationalities: list[str] = Field(default_factory=list)
 
     # Screening parameters
-    watchlist_ids: Optional[List[UUID]] = None  # None = all active
+    watchlist_ids: list[UUID] | None = None  # None = all active
     match_threshold: float = 0.8
     include_inactive: bool = False
 
     # Request metadata
     screening_type: str = "real_time"  # real_time, batch, periodic
     requested_by: str
-    requested_at: datetime = Field(default_factory=datetime.utcnow)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WatchlistScreeningResult(BaseModel):
@@ -228,26 +229,26 @@ class WatchlistScreeningResult(BaseModel):
 
     # Screened entity
     entity_type: str
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     entity_name: str
 
     # Results
     has_matches: bool = False
     match_count: int = 0
     highest_match_score: float = 0.0
-    matches: List[WatchlistMatch] = Field(default_factory=list)
+    matches: list[WatchlistMatch] = Field(default_factory=list)
 
     # Lists screened
     watchlists_screened: int = 0
     entries_screened: int = 0
 
     # Processing
-    screening_date: datetime = Field(default_factory=datetime.utcnow)
+    screening_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processing_time_ms: int = 0
 
     # Actions taken
     alerts_generated: int = 0
-    alert_ids: List[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
 
 
 class WatchlistImport(BaseModel):
@@ -258,7 +259,7 @@ class WatchlistImport(BaseModel):
     # Import source
     source_type: str  # file, api, database
     source_name: str
-    source_reference: Optional[str] = None
+    source_reference: str | None = None
 
     # Statistics
     total_records: int = 0
@@ -268,40 +269,40 @@ class WatchlistImport(BaseModel):
     duplicate_records: int = 0
 
     # Errors
-    errors: List[Dict[str, Any]] = Field(default_factory=list)
+    errors: list[dict[str, Any]] = Field(default_factory=list)
 
     # Status
     status: str = "pending"  # pending, processing, completed, failed
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Created by
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WatchlistAuditLog(BaseModel):
     """Audit log for watchlist changes"""
     audit_id: UUID = Field(default_factory=uuid4)
     watchlist_id: UUID
-    entry_id: Optional[UUID] = None
+    entry_id: UUID | None = None
 
     # Action
     action: str  # create, update, delete, review, activate, deactivate
     action_details: str
 
     # Changes
-    previous_values: Optional[Dict[str, Any]] = None
-    new_values: Optional[Dict[str, Any]] = None
+    previous_values: dict[str, Any] | None = None
+    new_values: dict[str, Any] | None = None
 
     # Actor
     performed_by: str
-    performed_at: datetime = Field(default_factory=datetime.utcnow)
+    performed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Context
-    reason: Optional[str] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    reason: str | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
 
 
 class WatchlistStatistics(BaseModel):
@@ -309,8 +310,8 @@ class WatchlistStatistics(BaseModel):
     total_watchlists: int = 0
     total_entries: int = 0
     active_entries: int = 0
-    by_type: Dict[str, int] = Field(default_factory=dict)
-    by_category: Dict[str, int] = Field(default_factory=dict)
+    by_type: dict[str, int] = Field(default_factory=dict)
+    by_category: dict[str, int] = Field(default_factory=dict)
     matches_this_month: int = 0
     false_positive_rate: float = 0.0
     pending_review: int = 0

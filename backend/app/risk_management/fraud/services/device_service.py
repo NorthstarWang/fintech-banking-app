@@ -1,26 +1,32 @@
 """Device Service - Device fingerprinting and trust management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID, uuid4
 import hashlib
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
+
 from ..models.device_models import (
-    DeviceFingerprint, DeviceProfile, DeviceSession,
-    DeviceTrustLevel, DeviceType, DeviceRiskAssessment, DeviceStatistics
+    DeviceFingerprint,
+    DeviceProfile,
+    DeviceRiskAssessment,
+    DeviceSession,
+    DeviceStatistics,
+    DeviceTrustLevel,
+    DeviceType,
 )
 
 
 class DeviceService:
     def __init__(self):
-        self._fingerprints: Dict[UUID, DeviceFingerprint] = {}
-        self._profiles: Dict[UUID, DeviceProfile] = {}
-        self._sessions: Dict[UUID, DeviceSession] = {}
+        self._fingerprints: dict[UUID, DeviceFingerprint] = {}
+        self._profiles: dict[UUID, DeviceProfile] = {}
+        self._sessions: dict[UUID, DeviceSession] = {}
 
-    def _calculate_device_hash(self, fingerprint_data: Dict[str, Any]) -> str:
+    def _calculate_device_hash(self, fingerprint_data: dict[str, Any]) -> str:
         data_str = f"{fingerprint_data.get('user_agent', '')}{fingerprint_data.get('screen_resolution', '')}{fingerprint_data.get('timezone', '')}"
         return hashlib.sha256(data_str.encode()).hexdigest()[:32]
 
-    async def register_fingerprint(self, fingerprint_data: Dict[str, Any]) -> DeviceFingerprint:
+    async def register_fingerprint(self, fingerprint_data: dict[str, Any]) -> DeviceFingerprint:
         device_hash = self._calculate_device_hash(fingerprint_data)
         fingerprint = DeviceFingerprint(
             device_hash=device_hash,
@@ -46,23 +52,23 @@ class DeviceService:
         self._profiles[profile.device_id] = profile
         return profile
 
-    async def get_profile(self, device_id: UUID) -> Optional[DeviceProfile]:
+    async def get_profile(self, device_id: UUID) -> DeviceProfile | None:
         return self._profiles.get(device_id)
 
-    async def update_trust_level(self, device_id: UUID, trust_level: DeviceTrustLevel, trust_score: float) -> Optional[DeviceProfile]:
+    async def update_trust_level(self, device_id: UUID, trust_level: DeviceTrustLevel, trust_score: float) -> DeviceProfile | None:
         profile = self._profiles.get(device_id)
         if profile:
             profile.trust_level = trust_level
             profile.trust_score = trust_score
-            profile.updated_at = datetime.utcnow()
+            profile.updated_at = datetime.now(UTC)
         return profile
 
-    async def block_device(self, device_id: UUID, reason: str) -> Optional[DeviceProfile]:
+    async def block_device(self, device_id: UUID, reason: str) -> DeviceProfile | None:
         profile = self._profiles.get(device_id)
         if profile:
             profile.is_blocked = True
             profile.block_reason = reason
-            profile.blocked_at = datetime.utcnow()
+            profile.blocked_at = datetime.now(UTC)
             profile.trust_level = DeviceTrustLevel.BLOCKED
         return profile
 

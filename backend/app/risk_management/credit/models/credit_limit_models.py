@@ -1,9 +1,10 @@
 """Credit Limit Models - Credit limit management models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -53,10 +54,10 @@ class CreditLimit(BaseModel):
     approved_by: str
     approved_date: datetime
     approval_authority: str
-    conditions: List[str] = []
-    covenants: List[Dict[str, Any]] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    conditions: list[str] = []
+    covenants: list[dict[str, Any]] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitRequest(BaseModel):
@@ -66,38 +67,38 @@ class LimitRequest(BaseModel):
     limit_type: LimitType
     entity_id: str
     entity_name: str
-    current_limit: Optional[float] = None
+    current_limit: float | None = None
     requested_limit: float
     requested_tenor_months: int
     purpose: str
     justification: str
-    supporting_documents: List[str] = []
-    risk_assessment: Optional[Dict[str, Any]] = None
-    credit_rating: Optional[str] = None
-    financial_analysis: Optional[Dict[str, Any]] = None
+    supporting_documents: list[str] = []
+    risk_assessment: dict[str, Any] | None = None
+    credit_rating: str | None = None
+    financial_analysis: dict[str, Any] | None = None
     requested_by: str
-    request_date: datetime = Field(default_factory=datetime.utcnow)
+    request_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str = "pending"
-    current_approver: Optional[str] = None
-    approval_history: List[Dict[str, Any]] = []
-    decision: Optional[str] = None
-    decision_date: Optional[datetime] = None
-    approved_amount: Optional[float] = None
-    conditions: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    current_approver: str | None = None
+    approval_history: list[dict[str, Any]] = []
+    decision: str | None = None
+    decision_date: datetime | None = None
+    approved_amount: float | None = None
+    conditions: list[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitUtilization(BaseModel):
     utilization_id: UUID = Field(default_factory=uuid4)
     limit_id: UUID
-    facility_id: Optional[UUID] = None
+    facility_id: UUID | None = None
     utilization_date: date
     utilized_amount: float
     utilization_type: str  # drawdown, repayment, adjustment
-    transaction_reference: Optional[str] = None
+    transaction_reference: str | None = None
     balance_after: float
     utilization_percentage_after: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitReview(BaseModel):
@@ -109,15 +110,15 @@ class LimitReview(BaseModel):
     recommended_limit: float
     limit_change: float
     change_reason: str
-    financial_performance: Dict[str, Any] = {}
-    risk_assessment: Dict[str, Any] = {}
-    covenant_compliance: Dict[str, Any] = {}
+    financial_performance: dict[str, Any] = {}
+    risk_assessment: dict[str, Any] = {}
+    covenant_compliance: dict[str, Any] = {}
     industry_outlook: str
     recommendation: str
     reviewed_by: str
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
     status: str = "pending"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitBreach(BaseModel):
@@ -130,14 +131,14 @@ class LimitBreach(BaseModel):
     breach_amount: float
     breach_percentage: float
     breach_reason: str
-    transaction_id: Optional[str] = None
+    transaction_id: str | None = None
     remediation_required: bool = True
-    remediation_plan: Optional[str] = None
-    remediation_deadline: Optional[date] = None
+    remediation_plan: str | None = None
+    remediation_deadline: date | None = None
     resolved: bool = False
-    resolved_date: Optional[datetime] = None
-    resolution_action: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    resolved_date: datetime | None = None
+    resolution_action: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitCovenant(BaseModel):
@@ -147,14 +148,14 @@ class LimitCovenant(BaseModel):
     covenant_name: str
     covenant_description: str
     threshold_value: float
-    current_value: Optional[float] = None
+    current_value: float | None = None
     compliance_status: str = "compliant"
     measurement_frequency: str  # monthly, quarterly, annually
-    last_measurement_date: Optional[date] = None
-    next_measurement_date: Optional[date] = None
+    last_measurement_date: date | None = None
+    next_measurement_date: date | None = None
     grace_period_days: int = 0
     breach_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LimitStatistics(BaseModel):
@@ -162,7 +163,7 @@ class LimitStatistics(BaseModel):
     total_limit_amount: float = 0.0
     total_utilized: float = 0.0
     average_utilization: float = 0.0
-    by_type: Dict[str, int] = {}
-    by_status: Dict[str, int] = {}
+    by_type: dict[str, int] = {}
+    by_status: dict[str, int] = {}
     breaches_count: int = 0
     warnings_count: int = 0

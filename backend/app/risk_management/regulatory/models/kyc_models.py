@@ -1,11 +1,12 @@
 """KYC Models - Data models for Know Your Customer compliance"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class CustomerType(str, Enum):
@@ -48,51 +49,51 @@ class CustomerProfile(BaseModel):
     customer_id: str
     customer_type: CustomerType
     full_name: str
-    date_of_birth: Optional[date] = None
-    nationality: Optional[str] = None
+    date_of_birth: date | None = None
+    nationality: str | None = None
     country_of_residence: str
     address: str
-    occupation: Optional[str] = None
-    employer: Optional[str] = None
+    occupation: str | None = None
+    employer: str | None = None
     source_of_funds: str
-    source_of_wealth: Optional[str] = None
+    source_of_wealth: str | None = None
     expected_activity: str
     expected_monthly_volume: Decimal
     pep_status: bool = False
-    pep_details: Optional[str] = None
+    pep_details: str | None = None
     sanctions_status: bool = False
     adverse_media: bool = False
     risk_rating: RiskRating = RiskRating.MEDIUM
     risk_score: int = 50
     onboarding_date: date
-    last_review_date: Optional[date] = None
-    next_review_date: Optional[date] = None
+    last_review_date: date | None = None
+    next_review_date: date | None = None
     status: str = "active"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CorporateCustomer(BaseModel):
     corporate_id: UUID = Field(default_factory=uuid4)
     profile_id: UUID
     legal_name: str
-    trading_name: Optional[str] = None
+    trading_name: str | None = None
     registration_number: str
     registration_country: str
     registration_date: date
     legal_form: str
     industry_sector: str
     business_description: str
-    website: Optional[str] = None
-    annual_revenue: Optional[Decimal] = None
-    employee_count: Optional[int] = None
-    beneficial_owners: List[Dict[str, Any]] = Field(default_factory=list)
-    directors: List[Dict[str, Any]] = Field(default_factory=list)
-    authorized_signatories: List[Dict[str, Any]] = Field(default_factory=list)
-    parent_company: Optional[str] = None
-    subsidiaries: List[str] = Field(default_factory=list)
+    website: str | None = None
+    annual_revenue: Decimal | None = None
+    employee_count: int | None = None
+    beneficial_owners: list[dict[str, Any]] = Field(default_factory=list)
+    directors: list[dict[str, Any]] = Field(default_factory=list)
+    authorized_signatories: list[dict[str, Any]] = Field(default_factory=list)
+    parent_company: str | None = None
+    subsidiaries: list[str] = Field(default_factory=list)
     complex_structure: bool = False
-    structure_diagram: Optional[str] = None
+    structure_diagram: str | None = None
 
 
 class IdentityVerification(BaseModel):
@@ -102,17 +103,17 @@ class IdentityVerification(BaseModel):
     document_type: DocumentType
     document_number: str
     issuing_country: str
-    issue_date: Optional[date] = None
-    expiry_date: Optional[date] = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
     verification_method: str  # manual, automated, third_party
-    verification_provider: Optional[str] = None
-    verification_reference: Optional[str] = None
+    verification_provider: str | None = None
+    verification_reference: str | None = None
     status: VerificationStatus = VerificationStatus.PENDING
-    verification_date: Optional[datetime] = None
-    verified_by: Optional[str] = None
-    failure_reason: Optional[str] = None
+    verification_date: datetime | None = None
+    verified_by: str | None = None
+    failure_reason: str | None = None
     document_location: str
-    confidence_score: Optional[Decimal] = None
+    confidence_score: Decimal | None = None
 
 
 class EnhancedDueDiligence(BaseModel):
@@ -125,17 +126,17 @@ class EnhancedDueDiligence(BaseModel):
     source_of_funds_verified: bool = False
     business_relationship_purpose: str
     expected_transactions: str
-    geographical_exposure: List[str]
-    pep_screening_result: Optional[str] = None
-    sanctions_screening_result: Optional[str] = None
-    adverse_media_result: Optional[str] = None
+    geographical_exposure: list[str]
+    pep_screening_result: str | None = None
+    sanctions_screening_result: str | None = None
+    adverse_media_result: str | None = None
     site_visit_conducted: bool = False
-    site_visit_date: Optional[date] = None
+    site_visit_date: date | None = None
     management_approval: bool = False
-    approval_date: Optional[date] = None
-    approved_by: Optional[str] = None
-    findings: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    approval_date: date | None = None
+    approved_by: str | None = None
+    findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     next_review_date: date
     status: str = "pending"
 
@@ -149,33 +150,33 @@ class PeriodicReview(BaseModel):
     previous_risk_rating: RiskRating
     new_risk_rating: RiskRating
     risk_score_change: int
-    changes_identified: List[str]
-    documents_updated: List[str]
-    screening_results: Dict[str, str]
-    transaction_review: Dict[str, Any]
+    changes_identified: list[str]
+    documents_updated: list[str]
+    screening_results: dict[str, str]
+    transaction_review: dict[str, Any]
     sar_filed: bool = False
-    recommendations: List[str]
-    action_items: List[Dict[str, Any]]
+    recommendations: list[str]
+    action_items: list[dict[str, Any]]
     next_review_date: date
     status: str = "completed"
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
 
 
 class BeneficialOwner(BaseModel):
     owner_id: UUID = Field(default_factory=uuid4)
     profile_id: UUID  # Corporate profile
-    individual_profile_id: Optional[UUID] = None
+    individual_profile_id: UUID | None = None
     full_name: str
     date_of_birth: date
     nationality: str
     country_of_residence: str
     ownership_percentage: Decimal
     ownership_type: str  # direct, indirect
-    control_type: Optional[str] = None  # voting_rights, board_control, etc.
+    control_type: str | None = None  # voting_rights, board_control, etc.
     verification_status: VerificationStatus = VerificationStatus.PENDING
     pep_status: bool = False
     sanctions_status: bool = False
-    verified_date: Optional[date] = None
+    verified_date: date | None = None
     is_active: bool = True
 
 

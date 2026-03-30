@@ -1,7 +1,7 @@
 """
 Transaction repository for managing transaction data in the mock system.
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.repositories.base_repository import BaseRepository
@@ -18,7 +18,7 @@ class TransactionRepository(BaseRepository[dict[str, Any]]):
         """Create a new transaction."""
         # Set defaults
         transaction_data.setdefault('status', 'completed')
-        transaction_data.setdefault('date', datetime.utcnow().isoformat())
+        transaction_data.setdefault('date', datetime.now(UTC).isoformat())
 
         return self.create(transaction_data)
 
@@ -93,7 +93,7 @@ class TransactionRepository(BaseRepository[dict[str, Any]]):
         transactions = self.find_by('user_id', user_id)
 
         # Calculate date range
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         if period == 'day':
             start_date = now - timedelta(days=1)
         elif period == 'week':

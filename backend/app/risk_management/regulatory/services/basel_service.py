@@ -1,13 +1,17 @@
 """Basel Service - Business logic for Basel III/IV compliance"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+
 from ..models.basel_models import (
-    BaselCapitalRequirement, CreditRiskRWA, MarketRiskRWA, OperationalRiskRWA,
-    LeverageRatio, LiquidityCoverageRatio, NetStableFundingRatio, CapitalBuffer,
-    BaselReport, RiskCategory
+    BaselReport,
+    CreditRiskRWA,
+    LeverageRatio,
+    LiquidityCoverageRatio,
+    MarketRiskRWA,
+    NetStableFundingRatio,
+    OperationalRiskRWA,
 )
 from ..repositories.basel_repository import basel_repository
 
@@ -92,8 +96,8 @@ class BaselService:
         return lcr
 
     async def calculate_nsfr(
-        self, reporting_date: date, entity_id: str, asf_components: Dict[str, Decimal],
-        rsf_components: Dict[str, Decimal]
+        self, reporting_date: date, entity_id: str, asf_components: dict[str, Decimal],
+        rsf_components: dict[str, Decimal]
     ) -> NetStableFundingRatio:
         available = sum(asf_components.values())
         required = sum(rsf_components.values())
@@ -129,7 +133,7 @@ class BaselService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

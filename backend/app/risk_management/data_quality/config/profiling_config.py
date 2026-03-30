@@ -1,8 +1,8 @@
 """Profiling Configuration"""
 
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class ProfilingDepth(str, Enum):
@@ -25,7 +25,7 @@ class ColumnProfilingConfig:
     include_distribution: bool = True
     include_patterns: bool = True
     include_statistics: bool = True
-    custom_patterns: List[str] = field(default_factory=list)
+    custom_patterns: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -34,7 +34,7 @@ class DatasetProfilingConfig:
     depth: ProfilingDepth
     sampling_strategy: SamplingStrategy
     sample_size: int
-    column_configs: Dict[str, ColumnProfilingConfig]
+    column_configs: dict[str, ColumnProfilingConfig]
     include_relationships: bool = True
     max_distinct_values: int = 1000
 
@@ -45,7 +45,7 @@ class ProfilingConfig:
         self._default_sampling = SamplingStrategy.FULL
         self._default_sample_size = 100000
         self._max_rows_full_profile = 1000000
-        self._dataset_configs: Dict[str, DatasetProfilingConfig] = {}
+        self._dataset_configs: dict[str, DatasetProfilingConfig] = {}
 
         self._depth_settings = {
             ProfilingDepth.BASIC: {
@@ -97,7 +97,7 @@ class ProfilingConfig:
         dataset_name: str,
         depth: ProfilingDepth = None,
         sampling_strategy: SamplingStrategy = None,
-        sample_size: int = None,
+        sample_size: int | None = None,
         include_relationships: bool = True,
         max_distinct_values: int = 1000,
     ) -> DatasetProfilingConfig:
@@ -120,7 +120,7 @@ class ProfilingConfig:
         include_distribution: bool = True,
         include_patterns: bool = True,
         include_statistics: bool = True,
-        custom_patterns: List[str] = None,
+        custom_patterns: list[str] | None = None,
     ) -> None:
         if dataset_name not in self._dataset_configs:
             self.configure_dataset(dataset_name)
@@ -134,18 +134,18 @@ class ProfilingConfig:
         )
         self._dataset_configs[dataset_name].column_configs[column_name] = column_config
 
-    def get_dataset_config(self, dataset_name: str) -> Optional[DatasetProfilingConfig]:
+    def get_dataset_config(self, dataset_name: str) -> DatasetProfilingConfig | None:
         return self._dataset_configs.get(dataset_name)
 
     def get_column_config(
         self, dataset_name: str, column_name: str
-    ) -> Optional[ColumnProfilingConfig]:
+    ) -> ColumnProfilingConfig | None:
         dataset_config = self._dataset_configs.get(dataset_name)
         if dataset_config:
             return dataset_config.column_configs.get(column_name)
         return None
 
-    def get_depth_settings(self, depth: ProfilingDepth) -> Dict[str, bool]:
+    def get_depth_settings(self, depth: ProfilingDepth) -> dict[str, bool]:
         return self._depth_settings.get(depth, self._depth_settings[ProfilingDepth.STANDARD])
 
     def should_sample(self, total_rows: int) -> bool:
@@ -156,7 +156,7 @@ class ProfilingConfig:
             return total_rows
         return min(self._default_sample_size, max(10000, total_rows // 100))
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "default_depth": self._default_depth.value,
             "default_sampling": self._default_sampling.value,

@@ -1,9 +1,10 @@
 """Data Governance Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -24,11 +25,11 @@ class DataDomain(BaseModel):
     business_owner: str
     data_steward: str
     technical_owner: str
-    parent_domain_id: Optional[UUID] = None
-    sub_domains: List[str] = Field(default_factory=list)
-    critical_data_elements: List[str] = Field(default_factory=list)
-    policies: List[str] = Field(default_factory=list)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    parent_domain_id: UUID | None = None
+    sub_domains: list[str] = Field(default_factory=list)
+    critical_data_elements: list[str] = Field(default_factory=list)
+    policies: list[str] = Field(default_factory=list)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = True
 
 
@@ -41,9 +42,9 @@ class DataOwnership(BaseModel):
     technical_owner: str
     custodian: str = ""
     effective_date: date
-    expiry_date: Optional[date] = None
-    responsibilities: Dict[str, List[str]] = Field(default_factory=dict)
-    escalation_path: List[str] = Field(default_factory=list)
+    expiry_date: date | None = None
+    responsibilities: dict[str, list[str]] = Field(default_factory=dict)
+    escalation_path: list[str] = Field(default_factory=list)
     status: str = "active"
 
 
@@ -54,8 +55,8 @@ class DataPolicy(BaseModel):
     policy_type: str  # quality, security, retention, usage, sharing
     description: str
     scope: str
-    requirements: List[str] = Field(default_factory=list)
-    controls: List[str] = Field(default_factory=list)
+    requirements: list[str] = Field(default_factory=list)
+    controls: list[str] = Field(default_factory=list)
     exceptions_process: str = ""
     owner: str
     approver: str
@@ -71,9 +72,9 @@ class DataStandard(BaseModel):
     standard_name: str
     standard_type: str  # naming, format, encoding, modeling
     description: str
-    domain_applicability: List[str] = Field(default_factory=list)
-    rules: List[Dict[str, Any]] = Field(default_factory=list)
-    examples: List[Dict[str, Any]] = Field(default_factory=list)
+    domain_applicability: list[str] = Field(default_factory=list)
+    rules: list[dict[str, Any]] = Field(default_factory=list)
+    examples: list[dict[str, Any]] = Field(default_factory=list)
     owner: str
     effective_date: date
     is_mandatory: bool = True
@@ -85,14 +86,14 @@ class BusinessGlossary(BaseModel):
     term_name: str
     term_definition: str
     domain_id: UUID
-    synonyms: List[str] = Field(default_factory=list)
-    related_terms: List[str] = Field(default_factory=list)
-    business_rules: List[str] = Field(default_factory=list)
+    synonyms: list[str] = Field(default_factory=list)
+    related_terms: list[str] = Field(default_factory=list)
+    business_rules: list[str] = Field(default_factory=list)
     owner: str
     steward: str
     status: str = "approved"
-    created_date: datetime = Field(default_factory=datetime.utcnow)
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataAccessRequest(BaseModel):
@@ -106,10 +107,10 @@ class DataAccessRequest(BaseModel):
     duration: str
     justification: str
     approver: str = ""
-    approval_date: Optional[datetime] = None
+    approval_date: datetime | None = None
     status: str = "pending"
-    expiry_date: Optional[date] = None
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    expiry_date: date | None = None
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataPrivacyAssessment(BaseModel):
@@ -119,21 +120,21 @@ class DataPrivacyAssessment(BaseModel):
     assessment_date: date
     assessor: str
     contains_pii: bool = False
-    pii_categories: List[str] = Field(default_factory=list)
-    data_subjects: List[str] = Field(default_factory=list)
-    processing_purposes: List[str] = Field(default_factory=list)
+    pii_categories: list[str] = Field(default_factory=list)
+    data_subjects: list[str] = Field(default_factory=list)
+    processing_purposes: list[str] = Field(default_factory=list)
     retention_period: str = ""
-    sharing_partners: List[str] = Field(default_factory=list)
-    security_controls: List[str] = Field(default_factory=list)
+    sharing_partners: list[str] = Field(default_factory=list)
+    security_controls: list[str] = Field(default_factory=list)
     risk_level: str = "low"
-    recommendations: List[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     status: str = "completed"
 
 
 class GovernanceMetric(BaseModel):
     metric_id: UUID = Field(default_factory=uuid4)
     metric_date: date
-    domain_id: Optional[UUID] = None
+    domain_id: UUID | None = None
     metric_name: str
     metric_type: str
     current_value: float

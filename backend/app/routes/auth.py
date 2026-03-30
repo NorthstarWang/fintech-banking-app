@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -60,7 +60,7 @@ async def register(request: Request, user_data: UserCreate, db_session: Any = De
 
     # Log user creation
 
-    return UserResponse.from_orm(new_user)
+    return UserResponse.model_validate(new_user)
 
 @router.post("/login")
 async def login(request: Request, response: Response, credentials: UserLogin,
@@ -99,7 +99,7 @@ async def login(request: Request, response: Response, credentials: UserLogin,
         )
 
     # Update last login
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(UTC)
     db_session.commit()
 
     # Generate JWT token
@@ -155,7 +155,7 @@ async def login(request: Request, response: Response, credentials: UserLogin,
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": UserResponse.from_orm(user)
+        "user": UserResponse.model_validate(user)
     }
 
 @router.post("/logout")
@@ -188,7 +188,7 @@ async def get_current_user_profile(
             detail="User not found"
         )
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 @router.put("/me", response_model=UserResponse)
 async def update_profile(
@@ -233,11 +233,11 @@ async def update_profile(
 
         user.email = user_update['email']
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(user)
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 @router.post("/change-password")
 async def change_password(
@@ -273,7 +273,7 @@ async def change_password(
 
     # Update password
     user.password_hash = auth_handler.get_password_hash(new_password)
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Password successfully changed"}

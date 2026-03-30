@@ -1,9 +1,9 @@
 """Commodity Models - Commodity risk management models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -36,10 +36,10 @@ class CommodityPosition(BaseModel):
     current_price: float
     market_value: float
     unrealized_pnl: float
-    delivery_date: Optional[date] = None
-    delivery_location: Optional[str] = None
+    delivery_date: date | None = None
+    delivery_location: str | None = None
     portfolio_id: UUID
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CommodityCurve(BaseModel):
@@ -47,13 +47,13 @@ class CommodityCurve(BaseModel):
     commodity_name: str
     commodity_type: CommodityType
     curve_date: date
-    contract_months: List[str] = []
-    prices: List[float] = []
+    contract_months: list[str] = []
+    prices: list[float] = []
     curve_shape: str  # contango, backwardation, flat
     roll_yield: float
     convenience_yield: float
     storage_cost: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CommodityExposure(BaseModel):
@@ -68,23 +68,23 @@ class CommodityExposure(BaseModel):
     var_contribution: float
     stress_loss: float
     as_of_date: date
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CommodityScenario(BaseModel):
     scenario_id: UUID = Field(default_factory=uuid4)
     scenario_name: str
     scenario_type: str
-    price_shocks: Dict[str, float] = {}
-    volatility_shocks: Dict[str, float] = {}
-    curve_shocks: Dict[str, float] = {}
+    price_shocks: dict[str, float] = {}
+    volatility_shocks: dict[str, float] = {}
+    curve_shocks: dict[str, float] = {}
     pnl_impact: float
     var_impact: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CommodityRiskStatistics(BaseModel):
     total_positions: int = 0
     total_notional: float = 0.0
     commodity_var: float = 0.0
-    by_type: Dict[str, float] = {}
+    by_type: dict[str, float] = {}

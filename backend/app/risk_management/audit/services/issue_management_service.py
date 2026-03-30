@@ -1,11 +1,19 @@
 """Issue Management Service - Business logic for issue tracking and remediation"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
+
 from ..models.issue_management_models import (
-    Issue, ActionPlan, IssueUpdate, IssueValidation, IssueEscalation, IssueReport,
-    IssueSource, IssuePriority, IssueStatus
+    ActionPlan,
+    Issue,
+    IssueEscalation,
+    IssuePriority,
+    IssueReport,
+    IssueSource,
+    IssueStatus,
+    IssueUpdate,
+    IssueValidation,
 )
 from ..repositories.issue_management_repository import issue_management_repository
 
@@ -34,7 +42,7 @@ class IssueManagementService:
 
     async def create_action_plan(
         self, issue_id: UUID, action_description: str, action_type: str,
-        owner: str, due_date: date, evidence_required: List[str]
+        owner: str, due_date: date, evidence_required: list[str]
     ) -> ActionPlan:
         self._action_counter += 1
         action = ActionPlan(
@@ -46,9 +54,9 @@ class IssueManagementService:
         return action
 
     async def update_action_progress(
-        self, action_id: UUID, progress_percentage: int, evidence_provided: List[str],
+        self, action_id: UUID, progress_percentage: int, evidence_provided: list[str],
         comments: str
-    ) -> Optional[ActionPlan]:
+    ) -> ActionPlan | None:
         action = await self.repository.find_action_plan_by_id(action_id)
         if action:
             action.progress_percentage = progress_percentage
@@ -61,7 +69,7 @@ class IssueManagementService:
 
     async def update_issue(
         self, issue_id: UUID, updated_by: str, update_type: str,
-        progress_update: str, next_steps: str, blockers: List[str] = None
+        progress_update: str, next_steps: str, blockers: list[str] | None = None
     ) -> IssueUpdate:
         issue = await self.repository.find_issue_by_id(issue_id)
 
@@ -76,7 +84,7 @@ class IssueManagementService:
 
     async def change_issue_status(
         self, issue_id: UUID, new_status: IssueStatus, updated_by: str
-    ) -> Optional[Issue]:
+    ) -> Issue | None:
         issue = await self.repository.find_issue_by_id(issue_id)
         if issue:
             old_status = issue.status
@@ -93,7 +101,7 @@ class IssueManagementService:
 
     async def validate_issue(
         self, issue_id: UUID, validator: str, validation_type: str,
-        evidence_reviewed: List[str], tests_performed: List[str],
+        evidence_reviewed: list[str], tests_performed: list[str],
         validation_result: str, findings: str, recommendation: str
     ) -> IssueValidation:
         validation = IssueValidation(
@@ -131,7 +139,7 @@ class IssueManagementService:
 
     async def extend_due_date(
         self, issue_id: UUID, new_due_date: date, updated_by: str, reason: str
-    ) -> Optional[Issue]:
+    ) -> Issue | None:
         issue = await self.repository.find_issue_by_id(issue_id)
         if issue:
             issue.extended_due_date = new_due_date
@@ -167,7 +175,7 @@ class IssueManagementService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

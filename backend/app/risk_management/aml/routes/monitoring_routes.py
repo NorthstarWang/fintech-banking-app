@@ -4,21 +4,20 @@ Transaction Monitoring Routes
 API endpoints for transaction monitoring.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
-from ..models.transaction_pattern_models import (
-    PatternType, DetectedPattern, PatternRule, PatternAnalysisRequest, PatternAnalysisResult
-)
-from ..services.transaction_monitoring_service import transaction_monitoring_service
+from ..models.transaction_pattern_models import PatternAnalysisRequest, PatternAnalysisResult, PatternRule
 from ..services.pattern_detection_service import pattern_detection_service
+from ..services.transaction_monitoring_service import transaction_monitoring_service
 
 router = APIRouter(prefix="/aml/monitoring", tags=["Transaction Monitoring"])
 
 
 @router.post("/analyze-transaction")
-async def analyze_transaction(transaction: Dict[str, Any], customer_profile: Dict[str, Any]):
+async def analyze_transaction(transaction: dict[str, Any], customer_profile: dict[str, Any]):
     """Analyze a single transaction for suspicious patterns"""
     patterns = await transaction_monitoring_service.monitor_transaction(transaction, customer_profile)
     return {"detected_patterns": patterns}
@@ -30,7 +29,7 @@ async def run_batch_analysis(request: PatternAnalysisRequest):
     return await transaction_monitoring_service.run_batch_analysis(request)
 
 
-@router.get("/rules", response_model=List[PatternRule])
+@router.get("/rules", response_model=list[PatternRule])
 async def get_monitoring_rules():
     """Get all monitoring rules"""
     return await transaction_monitoring_service.get_rules()
@@ -52,7 +51,7 @@ async def create_monitoring_rule(rule: PatternRule):
 
 
 @router.put("/rules/{rule_id}")
-async def update_monitoring_rule(rule_id: UUID, updates: Dict[str, Any]):
+async def update_monitoring_rule(rule_id: UUID, updates: dict[str, Any]):
     """Update an existing monitoring rule"""
     rule = await transaction_monitoring_service.update_rule(rule_id, updates)
     if not rule:
@@ -71,7 +70,7 @@ async def toggle_rule(rule_id: UUID, is_active: bool):
 
 @router.post("/detect/structuring")
 async def detect_structuring(
-    customer_id: str, transactions: List[Dict[str, Any]], reporting_threshold: float = 10000.0
+    customer_id: str, transactions: list[dict[str, Any]], reporting_threshold: float = 10000.0
 ):
     """Detect potential structuring patterns"""
     pattern = await pattern_detection_service.detect_structuring(
@@ -81,7 +80,7 @@ async def detect_structuring(
 
 
 @router.post("/detect/layering")
-async def detect_layering(transactions: List[Dict[str, Any]], max_hops: int = 10):
+async def detect_layering(transactions: list[dict[str, Any]], max_hops: int = 10):
     """Detect potential layering patterns"""
     patterns = await pattern_detection_service.detect_layering(transactions, max_hops)
     return {"patterns": patterns}
@@ -89,7 +88,7 @@ async def detect_layering(transactions: List[Dict[str, Any]], max_hops: int = 10
 
 @router.post("/detect/velocity")
 async def detect_velocity_anomaly(
-    customer_id: str, current_transactions: List[Dict[str, Any]], historical_stats: Dict[str, Any]
+    customer_id: str, current_transactions: list[dict[str, Any]], historical_stats: dict[str, Any]
 ):
     """Detect velocity anomalies"""
     pattern = await pattern_detection_service.detect_velocity_anomaly(
@@ -100,8 +99,8 @@ async def detect_velocity_anomaly(
 
 @router.post("/detect/geographic")
 async def detect_geographic_anomaly(
-    customer_id: str, transactions: List[Dict[str, Any]],
-    expected_countries: List[str], high_risk_countries: List[str]
+    customer_id: str, transactions: list[dict[str, Any]],
+    expected_countries: list[str], high_risk_countries: list[str]
 ):
     """Detect geographic anomalies"""
     pattern = await pattern_detection_service.detect_geographic_anomaly(
@@ -112,7 +111,7 @@ async def detect_geographic_anomaly(
 
 @router.post("/detect/rapid-movement")
 async def detect_rapid_movement(
-    account_id: str, transactions: List[Dict[str, Any]], time_threshold_hours: int = 24
+    account_id: str, transactions: list[dict[str, Any]], time_threshold_hours: int = 24
 ):
     """Detect rapid movement of funds"""
     patterns = await pattern_detection_service.detect_rapid_movement(
@@ -122,13 +121,13 @@ async def detect_rapid_movement(
 
 
 @router.post("/detect/round-tripping")
-async def detect_round_tripping(transactions: List[Dict[str, Any]]):
+async def detect_round_tripping(transactions: list[dict[str, Any]]):
     """Detect round-tripping patterns"""
     patterns = await pattern_detection_service.detect_round_tripping(transactions)
     return {"patterns": patterns}
 
 
 @router.post("/analyze-flow")
-async def analyze_transaction_flow(transactions: List[Dict[str, Any]], root_entity: str):
+async def analyze_transaction_flow(transactions: list[dict[str, Any]], root_entity: str):
     """Build and analyze transaction flow"""
     return await pattern_detection_service.analyze_transaction_flow(transactions, root_entity)

@@ -4,15 +4,21 @@ SAR Routes
 API endpoints for SAR management.
 """
 
-from typing import List
-from datetime import datetime
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.sar_models import (
-    SAR, SARSummary, SARStatistics, SARStatus, SARType,
-    SARCreateRequest, SARUpdateRequest, SARSearchCriteria,
-    SubjectInfo, SuspiciousActivity, TransactionDetail, SARDocument
+    SAR,
+    SARCreateRequest,
+    SARDocument,
+    SARSearchCriteria,
+    SARStatistics,
+    SARSummary,
+    SARUpdateRequest,
+    SubjectInfo,
+    SuspiciousActivity,
+    TransactionDetail,
 )
 from ..services.sar_service import sar_service
 
@@ -99,7 +105,7 @@ async def submit_for_approval(sar_id: UUID, submitted_by: str = "system"):
 
 @router.post("/{sar_id}/approve")
 async def approve_sar(
-    sar_id: UUID, approver_id: str, approver_name: str, approver_role: str, comments: str = None
+    sar_id: UUID, approver_id: str, approver_name: str, approver_role: str, comments: str | None = None
 ):
     """Approve SAR"""
     sar = await sar_service.approve_sar(sar_id, approver_id, approver_name, approver_role, comments)
@@ -138,7 +144,7 @@ async def acknowledge_sar(sar_id: UUID, acknowledgment_number: str):
     return sar
 
 
-@router.post("/search", response_model=List[SARSummary])
+@router.post("/search", response_model=list[SARSummary])
 async def search_sars(criteria: SARSearchCriteria):
     """Search SARs based on criteria"""
     return await sar_service.search_sars(criteria)

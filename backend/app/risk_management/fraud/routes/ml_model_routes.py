@@ -1,16 +1,13 @@
 """ML Model Routes - API endpoints for machine learning model management"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..models.ml_models import (
-    MLModel, ModelPrediction, ModelTrainingJob,
-    ModelType, ModelStatus
-)
+from ..models.ml_models import MLModel, ModelPrediction, ModelStatus, ModelTrainingJob, ModelType
 from ..services.ml_service import ml_service
-
 
 router = APIRouter(prefix="/fraud/ml", tags=["Fraud ML Models"])
 
@@ -23,26 +20,26 @@ class RegisterModelRequest(BaseModel):
 
 
 class UpdateModelMetricsRequest(BaseModel):
-    accuracy: Optional[float] = Field(None, ge=0, le=1)
-    precision: Optional[float] = Field(None, ge=0, le=1)
-    recall: Optional[float] = Field(None, ge=0, le=1)
-    f1_score: Optional[float] = Field(None, ge=0, le=1)
-    auc_roc: Optional[float] = Field(None, ge=0, le=1)
+    accuracy: float | None = Field(None, ge=0, le=1)
+    precision: float | None = Field(None, ge=0, le=1)
+    recall: float | None = Field(None, ge=0, le=1)
+    f1_score: float | None = Field(None, ge=0, le=1)
+    auc_roc: float | None = Field(None, ge=0, le=1)
 
 
 class PredictRequest(BaseModel):
     model_id: UUID
-    input_data: Dict[str, Any]
+    input_data: dict[str, Any]
 
 
 class BatchPredictRequest(BaseModel):
     model_id: UUID
-    input_data_list: List[Dict[str, Any]]
+    input_data_list: list[dict[str, Any]]
 
 
 class StartTrainingRequest(BaseModel):
     model_id: UUID
-    training_config: Dict[str, Any]
+    training_config: dict[str, Any]
     created_by: str
 
 
@@ -53,13 +50,12 @@ class UpdateThresholdRequest(BaseModel):
 @router.post("/models", response_model=MLModel)
 async def register_model(request: RegisterModelRequest):
     """Register a new ML model"""
-    model = await ml_service.register_model(
+    return await ml_service.register_model(
         name=request.name,
         model_type=request.model_type,
         algorithm=request.algorithm,
         created_by=request.created_by
     )
-    return model
 
 
 @router.get("/models/{model_id}", response_model=MLModel)
@@ -109,10 +105,10 @@ async def update_threshold(model_id: UUID, request: UpdateThresholdRequest):
     return model
 
 
-@router.get("/models", response_model=List[MLModel])
+@router.get("/models", response_model=list[MLModel])
 async def list_models(
-    model_type: Optional[ModelType] = None,
-    status: Optional[ModelStatus] = None,
+    model_type: ModelType | None = None,
+    status: ModelStatus | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):
@@ -125,7 +121,7 @@ async def list_models(
     return models[:limit]
 
 
-@router.get("/models/active", response_model=List[MLModel])
+@router.get("/models/active", response_model=list[MLModel])
 async def get_active_models():
     """Get all active ML models"""
     return await ml_service.get_active_models()
@@ -159,12 +155,11 @@ async def batch_predict(request: BatchPredictRequest):
 @router.post("/training/start", response_model=ModelTrainingJob)
 async def start_training(request: StartTrainingRequest):
     """Start a model training job"""
-    job = await ml_service.start_training_job(
+    return await ml_service.start_training_job(
         model_id=request.model_id,
         training_config=request.training_config,
         created_by=request.created_by
     )
-    return job
 
 
 @router.get("/training/{job_id}", response_model=ModelTrainingJob)
@@ -178,8 +173,8 @@ async def get_training_job(job_id: UUID):
 
 @router.get("/training")
 async def list_training_jobs(
-    model_id: Optional[UUID] = None,
-    status: Optional[str] = None,
+    model_id: UUID | None = None,
+    status: str | None = None,
     limit: int = Query(default=50, le=200)
 ):
     """List training jobs"""

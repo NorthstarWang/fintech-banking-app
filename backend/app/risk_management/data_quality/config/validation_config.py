@@ -1,8 +1,8 @@
 """Validation Configuration"""
 
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class ValidationMode(str, Enum):
@@ -21,18 +21,18 @@ class OnFailureAction(str, Enum):
 @dataclass
 class FieldValidationConfig:
     field_name: str
-    validators: List[str]
+    validators: list[str]
     is_required: bool = True
     on_failure: OnFailureAction = OnFailureAction.REJECT
-    custom_params: Dict[str, Any] = field(default_factory=dict)
+    custom_params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DatasetValidationConfig:
     dataset_name: str
     mode: ValidationMode
-    field_configs: Dict[str, FieldValidationConfig]
-    global_validators: List[str] = field(default_factory=list)
+    field_configs: dict[str, FieldValidationConfig]
+    global_validators: list[str] = field(default_factory=list)
     fail_fast: bool = False
     max_errors: int = 1000
 
@@ -41,7 +41,7 @@ class ValidationConfig:
     def __init__(self):
         self._mode = ValidationMode.STRICT
         self._default_action = OnFailureAction.REJECT
-        self._dataset_configs: Dict[str, DatasetValidationConfig] = {}
+        self._dataset_configs: dict[str, DatasetValidationConfig] = {}
         self._global_validators = [
             "not_null",
             "not_empty",
@@ -64,7 +64,7 @@ class ValidationConfig:
             "unique": "Validates uniqueness",
             "foreign_key": "Validates foreign key reference",
         }
-        self._custom_validators: Dict[str, str] = {}
+        self._custom_validators: dict[str, str] = {}
 
     def get_mode(self) -> ValidationMode:
         return self._mode
@@ -100,10 +100,10 @@ class ValidationConfig:
         self,
         dataset_name: str,
         field_name: str,
-        validators: List[str],
+        validators: list[str],
         is_required: bool = True,
         on_failure: OnFailureAction = None,
-        custom_params: Dict[str, Any] = None,
+        custom_params: dict[str, Any] | None = None,
     ) -> None:
         if dataset_name not in self._dataset_configs:
             self.configure_dataset(dataset_name)
@@ -117,12 +117,12 @@ class ValidationConfig:
         )
         self._dataset_configs[dataset_name].field_configs[field_name] = field_config
 
-    def get_dataset_config(self, dataset_name: str) -> Optional[DatasetValidationConfig]:
+    def get_dataset_config(self, dataset_name: str) -> DatasetValidationConfig | None:
         return self._dataset_configs.get(dataset_name)
 
     def get_field_config(
         self, dataset_name: str, field_name: str
-    ) -> Optional[FieldValidationConfig]:
+    ) -> FieldValidationConfig | None:
         dataset_config = self._dataset_configs.get(dataset_name)
         if dataset_config:
             return dataset_config.field_configs.get(field_name)
@@ -131,7 +131,7 @@ class ValidationConfig:
     def register_custom_validator(self, name: str, description: str) -> None:
         self._custom_validators[name] = description
 
-    def get_available_validators(self) -> Dict[str, str]:
+    def get_available_validators(self) -> dict[str, str]:
         validators = self._builtin_validators.copy()
         validators.update(self._custom_validators)
         return validators
@@ -144,7 +144,7 @@ class ValidationConfig:
         if validator in self._global_validators:
             self._global_validators.remove(validator)
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "mode": self._mode.value,
             "default_action": self._default_action.value,

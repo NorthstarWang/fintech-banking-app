@@ -1,8 +1,8 @@
 """Notification Configuration for Data Quality"""
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class NotificationChannel(str, Enum):
@@ -35,26 +35,26 @@ class NotificationTrigger(str, Enum):
 class ChannelConfig:
     channel: NotificationChannel
     is_enabled: bool
-    config: Dict[str, Any]
+    config: dict[str, Any]
     min_severity: NotificationSeverity = NotificationSeverity.MEDIUM
 
 
 @dataclass
 class NotificationRule:
     rule_name: str
-    triggers: List[NotificationTrigger]
-    channels: List[NotificationChannel]
+    triggers: list[NotificationTrigger]
+    channels: list[NotificationChannel]
     min_severity: NotificationSeverity
-    recipients: List[str]
+    recipients: list[str]
     cooldown_minutes: int = 60
     is_active: bool = True
 
 
 class NotificationConfig:
     def __init__(self):
-        self._channels: Dict[NotificationChannel, ChannelConfig] = {}
-        self._rules: Dict[str, NotificationRule] = {}
-        self._default_recipients: List[str] = []
+        self._channels: dict[NotificationChannel, ChannelConfig] = {}
+        self._rules: dict[str, NotificationRule] = {}
+        self._default_recipients: list[str] = []
         self._global_cooldown = 30
 
         self._severity_escalation = {
@@ -79,7 +79,7 @@ class NotificationConfig:
     def configure_channel(
         self,
         channel: NotificationChannel,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         is_enabled: bool = True,
         min_severity: NotificationSeverity = NotificationSeverity.MEDIUM,
     ) -> None:
@@ -90,7 +90,7 @@ class NotificationConfig:
             min_severity=min_severity,
         )
 
-    def get_channel_config(self, channel: NotificationChannel) -> Optional[ChannelConfig]:
+    def get_channel_config(self, channel: NotificationChannel) -> ChannelConfig | None:
         return self._channels.get(channel)
 
     def is_channel_enabled(self, channel: NotificationChannel) -> bool:
@@ -100,10 +100,10 @@ class NotificationConfig:
     def create_rule(
         self,
         rule_name: str,
-        triggers: List[NotificationTrigger],
-        channels: List[NotificationChannel],
+        triggers: list[NotificationTrigger],
+        channels: list[NotificationChannel],
         min_severity: NotificationSeverity,
-        recipients: List[str] = None,
+        recipients: list[str] | None = None,
         cooldown_minutes: int = 60,
     ) -> NotificationRule:
         rule = NotificationRule(
@@ -117,12 +117,12 @@ class NotificationConfig:
         self._rules[rule_name] = rule
         return rule
 
-    def get_rule(self, rule_name: str) -> Optional[NotificationRule]:
+    def get_rule(self, rule_name: str) -> NotificationRule | None:
         return self._rules.get(rule_name)
 
     def get_rules_for_trigger(
         self, trigger: NotificationTrigger, severity: NotificationSeverity
-    ) -> List[NotificationRule]:
+    ) -> list[NotificationRule]:
         matching_rules = []
         severity_order = list(NotificationSeverity)
 
@@ -137,10 +137,10 @@ class NotificationConfig:
 
         return matching_rules
 
-    def set_default_recipients(self, recipients: List[str]) -> None:
+    def set_default_recipients(self, recipients: list[str]) -> None:
         self._default_recipients = recipients
 
-    def get_default_recipients(self) -> List[str]:
+    def get_default_recipients(self) -> list[str]:
         return self._default_recipients.copy()
 
     def set_global_cooldown(self, minutes: int) -> None:
@@ -148,14 +148,14 @@ class NotificationConfig:
 
     def get_escalation_channels(
         self, severity: NotificationSeverity
-    ) -> List[NotificationChannel]:
+    ) -> list[NotificationChannel]:
         return self._severity_escalation.get(severity, [])
 
     def toggle_rule(self, rule_name: str, is_active: bool) -> None:
         if rule_name in self._rules:
             self._rules[rule_name].is_active = is_active
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "channels": {
                 ch.value: {

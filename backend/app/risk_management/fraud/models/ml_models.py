@@ -4,11 +4,12 @@ Machine Learning Models
 Defines data structures for ML-based fraud detection.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class ModelType(str, Enum):
@@ -40,13 +41,13 @@ class MLModel(BaseModel):
     algorithm: str
     framework: str
 
-    features: List[str] = Field(default_factory=list)
-    target_variable: Optional[str] = None
+    features: list[str] = Field(default_factory=list)
+    target_variable: str | None = None
 
-    hyperparameters: Dict[str, Any] = Field(default_factory=dict)
+    hyperparameters: dict[str, Any] = Field(default_factory=dict)
 
-    training_data_start: Optional[datetime] = None
-    training_data_end: Optional[datetime] = None
+    training_data_start: datetime | None = None
+    training_data_end: datetime | None = None
     training_samples: int = 0
 
     accuracy: float = 0.0
@@ -57,31 +58,31 @@ class MLModel(BaseModel):
 
     threshold: float = 0.5
 
-    model_path: Optional[str] = None
+    model_path: str | None = None
     model_size_mb: float = 0.0
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    trained_at: Optional[datetime] = None
-    activated_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    trained_at: datetime | None = None
+    activated_at: datetime | None = None
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ModelPrediction(BaseModel):
     prediction_id: UUID = Field(default_factory=uuid4)
     model_id: UUID
 
-    input_data: Dict[str, Any]
+    input_data: dict[str, Any]
 
     prediction: Any
     probability: float = 0.0
     confidence: float = 0.0
 
-    features_used: Dict[str, Any] = Field(default_factory=dict)
-    feature_importance: Dict[str, float] = Field(default_factory=dict)
+    features_used: dict[str, Any] = Field(default_factory=dict)
+    feature_importance: dict[str, float] = Field(default_factory=dict)
 
-    predicted_at: datetime = Field(default_factory=datetime.utcnow)
+    predicted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     prediction_time_ms: float = 0.0
 
     is_fraud: bool = False
@@ -94,20 +95,20 @@ class ModelTrainingJob(BaseModel):
 
     status: str = "pending"
 
-    training_config: Dict[str, Any] = Field(default_factory=dict)
+    training_config: dict[str, Any] = Field(default_factory=dict)
 
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     epochs_completed: int = 0
     total_epochs: int = 0
     current_loss: float = 0.0
     current_accuracy: float = 0.0
 
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ModelPerformanceMetrics(BaseModel):
@@ -133,7 +134,7 @@ class ModelPerformanceMetrics(BaseModel):
     drift_score: float = 0.0
     needs_retraining: bool = False
 
-    calculated_at: datetime = Field(default_factory=datetime.utcnow)
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FeatureStore(BaseModel):
@@ -144,22 +145,22 @@ class FeatureStore(BaseModel):
     description: str
     calculation_logic: str
 
-    source_tables: List[str] = Field(default_factory=list)
-    dependencies: List[str] = Field(default_factory=list)
+    source_tables: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
 
     refresh_frequency: str = "daily"
-    last_refresh: Optional[datetime] = None
+    last_refresh: datetime | None = None
 
     is_active: bool = True
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class MLModelStatistics(BaseModel):
     total_models: int = 0
     active_models: int = 0
-    by_type: Dict[str, int] = Field(default_factory=dict)
+    by_type: dict[str, int] = Field(default_factory=dict)
     total_predictions_today: int = 0
     average_accuracy: float = 0.0
     models_requiring_retraining: int = 0

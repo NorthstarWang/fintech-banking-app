@@ -2,7 +2,7 @@
 Unified financial manager for cross-asset operations and aggregations.
 """
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from ..models import AssetBridge, AssetClass, CollateralPosition, ConversionRate, UnifiedBalance, UnifiedTransferStatus
@@ -132,7 +132,7 @@ class UnifiedManager:
             debt_to_asset_ratio=debt_to_asset_ratio,
             liquid_assets=liquid_assets,
             illiquid_assets=illiquid_assets,
-            last_updated=datetime.utcnow()
+            last_updated=datetime.now(UTC)
         )
 
         # Store in data manager
@@ -188,7 +188,7 @@ class UnifiedManager:
             fees=fees,
             total_fees_usd=fees['total_fee'],
             status=UnifiedTransferStatus.PENDING,
-            initiated_at=datetime.utcnow()
+            initiated_at=datetime.now(UTC)
         )
 
         # Store in data manager
@@ -237,14 +237,14 @@ class UnifiedManager:
         if asset_class == AssetClass.CRYPTO:
             # Would create a new wallet
             return f"wallet_{len(self.data_manager.crypto_wallets) + 1}"
-        return f"{asset_class.value}_{datetime.utcnow().timestamp()}"
+        return f"{asset_class.value}_{datetime.now(UTC).timestamp()}"
 
     def _process_bridge(self, bridge: AssetBridge):
         """Simulate processing of asset bridge."""
         # In production, this would handle actual transfers
         # For now, just update status after a delay
         bridge.status = UnifiedTransferStatus.COMPLETED
-        bridge.completed_at = datetime.utcnow()
+        bridge.completed_at = datetime.now(UTC)
 
         # Update in data manager
         for b in self.data_manager.asset_bridges:

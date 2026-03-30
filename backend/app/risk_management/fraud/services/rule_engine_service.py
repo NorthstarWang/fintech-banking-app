@@ -1,18 +1,24 @@
 """Rule Engine Service - Rule-based fraud detection"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.fraud_rule_models import (
-    FraudRule, RuleSet, RuleEvaluationResult, RulePerformanceMetrics,
-    RuleType, RuleStatus, RuleAction, RuleCondition
+    FraudRule,
+    RuleAction,
+    RuleCondition,
+    RuleEvaluationResult,
+    RuleSet,
+    RuleStatus,
+    RuleType,
 )
 
 
 class RuleEngineService:
     def __init__(self):
-        self._rules: Dict[UUID, FraudRule] = {}
-        self._rulesets: Dict[UUID, RuleSet] = {}
+        self._rules: dict[UUID, FraudRule] = {}
+        self._rulesets: dict[UUID, RuleSet] = {}
         self._initialize_default_rules()
 
     def _initialize_default_rules(self):
@@ -58,32 +64,32 @@ class RuleEngineService:
         self._rules[rule.rule_id] = rule
         return rule
 
-    async def get_rule(self, rule_id: UUID) -> Optional[FraudRule]:
+    async def get_rule(self, rule_id: UUID) -> FraudRule | None:
         return self._rules.get(rule_id)
 
-    async def update_rule(self, rule_id: UUID, updates: Dict[str, Any]) -> Optional[FraudRule]:
+    async def update_rule(self, rule_id: UUID, updates: dict[str, Any]) -> FraudRule | None:
         rule = self._rules.get(rule_id)
         if rule:
             for key, value in updates.items():
                 if hasattr(rule, key):
                     setattr(rule, key, value)
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = datetime.now(UTC)
             rule.version += 1
         return rule
 
-    async def toggle_rule(self, rule_id: UUID, is_active: bool) -> Optional[FraudRule]:
+    async def toggle_rule(self, rule_id: UUID, is_active: bool) -> FraudRule | None:
         rule = self._rules.get(rule_id)
         if rule:
             rule.status = RuleStatus.ACTIVE if is_active else RuleStatus.INACTIVE
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = datetime.now(UTC)
         return rule
 
-    async def evaluate_transaction(self, transaction: Dict[str, Any]) -> List[RuleEvaluationResult]:
+    async def evaluate_transaction(self, transaction: dict[str, Any]) -> list[RuleEvaluationResult]:
         results = []
         for rule in self._rules.values():
             if rule.status != RuleStatus.ACTIVE:
                 continue
-            start_time = datetime.utcnow()
+            start_time = datetime.now(UTC)
             matched, conditions_matched = self._evaluate_rule(rule, transaction)
             result = RuleEvaluationResult(
                 rule_id=rule.rule_id,
@@ -92,15 +98,15 @@ class RuleEngineService:
                 score=rule.score_weight if matched else 0.0,
                 action=rule.action if matched else RuleAction.LOG,
                 conditions_matched=conditions_matched,
-                evaluation_time_ms=(datetime.utcnow() - start_time).total_seconds() * 1000
+                evaluation_time_ms=(datetime.now(UTC) - start_time).total_seconds() * 1000
             )
             results.append(result)
             if matched:
                 rule.hit_count += 1
-                rule.last_hit_at = datetime.utcnow()
+                rule.last_hit_at = datetime.now(UTC)
         return results
 
-    def _evaluate_rule(self, rule: FraudRule, transaction: Dict[str, Any]) -> tuple:
+    def _evaluate_rule(self, rule: FraudRule, transaction: dict[str, Any]) -> tuple:
         conditions_matched = []
         for condition in rule.conditions:
             value = transaction.get(condition.field)
@@ -127,10 +133,10 @@ class RuleEngineService:
             return op_func(value, condition.value)
         return False
 
-    async def get_all_rules(self) -> List[FraudRule]:
+    async def get_all_rules(self) -> list[FraudRule]:
         return list(self._rules.values())
 
-    async def get_active_rules(self) -> List[FraudRule]:
+    async def get_active_rules(self) -> list[FraudRule]:
         return [r for r in self._rules.values() if r.status == RuleStatus.ACTIVE]
 
 

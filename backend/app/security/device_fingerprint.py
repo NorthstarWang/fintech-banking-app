@@ -5,7 +5,7 @@ Captures device signatures and manages trusted devices per user.
 """
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -62,15 +62,15 @@ class DeviceFingerprint:
                 user_id=user_id,
                 fingerprint_hash=fingerprint_hash,
                 device_name=device_name,
-                first_seen=datetime.utcnow(),
-                last_seen_at=datetime.utcnow(),
+                first_seen=datetime.now(UTC),
+                last_seen_at=datetime.now(UTC),
                 is_trusted=False,
             )
             db.add(device)
             db.commit()
 
         # Update last seen
-        device.last_seen_at = datetime.utcnow()
+        device.last_seen_at = datetime.now(UTC)
         db.commit()
 
         # Ensure the device object is properly tracked for future updates
@@ -107,7 +107,7 @@ class DeviceFingerprint:
                 if item.get('id') == device_id:
                     # Update the dict in place, not replace it
                     item['is_trusted'] = True
-                    item['last_seen_at'] = datetime.utcnow()
+                    item['last_seen_at'] = datetime.now(UTC)
                     break
 
     @staticmethod
@@ -133,7 +133,7 @@ class DeviceFingerprint:
         # Get user's trusted devices
         trusted_devices = db.query(TrustedDevice).filter(
             TrustedDevice.user_id == user_id,
-            TrustedDevice.is_trusted == True,
+            TrustedDevice.is_trusted == True,  # noqa: E712
         ).all()
 
         # Check if this fingerprint matches any trusted device
@@ -148,15 +148,14 @@ class DeviceFingerprint:
             untrusted_device = db.query(TrustedDevice).filter(
                 TrustedDevice.user_id == user_id,
                 TrustedDevice.fingerprint_hash == fingerprint_hash,
-                TrustedDevice.is_trusted == False,
+                TrustedDevice.is_trusted == False,  # noqa: E712
             ).first()
 
             if untrusted_device:
                 indicators.append("untrusted_device")
                 return True, indicators
-            else:
-                indicators.append("new_device")
-                return True, indicators
+            indicators.append("new_device")
+            return True, indicators
 
         # Device matches a trusted device - no change
         return False, indicators
@@ -186,7 +185,7 @@ class DeviceFingerprint:
     @staticmethod
     def cleanup_old_devices(db: Session, days: int = 90) -> int:
         """Remove devices not seen in specified days."""
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
         # Get all devices and filter manually to ensure we catch all old ones
         all_devices = db.query(TrustedDevice).all()

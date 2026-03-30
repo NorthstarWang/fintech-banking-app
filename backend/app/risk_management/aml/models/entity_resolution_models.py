@@ -4,11 +4,12 @@ Entity Resolution Models
 Defines data structures for entity resolution and identity matching.
 """
 
+from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class EntityType(str, Enum):
@@ -54,11 +55,11 @@ class NameVariant(BaseModel):
     variant_id: UUID = Field(default_factory=uuid4)
     name_type: str  # legal, maiden, alias, trading_name, former
     full_name: str
-    first_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    last_name: Optional[str] = None
-    suffix: Optional[str] = None
-    prefix: Optional[str] = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    suffix: str | None = None
+    prefix: str | None = None
     source_system: str
     confidence: float = 1.0
     is_primary: bool = False
@@ -69,14 +70,14 @@ class AddressRecord(BaseModel):
     address_id: UUID = Field(default_factory=uuid4)
     address_type: str  # residential, business, mailing, registered
     address_line1: str
-    address_line2: Optional[str] = None
+    address_line2: str | None = None
     city: str
-    state_province: Optional[str] = None
-    postal_code: Optional[str] = None
+    state_province: str | None = None
+    postal_code: str | None = None
     country: str
     is_current: bool = True
-    valid_from: Optional[datetime] = None
-    valid_to: Optional[datetime] = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
     source_system: str
     confidence: float = 1.0
 
@@ -86,10 +87,10 @@ class IdentifierRecord(BaseModel):
     identifier_id: UUID = Field(default_factory=uuid4)
     identifier_type: str  # ssn, ein, passport, account, phone, email
     identifier_value: str
-    issuing_authority: Optional[str] = None
-    issuing_country: Optional[str] = None
-    issue_date: Optional[date] = None
-    expiry_date: Optional[date] = None
+    issuing_authority: str | None = None
+    issuing_country: str | None = None
+    issue_date: date | None = None
+    expiry_date: date | None = None
     is_verified: bool = False
     source_system: str
     confidence: float = 1.0
@@ -101,10 +102,10 @@ class RelationshipRecord(BaseModel):
     related_entity_id: UUID
     relationship_type: str  # spouse, child, parent, employer, employee, owner, director
     relationship_role: str  # from perspective of the primary entity
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     is_active: bool = True
-    ownership_percentage: Optional[float] = None
+    ownership_percentage: float | None = None
     source_system: str
     confidence: float = 1.0
 
@@ -116,31 +117,31 @@ class MasterEntity(BaseModel):
 
     # Resolved name
     primary_name: str
-    name_variants: List[NameVariant] = Field(default_factory=list)
+    name_variants: list[NameVariant] = Field(default_factory=list)
 
     # Demographics (for individuals)
-    date_of_birth: Optional[date] = None
-    gender: Optional[str] = None
-    nationalities: List[str] = Field(default_factory=list)
+    date_of_birth: date | None = None
+    gender: str | None = None
+    nationalities: list[str] = Field(default_factory=list)
 
     # Organization details
-    incorporation_date: Optional[date] = None
-    incorporation_country: Optional[str] = None
-    business_type: Optional[str] = None
+    incorporation_date: date | None = None
+    incorporation_country: str | None = None
+    business_type: str | None = None
 
     # Addresses
-    addresses: List[AddressRecord] = Field(default_factory=list)
-    primary_address: Optional[AddressRecord] = None
+    addresses: list[AddressRecord] = Field(default_factory=list)
+    primary_address: AddressRecord | None = None
 
     # Identifiers
-    identifiers: List[IdentifierRecord] = Field(default_factory=list)
+    identifiers: list[IdentifierRecord] = Field(default_factory=list)
 
     # Relationships
-    relationships: List[RelationshipRecord] = Field(default_factory=list)
+    relationships: list[RelationshipRecord] = Field(default_factory=list)
 
     # Source records
-    source_record_ids: List[str] = Field(default_factory=list)
-    source_systems: List[str] = Field(default_factory=list)
+    source_record_ids: list[str] = Field(default_factory=list)
+    source_systems: list[str] = Field(default_factory=list)
 
     # Data quality
     completeness_score: float = 0.0
@@ -151,19 +152,19 @@ class MasterEntity(BaseModel):
 
     # Risk attributes
     risk_score: float = 0.0
-    risk_flags: List[str] = Field(default_factory=list)
+    risk_flags: list[str] = Field(default_factory=list)
     is_pep: bool = False
     is_sanctioned: bool = False
     is_on_watchlist: bool = False
 
     # Status
     status: str = "active"
-    merge_history: List[Dict[str, Any]] = Field(default_factory=list)
+    merge_history: list[dict[str, Any]] = Field(default_factory=list)
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    last_resolved_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_resolved_at: datetime | None = None
 
 
 class SourceRecord(BaseModel):
@@ -173,23 +174,23 @@ class SourceRecord(BaseModel):
     entity_type: EntityType
 
     # Raw data
-    raw_data: Dict[str, Any] = Field(default_factory=dict)
+    raw_data: dict[str, Any] = Field(default_factory=dict)
 
     # Extracted attributes
-    names: List[NameVariant] = Field(default_factory=list)
-    addresses: List[AddressRecord] = Field(default_factory=list)
-    identifiers: List[IdentifierRecord] = Field(default_factory=list)
-    date_of_birth: Optional[date] = None
-    additional_attributes: Dict[str, Any] = Field(default_factory=dict)
+    names: list[NameVariant] = Field(default_factory=list)
+    addresses: list[AddressRecord] = Field(default_factory=list)
+    identifiers: list[IdentifierRecord] = Field(default_factory=list)
+    date_of_birth: date | None = None
+    additional_attributes: dict[str, Any] = Field(default_factory=dict)
 
     # Resolution status
-    master_entity_id: Optional[UUID] = None
+    master_entity_id: UUID | None = None
     resolution_status: ResolutionStatus = ResolutionStatus.PENDING
     resolution_confidence: float = 0.0
 
     # Timestamps
-    ingested_at: datetime = Field(default_factory=datetime.utcnow)
-    resolved_at: Optional[datetime] = None
+    ingested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    resolved_at: datetime | None = None
 
 
 class MatchCandidate(BaseModel):
@@ -213,18 +214,18 @@ class MatchCandidate(BaseModel):
     dob_score: float = 0.0
 
     # Matching details
-    matching_fields: List[str] = Field(default_factory=list)
-    non_matching_fields: List[str] = Field(default_factory=list)
-    score_breakdown: Dict[str, float] = Field(default_factory=dict)
+    matching_fields: list[str] = Field(default_factory=list)
+    non_matching_fields: list[str] = Field(default_factory=list)
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
 
     # Status
     status: str = "pending"  # pending, confirmed, rejected
-    resolved_by: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    resolution_notes: Optional[str] = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    resolution_notes: str | None = None
 
     # Timestamps
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class MergeOperation(BaseModel):
@@ -236,30 +237,30 @@ class MergeOperation(BaseModel):
 
     # Entities involved
     surviving_entity_id: UUID
-    merged_entity_ids: List[UUID] = Field(default_factory=list)
+    merged_entity_ids: list[UUID] = Field(default_factory=list)
 
     # Match information
-    match_candidate_ids: List[UUID] = Field(default_factory=list)
+    match_candidate_ids: list[UUID] = Field(default_factory=list)
     merge_confidence: float
 
     # Before/After
-    pre_merge_state: Dict[str, Any] = Field(default_factory=dict)
-    post_merge_state: Dict[str, Any] = Field(default_factory=dict)
+    pre_merge_state: dict[str, Any] = Field(default_factory=dict)
+    post_merge_state: dict[str, Any] = Field(default_factory=dict)
 
     # Conflicts resolved
-    conflicts: List[Dict[str, Any]] = Field(default_factory=list)
-    conflict_resolutions: List[Dict[str, Any]] = Field(default_factory=list)
+    conflicts: list[dict[str, Any]] = Field(default_factory=list)
+    conflict_resolutions: list[dict[str, Any]] = Field(default_factory=list)
 
     # Performed by
     performed_by: str
-    performed_at: datetime = Field(default_factory=datetime.utcnow)
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
+    performed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    approved_by: str | None = None
+    approved_at: datetime | None = None
 
     # Rollback
     can_rollback: bool = True
     rolled_back: bool = False
-    rollback_at: Optional[datetime] = None
+    rollback_at: datetime | None = None
 
 
 class SplitOperation(BaseModel):
@@ -270,17 +271,17 @@ class SplitOperation(BaseModel):
     original_entity_id: UUID
 
     # New entities
-    new_entity_ids: List[UUID] = Field(default_factory=list)
+    new_entity_ids: list[UUID] = Field(default_factory=list)
 
     # Split details
     split_reason: str
-    record_assignments: Dict[str, str] = Field(default_factory=dict)  # record_id -> new_entity_id
+    record_assignments: dict[str, str] = Field(default_factory=dict)  # record_id -> new_entity_id
 
     # Performed by
     performed_by: str
-    performed_at: datetime = Field(default_factory=datetime.utcnow)
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
+    performed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    approved_by: str | None = None
+    approved_at: datetime | None = None
 
 
 class ResolutionRule(BaseModel):
@@ -291,8 +292,8 @@ class ResolutionRule(BaseModel):
 
     # Rule configuration
     entity_type: EntityType
-    match_fields: List[str] = Field(default_factory=list)
-    field_weights: Dict[str, float] = Field(default_factory=dict)
+    match_fields: list[str] = Field(default_factory=list)
+    field_weights: dict[str, float] = Field(default_factory=dict)
     threshold: float = 0.85
 
     # Auto-merge settings
@@ -305,8 +306,8 @@ class ResolutionRule(BaseModel):
 
     # Metadata
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ResolutionJob(BaseModel):
@@ -316,9 +317,9 @@ class ResolutionJob(BaseModel):
 
     # Scope
     entity_type: EntityType
-    source_systems: List[str] = Field(default_factory=list)
-    date_range_start: Optional[datetime] = None
-    date_range_end: Optional[datetime] = None
+    source_systems: list[str] = Field(default_factory=list)
+    date_range_start: datetime | None = None
+    date_range_end: datetime | None = None
 
     # Progress
     total_records: int = 0
@@ -330,12 +331,12 @@ class ResolutionJob(BaseModel):
 
     # Status
     status: str = "pending"  # pending, running, completed, failed
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Created by
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EntityResolutionStatistics(BaseModel):
@@ -346,8 +347,8 @@ class EntityResolutionStatistics(BaseModel):
     pending_review: int = 0
     auto_merge_rate: float = 0.0
     average_match_score: float = 0.0
-    by_entity_type: Dict[str, int] = Field(default_factory=dict)
-    by_source_system: Dict[str, int] = Field(default_factory=dict)
+    by_entity_type: dict[str, int] = Field(default_factory=dict)
+    by_source_system: dict[str, int] = Field(default_factory=dict)
     matches_this_month: int = 0
     merges_this_month: int = 0
     splits_this_month: int = 0

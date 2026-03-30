@@ -1,7 +1,7 @@
 import asyncio
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 # In-memory storage for verification codes (in production, use Redis or database)
 verification_codes = {}
@@ -43,7 +43,7 @@ def store_verification_code(user_id: int, method: str, code: str, expiry_minutes
     key = f"{user_id}:{method}"
     verification_codes[key] = {
         "code": code,
-        "expires_at": datetime.utcnow() + timedelta(minutes=expiry_minutes),
+        "expires_at": datetime.now(UTC) + timedelta(minutes=expiry_minutes),
         "attempts": 0
     }
 
@@ -57,7 +57,7 @@ def verify_code(user_id: int, method: str, code: str) -> tuple[bool, str]:
     stored = verification_codes[key]
 
     # Check expiry
-    if datetime.utcnow() > stored["expires_at"]:
+    if datetime.now(UTC) > stored["expires_at"]:
         del verification_codes[key]
         return False, "Verification code expired"
 

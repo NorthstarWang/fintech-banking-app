@@ -2,6 +2,8 @@
 Credit card recommendation and application API routes.
 """
 
+from datetime import UTC
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.repositories.credit_card_manager import CreditCardManager
@@ -197,11 +199,6 @@ async def submit_application(
     """Submit a credit card application."""
     try:
         card_id = application_data.get("card_id")
-        annual_income = application_data.get("annual_income")
-        employment_type = application_data.get("employment_type")
-        employment_duration_months = application_data.get("employment_duration_months")
-        housing_payment = application_data.get("housing_payment")
-        existing_cards_count = application_data.get("existing_cards_count")
         requested_credit_limit = application_data.get("requested_credit_limit")
 
         return card_manager.apply_for_card(
@@ -563,7 +560,7 @@ def _get_payment_due_date(card: dict) -> str:
     """Get payment due date (mock)."""
     from datetime import datetime, timedelta
     # Assume 25 days from now
-    due_date = datetime.utcnow() + timedelta(days=25)
+    due_date = datetime.now(UTC) + timedelta(days=25)
     return due_date.strftime("%Y-%m-%d")
 
 def _calculate_minimum_payment(card: dict) -> float:

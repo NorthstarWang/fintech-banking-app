@@ -2,7 +2,7 @@
 Credit manager for generating comprehensive mock credit data.
 """
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from ..models import (
     CreditAlertSeverity,
@@ -49,7 +49,7 @@ class CreditManager:
 
         # Generate scores for the last 24 months
         for months_ago in range(24):
-            score_date = datetime.utcnow() - timedelta(days=months_ago * 30)
+            score_date = datetime.now(UTC) - timedelta(days=months_ago * 30)
 
             # Add variation over time
             variation = random.randint(-20, 25)
@@ -194,7 +194,7 @@ class CreditManager:
 
         for i, alert_template in enumerate(selected_alerts):
             days_ago = random.randint(0, 90)
-            alert_date = datetime.utcnow() - timedelta(days=days_ago)
+            alert_date = datetime.now(UTC) - timedelta(days=days_ago)
 
             alert = {
                 'id': len(self.data_manager.credit_alerts) + 1,
@@ -250,7 +250,7 @@ class CreditManager:
         for dispute_template in selected_disputes:
             # Random filing date in last 6 months
             days_ago = random.randint(30, 180)
-            filed_date = datetime.utcnow() - timedelta(days=days_ago)
+            filed_date = datetime.now(UTC) - timedelta(days=days_ago)
 
             # Determine status based on age
             if days_ago > 120:
@@ -314,7 +314,7 @@ class CreditManager:
         for account_template in selected_accounts:
             # Account age in months
             account_age_months = random.randint(3, 24)
-            opened_date = datetime.utcnow() - timedelta(days=account_age_months * 30)
+            opened_date = datetime.now(UTC) - timedelta(days=account_age_months * 30)
 
             # Generate payment history
             payment_history = []
@@ -350,7 +350,7 @@ class CreditManager:
                 'current_balance': format_money(max(0, current_balance)),
                 'payment_history': payment_history,
                 'graduation_eligible': graduation_eligible,
-                'graduation_date': datetime.utcnow() if graduation_eligible else None,
+                'graduation_date': datetime.now(UTC) if graduation_eligible else None,
                 'reports_to_bureaus': ['equifax', 'experian', 'transunion'],
                 'auto_pay_enabled': random.random() < 0.7,
                 'monthly_fee': format_money(account_template['monthly_fee']),
@@ -390,7 +390,7 @@ class CreditManager:
         for _i in range(num_simulations):
             sim_template = random.choice(simulation_types)
             days_ago = random.randint(1, 90)
-            simulation_date = datetime.utcnow() - timedelta(days=days_ago)
+            simulation_date = datetime.now(UTC) - timedelta(days=days_ago)
 
             # Get a base score
             base_score = 650 + (user_id * 7) % 100

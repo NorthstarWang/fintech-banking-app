@@ -4,13 +4,18 @@ Watchlist Routes
 API endpoints for watchlist management.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.watchlist_models import (
-    Watchlist, WatchlistEntry, WatchlistType, WatchlistCategory,
-    WatchlistScreeningRequest, WatchlistScreeningResult, WatchlistStatistics
+    Watchlist,
+    WatchlistCategory,
+    WatchlistScreeningRequest,
+    WatchlistScreeningResult,
+    WatchlistStatistics,
+    WatchlistType,
 )
 from ..services.watchlist_service import watchlist_service
 
@@ -28,7 +33,7 @@ async def create_watchlist(
     )
 
 
-@router.get("/", response_model=List[Watchlist])
+@router.get("/", response_model=list[Watchlist])
 async def get_all_watchlists():
     """Get all watchlists"""
     return await watchlist_service.get_all_watchlists()
@@ -44,7 +49,7 @@ async def get_watchlist(watchlist_id: UUID):
 
 
 @router.put("/{watchlist_id}")
-async def update_watchlist(watchlist_id: UUID, updates: Dict[str, Any], updated_by: str = "system"):
+async def update_watchlist(watchlist_id: UUID, updates: dict[str, Any], updated_by: str = "system"):
     """Update a watchlist"""
     watchlist = await watchlist_service.update_watchlist(watchlist_id, updates, updated_by)
     if not watchlist:
@@ -53,7 +58,7 @@ async def update_watchlist(watchlist_id: UUID, updates: Dict[str, Any], updated_
 
 
 @router.post("/{watchlist_id}/entries")
-async def add_entry(watchlist_id: UUID, entry_data: Dict[str, Any], created_by: str = "system"):
+async def add_entry(watchlist_id: UUID, entry_data: dict[str, Any], created_by: str = "system"):
     """Add entry to a watchlist"""
     try:
         return await watchlist_service.add_entry(watchlist_id, entry_data, created_by)
@@ -71,7 +76,7 @@ async def get_entry(entry_id: UUID):
 
 
 @router.put("/entries/{entry_id}")
-async def update_entry(entry_id: UUID, updates: Dict[str, Any], updated_by: str = "system"):
+async def update_entry(entry_id: UUID, updates: dict[str, Any], updated_by: str = "system"):
     """Update a watchlist entry"""
     entry = await watchlist_service.update_entry(entry_id, updates, updated_by)
     if not entry:
@@ -90,8 +95,8 @@ async def deactivate_entry(entry_id: UUID, reason: str, deactivated_by: str = "s
 
 @router.get("/entries/search")
 async def search_entries(
-    query: str, watchlist_ids: Optional[List[UUID]] = None,
-    categories: Optional[List[WatchlistCategory]] = None, active_only: bool = True
+    query: str, watchlist_ids: list[UUID] | None = None,
+    categories: list[WatchlistCategory] | None = None, active_only: bool = True
 ):
     """Search watchlist entries"""
     return await watchlist_service.search_entries(query, watchlist_ids, categories, active_only)
@@ -105,7 +110,7 @@ async def screen_entity(request: WatchlistScreeningRequest):
 
 @router.post("/matches/{match_id}/review")
 async def review_match(
-    match_id: UUID, status: str, reviewed_by: str, notes: Optional[str] = None
+    match_id: UUID, status: str, reviewed_by: str, notes: str | None = None
 ):
     """Review a watchlist match"""
     match = await watchlist_service.review_match(match_id, status, reviewed_by, notes)

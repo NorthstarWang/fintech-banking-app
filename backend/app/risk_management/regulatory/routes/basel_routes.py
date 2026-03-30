@@ -1,15 +1,13 @@
 """Basel III/IV Compliance API Routes"""
 
-from typing import List, Optional
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.basel_models import (
-    RiskWeightedAsset, CapitalRequirement, LiquidityCoverageRatio,
-    NetStableFundingRatio, LeverageRatio, CounterpartyCreditRisk,
-    LargeExposure, BaselReport, RWARiskType
+    RWARiskType,
 )
 from ..services.basel_service import basel_service
 
@@ -88,10 +86,10 @@ async def calculate_rwa(request: RWACalculationRequest):
     return {"rwa_id": str(rwa.rwa_id), "rwa_amount": float(rwa.rwa_amount), "risk_weight": float(rwa.risk_weight)}
 
 
-@router.get("/rwa", response_model=List[dict])
+@router.get("/rwa", response_model=list[dict])
 async def list_rwas(
-    risk_type: Optional[str] = None,
-    reporting_date: Optional[date] = None
+    risk_type: str | None = None,
+    reporting_date: date | None = None
 ):
     """List all Risk-Weighted Asset calculations"""
     if risk_type:
@@ -141,7 +139,7 @@ async def calculate_lcr(request: LCRCalculationRequest):
     return {"lcr_id": str(lcr.lcr_id), "lcr_ratio": float(lcr.lcr_ratio), "compliant": lcr.compliant}
 
 
-@router.get("/lcr/{entity_id}", response_model=List[dict])
+@router.get("/lcr/{entity_id}", response_model=list[dict])
 async def get_entity_lcrs(entity_id: str):
     """Get LCR history for an entity"""
     lcrs = await basel_service.repository.find_lcrs_by_entity(entity_id)
@@ -191,7 +189,7 @@ async def record_large_exposure(request: LargeExposureRequest):
     return {"exposure_id": str(exposure.exposure_id), "limit_breach": exposure.limit_breach}
 
 
-@router.get("/large-exposures/breached", response_model=List[dict])
+@router.get("/large-exposures/breached", response_model=list[dict])
 async def list_breached_exposures():
     """List all large exposures that breach limits"""
     exposures = await basel_service.repository.find_large_exposures_breached()

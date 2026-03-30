@@ -1,9 +1,11 @@
 """Data Catalog Routes"""
 
-from typing import List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.data_catalog_service import data_catalog_service
 
 router = APIRouter(prefix="/data-catalog", tags=["Data Catalog"])
@@ -20,14 +22,14 @@ class CreateEntryRequest(BaseModel):
     steward: str = ""
     domain: str = ""
     classification: str = "internal"
-    tags: List[str] = []
+    tags: list[str] = []
 
 
 class DefineSchemaRequest(BaseModel):
     entry_id: UUID
-    columns: List[Dict[str, Any]]
-    primary_keys: List[str]
-    foreign_keys: List[Dict[str, str]] = []
+    columns: list[dict[str, Any]]
+    primary_keys: list[str]
+    foreign_keys: list[dict[str, str]] = []
 
 
 class RecordUsageRequest(BaseModel):
@@ -65,9 +67,9 @@ class BookmarkDatasetRequest(BaseModel):
 class RecordSearchRequest(BaseModel):
     user_id: str
     search_query: str
-    filters_applied: Dict[str, Any]
+    filters_applied: dict[str, Any]
     results_count: int
-    clicked_results: List[UUID] = []
+    clicked_results: list[UUID] = []
 
 
 class CreateCollectionRequest(BaseModel):
@@ -75,7 +77,7 @@ class CreateCollectionRequest(BaseModel):
     description: str
     owner: str
     visibility: str = "private"
-    entries: List[UUID] = []
+    entries: list[UUID] = []
 
 
 class AddDictionaryEntryRequest(BaseModel):

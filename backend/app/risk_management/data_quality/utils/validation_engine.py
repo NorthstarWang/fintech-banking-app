@@ -1,12 +1,12 @@
 """Data Validation Engine"""
 
-from typing import List, Dict, Any, Optional, Callable
-from decimal import Decimal
-from datetime import datetime, date
-from dataclasses import dataclass, field
-from enum import Enum
 import re
-from uuid import UUID, uuid4
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
+from uuid import uuid4
 
 
 class ValidationSeverity(str, Enum):
@@ -30,7 +30,7 @@ class ValidationRuleDefinition:
     error_message: str
     severity: ValidationSeverity = ValidationSeverity.ERROR
     is_active: bool = True
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -54,15 +54,15 @@ class ValidationResult:
     records_evaluated: int
     records_passed: int
     records_failed: int
-    errors: List[ValidationError]
+    errors: list[ValidationError]
     execution_time_ms: int
     executed_at: datetime
 
 
 class ValidationEngine:
     def __init__(self):
-        self._rules: Dict[str, ValidationRuleDefinition] = {}
-        self._validators: Dict[str, Callable] = {}
+        self._rules: dict[str, ValidationRuleDefinition] = {}
+        self._validators: dict[str, Callable] = {}
         self._register_builtin_validators()
 
     def _register_builtin_validators(self) -> None:
@@ -88,7 +88,7 @@ class ValidationEngine:
         expression: str,
         error_message: str,
         severity: ValidationSeverity = ValidationSeverity.ERROR,
-        parameters: Dict[str, Any] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> ValidationRuleDefinition:
         rule_id = str(uuid4())
         rule = ValidationRuleDefinition(
@@ -108,10 +108,10 @@ class ValidationEngine:
 
     def validate_record(
         self,
-        record: Dict[str, Any],
-        rules: List[ValidationRuleDefinition],
+        record: dict[str, Any],
+        rules: list[ValidationRuleDefinition],
         record_id: str = "",
-    ) -> List[ValidationError]:
+    ) -> list[ValidationError]:
         errors = []
 
         for rule in rules:
@@ -138,7 +138,7 @@ class ValidationEngine:
                         invalid_value=str(value) if value is not None else "NULL",
                         expected_value=rule.expression,
                         severity=rule.severity,
-                        detected_at=datetime.utcnow(),
+                        detected_at=datetime.now(UTC),
                     )
                 )
 
@@ -146,11 +146,11 @@ class ValidationEngine:
 
     def validate_dataset(
         self,
-        data: List[Dict[str, Any]],
-        rules: List[ValidationRuleDefinition],
+        data: list[dict[str, Any]],
+        rules: list[ValidationRuleDefinition],
         id_field: str = "id",
     ) -> ValidationResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         all_errors = []
         records_passed = 0
 
@@ -163,7 +163,7 @@ class ValidationEngine:
             else:
                 records_passed += 1
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         exec_time = int((end_time - start_time).total_seconds() * 1000)
 
         return ValidationResult(
@@ -178,17 +178,17 @@ class ValidationEngine:
             executed_at=end_time,
         )
 
-    def _validate_not_null(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_not_null(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None:
             return False, "Value cannot be null"
         return True, None
 
-    def _validate_not_empty(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_not_empty(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None or value == "":
             return False, "Value cannot be empty"
         return True, None
 
-    def _validate_min_length(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_min_length(self, value: Any, params: dict[str, Any]) -> tuple:
         min_len = params.get("min_length", 0)
         if value is None:
             return False, f"Value must have minimum length of {min_len}"
@@ -196,7 +196,7 @@ class ValidationEngine:
             return False, f"Value length {len(str(value))} is less than minimum {min_len}"
         return True, None
 
-    def _validate_max_length(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_max_length(self, value: Any, params: dict[str, Any]) -> tuple:
         max_len = params.get("max_length", 1000)
         if value is None:
             return True, None
@@ -204,7 +204,7 @@ class ValidationEngine:
             return False, f"Value length {len(str(value))} exceeds maximum {max_len}"
         return True, None
 
-    def _validate_regex(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_regex(self, value: Any, params: dict[str, Any]) -> tuple:
         pattern = params.get("pattern", ".*")
         if value is None:
             return False, "Value cannot be null for regex validation"
@@ -212,7 +212,7 @@ class ValidationEngine:
             return False, f"Value does not match pattern {pattern}"
         return True, None
 
-    def _validate_email(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_email(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None:
             return False, "Email cannot be null"
         email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
@@ -220,7 +220,7 @@ class ValidationEngine:
             return False, "Invalid email format"
         return True, None
 
-    def _validate_numeric(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_numeric(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None:
             return False, "Value cannot be null for numeric validation"
         try:
@@ -229,7 +229,7 @@ class ValidationEngine:
         except (ValueError, TypeError):
             return False, "Value must be numeric"
 
-    def _validate_integer(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_integer(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None:
             return False, "Value cannot be null for integer validation"
         try:
@@ -238,7 +238,7 @@ class ValidationEngine:
         except (ValueError, TypeError):
             return False, "Value must be an integer"
 
-    def _validate_positive(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_positive(self, value: Any, params: dict[str, Any]) -> tuple:
         if value is None:
             return False, "Value cannot be null"
         try:
@@ -249,7 +249,7 @@ class ValidationEngine:
         except (ValueError, TypeError):
             return False, "Value must be numeric and positive"
 
-    def _validate_range(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_range(self, value: Any, params: dict[str, Any]) -> tuple:
         min_val = params.get("min")
         max_val = params.get("max")
 
@@ -266,7 +266,7 @@ class ValidationEngine:
         except (ValueError, TypeError):
             return False, "Value must be numeric for range validation"
 
-    def _validate_date_format(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_date_format(self, value: Any, params: dict[str, Any]) -> tuple:
         date_format = params.get("format", "%Y-%m-%d")
 
         if value is None:
@@ -278,7 +278,7 @@ class ValidationEngine:
         except ValueError:
             return False, f"Invalid date format, expected {date_format}"
 
-    def _validate_in_list(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_in_list(self, value: Any, params: dict[str, Any]) -> tuple:
         allowed_values = params.get("values", [])
 
         if value is None:
@@ -288,7 +288,7 @@ class ValidationEngine:
             return False, f"Value must be one of: {allowed_values}"
         return True, None
 
-    def _validate_unique(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_unique(self, value: Any, params: dict[str, Any]) -> tuple:
         existing_values = params.get("existing_values", set())
 
         if value is None:
@@ -298,7 +298,7 @@ class ValidationEngine:
             return False, "Value must be unique"
         return True, None
 
-    def _validate_referential(self, value: Any, params: Dict[str, Any]) -> tuple:
+    def _validate_referential(self, value: Any, params: dict[str, Any]) -> tuple:
         reference_values = params.get("reference_values", set())
 
         if value is None:
@@ -311,13 +311,13 @@ class ValidationEngine:
             return False, "Foreign key reference not found"
         return True, None
 
-    def get_rule(self, rule_id: str) -> Optional[ValidationRuleDefinition]:
+    def get_rule(self, rule_id: str) -> ValidationRuleDefinition | None:
         return self._rules.get(rule_id)
 
-    def get_all_rules(self) -> List[ValidationRuleDefinition]:
+    def get_all_rules(self) -> list[ValidationRuleDefinition]:
         return list(self._rules.values())
 
-    def get_available_validators(self) -> List[str]:
+    def get_available_validators(self) -> list[str]:
         return list(self._validators.keys())
 
 

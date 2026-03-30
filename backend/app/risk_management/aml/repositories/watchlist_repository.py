@@ -4,35 +4,30 @@ Watchlist Repository
 Data access layer for watchlist management.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 from uuid import UUID
 
-from ..models.watchlist_models import (
-    Watchlist, WatchlistEntry, WatchlistType, WatchlistCategory,
-    WatchlistMatch, WatchlistAuditLog
-)
+from ..models.watchlist_models import Watchlist, WatchlistAuditLog, WatchlistCategory, WatchlistEntry, WatchlistMatch
 
 
 class WatchlistRepository:
     """Repository for watchlist data access"""
 
     def __init__(self):
-        self._watchlists: Dict[UUID, Watchlist] = {}
-        self._entries: Dict[UUID, WatchlistEntry] = {}
-        self._matches: Dict[UUID, WatchlistMatch] = {}
-        self._audit_logs: List[WatchlistAuditLog] = []
+        self._watchlists: dict[UUID, Watchlist] = {}
+        self._entries: dict[UUID, WatchlistEntry] = {}
+        self._matches: dict[UUID, WatchlistMatch] = {}
+        self._audit_logs: list[WatchlistAuditLog] = []
 
     async def create_watchlist(self, watchlist: Watchlist) -> Watchlist:
         """Create a new watchlist"""
         self._watchlists[watchlist.watchlist_id] = watchlist
         return watchlist
 
-    async def get_watchlist(self, watchlist_id: UUID) -> Optional[Watchlist]:
+    async def get_watchlist(self, watchlist_id: UUID) -> Watchlist | None:
         """Get watchlist by ID"""
         return self._watchlists.get(watchlist_id)
 
-    async def get_watchlist_by_code(self, code: str) -> Optional[Watchlist]:
+    async def get_watchlist_by_code(self, code: str) -> Watchlist | None:
         """Get watchlist by code"""
         for watchlist in self._watchlists.values():
             if watchlist.watchlist_code == code:
@@ -51,11 +46,11 @@ class WatchlistRepository:
             return True
         return False
 
-    async def get_all_watchlists(self) -> List[Watchlist]:
+    async def get_all_watchlists(self) -> list[Watchlist]:
         """Get all watchlists"""
         return list(self._watchlists.values())
 
-    async def find_active_watchlists(self) -> List[Watchlist]:
+    async def find_active_watchlists(self) -> list[Watchlist]:
         """Find active watchlists"""
         return [w for w in self._watchlists.values() if w.is_active]
 
@@ -64,7 +59,7 @@ class WatchlistRepository:
         self._entries[entry.entry_id] = entry
         return entry
 
-    async def get_entry(self, entry_id: UUID) -> Optional[WatchlistEntry]:
+    async def get_entry(self, entry_id: UUID) -> WatchlistEntry | None:
         """Get entry by ID"""
         return self._entries.get(entry_id)
 
@@ -80,19 +75,19 @@ class WatchlistRepository:
             return True
         return False
 
-    async def find_entries_by_watchlist(self, watchlist_id: UUID) -> List[WatchlistEntry]:
+    async def find_entries_by_watchlist(self, watchlist_id: UUID) -> list[WatchlistEntry]:
         """Find entries by watchlist"""
         return [e for e in self._entries.values() if e.watchlist_id == watchlist_id]
 
-    async def find_active_entries(self) -> List[WatchlistEntry]:
+    async def find_active_entries(self) -> list[WatchlistEntry]:
         """Find active entries"""
         return [e for e in self._entries.values() if e.is_active]
 
-    async def find_entries_by_category(self, category: WatchlistCategory) -> List[WatchlistEntry]:
+    async def find_entries_by_category(self, category: WatchlistCategory) -> list[WatchlistEntry]:
         """Find entries by category"""
         return [e for e in self._entries.values() if e.category == category]
 
-    async def search_entries(self, query: str) -> List[WatchlistEntry]:
+    async def search_entries(self, query: str) -> list[WatchlistEntry]:
         """Search entries by name"""
         query_lower = query.lower()
         results = []
@@ -109,15 +104,15 @@ class WatchlistRepository:
         self._matches[match.match_id] = match
         return match
 
-    async def get_match(self, match_id: UUID) -> Optional[WatchlistMatch]:
+    async def get_match(self, match_id: UUID) -> WatchlistMatch | None:
         """Get match by ID"""
         return self._matches.get(match_id)
 
-    async def find_pending_matches(self) -> List[WatchlistMatch]:
+    async def find_pending_matches(self) -> list[WatchlistMatch]:
         """Find pending review matches"""
         return [m for m in self._matches.values() if m.status == "pending"]
 
-    async def find_matches_by_entity(self, entity_id: str) -> List[WatchlistMatch]:
+    async def find_matches_by_entity(self, entity_id: str) -> list[WatchlistMatch]:
         """Find matches by entity"""
         return [m for m in self._matches.values() if m.screened_entity_id == entity_id]
 
@@ -127,8 +122,8 @@ class WatchlistRepository:
         return log
 
     async def get_audit_logs(
-        self, watchlist_id: Optional[UUID] = None, limit: int = 100
-    ) -> List[WatchlistAuditLog]:
+        self, watchlist_id: UUID | None = None, limit: int = 100
+    ) -> list[WatchlistAuditLog]:
         """Get audit logs"""
         logs = self._audit_logs
         if watchlist_id:

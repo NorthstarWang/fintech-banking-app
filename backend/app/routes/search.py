@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -307,8 +307,8 @@ async def get_recent_searches(
     # In a real implementation, this would track user's search history
     return {
         "recent_searches": [
-            {"query": "Starbucks", "timestamp": datetime.utcnow(), "result_count": 15},
-            {"query": "Food & Dining", "timestamp": datetime.utcnow(), "result_count": 42},
-            {"query": "Emergency Fund", "timestamp": datetime.utcnow(), "result_count": 1}
+            {"query": "Starbucks", "timestamp": datetime.now(UTC), "result_count": 15},
+            {"query": "Food & Dining", "timestamp": datetime.now(UTC), "result_count": 42},
+            {"query": "Emergency Fund", "timestamp": datetime.now(UTC), "result_count": 1}
         ]
     }

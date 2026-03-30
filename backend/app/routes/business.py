@@ -1,14 +1,13 @@
 import calendar
 import secrets
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 
 from ..models import (
     Account,
-    Any,
     APIKeyRequest,
     APIKeyResponse,
     AuthorizedUserRequest,
@@ -56,15 +55,14 @@ from ..utils.validators import ValidationError
 
 router = APIRouter()
 
-def log_business_action(*args, action: str = None, user_id: int = None, details: dict = None, **kwargs):
+def log_business_action(*args, action: str | None = None, user_id: int | None = None, details: dict | None = None, **kwargs):
     """Helper function to log business actions using DB_UPDATE action type"""
     # This function can be called with either positional args or keyword args
     # For now, we'll just pass - logging can be implemented later if needed
-    pass
 
 def generate_invoice_number() -> str:
     """Generate unique invoice number"""
-    timestamp = datetime.utcnow().strftime("%Y%m%d")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d")
     random_suffix = uuid.uuid4().hex[:6].upper()
     return f"INV-{timestamp}-{random_suffix}"
 
@@ -230,7 +228,7 @@ async def send_invoice(
 
     # Update status
     invoice.status = InvoiceStatus.SENT
-    invoice.sent_at = datetime.utcnow()
+    invoice.sent_at = datetime.now(UTC)
 
     db_session.commit()
 
@@ -279,7 +277,7 @@ async def mark_invoice_paid(
     # Update status based on payment
     if invoice.amount_paid >= invoice.total_amount:
         invoice.status = InvoiceStatus.PAID
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = datetime.now(UTC)
     elif invoice.amount_paid > 0:
         invoice.status = InvoiceStatus.PENDING
 
@@ -460,7 +458,7 @@ async def generate_expense_report(
         details={
             "report_id": expense_report.id,
             "total_amount": total_amount,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         }
     )
 
@@ -567,7 +565,7 @@ async def categorize_transactions(
             "transaction_count": len(transactions),
             "tax_deductible_total": tax_deductible_total,
             "categorized_count": categorized_count,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.now(UTC).isoformat()
         }
     )
 
@@ -642,7 +640,7 @@ async def upload_receipt(
         details={"receipt_id": receipt.id, "amount": receipt.amount}
     )
 
-    return ReceiptResponse.from_orm(receipt)
+    return ReceiptResponse.model_validate(receipt)
 
 @router.get("/tax/estimate", response_model=TaxEstimateResponse)
 async def get_tax_estimate(
@@ -654,10 +652,10 @@ async def get_tax_estimate(
     """Get quarterly tax estimate"""
     # Default to current quarter if not specified
     if not year:
-        year = datetime.utcnow().year
+        year = datetime.now(UTC).year
 
     if not quarter:
-        month = datetime.utcnow().month
+        month = datetime.now(UTC).month
         quarter = (month - 1) // 3 + 1
 
     # Calculate date range for quarter
@@ -928,7 +926,7 @@ async def apply_for_credit_line(
         "status": status,
         "purpose": application.purpose,
         "term_months": application.term_months,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(UTC).isoformat()
     })
     account.extra_data["credit_lines"] = credit_lines
 
@@ -946,7 +944,7 @@ async def apply_for_credit_line(
         interest_rate=interest_rate,
         status=status,
         credit_line_id=credit_line_id,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(UTC)
     )
 
 
@@ -1007,11 +1005,11 @@ async def process_payroll(
     payrolls.append({
         "payroll_id": payroll_id,
         "payroll_date": payroll_data.payroll_date.isoformat(),
-        "employees": [e.dict() for e in payroll_data.employees],
+        "employees": [e.model_dump() for e in payroll_data.employees],
         "total_gross": payroll_data.total_gross,
         "total_net": payroll_data.total_net,
         "total_taxes": payroll_data.total_taxes,
-        "processed_at": datetime.utcnow().isoformat()
+        "processed_at": datetime.now(UTC).isoformat()
     })
     account.extra_data["payrolls"] = payrolls
 
@@ -1024,7 +1022,7 @@ async def process_payroll(
             "payroll_id": payroll_id,
             "total_gross": payroll_data.total_gross,
             "employee_count": len(payroll_data.employees),
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         }
     )
 
@@ -1035,7 +1033,7 @@ async def process_payroll(
         total_net=payroll_data.total_net,
         total_taxes=payroll_data.total_taxes,
         employee_count=len(payroll_data.employees),
-        processed_at=datetime.utcnow()
+        processed_at=datetime.now(UTC)
     )
 
 
@@ -1201,7 +1199,7 @@ async def record_business_expense(
         amount=expense_data.amount,
         transaction_type=TransactionType.DEBIT,
         description=expense_data.description,
-        transaction_date=datetime.utcnow().date(),
+        transaction_date=datetime.now(UTC).date(),
         extra_data={
             "category": expense_data.category,
             "vendor": expense_data.vendor,
@@ -1349,7 +1347,7 @@ async def create_vendor(
         "contact_email": vendor_data.contact_email,
         "payment_terms": vendor_data.payment_terms,
         "tax_id": vendor_data.tax_id,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(UTC).isoformat()
     }
 
     vendors.append(vendor)
@@ -1373,7 +1371,7 @@ async def create_vendor(
         contact_email=vendor_data.contact_email,
         payment_terms=vendor_data.payment_terms,
         tax_id=vendor_data.tax_id,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(UTC)
     )
 
 
@@ -1397,7 +1395,7 @@ async def get_cash_flow_analysis(
         )
 
     # Get current month data
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     current_month_start = date(now.year, now.month, 1)
     current_month_end = date(now.year, now.month, calendar.monthrange(now.year, now.month)[1])
 
@@ -1525,7 +1523,7 @@ async def add_authorized_user(
         "username": user_data.username,
         "role": user_data.role,
         "permissions": user_data.permissions,
-        "added_at": datetime.utcnow().isoformat()
+        "added_at": datetime.now(UTC).isoformat()
     }
 
     authorized_users.append(new_user)
@@ -1544,7 +1542,7 @@ async def add_authorized_user(
         username=user_data.username,
         role=user_data.role,
         permissions=user_data.permissions,
-        added_at=datetime.utcnow()
+        added_at=datetime.now(UTC)
     )
 
 
@@ -1594,7 +1592,7 @@ async def setup_recurring_payment(
         "end_date": payment_data.end_date.isoformat() if payment_data.end_date else None,
         "next_payment_date": next_payment_date.isoformat(),
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(UTC).isoformat()
     }
 
     recurring_payments.append(new_payment)
@@ -1677,7 +1675,7 @@ async def apply_for_business_loan(
         "status": status,
         "estimated_rate": estimated_rate,
         "monthly_payment": round(monthly_payment, 2),
-        "applied_at": datetime.utcnow().isoformat()
+        "applied_at": datetime.now(UTC).isoformat()
     }
 
     loan_applications.append(new_application)
@@ -1700,7 +1698,7 @@ async def apply_for_business_loan(
         status=status,
         estimated_rate=estimated_rate,
         monthly_payment=round(monthly_payment, 2),
-        applied_at=datetime.utcnow()
+        applied_at=datetime.now(UTC)
     )
 
 
@@ -1731,7 +1729,7 @@ async def generate_api_key(
     key_id = uuid.uuid4().int % 1000000
 
     # Calculate expiration
-    expires_at = datetime.utcnow() + timedelta(days=api_key_data.expires_in_days)
+    expires_at = datetime.now(UTC) + timedelta(days=api_key_data.expires_in_days)
 
     # Store API key in metadata
     api_keys = account.extra_data.get("api_keys", [])
@@ -1741,7 +1739,7 @@ async def generate_api_key(
         "api_key_hash": api_key[:10] + "..." + api_key[-4:],  # Store partial for display
         "key_name": api_key_data.key_name,
         "permissions": api_key_data.permissions,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "expires_at": expires_at.isoformat(),
         "is_active": True
     }
@@ -1762,6 +1760,6 @@ async def generate_api_key(
         api_key=api_key,
         key_name=api_key_data.key_name,
         permissions=api_key_data.permissions,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
         expires_at=expires_at
     )

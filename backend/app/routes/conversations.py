@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -33,7 +33,7 @@ def get_or_create_conversation(db_session: Any, user1_id: int, user2_id: int) ->
     conversation = Conversation(
         is_group=False,
         created_by_id=user1_id,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(UTC)
     )
     db_session.add(conversation)
     db_session.commit()
@@ -45,7 +45,7 @@ def get_or_create_conversation(db_session: Any, user1_id: int, user2_id: int) ->
             conversation_id=conversation.id,
             user_id=user_id,
             is_admin=False,
-            joined_at=datetime.utcnow()
+            joined_at=datetime.now(UTC)
         )
         db_session.add(participant)
 
@@ -173,7 +173,7 @@ async def get_conversation_messages(
     unread_messages = [m for m in messages if m.recipient_id == current_user['user_id'] and not m.is_read]
     for msg in unread_messages:
         msg.is_read = True
-        msg.read_at = datetime.utcnow()
+        msg.read_at = datetime.now(UTC)
 
     if unread_messages:
         db_session.commit()
@@ -219,7 +219,7 @@ async def mark_conversation_read(
         not DirectMessage.is_read
     ).update({
         'is_read': True,
-        'read_at': datetime.utcnow()
+        'read_at': datetime.now(UTC)
     }, synchronize_session=False)
 
     db_session.commit()

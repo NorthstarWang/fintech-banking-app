@@ -1,11 +1,11 @@
 import hashlib
 import random
 import string
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..models import (
     Account,
@@ -71,6 +71,8 @@ class CardUpdate(BaseModel):
     interest_rate: float | None = None
 
 class CardResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     account_id: int
@@ -90,9 +92,6 @@ class CardResponse(BaseModel):
     rewards_rate: float | None = None
     created_at: datetime
     updated_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
 
 class CardPaymentRequest(BaseModel):
     amount: float = Field(gt=0)
@@ -236,7 +235,7 @@ async def create_card(
             raise ValidationError("Invalid expiry date format. Use YYYY-MM-DD") from None
     else:
         # Default to 4 years from now
-        expiry_date = (datetime.utcnow() + timedelta(days=365 * 4)).date()
+        expiry_date = (datetime.now(UTC) + timedelta(days=365 * 4)).date()
 
     # Create card
     card = Card(
@@ -340,7 +339,7 @@ async def get_cards_analytics(
     if all_account_ids:
         recent_transactions = db_session.query(Transaction).filter(
             Transaction.account_id.in_(all_account_ids),
-            Transaction.transaction_date >= datetime.utcnow() - timedelta(days=30),
+            Transaction.transaction_date >= datetime.now(UTC) - timedelta(days=30),
             Transaction.transaction_type == TransactionType.DEBIT
         ).all()
 
@@ -431,7 +430,7 @@ async def list_virtual_cards(
             merchant_restrictions=card_data.get('merchant_restrictions', []),
             single_use=card_data.get('single_use', False),
             name=card_data.get('name', 'Virtual Card'),
-            created_at=card_data.get('created_at', datetime.utcnow()),
+            created_at=card_data.get('created_at', datetime.now(UTC)),
             expires_at=card_data.get('expires_at'),
             last_used_at=card_data.get('last_used_at'),
             is_virtual=True,
@@ -933,14 +932,14 @@ async def set_spending_limits(
 
         if daily_limit:
             daily_limit.limit_amount = limit_data.daily_limit
-            daily_limit.updated_at = datetime.utcnow()
+            daily_limit.updated_at = datetime.now(UTC)
         else:
             daily_limit = CardSpendingLimit(
                 card_id=card_id,
                 limit_amount=limit_data.daily_limit,
                 limit_period=SpendingLimitPeriod.DAILY,
-                period_start=datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0),
-                period_end=datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999),
+                period_start=datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0),
+                period_end=datetime.now(UTC).replace(hour=23, minute=59, second=59, microsecond=999999),
                 current_usage=0.0,
                 is_active=True
             )
@@ -956,9 +955,9 @@ async def set_spending_limits(
 
         if monthly_limit:
             monthly_limit.limit_amount = limit_data.monthly_limit
-            monthly_limit.updated_at = datetime.utcnow()
+            monthly_limit.updated_at = datetime.now(UTC)
         else:
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             if now.month == 12:
                 period_end = period_start.replace(year=now.year + 1, month=1) - timedelta(microseconds=1)
@@ -995,15 +994,15 @@ async def set_spending_limits(
 
             if cat_limit:
                 cat_limit.limit_amount = limit_amount
-                cat_limit.updated_at = datetime.utcnow()
+                cat_limit.updated_at = datetime.now(UTC)
             else:
                 cat_limit = CardSpendingLimit(
                     card_id=card_id,
                     limit_amount=limit_amount,
                     limit_period=SpendingLimitPeriod.MONTHLY,
                     merchant_categories=[category],
-                    period_start=datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0),
-                    period_end=(datetime.utcnow().replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(microseconds=1),
+                    period_start=datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                    period_end=(datetime.now(UTC).replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(microseconds=1),
                     current_usage=0.0,
                     is_active=True
                 )
@@ -1022,7 +1021,7 @@ async def set_spending_limits(
         "daily_limit": next((l.limit_amount for l in active_limits if l.limit_period == SpendingLimitPeriod.DAILY), None),
         "monthly_limit": next((l.limit_amount for l in active_limits if l.limit_period == SpendingLimitPeriod.MONTHLY and not l.merchant_categories), None),
         "category_limits": {l.merchant_categories[0]: l.limit_amount for l in active_limits if l.merchant_categories},
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.now(UTC).isoformat()
     }
 
 
@@ -1130,7 +1129,7 @@ async def configure_card_alerts(
         "high_balance_alert": alert_config.high_balance_alert,
         "high_balance_threshold": alert_config.high_balance_threshold,
         "unusual_activity_alert": alert_config.unusual_activity_alert,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.now(UTC).isoformat()
     }
 
 
@@ -1162,7 +1161,7 @@ async def report_card_fraud(
     db_session.commit()
 
     # Generate case number
-    case_number = f"FRAUD-{datetime.utcnow().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+    case_number = f"FRAUD-{datetime.now(UTC).strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
 
     # Create notification
     notification = Notification(
@@ -1181,7 +1180,7 @@ async def report_card_fraud(
         case_number=case_number,
         card_blocked=True,
         new_card_ordered=True,
-        estimated_delivery=(datetime.utcnow() + timedelta(days=7)).date()
+        estimated_delivery=(datetime.now(UTC) + timedelta(days=7)).date()
     )
 
 
@@ -1214,7 +1213,7 @@ async def create_virtual_card_from_parent(
     cvv = generate_cvv()
 
     # Calculate expiry
-    expires_at = datetime.utcnow() + timedelta(days=card_data.expires_in_days or 30)
+    expires_at = datetime.now(UTC) + timedelta(days=card_data.expires_in_days or 30)
 
     # Create virtual card
     virtual_card = Card(
@@ -1239,7 +1238,7 @@ async def create_virtual_card_from_parent(
         "spending_limit": card_data.spending_limit,
         "merchant_restrictions": card_data.merchant_restrictions,
         "single_use": card_data.single_use,
-        "name": card_data.name or f"Virtual Card {datetime.utcnow().strftime('%m/%d')}",
+        "name": card_data.name or f"Virtual Card {datetime.now(UTC).strftime('%m/%d')}",
         "expires_at": expires_at,
         "spent_amount": 0.0,
         "is_virtual": True
@@ -1296,7 +1295,7 @@ async def create_virtual_card(
     cvv = generate_cvv()
 
     # Calculate expiry
-    expires_at = datetime.utcnow() + timedelta(days=card_data.expires_in_days or 30)
+    expires_at = datetime.now(UTC) + timedelta(days=card_data.expires_in_days or 30)
 
     # Create virtual card
     virtual_card = Card(
@@ -1310,7 +1309,7 @@ async def create_virtual_card(
         spending_limit=card_data.spending_limit,
         merchant_restrictions=card_data.merchant_restrictions,
         single_use=card_data.single_use,
-        name=card_data.name or f"Virtual Card {datetime.utcnow().strftime('%m/%d')}",
+        name=card_data.name or f"Virtual Card {datetime.now(UTC).strftime('%m/%d')}",
         expires_at=expires_at
     )
 
@@ -1331,7 +1330,7 @@ async def create_virtual_card(
             "spent_amount": 0.0,  # Track this separately in production
             "merchant_restrictions": virtual_card.merchant_restrictions if hasattr(virtual_card, 'merchant_restrictions') else None,
             "single_use": virtual_card.single_use if hasattr(virtual_card, 'single_use') else False,
-            "name": virtual_card.name or f"Virtual Card {datetime.utcnow().strftime('%m/%d')}",
+            "name": virtual_card.name or f"Virtual Card {datetime.now(UTC).strftime('%m/%d')}",
             "created_at": virtual_card.created_at,
             "expires_at": virtual_card.expires_at if hasattr(virtual_card, 'expires_at') else expires_at,
             "last_used_at": None,
@@ -1446,7 +1445,7 @@ async def set_card_limit(
         )
 
     # Calculate period dates
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     if limit_data.limit_period == SpendingLimitPeriod.DAILY:
         period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         period_end = period_start + timedelta(days=1)
@@ -1466,7 +1465,7 @@ async def set_card_limit(
         period_end = now + timedelta(days=365)  # Effectively no end
 
     # Create card limit
-    card_limit = SpendingLimit(
+    card_limit = CardSpendingLimit(
         card_id=card_id,
         limit_amount=limit_data.limit_amount,
         limit_period=limit_data.limit_period,
@@ -1523,7 +1522,7 @@ async def get_card_analytics(
         )
 
     # Calculate date range
-    end_date = datetime.utcnow()
+    end_date = datetime.now(UTC)
     start_date = end_date - timedelta(days=days)
 
     # Get transactions (mock data for now)
@@ -1638,7 +1637,7 @@ async def get_analytics(
     utilization_rate = (total_balance / total_credit_limit * 100) if total_credit_limit > 0 else 0
 
     # Get spending by category for all cards in the last 30 days
-    end_date = datetime.utcnow()
+    end_date = datetime.now(UTC)
     start_date = end_date - timedelta(days=30)
 
     spending_by_category = {}

@@ -1,9 +1,9 @@
 """FX Risk Models - Foreign exchange risk management models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -24,15 +24,15 @@ class FXPosition(BaseModel):
     notional_amount: float
     direction: str  # long, short
     spot_rate: float
-    forward_rate: Optional[float] = None
+    forward_rate: float | None = None
     value_date: date
-    maturity_date: Optional[date] = None
+    maturity_date: date | None = None
     mtm_value: float = 0.0
     unrealized_pnl: float = 0.0
     delta: float = 0.0
     portfolio_id: UUID
-    counterparty_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    counterparty_id: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FXExposure(BaseModel):
@@ -47,7 +47,7 @@ class FXExposure(BaseModel):
     stress_loss: float
     hedge_ratio: float = 0.0
     as_of_date: date
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FXRate(BaseModel):
@@ -59,37 +59,37 @@ class FXRate(BaseModel):
     bid_rate: float
     ask_rate: float
     mid_rate: float
-    forward_points: Dict[str, float] = {}
+    forward_points: dict[str, float] = {}
     volatility: float
     rate_date: date
     rate_time: datetime
     source: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FXVolatilitySurface(BaseModel):
     surface_id: UUID = Field(default_factory=uuid4)
     currency_pair: str
     surface_date: date
-    tenors: List[str] = []
-    deltas: List[float] = []
-    volatilities: List[List[float]] = []
-    atm_vols: Dict[str, float] = {}
-    risk_reversals: Dict[str, float] = {}
-    butterflies: Dict[str, float] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    tenors: list[str] = []
+    deltas: list[float] = []
+    volatilities: list[list[float]] = []
+    atm_vols: dict[str, float] = {}
+    risk_reversals: dict[str, float] = {}
+    butterflies: dict[str, float] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FXScenario(BaseModel):
     scenario_id: UUID = Field(default_factory=uuid4)
     scenario_name: str
     scenario_type: str  # historical, hypothetical
-    rate_shocks: Dict[str, float] = {}
-    vol_shocks: Dict[str, float] = {}
-    correlation_shocks: Dict[str, float] = {}
+    rate_shocks: dict[str, float] = {}
+    vol_shocks: dict[str, float] = {}
+    correlation_shocks: dict[str, float] = {}
     pnl_impact: float
     var_impact: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FXRiskStatistics(BaseModel):
@@ -97,4 +97,4 @@ class FXRiskStatistics(BaseModel):
     total_notional: float = 0.0
     net_fx_exposure: float = 0.0
     fx_var: float = 0.0
-    by_currency: Dict[str, float] = {}
+    by_currency: dict[str, float] = {}

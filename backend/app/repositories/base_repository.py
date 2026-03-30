@@ -3,7 +3,7 @@ Base repository class providing common CRUD operations for in-memory data stores
 """
 import uuid
 from abc import ABC
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 T = TypeVar('T', bound=dict[str, Any])
@@ -41,7 +41,7 @@ class BaseRepository[T: dict[str, Any]](ABC):
 
         # Add timestamp if not provided
         if 'created_at' not in entity:
-            entity['created_at'] = datetime.utcnow().isoformat()
+            entity['created_at'] = datetime.now(UTC).isoformat()
 
         # Add to data store
         self.data_store.append(entity)
@@ -124,7 +124,7 @@ class BaseRepository[T: dict[str, Any]](ABC):
 
                 # Add updated_at timestamp
                 if 'updated_at' not in updates:
-                    entity['updated_at'] = datetime.utcnow().isoformat()
+                    entity['updated_at'] = datetime.now(UTC).isoformat()
 
                 return entity.copy()
         return None

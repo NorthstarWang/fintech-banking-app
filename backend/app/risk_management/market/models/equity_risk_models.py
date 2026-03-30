@@ -1,9 +1,9 @@
 """Equity Risk Models - Equity risk management models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -33,7 +33,7 @@ class EquityPosition(BaseModel):
     country: str
     currency: str
     portfolio_id: UUID
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EquityExposure(BaseModel):
@@ -48,7 +48,7 @@ class EquityExposure(BaseModel):
     beta_adjusted_exposure: float
     var_contribution: float
     as_of_date: date
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class BetaAnalysis(BaseModel):
@@ -65,7 +65,7 @@ class BetaAnalysis(BaseModel):
     jensen_alpha: float
     systematic_risk: float
     idiosyncratic_risk: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EquityFactorExposure(BaseModel):
@@ -78,9 +78,9 @@ class EquityFactorExposure(BaseModel):
     momentum_factor: float
     quality_factor: float
     volatility_factor: float
-    factor_var: Dict[str, float] = {}
+    factor_var: dict[str, float] = {}
     residual_risk: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EquityScenario(BaseModel):
@@ -88,12 +88,12 @@ class EquityScenario(BaseModel):
     scenario_name: str
     scenario_type: str
     market_shock: float
-    sector_shocks: Dict[str, float] = {}
+    sector_shocks: dict[str, float] = {}
     volatility_shock: float
     correlation_change: float
     pnl_impact: float
     beta_impact: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class EquityRiskStatistics(BaseModel):
@@ -101,4 +101,4 @@ class EquityRiskStatistics(BaseModel):
     total_market_value: float = 0.0
     portfolio_beta: float = 0.0
     equity_var: float = 0.0
-    by_sector: Dict[str, float] = {}
+    by_sector: dict[str, float] = {}

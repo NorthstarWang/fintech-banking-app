@@ -1,10 +1,8 @@
 """Data Lineage Graph Builder"""
 
-from typing import List, Dict, Any, Optional, Set, Tuple
-from uuid import UUID
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 
 class NodeType(str, Enum):
@@ -35,7 +33,7 @@ class LineageNode:
     schema_name: str = ""
     description: str = ""
     owner: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -45,15 +43,15 @@ class LineageEdge:
     target_node_id: str
     edge_type: EdgeType
     transformation: str = ""
-    column_mappings: List[Dict[str, str]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    column_mappings: list[dict[str, str]] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class LineagePath:
     path_id: str
-    nodes: List[str]
-    edges: List[str]
+    nodes: list[str]
+    edges: list[str]
     total_hops: int
     start_node: str
     end_node: str
@@ -61,10 +59,10 @@ class LineagePath:
 
 class LineageGraphBuilder:
     def __init__(self):
-        self._nodes: Dict[str, LineageNode] = {}
-        self._edges: Dict[str, LineageEdge] = {}
-        self._adjacency_list: Dict[str, List[str]] = {}
-        self._reverse_adjacency_list: Dict[str, List[str]] = {}
+        self._nodes: dict[str, LineageNode] = {}
+        self._edges: dict[str, LineageEdge] = {}
+        self._adjacency_list: dict[str, list[str]] = {}
+        self._reverse_adjacency_list: dict[str, list[str]] = {}
         self._edge_counter = 0
 
     def add_node(
@@ -76,7 +74,7 @@ class LineageGraphBuilder:
         schema_name: str = "",
         description: str = "",
         owner: str = "",
-        metadata: Dict[str, Any] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageNode:
         node = LineageNode(
             node_id=node_id,
@@ -103,8 +101,8 @@ class LineageGraphBuilder:
         target_node_id: str,
         edge_type: EdgeType,
         transformation: str = "",
-        column_mappings: List[Dict[str, str]] = None,
-        metadata: Dict[str, Any] = None,
+        column_mappings: list[dict[str, str]] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageEdge:
         self._edge_counter += 1
         edge_id = f"edge_{self._edge_counter:06d}"
@@ -130,14 +128,14 @@ class LineageGraphBuilder:
 
         return edge
 
-    def get_upstream_nodes(self, node_id: str, max_depth: int = 10) -> List[LineageNode]:
+    def get_upstream_nodes(self, node_id: str, max_depth: int = 10) -> list[LineageNode]:
         visited = set()
         result = []
         self._traverse_upstream(node_id, visited, result, 0, max_depth)
         return result
 
     def _traverse_upstream(
-        self, node_id: str, visited: Set[str], result: List[LineageNode], depth: int, max_depth: int
+        self, node_id: str, visited: set[str], result: list[LineageNode], depth: int, max_depth: int
     ) -> None:
         if depth >= max_depth or node_id in visited:
             return
@@ -150,14 +148,14 @@ class LineageGraphBuilder:
                 result.append(self._nodes[upstream_id])
                 self._traverse_upstream(upstream_id, visited, result, depth + 1, max_depth)
 
-    def get_downstream_nodes(self, node_id: str, max_depth: int = 10) -> List[LineageNode]:
+    def get_downstream_nodes(self, node_id: str, max_depth: int = 10) -> list[LineageNode]:
         visited = set()
         result = []
         self._traverse_downstream(node_id, visited, result, 0, max_depth)
         return result
 
     def _traverse_downstream(
-        self, node_id: str, visited: Set[str], result: List[LineageNode], depth: int, max_depth: int
+        self, node_id: str, visited: set[str], result: list[LineageNode], depth: int, max_depth: int
     ) -> None:
         if depth >= max_depth or node_id in visited:
             return
@@ -172,7 +170,7 @@ class LineageGraphBuilder:
 
     def find_all_paths(
         self, start_node_id: str, end_node_id: str, max_depth: int = 10
-    ) -> List[LineagePath]:
+    ) -> list[LineagePath]:
         all_paths = []
         current_path = [start_node_id]
         visited = {start_node_id}
@@ -183,9 +181,9 @@ class LineageGraphBuilder:
         self,
         current: str,
         end: str,
-        visited: Set[str],
-        current_path: List[str],
-        all_paths: List[LineagePath],
+        visited: set[str],
+        current_path: list[str],
+        all_paths: list[LineagePath],
         max_depth: int,
     ) -> None:
         if len(current_path) > max_depth:
@@ -211,7 +209,7 @@ class LineageGraphBuilder:
                 current_path.pop()
                 visited.remove(neighbor)
 
-    def _get_edges_for_path(self, path: List[str]) -> List[str]:
+    def _get_edges_for_path(self, path: list[str]) -> list[str]:
         edges = []
         for i in range(len(path) - 1):
             source = path[i]
@@ -222,21 +220,21 @@ class LineageGraphBuilder:
                     break
         return edges
 
-    def get_root_nodes(self) -> List[LineageNode]:
+    def get_root_nodes(self) -> list[LineageNode]:
         roots = []
         for node_id, node in self._nodes.items():
             if not self._reverse_adjacency_list.get(node_id):
                 roots.append(node)
         return roots
 
-    def get_leaf_nodes(self) -> List[LineageNode]:
+    def get_leaf_nodes(self) -> list[LineageNode]:
         leaves = []
         for node_id, node in self._nodes.items():
             if not self._adjacency_list.get(node_id):
                 leaves.append(node)
         return leaves
 
-    def export_to_dict(self) -> Dict[str, Any]:
+    def export_to_dict(self) -> dict[str, Any]:
         return {
             "nodes": [
                 {

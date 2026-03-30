@@ -1,12 +1,13 @@
 """SOX Compliance API Routes"""
 
-from typing import List, Optional
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.sox_models import ControlObjective, AssertionType
+
+from ..models.sox_models import AssertionType, ControlObjective
 from ..services.sox_service import sox_service
 
 router = APIRouter(prefix="/sox", tags=["SOX Compliance"])
@@ -17,8 +18,8 @@ class ProcessRegistrationRequest(BaseModel):
     process_description: str
     business_unit: str
     process_owner: str
-    financial_statement_areas: List[str]
-    assertions_addressed: List[AssertionType]
+    financial_statement_areas: list[str]
+    assertions_addressed: list[AssertionType]
     materiality_threshold: Decimal
     risk_rating: str
     documentation_location: str
@@ -29,7 +30,7 @@ class ControlCreateRequest(BaseModel):
     control_name: str
     control_description: str
     control_objective: ControlObjective
-    assertions: List[AssertionType]
+    assertions: list[AssertionType]
     control_type: str
     control_nature: str
     control_frequency: str
@@ -60,7 +61,7 @@ class TestResultRequest(BaseModel):
     sample_size: int
     items_tested: int
     exceptions_found: int
-    test_evidence: List[str]
+    test_evidence: list[str]
 
 
 class CertificationRequest(BaseModel):
@@ -70,7 +71,7 @@ class CertificationRequest(BaseModel):
     certifier_title: str
     icfr_effective: bool
     material_weaknesses_exist: bool
-    material_weaknesses_disclosed: List[str]
+    material_weaknesses_disclosed: list[str]
 
 
 @router.post("/processes", response_model=dict)
@@ -87,8 +88,8 @@ async def register_process(request: ProcessRegistrationRequest):
     return {"process_id": str(process.process_id), "process_code": process.process_code}
 
 
-@router.get("/processes", response_model=List[dict])
-async def list_processes(in_scope_only: bool = False, business_unit: Optional[str] = None):
+@router.get("/processes", response_model=list[dict])
+async def list_processes(in_scope_only: bool = False, business_unit: str | None = None):
     """List SOX processes"""
     if in_scope_only:
         processes = await sox_service.repository.find_in_scope_processes()
@@ -130,10 +131,10 @@ async def create_control(request: ControlCreateRequest):
     return {"control_id": str(control.control_id), "control_code": control.control_code}
 
 
-@router.get("/controls", response_model=List[dict])
+@router.get("/controls", response_model=list[dict])
 async def list_controls(
     key_controls_only: bool = False,
-    process_id: Optional[UUID] = None,
+    process_id: UUID | None = None,
     active_only: bool = True
 ):
     """List SOX controls"""
@@ -176,8 +177,8 @@ async def create_test_plan(request: TestPlanCreateRequest):
     return {"plan_id": str(plan.plan_id), "fiscal_year": plan.fiscal_year, "quarter": plan.quarter}
 
 
-@router.get("/test-plans", response_model=List[dict])
-async def list_test_plans(fiscal_year: Optional[int] = None, pending_only: bool = False):
+@router.get("/test-plans", response_model=list[dict])
+async def list_test_plans(fiscal_year: int | None = None, pending_only: bool = False):
     """List SOX test plans"""
     if fiscal_year:
         plans = await sox_service.repository.find_test_plans_by_fiscal_year(fiscal_year)
@@ -204,8 +205,8 @@ async def record_test_result(request: TestResultRequest):
     }
 
 
-@router.get("/test-results", response_model=List[dict])
-async def list_test_results(control_id: Optional[UUID] = None, ineffective_only: bool = False):
+@router.get("/test-results", response_model=list[dict])
+async def list_test_results(control_id: UUID | None = None, ineffective_only: bool = False):
     """List SOX test results"""
     if control_id:
         results = await sox_service.repository.find_test_results_by_control(control_id)
@@ -216,7 +217,7 @@ async def list_test_results(control_id: Optional[UUID] = None, ineffective_only:
     return [{"result_id": str(r.result_id), "control_id": str(r.control_id), "overall_conclusion": r.overall_conclusion} for r in results]
 
 
-@router.get("/deficiencies", response_model=List[dict])
+@router.get("/deficiencies", response_model=list[dict])
 async def list_deficiencies(
     open_only: bool = False,
     material_weaknesses: bool = False,
@@ -271,8 +272,8 @@ async def create_certification(request: CertificationRequest):
     return {"certification_id": str(certification.certification_id), "certification_type": certification.certification_type}
 
 
-@router.get("/certifications", response_model=List[dict])
-async def list_certifications(fiscal_year: Optional[int] = None):
+@router.get("/certifications", response_model=list[dict])
+async def list_certifications(fiscal_year: int | None = None):
     """List management certifications"""
     if fiscal_year:
         certifications = await sox_service.repository.find_certifications_by_fiscal_year(fiscal_year)

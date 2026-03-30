@@ -1,35 +1,41 @@
 """Behavior Service - Behavioral analysis for fraud detection"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.behavior_models import (
-    BehaviorPattern, BehaviorEvent, BehaviorAnomaly,
-    BehaviorScore, BehaviorCategory, AnomalyType, BehaviorStatistics
+    AnomalyType,
+    BehaviorAnomaly,
+    BehaviorCategory,
+    BehaviorEvent,
+    BehaviorPattern,
+    BehaviorScore,
+    BehaviorStatistics,
 )
 
 
 class BehaviorService:
     def __init__(self):
-        self._patterns: Dict[str, BehaviorPattern] = {}
-        self._events: List[BehaviorEvent] = []
-        self._anomalies: Dict[UUID, BehaviorAnomaly] = {}
-        self._scores: Dict[str, BehaviorScore] = {}
+        self._patterns: dict[str, BehaviorPattern] = {}
+        self._events: list[BehaviorEvent] = []
+        self._anomalies: dict[UUID, BehaviorAnomaly] = {}
+        self._scores: dict[str, BehaviorScore] = {}
 
     async def create_pattern(self, customer_id: str) -> BehaviorPattern:
         pattern = BehaviorPattern(
             customer_id=customer_id,
             pattern_type="baseline",
-            profile_start_date=datetime.utcnow() - timedelta(days=90),
-            profile_end_date=datetime.utcnow()
+            profile_start_date=datetime.now(UTC) - timedelta(days=90),
+            profile_end_date=datetime.now(UTC)
         )
         self._patterns[customer_id] = pattern
         return pattern
 
-    async def get_pattern(self, customer_id: str) -> Optional[BehaviorPattern]:
+    async def get_pattern(self, customer_id: str) -> BehaviorPattern | None:
         return self._patterns.get(customer_id)
 
-    async def record_event(self, customer_id: str, event_type: str, category: BehaviorCategory, event_data: Dict[str, Any]) -> BehaviorEvent:
+    async def record_event(self, customer_id: str, event_type: str, category: BehaviorCategory, event_data: dict[str, Any]) -> BehaviorEvent:
         event = BehaviorEvent(
             customer_id=customer_id,
             event_type=event_type,
@@ -43,7 +49,7 @@ class BehaviorService:
         self._events.append(event)
         return event
 
-    async def _check_for_anomalies(self, customer_id: str, event: BehaviorEvent) -> Dict[str, Any]:
+    async def _check_for_anomalies(self, customer_id: str, event: BehaviorEvent) -> dict[str, Any]:
         pattern = self._patterns.get(customer_id)
         if not pattern:
             return {"is_anomalous": False, "score": 0.0, "types": []}
@@ -75,7 +81,7 @@ class BehaviorService:
         return anomaly
 
     async def calculate_behavior_score(self, customer_id: str) -> BehaviorScore:
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         customer_anomalies = [a for a in self._anomalies.values() if a.customer_id == customer_id]
         recent_anomalies_24h = len([a for a in customer_anomalies if (now - a.detected_at).total_seconds() < 86400])
         recent_anomalies_7d = len([a for a in customer_anomalies if (now - a.detected_at).total_seconds() < 604800])
@@ -95,7 +101,7 @@ class BehaviorService:
     async def get_statistics(self) -> BehaviorStatistics:
         return BehaviorStatistics(
             total_profiles=len(self._patterns),
-            anomalies_detected_today=len([a for a in self._anomalies.values() if a.detected_at.date() == datetime.utcnow().date()]),
+            anomalies_detected_today=len([a for a in self._anomalies.values() if a.detected_at.date() == datetime.now(UTC).date()]),
             average_behavior_score=sum(s.overall_score for s in self._scores.values()) / max(len(self._scores), 1)
         )
 

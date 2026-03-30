@@ -1,10 +1,10 @@
 """SLA Monitoring Utilities for Data Quality"""
 
-from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 from uuid import uuid4
 
 
@@ -32,7 +32,7 @@ class SLADefinition:
     target_value: Decimal
     warning_threshold: Decimal
     measurement_window_hours: int
-    stakeholders: List[str]
+    stakeholders: list[str]
     is_active: bool = True
 
 
@@ -44,7 +44,7 @@ class SLAMeasurement:
     target_value: Decimal
     status: SLAStatus
     measurement_time: datetime
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 @dataclass
@@ -67,17 +67,17 @@ class SLAReport:
 
 class SLAMonitoringUtilities:
     def __init__(self):
-        self._slas: Dict[str, SLADefinition] = {}
-        self._measurements: Dict[str, List[SLAMeasurement]] = {}
+        self._slas: dict[str, SLADefinition] = {}
+        self._measurements: dict[str, list[SLAMeasurement]] = {}
 
     def create_sla(
         self,
         sla_name: str,
         metric_type: SLAMetricType,
         target_value: Decimal,
-        warning_threshold: Decimal = None,
+        warning_threshold: Decimal | None = None,
         measurement_window_hours: int = 24,
-        stakeholders: List[str] = None,
+        stakeholders: list[str] | None = None,
     ) -> SLADefinition:
         sla = SLADefinition(
             sla_id=str(uuid4()),
@@ -96,8 +96,8 @@ class SLAMonitoringUtilities:
         self,
         sla_id: str,
         measured_value: Decimal,
-        details: Dict[str, Any] = None,
-    ) -> Optional[SLAMeasurement]:
+        details: dict[str, Any] | None = None,
+    ) -> SLAMeasurement | None:
         sla = self._slas.get(sla_id)
         if not sla:
             return None
@@ -110,7 +110,7 @@ class SLAMonitoringUtilities:
             measured_value=measured_value,
             target_value=sla.target_value,
             status=status,
-            measurement_time=datetime.utcnow(),
+            measurement_time=datetime.now(UTC),
             details=details or {},
         )
 
@@ -122,12 +122,11 @@ class SLAMonitoringUtilities:
     ) -> SLAStatus:
         if measured_value >= sla.target_value:
             return SLAStatus.MET
-        elif measured_value >= sla.warning_threshold:
+        if measured_value >= sla.warning_threshold:
             return SLAStatus.AT_RISK
-        else:
-            return SLAStatus.BREACHED
+        return SLAStatus.BREACHED
 
-    def get_current_status(self, sla_id: str) -> Optional[SLAStatus]:
+    def get_current_status(self, sla_id: str) -> SLAStatus | None:
         measurements = self._measurements.get(sla_id, [])
         if not measurements:
             return SLAStatus.UNKNOWN
@@ -138,14 +137,14 @@ class SLAMonitoringUtilities:
     def generate_report(
         self,
         sla_id: str,
-        period_start: datetime = None,
-        period_end: datetime = None,
-    ) -> Optional[SLAReport]:
+        period_start: datetime | None = None,
+        period_end: datetime | None = None,
+    ) -> SLAReport | None:
         sla = self._slas.get(sla_id)
         if not sla:
             return None
 
-        period_end = period_end or datetime.utcnow()
+        period_end = period_end or datetime.now(UTC)
         period_start = period_start or (period_end - timedelta(hours=sla.measurement_window_hours))
 
         measurements = [
@@ -168,7 +167,7 @@ class SLAMonitoringUtilities:
                 min_value=Decimal("0"),
                 max_value=Decimal("0"),
                 status=SLAStatus.UNKNOWN,
-                generated_at=datetime.utcnow(),
+                generated_at=datetime.now(UTC),
             )
 
         met_count = len([m for m in measurements if m.status == SLAStatus.MET])
@@ -199,7 +198,7 @@ class SLAMonitoringUtilities:
             min_value=min(values),
             max_value=max(values),
             status=overall_status,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(UTC),
         )
 
     def get_sla_trend(
@@ -207,12 +206,12 @@ class SLAMonitoringUtilities:
         sla_id: str,
         period_hours: int = 168,
         bucket_hours: int = 24,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         measurements = self._measurements.get(sla_id, [])
         if not measurements:
             return []
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         start_time = end_time - timedelta(hours=period_hours)
 
         filtered = [
@@ -244,7 +243,7 @@ class SLAMonitoringUtilities:
 
         return buckets
 
-    def get_breached_slas(self) -> List[SLADefinition]:
+    def get_breached_slas(self) -> list[SLADefinition]:
         breached = []
         for sla_id, sla in self._slas.items():
             status = self.get_current_status(sla_id)
@@ -252,7 +251,7 @@ class SLAMonitoringUtilities:
                 breached.append(sla)
         return breached
 
-    def get_at_risk_slas(self) -> List[SLADefinition]:
+    def get_at_risk_slas(self) -> list[SLADefinition]:
         at_risk = []
         for sla_id, sla in self._slas.items():
             status = self.get_current_status(sla_id)
@@ -260,7 +259,7 @@ class SLAMonitoringUtilities:
                 at_risk.append(sla)
         return at_risk
 
-    def get_all_slas(self) -> Dict[str, SLADefinition]:
+    def get_all_slas(self) -> dict[str, SLADefinition]:
         return self._slas.copy()
 
     def toggle_sla(self, sla_id: str, is_active: bool) -> None:

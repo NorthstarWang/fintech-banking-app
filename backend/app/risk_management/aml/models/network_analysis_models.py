@@ -4,11 +4,12 @@ Network Analysis Models
 Defines data structures for network analysis and link analysis in AML.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class NodeType(str, Enum):
@@ -56,15 +57,15 @@ class NetworkNode(BaseModel):
     display_name: str
 
     # Entity reference
-    entity_id: Optional[str] = None
-    entity_type: Optional[str] = None
+    entity_id: str | None = None
+    entity_type: str | None = None
 
     # Node properties
-    properties: Dict[str, Any] = Field(default_factory=dict)
+    properties: dict[str, Any] = Field(default_factory=dict)
 
     # Risk attributes
     risk_score: float = 0.0
-    risk_flags: List[str] = Field(default_factory=list)
+    risk_flags: list[str] = Field(default_factory=list)
     is_pep: bool = False
     is_sanctioned: bool = False
     is_on_watchlist: bool = False
@@ -77,12 +78,12 @@ class NetworkNode(BaseModel):
 
     # Visual attributes
     size: float = 1.0
-    color: Optional[str] = None
-    icon: Optional[str] = None
+    color: str | None = None
+    icon: str | None = None
 
     # Metadata
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class NetworkEdge(BaseModel):
@@ -93,36 +94,36 @@ class NetworkEdge(BaseModel):
     edge_type: EdgeType
 
     # Edge properties
-    label: Optional[str] = None
+    label: str | None = None
     weight: float = 1.0
     is_directed: bool = True
 
     # Transaction-specific
     transaction_count: int = 0
     total_amount: float = 0.0
-    currency: Optional[str] = None
-    first_transaction_date: Optional[datetime] = None
-    last_transaction_date: Optional[datetime] = None
+    currency: str | None = None
+    first_transaction_date: datetime | None = None
+    last_transaction_date: datetime | None = None
 
     # Relationship-specific
-    relationship_start: Optional[datetime] = None
-    relationship_end: Optional[datetime] = None
+    relationship_start: datetime | None = None
+    relationship_end: datetime | None = None
     is_active: bool = True
 
     # Risk attributes
     risk_score: float = 0.0
-    risk_indicators: List[str] = Field(default_factory=list)
+    risk_indicators: list[str] = Field(default_factory=list)
 
     # Visual attributes
     thickness: float = 1.0
-    color: Optional[str] = None
+    color: str | None = None
     style: str = "solid"  # solid, dashed, dotted
 
     # Additional properties
-    properties: Dict[str, Any] = Field(default_factory=dict)
+    properties: dict[str, Any] = Field(default_factory=dict)
 
     # Metadata
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class NetworkCluster(BaseModel):
@@ -132,8 +133,8 @@ class NetworkCluster(BaseModel):
     cluster_type: str
 
     # Members
-    node_ids: List[str] = Field(default_factory=list)
-    central_node_id: Optional[str] = None
+    node_ids: list[str] = Field(default_factory=list)
+    central_node_id: str | None = None
 
     # Cluster metrics
     size: int = 0
@@ -144,7 +145,7 @@ class NetworkCluster(BaseModel):
     # Risk assessment
     risk_score: float = 0.0
     risk_level: NetworkRiskLevel = NetworkRiskLevel.LOW
-    risk_factors: List[str] = Field(default_factory=list)
+    risk_factors: list[str] = Field(default_factory=list)
 
     # Transaction summary
     total_transaction_count: int = 0
@@ -158,12 +159,12 @@ class NetworkCluster(BaseModel):
     high_risk_country_count: int = 0
 
     # Alert/case linkage
-    related_alert_ids: List[UUID] = Field(default_factory=list)
-    related_case_ids: List[UUID] = Field(default_factory=list)
+    related_alert_ids: list[UUID] = Field(default_factory=list)
+    related_case_ids: list[UUID] = Field(default_factory=list)
 
     # Timestamps
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
-    last_analyzed_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_analyzed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class NetworkPath(BaseModel):
@@ -173,8 +174,8 @@ class NetworkPath(BaseModel):
     end_node_id: str
 
     # Path details
-    node_sequence: List[str] = Field(default_factory=list)
-    edge_sequence: List[UUID] = Field(default_factory=list)
+    node_sequence: list[str] = Field(default_factory=list)
+    edge_sequence: list[UUID] = Field(default_factory=list)
     path_length: int = 0
 
     # Transaction flow
@@ -184,7 +185,7 @@ class NetworkPath(BaseModel):
 
     # Risk assessment
     risk_score: float = 0.0
-    risk_indicators: List[str] = Field(default_factory=list)
+    risk_indicators: list[str] = Field(default_factory=list)
     is_circular: bool = False
 
 
@@ -195,16 +196,16 @@ class NetworkAnalysis(BaseModel):
     analysis_type: str  # customer_network, transaction_network, risk_network
 
     # Scope
-    root_entity_id: Optional[str] = None
-    root_entity_type: Optional[str] = None
+    root_entity_id: str | None = None
+    root_entity_type: str | None = None
     depth: int = 2
-    date_range_start: Optional[datetime] = None
-    date_range_end: Optional[datetime] = None
+    date_range_start: datetime | None = None
+    date_range_end: datetime | None = None
 
     # Network structure
-    nodes: List[NetworkNode] = Field(default_factory=list)
-    edges: List[NetworkEdge] = Field(default_factory=list)
-    clusters: List[NetworkCluster] = Field(default_factory=list)
+    nodes: list[NetworkNode] = Field(default_factory=list)
+    edges: list[NetworkEdge] = Field(default_factory=list)
+    clusters: list[NetworkCluster] = Field(default_factory=list)
 
     # Network metrics
     total_nodes: int = 0
@@ -222,13 +223,13 @@ class NetworkAnalysis(BaseModel):
     circular_flow_count: int = 0
 
     # Key findings
-    key_nodes: List[str] = Field(default_factory=list)  # High centrality nodes
-    suspicious_paths: List[NetworkPath] = Field(default_factory=list)
-    anomalies: List[Dict[str, Any]] = Field(default_factory=list)
+    key_nodes: list[str] = Field(default_factory=list)  # High centrality nodes
+    suspicious_paths: list[NetworkPath] = Field(default_factory=list)
+    anomalies: list[dict[str, Any]] = Field(default_factory=list)
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
     processing_time_seconds: float = 0.0
 
 
@@ -243,17 +244,17 @@ class NetworkQuery(BaseModel):
     # Expansion parameters
     max_depth: int = 3
     max_nodes: int = 500
-    node_types: Optional[List[NodeType]] = None
-    edge_types: Optional[List[EdgeType]] = None
+    node_types: list[NodeType] | None = None
+    edge_types: list[EdgeType] | None = None
 
     # Filters
-    date_range_start: Optional[datetime] = None
-    date_range_end: Optional[datetime] = None
-    min_transaction_amount: Optional[float] = None
+    date_range_start: datetime | None = None
+    date_range_end: datetime | None = None
+    min_transaction_amount: float | None = None
     include_inactive: bool = False
 
     # Risk filters
-    min_risk_score: Optional[float] = None
+    min_risk_score: float | None = None
     include_pep: bool = True
     include_sanctioned: bool = True
 
@@ -276,15 +277,15 @@ class LinkAnalysisResult(BaseModel):
 
     # Connection analysis
     is_connected: bool = False
-    shortest_path_length: Optional[int] = None
-    shortest_path: Optional[NetworkPath] = None
-    all_paths: List[NetworkPath] = Field(default_factory=list)
+    shortest_path_length: int | None = None
+    shortest_path: NetworkPath | None = None
+    all_paths: list[NetworkPath] = Field(default_factory=list)
 
     # Shared elements
-    shared_addresses: List[str] = Field(default_factory=list)
-    shared_phones: List[str] = Field(default_factory=list)
-    shared_devices: List[str] = Field(default_factory=list)
-    shared_counterparties: List[str] = Field(default_factory=list)
+    shared_addresses: list[str] = Field(default_factory=list)
+    shared_phones: list[str] = Field(default_factory=list)
+    shared_devices: list[str] = Field(default_factory=list)
+    shared_counterparties: list[str] = Field(default_factory=list)
 
     # Transaction relationship
     direct_transactions: int = 0
@@ -293,10 +294,10 @@ class LinkAnalysisResult(BaseModel):
 
     # Risk assessment
     relationship_risk_score: float = 0.0
-    risk_indicators: List[str] = Field(default_factory=list)
+    risk_indicators: list[str] = Field(default_factory=list)
 
     # Timestamps
-    analyzed_at: datetime = Field(default_factory=datetime.utcnow)
+    analyzed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CommunityDetectionResult(BaseModel):
@@ -306,11 +307,11 @@ class CommunityDetectionResult(BaseModel):
 
     # Algorithm used
     algorithm: str  # louvain, label_propagation, girvan_newman
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
     # Communities detected
     community_count: int = 0
-    communities: List[NetworkCluster] = Field(default_factory=list)
+    communities: list[NetworkCluster] = Field(default_factory=list)
 
     # Quality metrics
     modularity: float = 0.0
@@ -318,10 +319,10 @@ class CommunityDetectionResult(BaseModel):
 
     # Suspicious communities
     suspicious_community_count: int = 0
-    suspicious_community_ids: List[UUID] = Field(default_factory=list)
+    suspicious_community_ids: list[UUID] = Field(default_factory=list)
 
     # Timestamps
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CircularFlowDetection(BaseModel):
@@ -329,8 +330,8 @@ class CircularFlowDetection(BaseModel):
     detection_id: UUID = Field(default_factory=uuid4)
 
     # Cycle details
-    cycle_nodes: List[str] = Field(default_factory=list)
-    cycle_edges: List[UUID] = Field(default_factory=list)
+    cycle_nodes: list[str] = Field(default_factory=list)
+    cycle_edges: list[UUID] = Field(default_factory=list)
     cycle_length: int = 0
 
     # Flow analysis
@@ -356,10 +357,10 @@ class CircularFlowDetection(BaseModel):
 
     # Alert linkage
     alert_generated: bool = False
-    alert_id: Optional[UUID] = None
+    alert_id: UUID | None = None
 
     # Timestamps
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class NetworkVisualization(BaseModel):
@@ -369,21 +370,21 @@ class NetworkVisualization(BaseModel):
 
     # Layout
     layout_algorithm: str  # force_directed, hierarchical, circular
-    layout_data: Dict[str, Tuple[float, float]] = Field(default_factory=dict)  # node_id -> (x, y)
+    layout_data: dict[str, tuple[float, float]] = Field(default_factory=dict)  # node_id -> (x, y)
 
     # Styling
-    node_styles: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    edge_styles: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    node_styles: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    edge_styles: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     # Filters applied
-    filters: Dict[str, Any] = Field(default_factory=dict)
+    filters: dict[str, Any] = Field(default_factory=dict)
 
     # Export formats
-    svg_data: Optional[str] = None
-    json_data: Optional[Dict[str, Any]] = None
+    svg_data: str | None = None
+    json_data: dict[str, Any] | None = None
 
     # Timestamps
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class NetworkStatistics(BaseModel):

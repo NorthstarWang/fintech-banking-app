@@ -1,10 +1,11 @@
 """Compliance Testing Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -34,7 +35,7 @@ class ComplianceTestPlan(BaseModel):
     testing_period: str
     regulation: str
     requirement_reference: str
-    control_id: Optional[str] = None
+    control_id: str | None = None
     test_objective: str
     test_procedure: str
     testing_type: TestingType
@@ -44,7 +45,7 @@ class ComplianceTestPlan(BaseModel):
     assigned_tester: str
     planned_date: date
     status: str = "planned"
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ComplianceTestExecution(BaseModel):
@@ -58,12 +59,12 @@ class ComplianceTestExecution(BaseModel):
     exceptions_found: int
     exception_rate: Decimal = Decimal("0")
     test_result: TestResult = TestResult.NOT_TESTED
-    evidence_references: List[str] = Field(default_factory=list)
+    evidence_references: list[str] = Field(default_factory=list)
     workpaper_reference: str = ""
     observations: str = ""
     conclusion: str = ""
-    reviewed_by: Optional[str] = None
-    review_date: Optional[date] = None
+    reviewed_by: str | None = None
+    review_date: date | None = None
     review_comments: str = ""
 
 
@@ -81,7 +82,7 @@ class ComplianceException(BaseModel):
     remediation_required: bool = True
     remediation_action: str = ""
     remediation_owner: str = ""
-    remediation_due_date: Optional[date] = None
+    remediation_due_date: date | None = None
     status: str = "open"
 
 
@@ -91,11 +92,11 @@ class ComplianceMonitoring(BaseModel):
     regulation: str
     monitoring_area: str
     monitoring_period: str
-    metrics: List[Dict[str, Any]] = Field(default_factory=list)
-    thresholds: Dict[str, Decimal] = Field(default_factory=dict)
-    current_values: Dict[str, Decimal] = Field(default_factory=dict)
-    breaches_identified: List[Dict[str, Any]] = Field(default_factory=list)
-    trend_analysis: Dict[str, Any] = Field(default_factory=dict)
+    metrics: list[dict[str, Any]] = Field(default_factory=list)
+    thresholds: dict[str, Decimal] = Field(default_factory=dict)
+    current_values: dict[str, Decimal] = Field(default_factory=dict)
+    breaches_identified: list[dict[str, Any]] = Field(default_factory=list)
+    trend_analysis: dict[str, Any] = Field(default_factory=dict)
     monitoring_frequency: str
     last_monitoring_date: date
     next_monitoring_date: date
@@ -113,12 +114,12 @@ class RegulatoryChange(BaseModel):
     summary: str
     detailed_description: str
     impact_assessment: str
-    affected_areas: List[str] = Field(default_factory=list)
-    required_actions: List[Dict[str, Any]] = Field(default_factory=list)
+    affected_areas: list[str] = Field(default_factory=list)
+    required_actions: list[dict[str, Any]] = Field(default_factory=list)
     assigned_to: str
     implementation_deadline: date
     status: str = "identified"
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ComplianceReport(BaseModel):
@@ -127,17 +128,17 @@ class ComplianceReport(BaseModel):
     report_period: str
     report_date: date
     prepared_by: str
-    regulations_covered: List[str] = Field(default_factory=list)
+    regulations_covered: list[str] = Field(default_factory=list)
     tests_performed: int = 0
     tests_passed: int = 0
     tests_failed: int = 0
     pass_rate: Decimal = Decimal("0")
     exceptions_identified: int = 0
     open_exceptions: int = 0
-    key_findings: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
-    management_actions: List[Dict[str, Any]] = Field(default_factory=list)
+    key_findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    management_actions: list[dict[str, Any]] = Field(default_factory=list)
     overall_compliance_status: str
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    approved_by: str | None = None
+    approval_date: date | None = None
     status: str = "draft"

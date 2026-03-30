@@ -1,11 +1,11 @@
 """Data Sampling Utilities"""
 
-from typing import List, Dict, Any, Optional
-from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass
-from enum import Enum
 import random
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from decimal import Decimal
+from enum import Enum
+from typing import Any
 from uuid import uuid4
 
 
@@ -24,8 +24,8 @@ class SamplingResult:
     total_records: int
     sample_size: int
     sample_percentage: Decimal
-    sample_records: List[Dict[str, Any]]
-    sampling_seed: Optional[int]
+    sample_records: list[dict[str, Any]]
+    sampling_seed: int | None
     sampled_at: datetime
 
 
@@ -35,10 +35,10 @@ class DataSamplingUtilities:
 
     def random_sample(
         self,
-        data: List[Dict[str, Any]],
-        sample_size: int = None,
-        sample_percentage: Decimal = None,
-        seed: int = None,
+        data: list[dict[str, Any]],
+        sample_size: int | None = None,
+        sample_percentage: Decimal | None = None,
+        seed: int | None = None,
     ) -> SamplingResult:
         if seed is not None:
             random.seed(seed)
@@ -63,12 +63,12 @@ class DataSamplingUtilities:
             sample_percentage=Decimal(str(round(len(sample) / total * 100, 2))) if total > 0 else Decimal("0"),
             sample_records=sample,
             sampling_seed=seed or self._default_seed,
-            sampled_at=datetime.utcnow(),
+            sampled_at=datetime.now(UTC),
         )
 
     def systematic_sample(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         sample_size: int,
         start_offset: int = 0,
     ) -> SamplingResult:
@@ -82,7 +82,7 @@ class DataSamplingUtilities:
                 sample_percentage=Decimal("100"),
                 sample_records=data.copy(),
                 sampling_seed=None,
-                sampled_at=datetime.utcnow(),
+                sampled_at=datetime.now(UTC),
             )
 
         interval = total // sample_size
@@ -101,22 +101,22 @@ class DataSamplingUtilities:
             sample_percentage=Decimal(str(round(len(sample) / total * 100, 2))) if total > 0 else Decimal("0"),
             sample_records=sample,
             sampling_seed=None,
-            sampled_at=datetime.utcnow(),
+            sampled_at=datetime.now(UTC),
         )
 
     def stratified_sample(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         stratify_field: str,
         sample_size: int,
-        seed: int = None,
+        seed: int | None = None,
     ) -> SamplingResult:
         if seed is not None:
             random.seed(seed)
         elif self._default_seed is not None:
             random.seed(self._default_seed)
 
-        strata: Dict[Any, List[Dict[str, Any]]] = {}
+        strata: dict[Any, list[dict[str, Any]]] = {}
         for record in data:
             stratum_value = record.get(stratify_field)
             if stratum_value not in strata:
@@ -126,7 +126,7 @@ class DataSamplingUtilities:
         total = len(data)
         sample = []
 
-        for stratum_value, stratum_records in strata.items():
+        for _stratum_value, stratum_records in strata.items():
             stratum_proportion = len(stratum_records) / total
             stratum_sample_size = max(1, int(sample_size * stratum_proportion))
             stratum_sample_size = min(stratum_sample_size, len(stratum_records))
@@ -140,22 +140,22 @@ class DataSamplingUtilities:
             sample_percentage=Decimal(str(round(len(sample) / total * 100, 2))) if total > 0 else Decimal("0"),
             sample_records=sample,
             sampling_seed=seed or self._default_seed,
-            sampled_at=datetime.utcnow(),
+            sampled_at=datetime.now(UTC),
         )
 
     def cluster_sample(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         cluster_field: str,
         num_clusters: int,
-        seed: int = None,
+        seed: int | None = None,
     ) -> SamplingResult:
         if seed is not None:
             random.seed(seed)
         elif self._default_seed is not None:
             random.seed(self._default_seed)
 
-        clusters: Dict[Any, List[Dict[str, Any]]] = {}
+        clusters: dict[Any, list[dict[str, Any]]] = {}
         for record in data:
             cluster_value = record.get(cluster_field)
             if cluster_value not in clusters:
@@ -179,14 +179,14 @@ class DataSamplingUtilities:
             sample_percentage=Decimal(str(round(len(sample) / total * 100, 2))) if total > 0 else Decimal("0"),
             sample_records=sample,
             sampling_seed=seed or self._default_seed,
-            sampled_at=datetime.utcnow(),
+            sampled_at=datetime.now(UTC),
         )
 
     def reservoir_sample(
         self,
         data_iterator,
         sample_size: int,
-        seed: int = None,
+        seed: int | None = None,
     ) -> SamplingResult:
         if seed is not None:
             random.seed(seed)
@@ -213,7 +213,7 @@ class DataSamplingUtilities:
             sample_percentage=Decimal(str(round(len(reservoir) / total_count * 100, 2))) if total_count > 0 else Decimal("0"),
             sample_records=reservoir,
             sampling_seed=seed or self._default_seed,
-            sampled_at=datetime.utcnow(),
+            sampled_at=datetime.now(UTC),
         )
 
     def set_default_seed(self, seed: int) -> None:

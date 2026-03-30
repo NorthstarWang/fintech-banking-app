@@ -1,13 +1,23 @@
 """Business Continuity Service - Business logic for BCP/DR management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.business_continuity_models import (
-    BusinessProcess, BusinessContinuityPlan, DisasterRecoveryPlan, BCPTest,
-    BCPIncident, CrisisTeamMember, BCPMetrics, BCPStatus, CriticalityLevel,
-    DisasterType, RecoveryStrategy, TestType
+    BCPIncident,
+    BCPMetrics,
+    BCPStatus,
+    BCPTest,
+    BusinessContinuityPlan,
+    BusinessProcess,
+    CrisisTeamMember,
+    CriticalityLevel,
+    DisasterRecoveryPlan,
+    DisasterType,
+    RecoveryStrategy,
+    TestType,
 )
 from ..repositories.business_continuity_repository import business_continuity_repository
 
@@ -30,9 +40,9 @@ class BusinessContinuityService:
         normal_staff: int,
         recovery_strategy: RecoveryStrategy,
         financial_impact_per_hour: Decimal,
-        dependencies: List[str] = None,
-        systems_required: List[str] = None,
-        vendors_required: List[str] = None
+        dependencies: list[str] | None = None,
+        systems_required: list[str] | None = None,
+        vendors_required: list[str] | None = None
     ) -> BusinessProcess:
         process = BusinessProcess(
             process_name=process_name,
@@ -55,14 +65,14 @@ class BusinessContinuityService:
         await self.repository.save_process(process)
         return process
 
-    async def get_process(self, process_id: UUID) -> Optional[BusinessProcess]:
+    async def get_process(self, process_id: UUID) -> BusinessProcess | None:
         return await self.repository.find_process_by_id(process_id)
 
     async def list_processes(
         self,
-        criticality: Optional[CriticalityLevel] = None,
-        business_unit: Optional[str] = None
-    ) -> List[BusinessProcess]:
+        criticality: CriticalityLevel | None = None,
+        business_unit: str | None = None
+    ) -> list[BusinessProcess]:
         processes = await self.repository.find_all_processes()
 
         if criticality:
@@ -79,11 +89,11 @@ class BusinessContinuityService:
         business_unit: str,
         plan_owner: str,
         scope: str,
-        objectives: List[str],
-        assumptions: List[str],
-        processes_covered: List[UUID],
-        activation_criteria: List[str],
-        deactivation_criteria: List[str],
+        objectives: list[str],
+        assumptions: list[str],
+        processes_covered: list[UUID],
+        activation_criteria: list[str],
+        deactivation_criteria: list[str],
         document_location: str
     ) -> BusinessContinuityPlan:
         plan = BusinessContinuityPlan(
@@ -103,14 +113,14 @@ class BusinessContinuityService:
         await self.repository.save_bcp(plan)
         return plan
 
-    async def get_bcp(self, plan_id: UUID) -> Optional[BusinessContinuityPlan]:
+    async def get_bcp(self, plan_id: UUID) -> BusinessContinuityPlan | None:
         return await self.repository.find_bcp_by_id(plan_id)
 
     async def list_bcps(
         self,
-        status: Optional[BCPStatus] = None,
-        business_unit: Optional[str] = None
-    ) -> List[BusinessContinuityPlan]:
+        status: BCPStatus | None = None,
+        business_unit: str | None = None
+    ) -> list[BusinessContinuityPlan]:
         plans = await self.repository.find_all_bcps()
 
         if status:
@@ -124,7 +134,7 @@ class BusinessContinuityService:
         self,
         plan_id: UUID,
         approved_by: str
-    ) -> Optional[BusinessContinuityPlan]:
+    ) -> BusinessContinuityPlan | None:
         plan = await self.repository.find_bcp_by_id(plan_id)
         if not plan:
             return None
@@ -139,7 +149,7 @@ class BusinessContinuityService:
         await self.repository.update_bcp(plan)
         return plan
 
-    async def activate_bcp(self, plan_id: UUID) -> Optional[BusinessContinuityPlan]:
+    async def activate_bcp(self, plan_id: UUID) -> BusinessContinuityPlan | None:
         plan = await self.repository.find_bcp_by_id(plan_id)
         if not plan:
             return None
@@ -161,10 +171,10 @@ class BusinessContinuityService:
         backup_frequency: str,
         backup_location: str,
         backup_retention: str,
-        recovery_procedures: List[str],
-        verification_steps: List[str],
+        recovery_procedures: list[str],
+        verification_steps: list[str],
         owner: str,
-        dependencies: List[str] = None
+        dependencies: list[str] | None = None
     ) -> DisasterRecoveryPlan:
         plan = DisasterRecoveryPlan(
             plan_name=plan_name,
@@ -187,14 +197,14 @@ class BusinessContinuityService:
         await self.repository.save_drp(plan)
         return plan
 
-    async def get_drp(self, plan_id: UUID) -> Optional[DisasterRecoveryPlan]:
+    async def get_drp(self, plan_id: UUID) -> DisasterRecoveryPlan | None:
         return await self.repository.find_drp_by_id(plan_id)
 
     async def list_drps(
         self,
-        status: Optional[BCPStatus] = None,
-        criticality: Optional[CriticalityLevel] = None
-    ) -> List[DisasterRecoveryPlan]:
+        status: BCPStatus | None = None,
+        criticality: CriticalityLevel | None = None
+    ) -> list[DisasterRecoveryPlan]:
         plans = await self.repository.find_all_drps()
 
         if status:
@@ -211,10 +221,10 @@ class BusinessContinuityService:
         test_type: TestType,
         test_date: date,
         scope: str,
-        objectives: List[str],
-        scenarios_tested: List[str],
+        objectives: list[str],
+        scenarios_tested: list[str],
         test_coordinator: str,
-        participants: List[str]
+        participants: list[str]
     ) -> BCPTest:
         test = BCPTest(
             plan_id=plan_id,
@@ -240,10 +250,10 @@ class BusinessContinuityService:
         test_result: str,
         rto_achieved: int,
         rpo_achieved: int,
-        findings: List[str],
-        recommendations: List[str],
-        lessons_learned: List[str]
-    ) -> Optional[BCPTest]:
+        findings: list[str],
+        recommendations: list[str],
+        lessons_learned: list[str]
+    ) -> BCPTest | None:
         test = await self.repository.find_test_by_id(test_id)
         if not test:
             return None
@@ -268,7 +278,7 @@ class BusinessContinuityService:
 
         return test
 
-    async def get_plan_tests(self, plan_id: UUID) -> List[BCPTest]:
+    async def get_plan_tests(self, plan_id: UUID) -> list[BCPTest]:
         return await self.repository.find_tests_by_plan(plan_id)
 
     async def declare_incident(
@@ -276,12 +286,12 @@ class BusinessContinuityService:
         incident_name: str,
         disaster_type: DisasterType,
         declared_by: str,
-        affected_locations: List[str],
-        affected_processes: List[UUID],
+        affected_locations: list[str],
+        affected_processes: list[UUID],
         impact_description: str,
         plan_activated: UUID
     ) -> BCPIncident:
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         incident = BCPIncident(
             incident_name=incident_name,
@@ -301,12 +311,12 @@ class BusinessContinuityService:
 
         return incident
 
-    async def start_recovery(self, incident_id: UUID) -> Optional[BCPIncident]:
+    async def start_recovery(self, incident_id: UUID) -> BCPIncident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.recovery_start_time = datetime.utcnow()
+        incident.recovery_start_time = datetime.now(UTC)
         incident.status = "recovering"
 
         return incident
@@ -314,13 +324,13 @@ class BusinessContinuityService:
     async def complete_recovery(
         self,
         incident_id: UUID,
-        lessons_learned: List[str]
-    ) -> Optional[BCPIncident]:
+        lessons_learned: list[str]
+    ) -> BCPIncident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.recovery_end_time = datetime.utcnow()
+        incident.recovery_end_time = datetime.now(UTC)
         incident.status = "recovered"
         incident.lessons_learned = lessons_learned
 
@@ -335,19 +345,19 @@ class BusinessContinuityService:
         self,
         incident_id: UUID,
         financial_impact: Decimal
-    ) -> Optional[BCPIncident]:
+    ) -> BCPIncident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.deactivation_time = datetime.utcnow()
+        incident.deactivation_time = datetime.now(UTC)
         incident.status = "closed"
         incident.financial_impact = financial_impact
         incident.post_incident_review_date = date.today()
 
         return incident
 
-    async def get_active_incidents(self) -> List[BCPIncident]:
+    async def get_active_incidents(self) -> list[BCPIncident]:
         incidents = await self.repository.find_all_incidents()
         return [i for i in incidents if i.status in ["active", "recovering"]]
 
@@ -358,11 +368,11 @@ class BusinessContinuityService:
         primary_contact: str,
         primary_phone: str,
         primary_email: str,
-        responsibilities: List[str],
-        alternate_contact: Optional[str] = None,
-        alternate_phone: Optional[str] = None,
-        backup_person: Optional[str] = None,
-        backup_phone: Optional[str] = None
+        responsibilities: list[str],
+        alternate_contact: str | None = None,
+        alternate_phone: str | None = None,
+        backup_person: str | None = None,
+        backup_phone: str | None = None
     ) -> CrisisTeamMember:
         member = CrisisTeamMember(
             team_name=team_name,
@@ -380,12 +390,12 @@ class BusinessContinuityService:
         await self.repository.save_team_member(member)
         return member
 
-    async def get_crisis_team(self, team_name: str) -> List[CrisisTeamMember]:
+    async def get_crisis_team(self, team_name: str) -> list[CrisisTeamMember]:
         return await self.repository.find_team_members_by_team(team_name)
 
     async def generate_metrics(
         self,
-        business_unit: Optional[str] = None
+        business_unit: str | None = None
     ) -> BCPMetrics:
         processes = await self.list_processes(business_unit=business_unit)
         bcps = await self.list_bcps(business_unit=business_unit)
@@ -440,7 +450,7 @@ class BusinessContinuityService:
         await self.repository.save_metrics(metrics)
         return metrics
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

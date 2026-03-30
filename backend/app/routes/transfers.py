@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -82,7 +82,7 @@ async def transfer_money(
         status=TransactionStatus.COMPLETED,
         description=transfer_data.description or f"Transfer to {transfer_data.destination_account_id}",
         reference_number=f"TRF{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        transaction_date=datetime.utcnow(),
+        transaction_date=datetime.now(UTC),
         category_id=15,  # Transfer category
         metadata={
             "transfer_type": "debit",
@@ -105,7 +105,7 @@ async def transfer_money(
             status=TransactionStatus.COMPLETED,
             description=f"Transfer from {source_account.name}",
             reference_number=f"TRF{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            transaction_date=datetime.utcnow(),
+            transaction_date=datetime.now(UTC),
             category_id=15,  # Transfer category
             metadata={
                 "transfer_type": "credit",
@@ -199,12 +199,12 @@ async def transfer_money(
                 },
                 is_draft=False,
                 is_read=False,
-                sent_at=datetime.utcnow()
+                sent_at=datetime.now(UTC)
             )
             db_session.add(transaction_message)
 
             # Update conversation last message time
-            conversation.last_message_at = datetime.utcnow()
+            conversation.last_message_at = datetime.now(UTC)
 
             db_session.commit()
 
@@ -254,7 +254,7 @@ async def deposit_money(
         status=TransactionStatus.COMPLETED,
         description=deposit_data.description or "Deposit",
         reference_number=f"DEP{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        transaction_date=datetime.utcnow()
+        transaction_date=datetime.now(UTC)
     )
     # Update account balance
     account.balance += deposit_data.amount
@@ -439,7 +439,7 @@ async def send_money(
         status=TransactionStatus.COMPLETED,
         description=send_data.description or f"Sent to {recipient_user.username}",
         reference_number=f"SND{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        transaction_date=datetime.utcnow(),
+        transaction_date=datetime.now(UTC),
         category_id=15,  # Transfer category
         metadata={
             "transfer_type": "send_money",
@@ -459,7 +459,7 @@ async def send_money(
         status=TransactionStatus.COMPLETED,
         description=f"Received from {current_user.get('username', 'User')}",
         reference_number=f"RCV{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        transaction_date=datetime.utcnow(),
+        transaction_date=datetime.now(UTC),
         category_id=15,  # Transfer category
         metadata={
             "transfer_type": "receive_money",

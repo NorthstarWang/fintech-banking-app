@@ -1,15 +1,23 @@
 """Incident Routes - API endpoints for operational incident management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
-from datetime import datetime, date
-from pydantic import BaseModel
+from datetime import date, datetime
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.incident_models import (
-    Incident, IncidentTimeline, IncidentEscalation, IncidentRootCauseAnalysis,
-    IncidentCorrectiveAction, IncidentReport, IncidentSeverity, IncidentStatus,
-    IncidentCategory, IncidentImpact
+    Incident,
+    IncidentCategory,
+    IncidentCorrectiveAction,
+    IncidentEscalation,
+    IncidentImpact,
+    IncidentReport,
+    IncidentRootCauseAnalysis,
+    IncidentSeverity,
+    IncidentStatus,
+    IncidentTimeline,
 )
 from ..services.incident_service import incident_service
 
@@ -25,15 +33,15 @@ class CreateIncidentRequest(BaseModel):
     occurred_date: datetime
     detected_date: datetime
     business_unit: str
-    affected_systems: Optional[List[str]] = None
-    impact_types: Optional[List[IncidentImpact]] = None
-    estimated_loss: Optional[Decimal] = None
+    affected_systems: list[str] | None = None
+    impact_types: list[IncidentImpact] | None = None
+    estimated_loss: Decimal | None = None
 
 
 class UpdateStatusRequest(BaseModel):
     new_status: IncidentStatus
     updated_by: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class AssignRequest(BaseModel):
@@ -49,12 +57,12 @@ class EscalateRequest(BaseModel):
 
 class RCARequest(BaseModel):
     analyst: str
-    root_causes: List[str]
-    contributing_factors: List[str]
+    root_causes: list[str]
+    contributing_factors: list[str]
     methodology: str
     findings: str
-    recommendations: List[str]
-    preventive_measures: List[str]
+    recommendations: list[str]
+    preventive_measures: list[str]
 
 
 class CorrectiveActionRequest(BaseModel):
@@ -62,7 +70,7 @@ class CorrectiveActionRequest(BaseModel):
     description: str
     assigned_to: str
     due_date: date
-    analysis_id: Optional[UUID] = None
+    analysis_id: UUID | None = None
 
 
 @router.post("/", response_model=Incident)
@@ -101,14 +109,14 @@ async def get_incident_by_number(incident_number: str):
     return incident
 
 
-@router.get("/", response_model=List[Incident])
+@router.get("/", response_model=list[Incident])
 async def list_incidents(
-    status: Optional[IncidentStatus] = Query(None),
-    severity: Optional[IncidentSeverity] = Query(None),
-    category: Optional[IncidentCategory] = Query(None),
-    business_unit: Optional[str] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None)
+    status: IncidentStatus | None = Query(None),
+    severity: IncidentSeverity | None = Query(None),
+    category: IncidentCategory | None = Query(None),
+    business_unit: str | None = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None)
 ):
     """List incidents with filters"""
     return await incident_service.list_incidents(
@@ -186,7 +194,7 @@ async def complete_action(action_id: UUID, verified_by: str):
     return action
 
 
-@router.get("/{incident_id}/timeline", response_model=List[IncidentTimeline])
+@router.get("/{incident_id}/timeline", response_model=list[IncidentTimeline])
 async def get_timeline(incident_id: UUID):
     """Get incident timeline"""
     return await incident_service.get_incident_timeline(incident_id)

@@ -1,9 +1,9 @@
 """Data Timeliness Analysis Utilities"""
 
-from typing import List, Dict, Any, Optional
-from decimal import Decimal
-from datetime import datetime, date, timedelta
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 
@@ -14,7 +14,7 @@ class TimelinessRule:
     date_field: str
     max_age_days: int
     freshness_level: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
 
 
 @dataclass
@@ -35,13 +35,13 @@ class TimelinessCheckResult:
     stale_records: int
     timeliness_rate: Decimal
     average_age_days: Decimal
-    stale_record_details: List[StaleRecord]
+    stale_record_details: list[StaleRecord]
     checked_at: datetime
 
 
 class DataTimelinessUtilities:
     def __init__(self):
-        self._rules: Dict[str, TimelinessRule] = {}
+        self._rules: dict[str, TimelinessRule] = {}
         self._freshness_thresholds = {
             "real_time": 0,
             "near_real_time": 1,
@@ -58,7 +58,7 @@ class DataTimelinessUtilities:
         date_field: str,
         max_age_days: int,
         freshness_level: str = "daily",
-        parameters: Dict[str, Any] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> TimelinessRule:
         rule = TimelinessRule(
             rule_id=str(uuid4()),
@@ -73,12 +73,12 @@ class DataTimelinessUtilities:
 
     def check_timeliness(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         rule: TimelinessRule,
         id_field: str = "id",
-        reference_date: datetime = None,
+        reference_date: datetime | None = None,
     ) -> TimelinessCheckResult:
-        reference = reference_date or datetime.utcnow()
+        reference = reference_date or datetime.now(UTC)
         if isinstance(reference, datetime):
             reference = reference.date() if hasattr(reference, 'date') else reference
 
@@ -129,10 +129,10 @@ class DataTimelinessUtilities:
             timeliness_rate=timeliness_rate,
             average_age_days=avg_age,
             stale_record_details=stale_records,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(UTC),
         )
 
-    def _parse_date(self, value: Any) -> Optional[date]:
+    def _parse_date(self, value: Any) -> date | None:
         if isinstance(value, datetime):
             return value.date()
         if isinstance(value, date):
@@ -157,20 +157,19 @@ class DataTimelinessUtilities:
         excess = age_days - max_age
         if excess <= max_age:
             return "slightly_stale"
-        elif excess <= max_age * 3:
+        if excess <= max_age * 3:
             return "moderately_stale"
-        elif excess <= max_age * 7:
+        if excess <= max_age * 7:
             return "very_stale"
-        else:
-            return "critically_stale"
+        return "critically_stale"
 
     def calculate_data_currency(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         date_field: str,
-        reference_date: datetime = None,
-    ) -> Dict[str, Any]:
-        reference = reference_date or datetime.utcnow()
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        reference = reference_date or datetime.now(UTC)
         if isinstance(reference, datetime):
             reference = reference.date()
 
@@ -207,11 +206,11 @@ class DataTimelinessUtilities:
 
     def get_freshness_distribution(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         date_field: str,
-        reference_date: datetime = None,
-    ) -> Dict[str, int]:
-        reference = reference_date or datetime.utcnow()
+        reference_date: datetime | None = None,
+    ) -> dict[str, int]:
+        reference = reference_date or datetime.now(UTC)
         if isinstance(reference, datetime):
             reference = reference.date()
 
@@ -253,10 +252,10 @@ class DataTimelinessUtilities:
     def set_freshness_threshold(self, level: str, days: int) -> None:
         self._freshness_thresholds[level] = days
 
-    def get_freshness_thresholds(self) -> Dict[str, int]:
+    def get_freshness_thresholds(self) -> dict[str, int]:
         return self._freshness_thresholds.copy()
 
-    def get_rules(self) -> Dict[str, TimelinessRule]:
+    def get_rules(self) -> dict[str, TimelinessRule]:
         return self._rules.copy()
 
 

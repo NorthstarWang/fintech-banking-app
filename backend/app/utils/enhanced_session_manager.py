@@ -4,7 +4,7 @@ Provides secure session handling for banking applications with multi-device supp
 """
 import secrets
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import Request
 
@@ -373,7 +373,7 @@ class EnhancedSessionManager:
             "recent_events": len(recent_events),
             "suspicious_events": len(suspicious_events),
             "last_login": max([s.created_at for s in self.sessions.values() if s.user_id == user_id], default=0),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.now(UTC).isoformat()
         }
 
 

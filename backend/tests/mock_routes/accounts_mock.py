@@ -4,7 +4,7 @@ Complete mock implementation for accounts routes.
 from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -72,7 +72,7 @@ async def create_account(
         "balance": request.initial_balance,
         "currency": "USD",
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     if request.credit_limit is not None:
@@ -156,7 +156,7 @@ async def update_account(
     if request.is_active is not None:
         account["is_active"] = request.is_active
     
-    account["updated_at"] = datetime.utcnow().isoformat()
+    account["updated_at"] = datetime.now(timezone.utc).isoformat()
     return account
 
 @router.delete("/{account_id}")
@@ -182,7 +182,7 @@ async def delete_account(
     
     # Soft delete - mark as inactive
     account["is_active"] = False
-    account["closed_at"] = datetime.utcnow().isoformat()
+    account["closed_at"] = datetime.now(timezone.utc).isoformat()
     
     return {"message": "Account closed successfully"}
 
@@ -228,7 +228,7 @@ async def get_balance_history(
     # Return balance history with change field
     current_balance = account["balance"]
     return [{
-        "date": datetime.utcnow().isoformat(),
+        "date": datetime.now(timezone.utc).isoformat(),
         "balance": current_balance,
         "change": 0.0  # No change for the current entry
     }]
@@ -292,7 +292,7 @@ async def create_joint_account(
         "user_id": current_user["id"],
         "owners": owners,
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.accounts.append(account)

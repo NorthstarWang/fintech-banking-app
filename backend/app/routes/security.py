@@ -2,7 +2,7 @@ import base64
 import io
 import secrets
 import string
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pyotp
@@ -103,7 +103,7 @@ async def setup_two_factor(
         "method": setup_data.method,
         "is_enabled": False,
         "is_primary": False,
-        "created_at": two_factor.created_at if existing else datetime.utcnow()
+        "created_at": two_factor.created_at if existing else datetime.now(UTC)
     }
 
     # Setup based on method
@@ -275,7 +275,7 @@ async def get_two_factor_methods(
         TwoFactorAuth.user_id == current_user['user_id']
     ).all()
 
-    return [TwoFactorResponse.from_orm(m) for m in methods]
+    return [TwoFactorResponse.model_validate(m) for m in methods]
 
 @router.delete("/2fa/{method}")
 async def disable_two_factor(
@@ -337,7 +337,7 @@ async def get_user_devices(
 
     devices = query.order_by(UserDevice.last_active_at.desc()).all()
 
-    return [UserDeviceResponse.from_orm(d) for d in devices]
+    return [UserDeviceResponse.model_validate(d) for d in devices]
 
 @router.get("/devices/current", response_model=UserDeviceResponse)
 async def get_current_device(
@@ -347,7 +347,7 @@ async def get_current_device(
 ):
     """Get current device information"""
     device = get_or_create_device(db_session, current_user['user_id'], request)
-    return UserDeviceResponse.from_orm(device)
+    return UserDeviceResponse.model_validate(device)
 
 @router.put("/devices/{device_id}/trust", response_model=UserDeviceResponse)
 async def update_device_trust(
@@ -372,7 +372,7 @@ async def update_device_trust(
     db_session.commit()
     db_session.refresh(device)
 
-    return UserDeviceResponse.from_orm(device)
+    return UserDeviceResponse.model_validate(device)
 
 @router.delete("/devices/{device_id}")
 async def remove_device(
@@ -412,7 +412,7 @@ async def get_security_audit_logs(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get security audit logs for current user"""
-    since_date = datetime.utcnow() - timedelta(days=days_back)
+    since_date = datetime.now(UTC) - timedelta(days=days_back)
 
     query = db_session.query(SecurityAuditLog).filter(
         SecurityAuditLog.user_id == current_user['user_id'],
@@ -426,7 +426,7 @@ async def get_security_audit_logs(
 
     results = []
     for log in logs:
-        response = SecurityAuditLogResponse.from_orm(log)
+        response = SecurityAuditLogResponse.model_validate(log)
         if log.device:
             response.device_name = log.device.device_name
         results.append(response)
@@ -440,7 +440,7 @@ async def get_security_summary(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get security summary for current user"""
-    since_date = datetime.utcnow() - timedelta(days=days_back)
+    since_date = datetime.now(UTC) - timedelta(days=days_back)
 
     # Count events by type
     event_counts = {}
@@ -490,7 +490,7 @@ async def export_security_report_pdf(
     user = db_session.query(User).filter(User.id == current_user['user_id']).first()
 
     # Get security events (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(UTC) - timedelta(days=30)
     security_events = db_session.query(SecurityEvent).filter(
         SecurityEvent.user_id == current_user['user_id'],
         SecurityEvent.created_at >= thirty_days_ago

@@ -4,11 +4,12 @@ Fraud Rule Models
 Defines data structures for fraud detection rules.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class RuleType(str, Enum):
@@ -55,32 +56,32 @@ class FraudRule(BaseModel):
     status: RuleStatus = RuleStatus.ACTIVE
     priority: int = 1
 
-    conditions: List[RuleCondition] = Field(default_factory=list)
+    conditions: list[RuleCondition] = Field(default_factory=list)
     logic_expression: str
 
     action: RuleAction = RuleAction.ALERT
     alert_severity: str = "medium"
     score_weight: float = 1.0
 
-    applicable_channels: List[str] = Field(default_factory=list)
-    applicable_products: List[str] = Field(default_factory=list)
-    excluded_customers: List[str] = Field(default_factory=list)
+    applicable_channels: list[str] = Field(default_factory=list)
+    applicable_products: list[str] = Field(default_factory=list)
+    excluded_customers: list[str] = Field(default_factory=list)
 
-    effective_from: datetime = Field(default_factory=datetime.utcnow)
-    effective_to: Optional[datetime] = None
+    effective_from: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    effective_to: datetime | None = None
 
     hit_count: int = 0
-    last_hit_at: Optional[datetime] = None
+    last_hit_at: datetime | None = None
     false_positive_rate: float = 0.0
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     version: int = 1
-    parent_rule_id: Optional[UUID] = None
+    parent_rule_id: UUID | None = None
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RuleSet(BaseModel):
@@ -88,16 +89,16 @@ class RuleSet(BaseModel):
     ruleset_name: str
     description: str
 
-    rules: List[UUID] = Field(default_factory=list)
+    rules: list[UUID] = Field(default_factory=list)
     evaluation_mode: str = "all"
 
     is_active: bool = True
     priority: int = 1
 
-    applicable_channels: List[str] = Field(default_factory=list)
+    applicable_channels: list[str] = Field(default_factory=list)
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RuleEvaluationResult(BaseModel):
@@ -106,7 +107,7 @@ class RuleEvaluationResult(BaseModel):
     matched: bool
     score: float
     action: RuleAction
-    conditions_matched: List[str] = Field(default_factory=list)
+    conditions_matched: list[str] = Field(default_factory=list)
     evaluation_time_ms: float = 0.0
 
 

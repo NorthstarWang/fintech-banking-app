@@ -7,7 +7,7 @@ and compromise detection capabilities.
 
 import pytest
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.security.device_fingerprint import DeviceFingerprint, TrustedDevice
 from app.storage.memory_adapter import db
@@ -259,7 +259,7 @@ class TestDeviceCleanup:
         )
 
         # Manually set last_seen_at to old date
-        old_date = datetime.utcnow() - timedelta(days=days_to_keep + 1)
+        old_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep + 1)
         device.last_seen_at = old_date
         db_session.commit()
 
@@ -279,7 +279,7 @@ class TestDeviceCleanup:
         )
 
         # Set last_seen_at to recent date
-        recent_date = datetime.utcnow() - timedelta(days=days_to_keep - 1)
+        recent_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep - 1)
         device.last_seen_at = recent_date
         db_session.commit()
 
@@ -364,7 +364,7 @@ class TestDeviceFingerprintIntegration:
         assert is_changed is False
 
         # 4. Update last_seen_at
-        old_time = datetime.utcnow() - timedelta(days=40)
+        old_time = datetime.now(timezone.utc) - timedelta(days=40)
         device.last_seen_at = old_time
         db_session.commit()
 

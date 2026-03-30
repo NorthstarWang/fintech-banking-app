@@ -1,23 +1,26 @@
 """Fraud Alert Service - Manages fraud alerts"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
+from uuid import UUID
+
 from ..models.fraud_alert_models import (
-    FraudAlert, FraudAlertSummary, FraudAlertStatistics,
-    FraudAlertStatus, FraudAlertSeverity, FraudType,
-    FraudAlertCreateRequest, FraudAlertSearchCriteria
+    FraudAlert,
+    FraudAlertCreateRequest,
+    FraudAlertSearchCriteria,
+    FraudAlertStatistics,
+    FraudAlertStatus,
+    FraudAlertSummary,
 )
 
 
 class FraudAlertService:
     def __init__(self):
-        self._alerts: Dict[UUID, FraudAlert] = {}
+        self._alerts: dict[UUID, FraudAlert] = {}
         self._counter = 0
 
     def _generate_number(self) -> str:
         self._counter += 1
-        return f"FRD-{datetime.utcnow().strftime('%Y%m%d')}-{self._counter:06d}"
+        return f"FRD-{datetime.now(UTC).strftime('%Y%m%d')}-{self._counter:06d}"
 
     async def create_alert(self, request: FraudAlertCreateRequest) -> FraudAlert:
         alert = FraudAlert(
@@ -37,27 +40,27 @@ class FraudAlertService:
         self._alerts[alert.alert_id] = alert
         return alert
 
-    async def get_alert(self, alert_id: UUID) -> Optional[FraudAlert]:
+    async def get_alert(self, alert_id: UUID) -> FraudAlert | None:
         return self._alerts.get(alert_id)
 
-    async def update_status(self, alert_id: UUID, status: FraudAlertStatus) -> Optional[FraudAlert]:
+    async def update_status(self, alert_id: UUID, status: FraudAlertStatus) -> FraudAlert | None:
         alert = self._alerts.get(alert_id)
         if alert:
             alert.status = status
-            alert.updated_at = datetime.utcnow()
+            alert.updated_at = datetime.now(UTC)
             if status in [FraudAlertStatus.CONFIRMED_FRAUD, FraudAlertStatus.FALSE_POSITIVE, FraudAlertStatus.CLOSED]:
-                alert.resolved_at = datetime.utcnow()
+                alert.resolved_at = datetime.now(UTC)
         return alert
 
-    async def assign_alert(self, alert_id: UUID, assignee: str) -> Optional[FraudAlert]:
+    async def assign_alert(self, alert_id: UUID, assignee: str) -> FraudAlert | None:
         alert = self._alerts.get(alert_id)
         if alert:
             alert.assigned_to = assignee
             alert.status = FraudAlertStatus.ASSIGNED
-            alert.updated_at = datetime.utcnow()
+            alert.updated_at = datetime.now(UTC)
         return alert
 
-    async def search_alerts(self, criteria: FraudAlertSearchCriteria) -> List[FraudAlertSummary]:
+    async def search_alerts(self, criteria: FraudAlertSearchCriteria) -> list[FraudAlertSummary]:
         results = []
         for alert in self._alerts.values():
             if criteria.fraud_types and alert.fraud_type not in criteria.fraud_types:

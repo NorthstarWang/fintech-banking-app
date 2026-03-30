@@ -70,11 +70,12 @@ class TestAuthenticationSecurity:
         })
         assert login_response.status_code == 200
 
-        # Extract cookies from login response
-        cookies = dict(login_response.cookies)
+        # Set cookies from login response on the client
+        for name, value in login_response.cookies.items():
+            client.cookies.set(name, value)
 
         # Use session cookie to access protected endpoint
-        response = client.get("/api/auth/me", cookies=cookies)
+        response = client.get("/api/auth/me")
         assert response.status_code == 200
 
     def test_concurrent_session_detection(self):
@@ -174,7 +175,8 @@ class TestInputValidation:
             "password": "testpassword123"
         })
 
-        cookies = dict(login_response.cookies)
+        for name, value in login_response.cookies.items():
+            client.cookies.set(name, value)
 
         # Test invalid amount formats
         invalid_amounts = [
@@ -186,7 +188,6 @@ class TestInputValidation:
 
         for amount in invalid_amounts:
             response = client.post("/api/accounts/",
-                cookies=cookies,
                 json={
                     "name": "Test Account",
                     "account_type": "CHECKING",
@@ -215,11 +216,11 @@ class TestCSRFProtection:
             "password": "testpassword123"
         })
 
-        cookies = dict(login_response.cookies)
+        for name, value in login_response.cookies.items():
+            client.cookies.set(name, value)
 
         # Try to make a state-changing request without CSRF token
         response = client.post("/api/accounts/",
-            cookies=cookies,
             json={
                 "name": "Test Account",
                 "account_type": "CHECKING",
@@ -258,10 +259,11 @@ class TestMFASecurity:
             "password": "testpassword123"
         })
 
-        cookies = dict(login_response.cookies)
+        for name, value in login_response.cookies.items():
+            client.cookies.set(name, value)
 
         # Setup MFA
-        setup_response = client.post("/api/auth/mfa/setup", cookies=cookies)
+        setup_response = client.post("/api/auth/mfa/setup")
         assert setup_response.status_code == 200
 
         setup_data = setup_response.json()

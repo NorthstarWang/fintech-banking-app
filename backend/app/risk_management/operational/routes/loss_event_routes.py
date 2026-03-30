@@ -1,15 +1,23 @@
 """Loss Event Routes - API endpoints for operational loss tracking"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.loss_event_models import (
-    LossEvent, LossRecovery, LossProvision, LossEventCausality,
-    LossDistribution, OperationalLossCapital, LossEventReport,
-    LossEventType, LossEventStatus, RecoveryType
+    LossDistribution,
+    LossEvent,
+    LossEventCausality,
+    LossEventReport,
+    LossEventStatus,
+    LossEventType,
+    LossProvision,
+    LossRecovery,
+    OperationalLossCapital,
+    RecoveryType,
 )
 from ..services.loss_event_service import loss_event_service
 
@@ -29,8 +37,8 @@ class CreateLossEventRequest(BaseModel):
     gross_loss: Decimal
     reported_by: str
     near_miss: bool = False
-    near_miss_amount: Optional[Decimal] = None
-    related_incident_id: Optional[UUID] = None
+    near_miss_amount: Decimal | None = None
+    related_incident_id: UUID | None = None
 
 
 class UpdateStatusRequest(BaseModel):
@@ -43,7 +51,7 @@ class RecoveryRequest(BaseModel):
     recovery_amount: Decimal
     recovery_date: date
     source: str
-    reference_number: Optional[str] = None
+    reference_number: str | None = None
 
 
 class ProvisionRequest(BaseModel):
@@ -59,7 +67,7 @@ class CausalityRequest(BaseModel):
     cause_description: str
     contributing_factor: bool = False
     control_failure: bool = False
-    failed_control_id: Optional[UUID] = None
+    failed_control_id: UUID | None = None
 
 
 class CapitalRequest(BaseModel):
@@ -108,14 +116,14 @@ async def get_event_by_reference(reference: str):
     return event
 
 
-@router.get("/", response_model=List[LossEvent])
+@router.get("/", response_model=list[LossEvent])
 async def list_events(
-    event_type: Optional[LossEventType] = Query(None),
-    status: Optional[LossEventStatus] = Query(None),
-    business_line: Optional[str] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    min_loss: Optional[Decimal] = Query(None)
+    event_type: LossEventType | None = Query(None),
+    status: LossEventStatus | None = Query(None),
+    business_line: str | None = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    min_loss: Decimal | None = Query(None)
 ):
     """List loss events with filters"""
     return await loss_event_service.list_events(
@@ -147,7 +155,7 @@ async def add_recovery(event_id: UUID, request: RecoveryRequest):
     )
 
 
-@router.get("/{event_id}/recoveries", response_model=List[LossRecovery])
+@router.get("/{event_id}/recoveries", response_model=list[LossRecovery])
 async def get_recoveries(event_id: UUID):
     """Get recoveries for loss event"""
     return await loss_event_service.get_event_recoveries(event_id)

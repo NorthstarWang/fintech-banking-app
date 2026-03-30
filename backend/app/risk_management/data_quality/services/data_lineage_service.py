@@ -1,11 +1,16 @@
 """Data Lineage Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.data_lineage_models import (
-    DataAsset, DataFlow, ColumnLineage, DataPipeline,
-    ImpactAnalysis, LineageSnapshot, DataTransformation
+    ColumnLineage,
+    DataAsset,
+    DataFlow,
+    DataPipeline,
+    DataTransformation,
+    ImpactAnalysis,
+    LineageSnapshot,
 )
 from ..repositories.data_lineage_repository import data_lineage_repository
 
@@ -17,7 +22,7 @@ class DataLineageService:
     async def register_asset(
         self, asset_name: str, asset_type: str, database: str = "",
         schema_name: str = "", description: str = "", owner: str = "",
-        steward: str = "", tags: List[str] = None
+        steward: str = "", tags: list[str] | None = None
     ) -> DataAsset:
         asset = DataAsset(
             asset_name=asset_name, asset_type=asset_type, database=database,
@@ -56,7 +61,7 @@ class DataLineageService:
 
     async def create_pipeline(
         self, pipeline_name: str, pipeline_type: str, description: str,
-        source_systems: List[str], target_systems: List[str], owner: str
+        source_systems: list[str], target_systems: list[str], owner: str
     ) -> DataPipeline:
         pipeline = DataPipeline(
             pipeline_name=pipeline_name, pipeline_type=pipeline_type,
@@ -106,7 +111,7 @@ class DataLineageService:
 
     async def add_transformation(
         self, flow_id: UUID, transformation_name: str, transformation_type: str,
-        source_columns: List[str], target_columns: List[str], logic: str,
+        source_columns: list[str], target_columns: list[str], logic: str,
         documented_by: str
     ) -> DataTransformation:
         transformation = DataTransformation(
@@ -117,7 +122,7 @@ class DataLineageService:
         await self.repository.save_transformation(transformation)
         return transformation
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

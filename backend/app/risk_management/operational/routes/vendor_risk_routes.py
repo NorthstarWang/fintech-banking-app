@@ -1,15 +1,25 @@
 """Vendor Risk Routes - API endpoints for third-party risk management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional, Dict
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.vendor_risk_models import (
-    Vendor, VendorContract, VendorAssessment, VendorDueDiligence,
-    VendorIncident, VendorPerformance, VendorRiskMetrics,
-    VendorTier, VendorStatus, ServiceCategory, RiskRating, AssessmentType
+    AssessmentType,
+    RiskRating,
+    ServiceCategory,
+    Vendor,
+    VendorAssessment,
+    VendorContract,
+    VendorDueDiligence,
+    VendorIncident,
+    VendorPerformance,
+    VendorRiskMetrics,
+    VendorStatus,
+    VendorTier,
 )
 from ..services.vendor_risk_service import vendor_risk_service
 
@@ -20,7 +30,7 @@ class RegisterVendorRequest(BaseModel):
     vendor_name: str
     legal_name: str
     service_category: ServiceCategory
-    services_provided: List[str]
+    services_provided: list[str]
     primary_contact: str
     contact_email: str
     contact_phone: str
@@ -64,11 +74,11 @@ class PerformAssessmentRequest(BaseModel):
     reputational_risk_rating: RiskRating
     financial_stability: str
     years_in_business: int
-    certifications: List[str]
-    audit_reports: List[str]
-    insurance_coverage: Dict[str, Decimal]
-    findings: Optional[List[str]] = None
-    recommendations: Optional[List[str]] = None
+    certifications: list[str]
+    audit_reports: list[str]
+    insurance_coverage: dict[str, Decimal]
+    findings: list[str] | None = None
+    recommendations: list[str] | None = None
 
 
 class InitiateDDRequest(BaseModel):
@@ -96,15 +106,15 @@ class RecordPerformanceRequest(BaseModel):
     review_period: str
     period_start: date
     period_end: date
-    sla_metrics: Dict[str, Decimal]
+    sla_metrics: dict[str, Decimal]
     quality_score: Decimal
     delivery_score: Decimal
     responsiveness_score: Decimal
     cost_performance: Decimal
     issues_reported: int
     issues_resolved: int
-    strengths: List[str]
-    areas_for_improvement: List[str]
+    strengths: list[str]
+    areas_for_improvement: list[str]
     reviewer: str
 
 
@@ -141,11 +151,11 @@ async def get_vendor(vendor_id: UUID):
     return vendor
 
 
-@router.get("/", response_model=List[Vendor])
+@router.get("/", response_model=list[Vendor])
 async def list_vendors(
-    status: Optional[VendorStatus] = Query(None),
-    tier: Optional[VendorTier] = Query(None),
-    category: Optional[ServiceCategory] = Query(None),
+    status: VendorStatus | None = Query(None),
+    tier: VendorTier | None = Query(None),
+    category: ServiceCategory | None = Query(None),
     critical_only: bool = Query(False)
 ):
     """List vendors"""
@@ -184,13 +194,13 @@ async def create_contract(vendor_id: UUID, request: CreateContractRequest):
     )
 
 
-@router.get("/{vendor_id}/contracts", response_model=List[VendorContract])
+@router.get("/{vendor_id}/contracts", response_model=list[VendorContract])
 async def get_contracts(vendor_id: UUID):
     """Get vendor contracts"""
     return await vendor_risk_service.get_vendor_contracts(vendor_id)
 
 
-@router.get("/contracts/expiring", response_model=List[VendorContract])
+@router.get("/contracts/expiring", response_model=list[VendorContract])
 async def get_expiring_contracts(days: int = Query(90)):
     """Get contracts expiring soon"""
     return await vendor_risk_service.get_expiring_contracts(days)
@@ -218,7 +228,7 @@ async def perform_assessment(vendor_id: UUID, request: PerformAssessmentRequest)
     )
 
 
-@router.get("/{vendor_id}/assessments", response_model=List[VendorAssessment])
+@router.get("/{vendor_id}/assessments", response_model=list[VendorAssessment])
 async def get_assessments(vendor_id: UUID):
     """Get vendor assessments"""
     return await vendor_risk_service.get_vendor_assessments(vendor_id)
@@ -255,7 +265,7 @@ async def report_incident(vendor_id: UUID, request: ReportIncidentRequest):
     )
 
 
-@router.get("/{vendor_id}/incidents", response_model=List[VendorIncident])
+@router.get("/{vendor_id}/incidents", response_model=list[VendorIncident])
 async def get_incidents(vendor_id: UUID):
     """Get vendor incidents"""
     return await vendor_risk_service.get_vendor_incidents(vendor_id)
@@ -282,7 +292,7 @@ async def record_performance(vendor_id: UUID, request: RecordPerformanceRequest)
     )
 
 
-@router.get("/{vendor_id}/performance", response_model=List[VendorPerformance])
+@router.get("/{vendor_id}/performance", response_model=list[VendorPerformance])
 async def get_performance(vendor_id: UUID):
     """Get vendor performance"""
     return await vendor_risk_service.get_vendor_performance(vendor_id)

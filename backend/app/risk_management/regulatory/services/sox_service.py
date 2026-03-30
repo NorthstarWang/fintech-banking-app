@@ -1,13 +1,22 @@
 """SOX Service - Business logic for Sarbanes-Oxley compliance"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.sox_models import (
-    SOXProcess, SOXControl, SOXRisk, SOXTestPlan, SOXTestResult,
-    SOXDeficiency, ManagementCertification, SOXAuditCommittee, SOXReport,
-    ControlObjective, AssertionType, DeficiencyType
+    AssertionType,
+    ControlObjective,
+    DeficiencyType,
+    ManagementCertification,
+    SOXAuditCommittee,
+    SOXControl,
+    SOXDeficiency,
+    SOXProcess,
+    SOXReport,
+    SOXTestPlan,
+    SOXTestResult,
 )
 from ..repositories.sox_repository import sox_repository
 
@@ -20,7 +29,7 @@ class SOXService:
 
     async def register_process(
         self, process_name: str, process_description: str, business_unit: str, process_owner: str,
-        financial_statement_areas: List[str], assertions_addressed: List[AssertionType],
+        financial_statement_areas: list[str], assertions_addressed: list[AssertionType],
         materiality_threshold: Decimal, risk_rating: str, documentation_location: str
     ) -> SOXProcess:
         self._process_counter += 1
@@ -36,7 +45,7 @@ class SOXService:
 
     async def create_control(
         self, process_id: UUID, control_name: str, control_description: str,
-        control_objective: ControlObjective, assertions: List[AssertionType],
+        control_objective: ControlObjective, assertions: list[AssertionType],
         control_type: str, control_nature: str, control_frequency: str,
         control_owner: str, performer: str, evidence_type: str, evidence_retention: str,
         key_control: bool = False
@@ -68,7 +77,7 @@ class SOXService:
 
     async def record_test_result(
         self, plan_id: UUID, control_id: UUID, tester: str, population_size: int,
-        sample_size: int, items_tested: int, exceptions_found: int, test_evidence: List[str]
+        sample_size: int, items_tested: int, exceptions_found: int, test_evidence: list[str]
     ) -> SOXTestResult:
         exception_rate = Decimal(str(exceptions_found / items_tested)) if items_tested > 0 else Decimal("0")
 
@@ -118,7 +127,7 @@ class SOXService:
 
     async def close_deficiency(
         self, deficiency_id: UUID, closed_by: str
-    ) -> Optional[SOXDeficiency]:
+    ) -> SOXDeficiency | None:
         deficiency = await self.repository.find_deficiency_by_id(deficiency_id)
         if deficiency:
             deficiency.status = "closed"
@@ -128,7 +137,7 @@ class SOXService:
 
     async def create_certification(
         self, fiscal_year: int, certification_type: str, certifier_name: str, certifier_title: str,
-        icfr_effective: bool, material_weaknesses_exist: bool, material_weaknesses_disclosed: List[str]
+        icfr_effective: bool, material_weaknesses_exist: bool, material_weaknesses_disclosed: list[str]
     ) -> ManagementCertification:
         certification = ManagementCertification(
             fiscal_year=fiscal_year, certification_type=certification_type,
@@ -145,11 +154,10 @@ class SOXService:
     async def generate_audit_committee_report(
         self, fiscal_year: int, quarter: int, presented_by: str
     ) -> SOXAuditCommittee:
-        controls = await self.repository.find_all_controls()
         results = await self.repository.find_all_test_results()
         deficiencies = await self.repository.find_all_deficiencies()
 
-        tested = len(set(r.control_id for r in results))
+        tested = len({r.control_id for r in results})
         effective = len([r for r in results if r.overall_conclusion == "effective"])
 
         report = SOXAuditCommittee(
@@ -176,7 +184,7 @@ class SOXService:
 
         in_scope = len([p for p in processes if p.in_scope])
         key_controls = len([c for c in controls if c.key_control])
-        tested = len(set(r.control_id for r in results))
+        tested = len({r.control_id for r in results})
         passed = len([r for r in results if r.overall_conclusion == "effective"])
 
         report = SOXReport(
@@ -195,7 +203,7 @@ class SOXService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

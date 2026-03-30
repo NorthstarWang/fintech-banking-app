@@ -1,9 +1,9 @@
 """Data Transformation Utilities"""
 
-from typing import List, Dict, Any, Optional, Callable
-from decimal import Decimal
-from datetime import datetime
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 
@@ -12,9 +12,9 @@ class TransformationStep:
     step_id: str
     step_name: str
     transformation_type: str
-    source_fields: List[str]
+    source_fields: list[str]
     target_field: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     order: int
 
 
@@ -22,15 +22,15 @@ class TransformationStep:
 class TransformationPipeline:
     pipeline_id: str
     pipeline_name: str
-    steps: List[TransformationStep]
+    steps: list[TransformationStep]
     created_at: datetime
     is_active: bool = True
 
 
 class DataTransformationUtilities:
     def __init__(self):
-        self._pipelines: Dict[str, TransformationPipeline] = {}
-        self._transformers: Dict[str, Callable] = {}
+        self._pipelines: dict[str, TransformationPipeline] = {}
+        self._transformers: dict[str, Callable] = {}
         self._register_default_transformers()
 
     def _register_default_transformers(self) -> None:
@@ -48,7 +48,7 @@ class DataTransformationUtilities:
     def create_pipeline(
         self,
         pipeline_name: str,
-        steps: List[Dict[str, Any]],
+        steps: list[dict[str, Any]],
     ) -> TransformationPipeline:
         transformation_steps = []
         for i, step_config in enumerate(steps):
@@ -67,7 +67,7 @@ class DataTransformationUtilities:
             pipeline_id=str(uuid4()),
             pipeline_name=pipeline_name,
             steps=transformation_steps,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         self._pipelines[pipeline.pipeline_id] = pipeline
         return pipeline
@@ -75,8 +75,8 @@ class DataTransformationUtilities:
     def execute_pipeline(
         self,
         pipeline_id: str,
-        data: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        data: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         pipeline = self._pipelines.get(pipeline_id)
         if not pipeline or not pipeline.is_active:
             return data
@@ -91,9 +91,9 @@ class DataTransformationUtilities:
 
     def transform_record(
         self,
-        record: Dict[str, Any],
-        transformations: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        record: dict[str, Any],
+        transformations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         result = record.copy()
 
         for transform in transformations:
@@ -149,8 +149,8 @@ class DataTransformationUtilities:
         return result
 
     def _transform_concat(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         separator = step.parameters.get("separator", " ")
         result = []
         for record in data:
@@ -161,8 +161,8 @@ class DataTransformationUtilities:
         return result
 
     def _transform_split(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         delimiter = step.parameters.get("delimiter", ",")
         index = step.parameters.get("index", 0)
         source_field = step.source_fields[0] if step.source_fields else ""
@@ -177,8 +177,8 @@ class DataTransformationUtilities:
         return result
 
     def _transform_map(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         mapping = step.parameters.get("mapping", {})
         default = step.parameters.get("default")
         source_field = step.source_fields[0] if step.source_fields else ""
@@ -192,8 +192,8 @@ class DataTransformationUtilities:
         return result
 
     def _transform_calculate(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         operation = step.parameters.get("operation", "add")
 
         result = []
@@ -217,23 +217,23 @@ class DataTransformationUtilities:
         return result
 
     def _transform_aggregate(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         return data
 
     def _transform_pivot(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         return data
 
     def _transform_unpivot(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         return data
 
     def _transform_filter(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         conditions = step.parameters.get("conditions", [])
         result = []
 
@@ -245,13 +245,7 @@ class DataTransformationUtilities:
                 value = condition.get("value")
                 record_value = record.get(field)
 
-                if operator == "eq" and record_value != value:
-                    include = False
-                elif operator == "ne" and record_value == value:
-                    include = False
-                elif operator == "gt" and not (record_value > value):
-                    include = False
-                elif operator == "lt" and not (record_value < value):
+                if (operator == "eq" and record_value != value) or (operator == "ne" and record_value == value) or (operator == "gt" and not (record_value > value)) or (operator == "lt" and not (record_value < value)):
                     include = False
 
             if include:
@@ -260,8 +254,8 @@ class DataTransformationUtilities:
         return result
 
     def _transform_sort(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         sort_field = step.source_fields[0] if step.source_fields else None
         descending = step.parameters.get("descending", False)
 
@@ -270,8 +264,8 @@ class DataTransformationUtilities:
         return data
 
     def _transform_deduplicate(
-        self, data: List[Dict[str, Any]], step: TransformationStep
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], step: TransformationStep
+    ) -> list[dict[str, Any]]:
         key_fields = step.source_fields
         seen = set()
         result = []
@@ -287,7 +281,7 @@ class DataTransformationUtilities:
     def register_transformer(self, name: str, func: Callable) -> None:
         self._transformers[name] = func
 
-    def get_available_transformers(self) -> List[str]:
+    def get_available_transformers(self) -> list[str]:
         return list(self._transformers.keys())
 
 

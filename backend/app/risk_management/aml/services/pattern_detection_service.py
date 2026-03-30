@@ -4,16 +4,24 @@ Pattern Detection Service
 Advanced pattern detection for AML suspicious activity identification.
 """
 
-from typing import Optional, List, Dict, Any, Set
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
+from typing import Any
+from uuid import UUID
 
 from ..models.transaction_pattern_models import (
-    PatternType, PatternSeverity, PatternStatus, TransactionNode, TransactionEdge,
-    TransactionFlow, StructuringPattern, LayeringPattern, VelocityPattern,
-    GeographicPattern, DetectedPattern, PatternRule, PatternAnalysisRequest,
-    PatternAnalysisResult, TransactionProfileDeviation
+    DetectedPattern,
+    GeographicPattern,
+    LayeringPattern,
+    PatternAnalysisRequest,
+    PatternAnalysisResult,
+    PatternSeverity,
+    PatternType,
+    StructuringPattern,
+    TransactionEdge,
+    TransactionFlow,
+    TransactionNode,
+    VelocityPattern,
 )
 
 
@@ -21,12 +29,12 @@ class PatternDetectionService:
     """Service for detecting suspicious transaction patterns"""
 
     def __init__(self):
-        self._detected_patterns: Dict[UUID, DetectedPattern] = {}
-        self._transaction_flows: Dict[UUID, TransactionFlow] = {}
+        self._detected_patterns: dict[UUID, DetectedPattern] = {}
+        self._transaction_flows: dict[UUID, TransactionFlow] = {}
 
     async def detect_structuring(
-        self, customer_id: str, transactions: List[Dict[str, Any]], reporting_threshold: float = 10000.0
-    ) -> Optional[StructuringPattern]:
+        self, customer_id: str, transactions: list[dict[str, Any]], reporting_threshold: float = 10000.0
+    ) -> StructuringPattern | None:
         """Detect potential structuring (smurfing) patterns"""
         if not transactions:
             return None
@@ -100,8 +108,8 @@ class PatternDetectionService:
         )
 
     async def detect_layering(
-        self, transactions: List[Dict[str, Any]], max_hops: int = 10
-    ) -> List[LayeringPattern]:
+        self, transactions: list[dict[str, Any]], max_hops: int = 10
+    ) -> list[LayeringPattern]:
         """Detect potential layering patterns"""
         patterns = []
 
@@ -119,9 +127,9 @@ class PatternDetectionService:
                 })
 
         # Find chains
-        visited: Set[str] = set()
+        visited: set[str] = set()
 
-        def find_chains(start: str, path: List[str], transactions_in_path: List[str], depth: int):
+        def find_chains(start: str, path: list[str], transactions_in_path: list[str], depth: int):
             if depth > max_hops:
                 return
 
@@ -131,8 +139,8 @@ class PatternDetectionService:
                     continue
 
                 visited.add(target)
-                new_path = path + [target]
-                new_transactions = transactions_in_path + [edge["transaction_id"]]
+                new_path = [*path, target]
+                new_transactions = [*transactions_in_path, edge["transaction_id"]]
 
                 if len(new_path) >= 3:
                     # Potential layering detected
@@ -149,7 +157,7 @@ class PatternDetectionService:
                 find_chains(target, new_path, new_transactions, depth + 1)
                 visited.remove(target)
 
-        for start_node in graph.keys():
+        for start_node in graph:
             visited.add(start_node)
             find_chains(start_node, [start_node], [], 0)
             visited.remove(start_node)
@@ -157,9 +165,9 @@ class PatternDetectionService:
         return patterns
 
     async def detect_velocity_anomaly(
-        self, customer_id: str, current_transactions: List[Dict[str, Any]],
-        historical_stats: Dict[str, Any]
-    ) -> Optional[VelocityPattern]:
+        self, customer_id: str, current_transactions: list[dict[str, Any]],
+        historical_stats: dict[str, Any]
+    ) -> VelocityPattern | None:
         """Detect velocity anomalies"""
         if not current_transactions or not historical_stats:
             return None
@@ -185,8 +193,8 @@ class PatternDetectionService:
         return VelocityPattern(
             customer_id=customer_id,
             account_id=current_transactions[0].get("account_id", "") if current_transactions else "",
-            current_period_start=datetime.utcnow() - timedelta(days=7),
-            current_period_end=datetime.utcnow(),
+            current_period_start=datetime.now(UTC) - timedelta(days=7),
+            current_period_end=datetime.now(UTC),
             current_transaction_count=current_count,
             current_transaction_amount=current_amount,
             baseline_avg_count=baseline_count,
@@ -201,9 +209,9 @@ class PatternDetectionService:
         )
 
     async def detect_geographic_anomaly(
-        self, customer_id: str, transactions: List[Dict[str, Any]],
-        expected_countries: List[str], high_risk_countries: List[str]
-    ) -> Optional[GeographicPattern]:
+        self, customer_id: str, transactions: list[dict[str, Any]],
+        expected_countries: list[str], high_risk_countries: list[str]
+    ) -> GeographicPattern | None:
         """Detect geographic anomalies"""
         if not transactions:
             return None
@@ -245,8 +253,8 @@ class PatternDetectionService:
         )
 
     async def detect_rapid_movement(
-        self, account_id: str, transactions: List[Dict[str, Any]], time_threshold_hours: int = 24
-    ) -> List[DetectedPattern]:
+        self, account_id: str, transactions: list[dict[str, Any]], time_threshold_hours: int = 24
+    ) -> list[DetectedPattern]:
         """Detect rapid movement of funds (in and out quickly)"""
         patterns = []
 
@@ -304,8 +312,8 @@ class PatternDetectionService:
         return patterns
 
     async def detect_round_tripping(
-        self, transactions: List[Dict[str, Any]]
-    ) -> List[DetectedPattern]:
+        self, transactions: list[dict[str, Any]]
+    ) -> list[DetectedPattern]:
         """Detect round-tripping (funds returning to origin)"""
         patterns = []
 
@@ -362,16 +370,16 @@ class PatternDetectionService:
         return patterns
 
     async def analyze_transaction_flow(
-        self, transactions: List[Dict[str, Any]], root_entity: str
+        self, transactions: list[dict[str, Any]], root_entity: str
     ) -> TransactionFlow:
         """Build and analyze transaction flow"""
         flow = TransactionFlow(
-            start_date=datetime.utcnow() - timedelta(days=30),
-            end_date=datetime.utcnow()
+            start_date=datetime.now(UTC) - timedelta(days=30),
+            end_date=datetime.now(UTC)
         )
 
-        nodes: Dict[str, TransactionNode] = {}
-        edges: List[TransactionEdge] = []
+        nodes: dict[str, TransactionNode] = {}
+        edges: list[TransactionEdge] = []
 
         for t in transactions:
             source = t.get("source_account", "")
@@ -404,7 +412,7 @@ class PatternDetectionService:
                     transaction_id=t.get("transaction_id", ""),
                     amount=t.get("amount", 0),
                     currency=t.get("currency", "USD"),
-                    transaction_date=t.get("timestamp", datetime.utcnow()),
+                    transaction_date=t.get("timestamp", datetime.now(UTC)),
                     transaction_type=t.get("type", "transfer")
                 )
                 edges.append(edge)
@@ -435,7 +443,7 @@ class PatternDetectionService:
 
         # This would normally process real transaction data
         # For now, return empty result
-        result.analysis_date = datetime.utcnow()
+        result.analysis_date = datetime.now(UTC)
         result.processing_time_seconds = 0.5
 
         return result

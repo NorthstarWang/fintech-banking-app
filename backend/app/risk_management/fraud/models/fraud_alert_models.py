@@ -4,11 +4,12 @@ Fraud Alert Models
 Defines data structures for fraud alerts.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class FraudAlertSeverity(str, Enum):
@@ -51,7 +52,7 @@ class FraudIndicator(BaseModel):
     description: str
     weight: float = 1.0
     score: float = 0.0
-    evidence: Optional[str] = None
+    evidence: str | None = None
 
 
 class FraudAlert(BaseModel):
@@ -62,34 +63,34 @@ class FraudAlert(BaseModel):
     status: FraudAlertStatus = FraudAlertStatus.NEW
 
     customer_id: str
-    account_id: Optional[str] = None
-    transaction_id: Optional[str] = None
+    account_id: str | None = None
+    transaction_id: str | None = None
 
     title: str
     description: str
     fraud_score: float = Field(ge=0, le=100)
 
-    indicators: List[FraudIndicator] = Field(default_factory=list)
+    indicators: list[FraudIndicator] = Field(default_factory=list)
     detection_method: str
-    detection_rule_id: Optional[str] = None
-    ml_model_id: Optional[str] = None
+    detection_rule_id: str | None = None
+    ml_model_id: str | None = None
 
-    transaction_amount: Optional[float] = None
+    transaction_amount: float | None = None
     potential_loss: float = 0.0
 
-    device_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    location: Optional[Dict[str, Any]] = None
+    device_id: str | None = None
+    ip_address: str | None = None
+    location: dict[str, Any] | None = None
 
-    assigned_to: Optional[str] = None
-    case_id: Optional[UUID] = None
+    assigned_to: str | None = None
+    case_id: UUID | None = None
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    resolved_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    resolved_at: datetime | None = None
 
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class FraudAlertSummary(BaseModel):
@@ -102,14 +103,14 @@ class FraudAlertSummary(BaseModel):
     fraud_score: float
     potential_loss: float
     created_at: datetime
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
 
 
 class FraudAlertStatistics(BaseModel):
     total_alerts: int = 0
-    by_severity: Dict[str, int] = Field(default_factory=dict)
-    by_status: Dict[str, int] = Field(default_factory=dict)
-    by_fraud_type: Dict[str, int] = Field(default_factory=dict)
+    by_severity: dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_fraud_type: dict[str, int] = Field(default_factory=dict)
     confirmed_fraud_count: int = 0
     false_positive_count: int = 0
     total_potential_loss: float = 0.0
@@ -121,22 +122,22 @@ class FraudAlertCreateRequest(BaseModel):
     fraud_type: FraudType
     severity: FraudAlertSeverity
     customer_id: str
-    account_id: Optional[str] = None
-    transaction_id: Optional[str] = None
+    account_id: str | None = None
+    transaction_id: str | None = None
     title: str
     description: str
     fraud_score: float = Field(ge=0, le=100)
     detection_method: str
-    transaction_amount: Optional[float] = None
+    transaction_amount: float | None = None
 
 
 class FraudAlertSearchCriteria(BaseModel):
-    fraud_types: Optional[List[FraudType]] = None
-    severities: Optional[List[FraudAlertSeverity]] = None
-    statuses: Optional[List[FraudAlertStatus]] = None
-    customer_ids: Optional[List[str]] = None
-    min_fraud_score: Optional[float] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    fraud_types: list[FraudType] | None = None
+    severities: list[FraudAlertSeverity] | None = None
+    statuses: list[FraudAlertStatus] | None = None
+    customer_ids: list[str] | None = None
+    min_fraud_score: float | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     page: int = 1
     page_size: int = 50

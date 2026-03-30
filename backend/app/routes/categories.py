@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from ..models import Account, Category, CategoryCreate, CategoryResponse, CategoryUpdate, Transaction
-from ..storage.memory_adapter import db, ORClause
+from ..storage.memory_adapter import ORClause, db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError, sanitize_string
 
@@ -23,7 +23,7 @@ async def get_categories(
     # Filter by ownership
     if include_system:
         query = query.filter(
-            ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])
+            ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])  # noqa: E712
         )
     else:
         query = query.filter(Category.user_id == current_user['user_id'])
@@ -39,7 +39,7 @@ async def get_categories(
         Category.name
     ).all()
 
-    return [CategoryResponse.from_orm(cat) for cat in categories]
+    return [CategoryResponse.model_validate(cat) for cat in categories]
 
 @router.get("/system", response_model=list[CategoryResponse])
 async def get_system_categories(
@@ -54,7 +54,7 @@ async def get_system_categories(
 
     categories = query.order_by(Category.is_income.desc(), Category.name).all()
 
-    return [CategoryResponse.from_orm(cat) for cat in categories]
+    return [CategoryResponse.model_validate(cat) for cat in categories]
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
@@ -82,7 +82,7 @@ async def create_category(
     if category_data.parent_id:
         parent_category = db_session.query(Category).filter(
             Category.id == category_data.parent_id,
-            ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])
+            ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])  # noqa: E712
         ).first()
 
         if not parent_category:
@@ -111,7 +111,7 @@ async def create_category(
 
     # Log category creation
 
-    return CategoryResponse.from_orm(new_category)
+    return CategoryResponse.model_validate(new_category)
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
@@ -122,7 +122,7 @@ async def get_category(
     """Get specific category details"""
     category = db_session.query(Category).filter(
         Category.id == category_id,
-        ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])
+        ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])  # noqa: E712
     ).first()
 
     if not category:
@@ -131,7 +131,7 @@ async def get_category(
             detail="Category not found"
         )
 
-    return CategoryResponse.from_orm(category)
+    return CategoryResponse.model_validate(category)
 
 @router.put("/{category_id}", response_model=CategoryResponse)
 async def update_category(
@@ -183,7 +183,7 @@ async def update_category(
             # Validate parent category
             parent = db_session.query(Category).filter(
                 Category.id == update_data.parent_id,
-                ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])
+                ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])  # noqa: E712
             ).first()
 
             if not parent:
@@ -199,11 +199,11 @@ async def update_category(
 
         category.parent_id = update_data.parent_id
 
-    category.updated_at = datetime.utcnow()
+    category.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(category)
 
-    return CategoryResponse.from_orm(category)
+    return CategoryResponse.model_validate(category)
 
 @router.delete("/{category_id}")
 async def delete_category(
@@ -243,7 +243,7 @@ async def delete_category(
         # Validate reassignment category
         new_category = db_session.query(Category).filter(
             Category.id == reassign_to_category_id,
-            ORClause(Category.is_system == True, Category.user_id == current_user['user_id']),
+            ORClause(Category.is_system == True, Category.user_id == current_user['user_id']),  # noqa: E712
             Category.is_income == category.is_income  # Must be same type
         ).first()
 
@@ -284,7 +284,7 @@ async def get_category_transaction_count(
     # Verify category access
     category = db_session.query(Category).filter(
         Category.id == category_id,
-        ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])
+        ORClause(Category.is_system == True, Category.user_id == current_user['user_id'])  # noqa: E712
     ).first()
 
     if not category:

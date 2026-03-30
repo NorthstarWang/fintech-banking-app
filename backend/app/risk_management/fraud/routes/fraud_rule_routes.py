@@ -1,15 +1,13 @@
 """Fraud Rule Routes - API endpoints for fraud detection rules"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..models.fraud_rule_models import (
-    FraudRule, RuleSet, RuleType, RuleStatus, RuleAction, RuleCondition
-)
+from ..models.fraud_rule_models import FraudRule, RuleAction, RuleCondition, RuleStatus, RuleType
 from ..services.rule_engine_service import rule_engine_service
-
 
 router = APIRouter(prefix="/fraud/rules", tags=["Fraud Rules"])
 
@@ -26,7 +24,7 @@ class CreateRuleRequest(BaseModel):
     rule_name: str
     rule_type: RuleType
     description: str
-    conditions: List[RuleConditionRequest]
+    conditions: list[RuleConditionRequest]
     logic_expression: str
     action: RuleAction
     alert_severity: str = "medium"
@@ -35,13 +33,13 @@ class CreateRuleRequest(BaseModel):
 
 
 class UpdateRuleRequest(BaseModel):
-    rule_name: Optional[str] = None
-    description: Optional[str] = None
-    conditions: Optional[List[RuleConditionRequest]] = None
-    logic_expression: Optional[str] = None
-    action: Optional[RuleAction] = None
-    alert_severity: Optional[str] = None
-    score_weight: Optional[float] = None
+    rule_name: str | None = None
+    description: str | None = None
+    conditions: list[RuleConditionRequest] | None = None
+    logic_expression: str | None = None
+    action: RuleAction | None = None
+    alert_severity: str | None = None
+    score_weight: float | None = None
 
 
 class ToggleRuleRequest(BaseModel):
@@ -55,16 +53,16 @@ class EvaluateTransactionRequest(BaseModel):
     currency: str = "USD"
     transaction_type: str
     channel: str
-    device_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    additional_data: Dict[str, Any] = {}
+    device_id: str | None = None
+    ip_address: str | None = None
+    additional_data: dict[str, Any] = {}
 
 
 class CreateRuleSetRequest(BaseModel):
     name: str
     description: str
-    rule_ids: List[UUID]
-    applicable_channels: List[str]
+    rule_ids: list[UUID]
+    applicable_channels: list[str]
     created_by: str
 
 
@@ -137,10 +135,10 @@ async def delete_rule(rule_id: UUID):
     return {"message": "Rule deleted successfully", "rule_id": str(rule_id)}
 
 
-@router.get("/", response_model=List[FraudRule])
+@router.get("/", response_model=list[FraudRule])
 async def list_rules(
-    rule_type: Optional[RuleType] = None,
-    status: Optional[RuleStatus] = None,
+    rule_type: RuleType | None = None,
+    status: RuleStatus | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):
@@ -153,7 +151,7 @@ async def list_rules(
     return rules[offset:offset + limit]
 
 
-@router.get("/active", response_model=List[FraudRule])
+@router.get("/active", response_model=list[FraudRule])
 async def get_active_rules():
     """Get all active rules"""
     return await rule_engine_service.get_active_rules()

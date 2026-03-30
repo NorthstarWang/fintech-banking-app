@@ -1,12 +1,19 @@
 """Data Validation Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.data_validation_models import (
-    ValidationRule, ValidationExecution, ValidationResult, ValidationError,
-    ValidationSchedule, ValidationReport, RealTimeValidation, ValidationType
+    RealTimeValidation,
+    ValidationError,
+    ValidationExecution,
+    ValidationReport,
+    ValidationResult,
+    ValidationRule,
+    ValidationSchedule,
+    ValidationType,
 )
 from ..repositories.data_validation_repository import data_validation_repository
 
@@ -20,7 +27,7 @@ class DataValidationService:
     async def create_rule(
         self, rule_name: str, rule_description: str, validation_type: ValidationType,
         target_table: str, validation_expression: str, error_message: str,
-        owner: str, target_columns: List[str] = None, severity: str = "error",
+        owner: str, target_columns: list[str] | None = None, severity: str = "error",
         is_blocking: bool = False
     ) -> ValidationRule:
         self._rule_counter += 1
@@ -36,7 +43,7 @@ class DataValidationService:
 
     async def start_execution(
         self, execution_name: str, execution_type: str, target_dataset: str,
-        rules: List[UUID], triggered_by: str
+        rules: list[UUID], triggered_by: str
     ) -> ValidationExecution:
         execution = ValidationExecution(
             execution_name=execution_name, execution_type=execution_type,
@@ -49,7 +56,7 @@ class DataValidationService:
     async def record_result(
         self, execution_id: UUID, rule_id: UUID, rule_name: str,
         validation_type: str, records_evaluated: int, records_passed: int,
-        error_samples: List[Dict[str, Any]] = None, execution_time_ms: int = 0
+        error_samples: list[dict[str, Any]] | None = None, execution_time_ms: int = 0
     ) -> ValidationResult:
         records_failed = records_evaluated - records_passed
         pass_percentage = Decimal(str(records_passed / records_evaluated * 100)) if records_evaluated > 0 else Decimal("100")
@@ -67,11 +74,11 @@ class DataValidationService:
 
     async def complete_execution(
         self, execution_id: UUID, total_records: int, valid_records: int, error_count: int
-    ) -> Optional[ValidationExecution]:
+    ) -> ValidationExecution | None:
         execution = await self.repository.find_execution_by_id(execution_id)
         if execution:
             execution.status = "completed"
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = datetime.now(UTC)
             execution.total_records = total_records
             execution.valid_records = valid_records
             execution.invalid_records = total_records - valid_records
@@ -93,8 +100,8 @@ class DataValidationService:
         return error
 
     async def create_schedule(
-        self, schedule_name: str, target_dataset: str, rules: List[UUID],
-        cron_expression: str, created_by: str, notification_emails: List[str] = None
+        self, schedule_name: str, target_dataset: str, rules: list[UUID],
+        cron_expression: str, created_by: str, notification_emails: list[str] | None = None
     ) -> ValidationSchedule:
         schedule = ValidationSchedule(
             schedule_name=schedule_name, target_dataset=target_dataset,
@@ -106,7 +113,7 @@ class DataValidationService:
 
     async def validate_realtime(
         self, stream_name: str, rule_id: UUID, record_id: str,
-        is_valid: bool, error_details: str = None, action_taken: str = "accepted"
+        is_valid: bool, error_details: str | None = None, action_taken: str = "accepted"
     ) -> RealTimeValidation:
         validation = RealTimeValidation(
             stream_name=stream_name, rule_id=rule_id, record_id=record_id,
@@ -127,14 +134,14 @@ class DataValidationService:
 
         report = ValidationReport(
             report_date=date.today(), report_period=report_period,
-            datasets_validated=len(set(e.target_dataset for e in executions)),
+            datasets_validated=len({e.target_dataset for e in executions}),
             rules_executed=len(results), total_records_validated=total_validated,
             overall_pass_rate=pass_rate, generated_by=generated_by
         )
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

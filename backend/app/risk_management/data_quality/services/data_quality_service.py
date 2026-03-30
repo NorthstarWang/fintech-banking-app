@@ -1,12 +1,18 @@
 """Data Quality Service"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.data_quality_models import (
-    DataQualityRule, DataQualityCheck, DataQualityScore, DataQualityIssue,
-    DataQualityReport, DataQualityThreshold, QualityDimension, RuleSeverity
+    DataQualityCheck,
+    DataQualityIssue,
+    DataQualityReport,
+    DataQualityRule,
+    DataQualityScore,
+    QualityDimension,
+    RuleSeverity,
 )
 from ..repositories.data_quality_repository import data_quality_repository
 
@@ -20,7 +26,7 @@ class DataQualityService:
     async def create_rule(
         self, rule_name: str, rule_description: str, dimension: QualityDimension,
         severity: RuleSeverity, data_domain: str, table_name: str,
-        rule_expression: str, owner: str, column_name: Optional[str] = None,
+        rule_expression: str, owner: str, column_name: str | None = None,
         threshold_percentage: Decimal = Decimal("100")
     ) -> DataQualityRule:
         self._rule_counter += 1
@@ -36,7 +42,7 @@ class DataQualityService:
 
     async def execute_check(
         self, rule_id: UUID, total_records: int, passed_records: int,
-        execution_time_ms: int = 0, error_samples: List[Dict[str, Any]] = None
+        execution_time_ms: int = 0, error_samples: list[dict[str, Any]] | None = None
     ) -> DataQualityCheck:
         failed_records = total_records - passed_records
         pass_percentage = Decimal(str(passed_records / total_records * 100)) if total_records > 0 else Decimal("0")
@@ -91,7 +97,7 @@ class DataQualityService:
         await self.repository.save_score(score)
         return score
 
-    async def resolve_issue(self, issue_id: UUID, resolution: str, resolved_by: str) -> Optional[DataQualityIssue]:
+    async def resolve_issue(self, issue_id: UUID, resolution: str, resolved_by: str) -> DataQualityIssue | None:
         issue = await self.repository.find_issue_by_id(issue_id)
         if issue:
             issue.status = "resolved"
@@ -100,7 +106,7 @@ class DataQualityService:
         return issue
 
     async def generate_report(
-        self, report_period: str, generated_by: str, domains_covered: List[str]
+        self, report_period: str, generated_by: str, domains_covered: list[str]
     ) -> DataQualityReport:
         checks = await self.repository.find_all_checks()
         issues = await self.repository.find_all_issues()
@@ -117,7 +123,7 @@ class DataQualityService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

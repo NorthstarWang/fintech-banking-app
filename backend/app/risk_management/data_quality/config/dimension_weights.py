@@ -1,8 +1,7 @@
 """Dimension Weights Configuration"""
 
-from typing import Dict, List, Optional
-from decimal import Decimal
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass
@@ -47,7 +46,7 @@ class DimensionWeights:
                 description="Measures conformance to defined formats and ranges",
             ),
         }
-        self._domain_weights: Dict[str, Dict[str, Decimal]] = {}
+        self._domain_weights: dict[str, dict[str, Decimal]] = {}
 
     def get_weight(self, dimension: str) -> Decimal:
         weight_obj = self._weights.get(dimension)
@@ -73,7 +72,7 @@ class DimensionWeights:
                 if self._weights[dimension].is_active:
                     self._weights[dimension].weight = self._weights[dimension].weight / total
 
-    def calculate_weighted_score(self, dimension_scores: Dict[str, Decimal]) -> Decimal:
+    def calculate_weighted_score(self, dimension_scores: dict[str, Decimal]) -> Decimal:
         weighted_sum = Decimal("0")
         total_weight = Decimal("0")
 
@@ -85,14 +84,14 @@ class DimensionWeights:
 
         return weighted_sum / total_weight if total_weight > 0 else Decimal("0")
 
-    def set_domain_weights(self, domain: str, weights: Dict[str, Decimal]) -> None:
+    def set_domain_weights(self, domain: str, weights: dict[str, Decimal]) -> None:
         self._domain_weights[domain] = weights
 
-    def get_domain_weights(self, domain: str) -> Optional[Dict[str, Decimal]]:
+    def get_domain_weights(self, domain: str) -> dict[str, Decimal] | None:
         return self._domain_weights.get(domain)
 
     def calculate_domain_score(
-        self, domain: str, dimension_scores: Dict[str, Decimal]
+        self, domain: str, dimension_scores: dict[str, Decimal]
     ) -> Decimal:
         domain_weights = self._domain_weights.get(domain)
         if not domain_weights:
@@ -113,13 +112,13 @@ class DimensionWeights:
             self._weights[dimension].is_active = is_active
             self._normalize_weights()
 
-    def get_active_dimensions(self) -> List[str]:
+    def get_active_dimensions(self) -> list[str]:
         return [dim for dim, w in self._weights.items() if w.is_active]
 
-    def get_all_weights(self) -> Dict[str, DimensionWeight]:
+    def get_all_weights(self) -> dict[str, DimensionWeight]:
         return self._weights.copy()
 
-    def export_config(self) -> Dict[str, Dict[str, any]]:
+    def export_config(self) -> dict[str, dict[str, any]]:
         return {
             dim: {
                 "weight": float(w.weight),

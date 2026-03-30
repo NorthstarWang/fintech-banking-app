@@ -1,10 +1,10 @@
 """Data Reconciliation Utilities"""
 
-from typing import List, Dict, Any, Optional, Set, Tuple
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 from uuid import uuid4
 
 
@@ -48,10 +48,10 @@ class ReconciliationResult:
     matched_count: int
     unmatched_count: int
     match_rate: Decimal
-    breaks: List[ReconciliationBreak]
-    source_total: Optional[Decimal]
-    target_total: Optional[Decimal]
-    difference: Optional[Decimal]
+    breaks: list[ReconciliationBreak]
+    source_total: Decimal | None
+    target_total: Decimal | None
+    difference: Decimal | None
     execution_time_ms: int
     executed_at: datetime
 
@@ -63,12 +63,12 @@ class DataReconciliationUtilities:
 
     def reconcile_counts(
         self,
-        source_data: List[Dict[str, Any]],
-        target_data: List[Dict[str, Any]],
+        source_data: list[dict[str, Any]],
+        target_data: list[dict[str, Any]],
         source_name: str = "source",
         target_name: str = "target",
     ) -> ReconciliationResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         source_count = len(source_data)
         target_count = len(target_data)
@@ -90,11 +90,11 @@ class DataReconciliationUtilities:
                     target_value=target_count,
                     difference=difference,
                     severity="high" if abs(difference) > 100 else "medium",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         exec_time = int((end_time - start_time).total_seconds() * 1000)
 
         return ReconciliationResult(
@@ -118,13 +118,13 @@ class DataReconciliationUtilities:
 
     def reconcile_sums(
         self,
-        source_data: List[Dict[str, Any]],
-        target_data: List[Dict[str, Any]],
+        source_data: list[dict[str, Any]],
+        target_data: list[dict[str, Any]],
         sum_field: str,
         source_name: str = "source",
         target_name: str = "target",
     ) -> ReconciliationResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         source_total = sum(
             Decimal(str(r.get(sum_field, 0))) for r in source_data if r.get(sum_field) is not None
@@ -157,11 +157,11 @@ class DataReconciliationUtilities:
                     target_value=float(target_total),
                     difference=float(difference),
                     severity="critical" if abs_diff > source_total * Decimal("0.01") else "high",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         exec_time = int((end_time - start_time).total_seconds() * 1000)
 
         return ReconciliationResult(
@@ -185,14 +185,14 @@ class DataReconciliationUtilities:
 
     def reconcile_records(
         self,
-        source_data: List[Dict[str, Any]],
-        target_data: List[Dict[str, Any]],
-        key_fields: List[str],
-        compare_fields: List[str] = None,
+        source_data: list[dict[str, Any]],
+        target_data: list[dict[str, Any]],
+        key_fields: list[str],
+        compare_fields: list[str] | None = None,
         source_name: str = "source",
         target_name: str = "target",
     ) -> ReconciliationResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         source_map = {}
         for record in source_data:
@@ -224,7 +224,7 @@ class DataReconciliationUtilities:
                     target_value=None,
                     difference="record_missing",
                     severity="high",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -238,7 +238,7 @@ class DataReconciliationUtilities:
                     target_value=target_map[key],
                     difference="record_extra",
                     severity="high",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -266,7 +266,7 @@ class DataReconciliationUtilities:
                             target_value=target_val,
                             difference=f"{source_val} != {target_val}",
                             severity="medium",
-                            detected_at=datetime.utcnow(),
+                            detected_at=datetime.now(UTC),
                         )
                     )
 
@@ -284,7 +284,7 @@ class DataReconciliationUtilities:
         else:
             status = ReconciliationStatus.MISMATCHED
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         exec_time = int((end_time - start_time).total_seconds() * 1000)
 
         return ReconciliationResult(
@@ -307,7 +307,7 @@ class DataReconciliationUtilities:
         )
 
     def set_tolerance(
-        self, percentage: Decimal = None, absolute: Decimal = None
+        self, percentage: Decimal | None = None, absolute: Decimal | None = None
     ) -> None:
         if percentage is not None:
             self._tolerance_percentage = percentage

@@ -1,9 +1,9 @@
 """Scheduling Configuration for Data Quality Jobs"""
 
-from typing import Dict, List, Any, Optional
-from datetime import datetime, time, timedelta
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, time
 from enum import Enum
+from typing import Any
 
 
 class ScheduleFrequency(str, Enum):
@@ -34,7 +34,7 @@ class JobType(str, Enum):
 class ScheduleWindow:
     start_time: time
     end_time: time
-    days_of_week: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
+    days_of_week: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])
 
 
 @dataclass
@@ -42,26 +42,26 @@ class JobSchedule:
     job_name: str
     job_type: JobType
     frequency: ScheduleFrequency
-    cron_expression: Optional[str]
-    schedule_window: Optional[ScheduleWindow]
+    cron_expression: str | None
+    schedule_window: ScheduleWindow | None
     priority: JobPriority
     timeout_minutes: int
     retry_count: int
     retry_delay_minutes: int
-    dependencies: List[str]
+    dependencies: list[str]
     is_active: bool = True
 
 
 class SchedulingConfig:
     def __init__(self):
-        self._schedules: Dict[str, JobSchedule] = {}
+        self._schedules: dict[str, JobSchedule] = {}
         self._default_timeout = 60
         self._default_retry_count = 3
         self._default_retry_delay = 5
         self._max_concurrent_jobs = 10
 
-        self._blackout_windows: List[ScheduleWindow] = []
-        self._maintenance_windows: List[ScheduleWindow] = []
+        self._blackout_windows: list[ScheduleWindow] = []
+        self._maintenance_windows: list[ScheduleWindow] = []
 
         self._priority_weights = {
             JobPriority.CRITICAL: 100,
@@ -75,13 +75,13 @@ class SchedulingConfig:
         job_name: str,
         job_type: JobType,
         frequency: ScheduleFrequency,
-        cron_expression: str = None,
+        cron_expression: str | None = None,
         schedule_window: ScheduleWindow = None,
         priority: JobPriority = JobPriority.NORMAL,
-        timeout_minutes: int = None,
-        retry_count: int = None,
-        retry_delay_minutes: int = None,
-        dependencies: List[str] = None,
+        timeout_minutes: int | None = None,
+        retry_count: int | None = None,
+        retry_delay_minutes: int | None = None,
+        dependencies: list[str] | None = None,
     ) -> JobSchedule:
         schedule = JobSchedule(
             job_name=job_name,
@@ -98,13 +98,13 @@ class SchedulingConfig:
         self._schedules[job_name] = schedule
         return schedule
 
-    def get_schedule(self, job_name: str) -> Optional[JobSchedule]:
+    def get_schedule(self, job_name: str) -> JobSchedule | None:
         return self._schedules.get(job_name)
 
-    def get_schedules_by_type(self, job_type: JobType) -> List[JobSchedule]:
+    def get_schedules_by_type(self, job_type: JobType) -> list[JobSchedule]:
         return [s for s in self._schedules.values() if s.job_type == job_type]
 
-    def get_active_schedules(self) -> List[JobSchedule]:
+    def get_active_schedules(self) -> list[JobSchedule]:
         return [s for s in self._schedules.values() if s.is_active]
 
     def toggle_schedule(self, job_name: str, is_active: bool) -> None:
@@ -117,8 +117,8 @@ class SchedulingConfig:
     def add_maintenance_window(self, window: ScheduleWindow) -> None:
         self._maintenance_windows.append(window)
 
-    def is_in_blackout(self, check_time: datetime = None) -> bool:
-        check_time = check_time or datetime.utcnow()
+    def is_in_blackout(self, check_time: datetime | None = None) -> bool:
+        check_time = check_time or datetime.now(UTC)
         current_time = check_time.time()
         current_day = check_time.weekday()
 
@@ -128,8 +128,8 @@ class SchedulingConfig:
                     return True
         return False
 
-    def is_in_maintenance(self, check_time: datetime = None) -> bool:
-        check_time = check_time or datetime.utcnow()
+    def is_in_maintenance(self, check_time: datetime | None = None) -> bool:
+        check_time = check_time or datetime.now(UTC)
         current_time = check_time.time()
         current_day = check_time.weekday()
 
@@ -139,7 +139,7 @@ class SchedulingConfig:
                     return True
         return False
 
-    def can_run_job(self, job_name: str, check_time: datetime = None) -> bool:
+    def can_run_job(self, job_name: str, check_time: datetime | None = None) -> bool:
         schedule = self._schedules.get(job_name)
         if not schedule or not schedule.is_active:
             return False
@@ -163,7 +163,7 @@ class SchedulingConfig:
     def get_max_concurrent_jobs(self) -> int:
         return self._max_concurrent_jobs
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "total_schedules": len(self._schedules),
             "active_schedules": len([s for s in self._schedules.values() if s.is_active]),

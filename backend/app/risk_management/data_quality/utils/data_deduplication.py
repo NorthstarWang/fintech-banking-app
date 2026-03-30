@@ -1,20 +1,20 @@
 """Data Deduplication Utilities"""
 
-from typing import List, Dict, Any, Optional, Set, Tuple
-from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass, field
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 
 @dataclass
 class DuplicateGroup:
     group_id: str
-    primary_record: Dict[str, Any]
-    duplicate_records: List[Dict[str, Any]]
+    primary_record: dict[str, Any]
+    duplicate_records: list[dict[str, Any]]
     match_score: Decimal
-    matched_fields: List[str]
+    matched_fields: list[str]
     identified_at: datetime
 
 
@@ -24,7 +24,7 @@ class DeduplicationResult:
     unique_records: int
     duplicate_groups: int
     records_removed: int
-    duplicate_groups_list: List[DuplicateGroup]
+    duplicate_groups_list: list[DuplicateGroup]
     processing_time_ms: int
     processed_at: datetime
 
@@ -32,16 +32,16 @@ class DeduplicationResult:
 class DataDeduplicationUtilities:
     def __init__(self):
         self._default_threshold = Decimal("1.0")
-        self._survivorship_rules: Dict[str, str] = {}
+        self._survivorship_rules: dict[str, str] = {}
 
     def find_exact_duplicates(
         self,
-        data: List[Dict[str, Any]],
-        key_fields: List[str],
+        data: list[dict[str, Any]],
+        key_fields: list[str],
         id_field: str = "id",
     ) -> DeduplicationResult:
-        start_time = datetime.utcnow()
-        groups_by_key: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
+        start_time = datetime.now(UTC)
+        groups_by_key: dict[tuple, list[dict[str, Any]]] = defaultdict(list)
 
         for record in data:
             key = tuple(str(record.get(f, "")).lower().strip() for f in key_fields)
@@ -50,7 +50,7 @@ class DataDeduplicationUtilities:
         duplicate_groups = []
         total_duplicates = 0
 
-        for key, records in groups_by_key.items():
+        for _key, records in groups_by_key.items():
             if len(records) > 1:
                 primary = self._select_primary_record(records, id_field)
                 duplicates = [r for r in records if r.get(id_field) != primary.get(id_field)]
@@ -63,11 +63,11 @@ class DataDeduplicationUtilities:
                         duplicate_records=duplicates,
                         match_score=Decimal("1.0"),
                         matched_fields=key_fields,
-                        identified_at=datetime.utcnow(),
+                        identified_at=datetime.now(UTC),
                     )
                 )
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         processing_time = int((end_time - start_time).total_seconds() * 1000)
 
         return DeduplicationResult(
@@ -82,15 +82,15 @@ class DataDeduplicationUtilities:
 
     def find_fuzzy_duplicates(
         self,
-        data: List[Dict[str, Any]],
-        match_fields: List[str],
-        threshold: Decimal = None,
+        data: list[dict[str, Any]],
+        match_fields: list[str],
+        threshold: Decimal | None = None,
         id_field: str = "id",
     ) -> DeduplicationResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         threshold = threshold or self._default_threshold
         duplicate_groups = []
-        processed_ids: Set[str] = set()
+        processed_ids: set[str] = set()
         total_duplicates = 0
 
         for i, record1 in enumerate(data):
@@ -123,11 +123,11 @@ class DataDeduplicationUtilities:
                         duplicate_records=duplicates,
                         match_score=threshold,
                         matched_fields=match_fields,
-                        identified_at=datetime.utcnow(),
+                        identified_at=datetime.now(UTC),
                     )
                 )
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         processing_time = int((end_time - start_time).total_seconds() * 1000)
 
         return DeduplicationResult(
@@ -141,7 +141,7 @@ class DataDeduplicationUtilities:
         )
 
     def _calculate_similarity(
-        self, record1: Dict[str, Any], record2: Dict[str, Any], fields: List[str]
+        self, record1: dict[str, Any], record2: dict[str, Any], fields: list[str]
     ) -> Decimal:
         if not fields:
             return Decimal("0")
@@ -182,8 +182,8 @@ class DataDeduplicationUtilities:
         return Decimal(str(round(1 - (distance / max_len), 4)))
 
     def _select_primary_record(
-        self, records: List[Dict[str, Any]], id_field: str
-    ) -> Dict[str, Any]:
+        self, records: list[dict[str, Any]], id_field: str
+    ) -> dict[str, Any]:
         best_record = records[0]
         best_score = self._calculate_completeness_score(best_record)
 
@@ -195,9 +195,9 @@ class DataDeduplicationUtilities:
 
         return best_record
 
-    def _calculate_completeness_score(self, record: Dict[str, Any]) -> int:
+    def _calculate_completeness_score(self, record: dict[str, Any]) -> int:
         score = 0
-        for key, value in record.items():
+        for _key, value in record.items():
             if value is not None and value != "":
                 score += 1
         return score
@@ -205,10 +205,10 @@ class DataDeduplicationUtilities:
     def merge_duplicate_records(
         self,
         duplicate_group: DuplicateGroup,
-        survivorship_rules: Dict[str, str] = None,
-    ) -> Dict[str, Any]:
+        survivorship_rules: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         rules = survivorship_rules or self._survivorship_rules
-        all_records = [duplicate_group.primary_record] + duplicate_group.duplicate_records
+        all_records = [duplicate_group.primary_record, *duplicate_group.duplicate_records]
         merged = {}
 
         all_fields = set()
@@ -222,7 +222,7 @@ class DataDeduplicationUtilities:
         return merged
 
     def _apply_survivorship_rule(
-        self, records: List[Dict[str, Any]], field_name: str, rule: str
+        self, records: list[dict[str, Any]], field_name: str, rule: str
     ) -> Any:
         values = [r.get(field_name) for r in records if r.get(field_name) is not None]
 
@@ -231,15 +231,15 @@ class DataDeduplicationUtilities:
 
         if rule == "first":
             return values[0]
-        elif rule == "last":
+        if rule == "last":
             return values[-1]
-        elif rule == "most_complete":
+        if rule == "most_complete":
             return max(values, key=lambda v: len(str(v)) if v else 0)
-        elif rule == "most_frequent":
+        if rule == "most_frequent":
             from collections import Counter
             counter = Counter(str(v) for v in values)
             return counter.most_common(1)[0][0] if counter else None
-        elif rule == "max":
+        if rule == "max":
             try:
                 return max(float(v) for v in values if v is not None)
             except (ValueError, TypeError):
@@ -254,10 +254,10 @@ class DataDeduplicationUtilities:
 
     def remove_duplicates(
         self,
-        data: List[Dict[str, Any]],
-        key_fields: List[str],
+        data: list[dict[str, Any]],
+        key_fields: list[str],
         id_field: str = "id",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         result = self.find_exact_duplicates(data, key_fields, id_field)
         duplicate_ids = set()
 
@@ -267,7 +267,7 @@ class DataDeduplicationUtilities:
 
         return [r for r in data if str(r.get(id_field)) not in duplicate_ids]
 
-    def set_survivorship_rules(self, rules: Dict[str, str]) -> None:
+    def set_survivorship_rules(self, rules: dict[str, str]) -> None:
         self._survivorship_rules = rules
 
     def set_threshold(self, threshold: Decimal) -> None:

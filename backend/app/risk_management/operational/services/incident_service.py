@@ -1,13 +1,21 @@
 """Incident Service - Business logic for operational incident management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.incident_models import (
-    Incident, IncidentTimeline, IncidentEscalation, IncidentRootCauseAnalysis,
-    IncidentCorrectiveAction, IncidentReport, IncidentSeverity, IncidentStatus,
-    IncidentCategory, IncidentImpact
+    Incident,
+    IncidentCategory,
+    IncidentCorrectiveAction,
+    IncidentEscalation,
+    IncidentImpact,
+    IncidentReport,
+    IncidentRootCauseAnalysis,
+    IncidentSeverity,
+    IncidentStatus,
+    IncidentTimeline,
 )
 from ..repositories.incident_repository import incident_repository
 
@@ -31,9 +39,9 @@ class IncidentService:
         occurred_date: datetime,
         detected_date: datetime,
         business_unit: str,
-        affected_systems: List[str] = None,
-        impact_types: List[IncidentImpact] = None,
-        estimated_loss: Optional[Decimal] = None
+        affected_systems: list[str] | None = None,
+        impact_types: list[IncidentImpact] | None = None,
+        estimated_loss: Decimal | None = None
     ) -> Incident:
         incident = Incident(
             incident_number=self._generate_incident_number(),
@@ -71,21 +79,21 @@ class IncidentService:
         incident.escalation_level = 1
         await self.repository.update_incident(incident)
 
-    async def get_incident(self, incident_id: UUID) -> Optional[Incident]:
+    async def get_incident(self, incident_id: UUID) -> Incident | None:
         return await self.repository.find_incident_by_id(incident_id)
 
-    async def get_incident_by_number(self, incident_number: str) -> Optional[Incident]:
+    async def get_incident_by_number(self, incident_number: str) -> Incident | None:
         return await self.repository.find_incident_by_number(incident_number)
 
     async def list_incidents(
         self,
-        status: Optional[IncidentStatus] = None,
-        severity: Optional[IncidentSeverity] = None,
-        category: Optional[IncidentCategory] = None,
-        business_unit: Optional[str] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
-    ) -> List[Incident]:
+        status: IncidentStatus | None = None,
+        severity: IncidentSeverity | None = None,
+        category: IncidentCategory | None = None,
+        business_unit: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None
+    ) -> list[Incident]:
         incidents = await self.repository.find_all_incidents()
 
         if status:
@@ -108,8 +116,8 @@ class IncidentService:
         incident_id: UUID,
         new_status: IncidentStatus,
         updated_by: str,
-        notes: Optional[str] = None
-    ) -> Optional[Incident]:
+        notes: str | None = None
+    ) -> Incident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
@@ -118,9 +126,9 @@ class IncidentService:
         incident.status = new_status
 
         if new_status == IncidentStatus.RESOLVED:
-            incident.resolved_date = datetime.utcnow()
+            incident.resolved_date = datetime.now(UTC)
         elif new_status == IncidentStatus.CLOSED:
-            incident.closed_date = datetime.utcnow()
+            incident.closed_date = datetime.now(UTC)
 
         await self.repository.update_incident(incident)
 
@@ -141,7 +149,7 @@ class IncidentService:
         incident_id: UUID,
         assigned_to: str,
         assigned_by: str
-    ) -> Optional[Incident]:
+    ) -> Incident | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
@@ -168,7 +176,7 @@ class IncidentService:
         escalated_to: str,
         escalated_by: str,
         reason: str
-    ) -> Optional[IncidentEscalation]:
+    ) -> IncidentEscalation | None:
         incident = await self.repository.find_incident_by_id(incident_id)
         if not incident:
             return None
@@ -192,12 +200,12 @@ class IncidentService:
         self,
         incident_id: UUID,
         analyst: str,
-        root_causes: List[str],
-        contributing_factors: List[str],
+        root_causes: list[str],
+        contributing_factors: list[str],
         methodology: str,
         findings: str,
-        recommendations: List[str],
-        preventive_measures: List[str]
+        recommendations: list[str],
+        preventive_measures: list[str]
     ) -> IncidentRootCauseAnalysis:
         rca = IncidentRootCauseAnalysis(
             incident_id=incident_id,
@@ -227,7 +235,7 @@ class IncidentService:
         description: str,
         assigned_to: str,
         due_date: date,
-        analysis_id: Optional[UUID] = None
+        analysis_id: UUID | None = None
     ) -> IncidentCorrectiveAction:
         action = IncidentCorrectiveAction(
             incident_id=incident_id,
@@ -245,7 +253,7 @@ class IncidentService:
         self,
         action_id: UUID,
         verified_by: str
-    ) -> Optional[IncidentCorrectiveAction]:
+    ) -> IncidentCorrectiveAction | None:
         action = await self.repository.find_corrective_action_by_id(action_id)
         if not action:
             return None
@@ -257,7 +265,7 @@ class IncidentService:
 
         return action
 
-    async def get_incident_timeline(self, incident_id: UUID) -> List[IncidentTimeline]:
+    async def get_incident_timeline(self, incident_id: UUID) -> list[IncidentTimeline]:
         return await self.repository.find_timeline_by_incident(incident_id)
 
     async def generate_report(
@@ -318,7 +326,7 @@ class IncidentService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

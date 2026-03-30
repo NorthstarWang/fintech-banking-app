@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -42,7 +42,7 @@ async def get_unified_balance(
     # Calculate fresh unified balance
     balance = unified_manager.calculate_unified_balance(current_user['user_id'])
 
-    return UnifiedBalanceResponse.from_orm(balance)
+    return UnifiedBalanceResponse.model_validate(balance)
 
 @router.post("/bridge", response_model=AssetBridgeResponse, status_code=status.HTTP_201_CREATED)
 async def create_asset_bridge(
@@ -70,7 +70,7 @@ async def create_asset_bridge(
 
         # Log the bridge creation
 
-        return AssetBridgeResponse.from_orm(bridge)
+        return AssetBridgeResponse.model_validate(bridge)
 
     except ValueError as e:
         raise HTTPException(
@@ -94,7 +94,7 @@ async def get_asset_bridges(
 
     bridges = query.order_by(desc(AssetBridge.initiated_at)).limit(limit).all()
 
-    return [AssetBridgeResponse.from_orm(b) for b in bridges]
+    return [AssetBridgeResponse.model_validate(b) for b in bridges]
 
 @router.post("/transfer/smart", response_model=UnifiedTransferResponse, status_code=status.HTTP_201_CREATED)
 async def create_smart_transfer(
@@ -139,7 +139,7 @@ async def create_smart_transfer(
         status=UnifiedTransferStatus.PENDING,
         reference_ids={
             'recipient': transfer_request.recipient_identifier,
-            'route_id': f"route_{datetime.utcnow().timestamp()}"
+            'route_id': f"route_{datetime.now(UTC).timestamp()}"
         }
     )
     db_session.add(transaction)
@@ -161,7 +161,7 @@ async def create_smart_transfer(
         amount_received=transaction.destination_amount,
         amount_received_currency=transaction.destination_currency,
         total_fees_usd=transaction.total_fees_usd,
-        estimated_arrival=datetime.utcnow(),
+        estimated_arrival=datetime.now(UTC),
         status=transaction.status,
         initiated_at=transaction.initiated_at
     )
@@ -181,7 +181,7 @@ async def get_collateral_positions(
 
     positions = query.all()
 
-    return [CollateralPositionResponse.from_orm(p) for p in positions]
+    return [CollateralPositionResponse.model_validate(p) for p in positions]
 
 @router.post("/collateral/create", response_model=CollateralPositionResponse, status_code=status.HTTP_201_CREATED)
 async def create_collateral_position(
@@ -206,7 +206,7 @@ async def create_collateral_position(
         )
         # Log the creation
 
-        return CollateralPositionResponse.from_orm(position)
+        return CollateralPositionResponse.model_validate(position)
 
     except ValueError as e:
         raise HTTPException(

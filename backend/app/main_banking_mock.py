@@ -4,7 +4,7 @@ Main FastAPI application using memory-based mock data system.
 # Import routers
 import sys
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -148,7 +148,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "mock_system": True,
         "data_stats": {
             "users": len(data_manager.users),

@@ -2,7 +2,7 @@
 Initialize proper test data for all tests.
 """
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.repositories.data_manager import data_manager
 
@@ -25,7 +25,7 @@ def initialize_test_data():
             "hashed_password": hashlib.sha256(b"password123").hexdigest(),
             "is_active": True,
             "is_admin": False,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         },
         {
             "id": "test-user-2",
@@ -35,7 +35,7 @@ def initialize_test_data():
             "hashed_password": hashlib.sha256(b"password123").hexdigest(),
             "is_active": True,
             "is_admin": False,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         },
         {
             "id": "admin-user",
@@ -45,7 +45,7 @@ def initialize_test_data():
             "hashed_password": hashlib.sha256(b"admin123").hexdigest(),
             "is_active": True,
             "is_admin": True,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         }
     ]
 
@@ -62,7 +62,7 @@ def initialize_test_data():
             "balance": 1000.00,
             "currency": "USD",
             "is_active": True,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         },
         {
             "id": "2",
@@ -73,7 +73,7 @@ def initialize_test_data():
             "balance": 5000.00,
             "currency": "USD",
             "is_active": True,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         }
     ]
 

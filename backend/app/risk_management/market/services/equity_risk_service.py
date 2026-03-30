@@ -1,22 +1,26 @@
 """Equity Risk Service - Equity risk management service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
 from uuid import UUID
+
 from ..models.equity_risk_models import (
-    EquityPosition, EquityExposure, BetaAnalysis,
-    EquityFactorExposure, EquityScenario, EquityRiskStatistics,
-    EquityPositionType
+    BetaAnalysis,
+    EquityExposure,
+    EquityFactorExposure,
+    EquityPosition,
+    EquityPositionType,
+    EquityRiskStatistics,
+    EquityScenario,
 )
 
 
 class EquityRiskService:
     def __init__(self):
-        self._positions: Dict[UUID, EquityPosition] = {}
-        self._exposures: Dict[UUID, EquityExposure] = {}
-        self._beta_analyses: Dict[UUID, BetaAnalysis] = {}
-        self._factor_exposures: Dict[UUID, EquityFactorExposure] = {}
-        self._scenarios: Dict[UUID, EquityScenario] = {}
+        self._positions: dict[UUID, EquityPosition] = {}
+        self._exposures: dict[UUID, EquityExposure] = {}
+        self._beta_analyses: dict[UUID, BetaAnalysis] = {}
+        self._factor_exposures: dict[UUID, EquityFactorExposure] = {}
+        self._scenarios: dict[UUID, EquityScenario] = {}
 
     async def create_position(
         self, position_type: EquityPositionType, ticker: str, exchange: str,
@@ -45,7 +49,7 @@ class EquityRiskService:
         self._positions[position.position_id] = position
         return position
 
-    async def get_position(self, position_id: UUID) -> Optional[EquityPosition]:
+    async def get_position(self, position_id: UUID) -> EquityPosition | None:
         return self._positions.get(position_id)
 
     async def calculate_exposure(
@@ -81,7 +85,7 @@ class EquityRiskService:
 
     async def perform_beta_analysis(
         self, portfolio_id: UUID, benchmark_ticker: str,
-        portfolio_returns: List[float], benchmark_returns: List[float]
+        portfolio_returns: list[float], benchmark_returns: list[float]
     ) -> BetaAnalysis:
         # Simplified beta calculation
         if len(portfolio_returns) != len(benchmark_returns) or len(portfolio_returns) < 2:
@@ -90,7 +94,7 @@ class EquityRiskService:
         else:
             mean_p = sum(portfolio_returns) / len(portfolio_returns)
             mean_b = sum(benchmark_returns) / len(benchmark_returns)
-            cov = sum((p - mean_p) * (b - mean_b) for p, b in zip(portfolio_returns, benchmark_returns)) / len(portfolio_returns)
+            cov = sum((p - mean_p) * (b - mean_b) for p, b in zip(portfolio_returns, benchmark_returns, strict=False)) / len(portfolio_returns)
             var_b = sum((b - mean_b) ** 2 for b in benchmark_returns) / len(benchmark_returns)
             beta = cov / var_b if var_b > 0 else 1.0
             std_p = (sum((p - mean_p) ** 2 for p in portfolio_returns) / len(portfolio_returns)) ** 0.5
@@ -131,7 +135,7 @@ class EquityRiskService:
 
     async def run_scenario(
         self, scenario_name: str, market_shock: float,
-        sector_shocks: Dict[str, float], volatility_shock: float
+        sector_shocks: dict[str, float], volatility_shock: float
     ) -> EquityScenario:
         pnl_impact = 0
         for position in self._positions.values():
@@ -155,7 +159,7 @@ class EquityRiskService:
         self._scenarios[scenario.scenario_id] = scenario
         return scenario
 
-    async def get_portfolio_positions(self, portfolio_id: UUID) -> List[EquityPosition]:
+    async def get_portfolio_positions(self, portfolio_id: UUID) -> list[EquityPosition]:
         return [p for p in self._positions.values() if p.portfolio_id == portfolio_id]
 
     async def get_statistics(self) -> EquityRiskStatistics:

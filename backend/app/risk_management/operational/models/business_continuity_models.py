@@ -1,11 +1,12 @@
 """Business Continuity Models - Data models for BCP/DR management"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class BCPStatus(str, Enum):
@@ -63,10 +64,10 @@ class BusinessProcess(BaseModel):
     mtpd_hours: int  # Maximum Tolerable Period of Disruption
     minimum_staff: int
     normal_staff: int
-    dependencies: List[str] = Field(default_factory=list)
-    systems_required: List[str] = Field(default_factory=list)
-    vendors_required: List[str] = Field(default_factory=list)
-    alternate_location: Optional[str] = None
+    dependencies: list[str] = Field(default_factory=list)
+    systems_required: list[str] = Field(default_factory=list)
+    vendors_required: list[str] = Field(default_factory=list)
+    alternate_location: str | None = None
     recovery_strategy: RecoveryStrategy
     financial_impact_per_hour: Decimal
     regulatory_impact: bool = False
@@ -81,22 +82,22 @@ class BusinessContinuityPlan(BaseModel):
     business_unit: str
     plan_owner: str
     status: BCPStatus = BCPStatus.DRAFT
-    effective_date: Optional[date] = None
-    expiry_date: Optional[date] = None
-    last_review_date: Optional[date] = None
-    next_review_date: Optional[date] = None
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    effective_date: date | None = None
+    expiry_date: date | None = None
+    last_review_date: date | None = None
+    next_review_date: date | None = None
+    approved_by: str | None = None
+    approval_date: date | None = None
     scope: str
-    objectives: List[str]
-    assumptions: List[str]
-    processes_covered: List[UUID] = Field(default_factory=list)
-    recovery_teams: List[Dict[str, Any]] = Field(default_factory=list)
-    communication_plan: Dict[str, Any] = Field(default_factory=dict)
-    activation_criteria: List[str] = Field(default_factory=list)
-    deactivation_criteria: List[str] = Field(default_factory=list)
+    objectives: list[str]
+    assumptions: list[str]
+    processes_covered: list[UUID] = Field(default_factory=list)
+    recovery_teams: list[dict[str, Any]] = Field(default_factory=list)
+    communication_plan: dict[str, Any] = Field(default_factory=dict)
+    activation_criteria: list[str] = Field(default_factory=list)
+    deactivation_criteria: list[str] = Field(default_factory=list)
     document_location: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DisasterRecoveryPlan(BaseModel):
@@ -113,15 +114,15 @@ class DisasterRecoveryPlan(BaseModel):
     backup_frequency: str
     backup_location: str
     backup_retention: str
-    recovery_procedures: List[str] = Field(default_factory=list)
-    verification_steps: List[str] = Field(default_factory=list)
-    contact_list: List[Dict[str, str]] = Field(default_factory=list)
-    dependencies: List[str] = Field(default_factory=list)
-    last_test_date: Optional[date] = None
-    next_test_date: Optional[date] = None
-    test_result: Optional[str] = None
+    recovery_procedures: list[str] = Field(default_factory=list)
+    verification_steps: list[str] = Field(default_factory=list)
+    contact_list: list[dict[str, str]] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    last_test_date: date | None = None
+    next_test_date: date | None = None
+    test_result: str | None = None
     owner: str
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
 
 
 class BCPTest(BaseModel):
@@ -132,19 +133,19 @@ class BCPTest(BaseModel):
     test_date: date
     test_duration_hours: float
     scope: str
-    objectives: List[str]
-    participants: List[str]
-    scenarios_tested: List[str]
+    objectives: list[str]
+    participants: list[str]
+    scenarios_tested: list[str]
     test_coordinator: str
     test_result: str  # pass, partial, fail
-    rto_achieved: Optional[int] = None
-    rpo_achieved: Optional[int] = None
-    findings: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
-    action_items: List[Dict[str, Any]] = Field(default_factory=list)
-    lessons_learned: List[str] = Field(default_factory=list)
-    report_date: Optional[date] = None
-    approved_by: Optional[str] = None
+    rto_achieved: int | None = None
+    rpo_achieved: int | None = None
+    findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    action_items: list[dict[str, Any]] = Field(default_factory=list)
+    lessons_learned: list[str] = Field(default_factory=list)
+    report_date: date | None = None
+    approved_by: str | None = None
 
 
 class BCPIncident(BaseModel):
@@ -153,20 +154,20 @@ class BCPIncident(BaseModel):
     disaster_type: DisasterType
     declaration_time: datetime
     declared_by: str
-    affected_locations: List[str]
-    affected_processes: List[UUID]
+    affected_locations: list[str]
+    affected_processes: list[UUID]
     impact_description: str
     plan_activated: UUID
     activation_time: datetime
-    recovery_start_time: Optional[datetime] = None
-    recovery_end_time: Optional[datetime] = None
-    deactivation_time: Optional[datetime] = None
+    recovery_start_time: datetime | None = None
+    recovery_end_time: datetime | None = None
+    deactivation_time: datetime | None = None
     status: str = "active"
-    actual_rto_hours: Optional[float] = None
-    actual_rpo_hours: Optional[float] = None
-    financial_impact: Optional[Decimal] = None
-    lessons_learned: List[str] = Field(default_factory=list)
-    post_incident_review_date: Optional[date] = None
+    actual_rto_hours: float | None = None
+    actual_rpo_hours: float | None = None
+    financial_impact: Decimal | None = None
+    lessons_learned: list[str] = Field(default_factory=list)
+    post_incident_review_date: date | None = None
 
 
 class CrisisTeamMember(BaseModel):
@@ -176,18 +177,18 @@ class CrisisTeamMember(BaseModel):
     primary_contact: str
     primary_phone: str
     primary_email: str
-    alternate_contact: Optional[str] = None
-    alternate_phone: Optional[str] = None
-    backup_person: Optional[str] = None
-    backup_phone: Optional[str] = None
-    responsibilities: List[str]
+    alternate_contact: str | None = None
+    alternate_phone: str | None = None
+    backup_person: str | None = None
+    backup_phone: str | None = None
+    responsibilities: list[str]
     is_active: bool = True
 
 
 class BCPMetrics(BaseModel):
     metrics_id: UUID = Field(default_factory=uuid4)
     metrics_date: date
-    business_unit: Optional[str] = None
+    business_unit: str | None = None
     total_processes: int
     critical_processes: int
     plans_count: int
@@ -202,4 +203,4 @@ class BCPMetrics(BaseModel):
     open_action_items: int
     overdue_reviews: int
     coverage_percentage: Decimal
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

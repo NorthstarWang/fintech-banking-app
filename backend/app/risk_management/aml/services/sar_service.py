@@ -4,15 +4,25 @@ SAR Service
 Handles Suspicious Activity Report creation, management, and filing.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from ..models.sar_models import (
-    SAR, SARSummary, SARStatistics, SARStatus, SARType, SuspiciousActivityType,
-    FilingInstitution, SubjectInfo, SuspiciousActivity, TransactionDetail,
-    Narrative, SARDocument, SARApproval, SARSubmission,
-    SARCreateRequest, SARUpdateRequest, SARSearchCriteria
+    SAR,
+    FilingInstitution,
+    Narrative,
+    SARApproval,
+    SARCreateRequest,
+    SARDocument,
+    SARSearchCriteria,
+    SARStatistics,
+    SARStatus,
+    SARSubmission,
+    SARSummary,
+    SARUpdateRequest,
+    SubjectInfo,
+    SuspiciousActivity,
+    TransactionDetail,
 )
 
 
@@ -20,7 +30,7 @@ class SARService:
     """Service for SAR management and filing"""
 
     def __init__(self):
-        self._sars: Dict[UUID, SAR] = {}
+        self._sars: dict[UUID, SAR] = {}
         self._sar_counter = 0
         self._default_institution = FilingInstitution(
             institution_name="BankFlow Financial",
@@ -38,14 +48,14 @@ class SARService:
     def _generate_sar_number(self) -> str:
         """Generate unique SAR number"""
         self._sar_counter += 1
-        return f"SAR-{datetime.utcnow().strftime('%Y%m%d')}-{self._sar_counter:06d}"
+        return f"SAR-{datetime.now(UTC).strftime('%Y%m%d')}-{self._sar_counter:06d}"
 
     async def create_sar(self, request: SARCreateRequest, created_by: str) -> SAR:
         """Create a new SAR"""
         sar_id = uuid4()
 
         # Calculate filing deadline (30 days from detection for most cases)
-        filing_deadline = datetime.utcnow() + timedelta(days=30)
+        filing_deadline = datetime.now(UTC) + timedelta(days=30)
 
         sar = SAR(
             sar_id=sar_id,
@@ -63,11 +73,11 @@ class SARService:
         self._sars[sar_id] = sar
         return sar
 
-    async def get_sar(self, sar_id: UUID) -> Optional[SAR]:
+    async def get_sar(self, sar_id: UUID) -> SAR | None:
         """Get SAR by ID"""
         return self._sars.get(sar_id)
 
-    async def get_sar_by_number(self, sar_number: str) -> Optional[SAR]:
+    async def get_sar_by_number(self, sar_number: str) -> SAR | None:
         """Get SAR by SAR number"""
         for sar in self._sars.values():
             if sar.sar_number == sar_number:
@@ -76,7 +86,7 @@ class SARService:
 
     async def update_sar(
         self, sar_id: UUID, request: SARUpdateRequest, updated_by: str
-    ) -> Optional[SAR]:
+    ) -> SAR | None:
         """Update a SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -102,20 +112,20 @@ class SARService:
         if request.law_enforcement_agency:
             sar.law_enforcement_agency = request.law_enforcement_agency
 
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def add_subject(self, sar_id: UUID, subject: SubjectInfo) -> Optional[SAR]:
+    async def add_subject(self, sar_id: UUID, subject: SubjectInfo) -> SAR | None:
         """Add subject to SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
             return None
 
         sar.subjects.append(subject)
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def add_activity(self, sar_id: UUID, activity: SuspiciousActivity) -> Optional[SAR]:
+    async def add_activity(self, sar_id: UUID, activity: SuspiciousActivity) -> SAR | None:
         """Add suspicious activity to SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -123,10 +133,10 @@ class SARService:
 
         sar.activities.append(activity)
         sar.total_suspicious_amount += activity.total_amount
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def add_transaction(self, sar_id: UUID, transaction: TransactionDetail) -> Optional[SAR]:
+    async def add_transaction(self, sar_id: UUID, transaction: TransactionDetail) -> SAR | None:
         """Add transaction detail to SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -134,12 +144,12 @@ class SARService:
 
         sar.transactions.append(transaction)
         sar.transaction_count += 1
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
     async def add_narrative(
         self, sar_id: UUID, section: str, content: str, author: str
-    ) -> Optional[Narrative]:
+    ) -> Narrative | None:
         """Add or update narrative section"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -150,9 +160,9 @@ class SARService:
             if narrative.section == section:
                 narrative.content = content
                 narrative.modified_by = author
-                narrative.modified_at = datetime.utcnow()
+                narrative.modified_at = datetime.now(UTC)
                 narrative.version += 1
-                sar.updated_at = datetime.utcnow()
+                sar.updated_at = datetime.now(UTC)
                 return narrative
 
         # Create new section
@@ -165,7 +175,7 @@ class SARService:
 
         # Update full narrative
         await self._compile_full_narrative(sar)
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return narrative
 
     async def _compile_full_narrative(self, sar: SAR):
@@ -180,17 +190,17 @@ class SARService:
 
         sar.full_narrative = "\n\n".join(full_text_parts)
 
-    async def add_document(self, sar_id: UUID, document: SARDocument) -> Optional[SAR]:
+    async def add_document(self, sar_id: UUID, document: SARDocument) -> SAR | None:
         """Add supporting document to SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
             return None
 
         sar.documents.append(document)
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def submit_for_approval(self, sar_id: UUID, submitted_by: str) -> Optional[SAR]:
+    async def submit_for_approval(self, sar_id: UUID, submitted_by: str) -> SAR | None:
         """Submit SAR for approval"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -198,12 +208,12 @@ class SARService:
 
         sar.status = SARStatus.PENDING_REVIEW
         sar.requires_approval_from = ["compliance_officer", "bsa_officer"]
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
     async def approve_sar(
-        self, sar_id: UUID, approver_id: str, approver_name: str, approver_role: str, comments: Optional[str] = None
-    ) -> Optional[SAR]:
+        self, sar_id: UUID, approver_id: str, approver_name: str, approver_role: str, comments: str | None = None
+    ) -> SAR | None:
         """Approve SAR"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -225,12 +235,12 @@ class SARService:
         if required_roles.issubset(approved_roles):
             sar.status = SARStatus.APPROVED
 
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
     async def reject_sar(
         self, sar_id: UUID, approver_id: str, approver_name: str, approver_role: str, reason: str
-    ) -> Optional[SAR]:
+    ) -> SAR | None:
         """Reject SAR for revisions"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -245,10 +255,10 @@ class SARService:
         )
         sar.approvals.append(approval)
         sar.status = SARStatus.DRAFT
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def file_sar(self, sar_id: UUID, submission_method: str = "efiling") -> Optional[SAR]:
+    async def file_sar(self, sar_id: UUID, submission_method: str = "efiling") -> SAR | None:
         """File SAR with FinCEN"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -258,25 +268,25 @@ class SARService:
             raise ValueError("SAR must be approved before filing")
 
         submission = SARSubmission(
-            submission_date=datetime.utcnow(),
+            submission_date=datetime.now(UTC),
             submission_method=submission_method,
             bsa_id=f"BSA-{uuid4().hex[:12].upper()}",
             response_received=True,
-            response_date=datetime.utcnow(),
+            response_date=datetime.now(UTC),
             response_status="accepted"
         )
 
         sar.submissions.append(submission)
         sar.last_submission = submission
         sar.status = SARStatus.SUBMITTED
-        sar.submitted_at = datetime.utcnow()
-        sar.updated_at = datetime.utcnow()
+        sar.submitted_at = datetime.now(UTC)
+        sar.updated_at = datetime.now(UTC)
 
         return sar
 
     async def acknowledge_sar(
         self, sar_id: UUID, acknowledgment_number: str
-    ) -> Optional[SAR]:
+    ) -> SAR | None:
         """Record SAR acknowledgment from FinCEN"""
         sar = self._sars.get(sar_id)
         if not sar or not sar.last_submission:
@@ -284,12 +294,12 @@ class SARService:
 
         sar.last_submission.acknowledgment_number = acknowledgment_number
         sar.status = SARStatus.ACKNOWLEDGED
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
     async def request_extension(
         self, sar_id: UUID, reason: str, new_deadline: datetime, requested_by: str
-    ) -> Optional[SAR]:
+    ) -> SAR | None:
         """Request filing deadline extension"""
         sar = self._sars.get(sar_id)
         if not sar:
@@ -298,10 +308,10 @@ class SARService:
         sar.extension_granted = True
         sar.extension_reason = reason
         sar.new_deadline = new_deadline
-        sar.updated_at = datetime.utcnow()
+        sar.updated_at = datetime.now(UTC)
         return sar
 
-    async def search_sars(self, criteria: SARSearchCriteria) -> List[SARSummary]:
+    async def search_sars(self, criteria: SARSearchCriteria) -> list[SARSummary]:
         """Search SARs based on criteria"""
         results = []
         for sar in self._sars.values():
@@ -360,17 +370,14 @@ class SARService:
             return False
 
         deadline = sar.new_deadline or sar.filing_deadline
-        if criteria.overdue_only and deadline > datetime.utcnow():
-            return False
-
-        return True
+        return not (criteria.overdue_only and deadline > datetime.now(UTC))
 
     async def get_statistics(self) -> SARStatistics:
         """Get SAR statistics"""
         stats = SARStatistics()
         stats.total_sars = len(self._sars)
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         quarter_start = now.replace(month=((now.month - 1) // 3) * 3 + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
         year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)

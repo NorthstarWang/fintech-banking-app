@@ -1,10 +1,12 @@
 """Data Profiling Routes"""
 
-from typing import List, Dict, Any, Optional
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.data_profiling_service import data_profiling_service
 
 router = APIRouter(prefix="/data-profiling", tags=["Data Profiling"])
@@ -27,13 +29,13 @@ class AddColumnProfileRequest(BaseModel):
     distinct_count: int
     min_value: str = ""
     max_value: str = ""
-    avg_value: Optional[Decimal] = None
+    avg_value: Decimal | None = None
 
 
 class RecordDistributionRequest(BaseModel):
     column_profile_id: UUID
     distribution_type: str
-    buckets: List[Dict[str, Any]]
+    buckets: list[dict[str, Any]]
 
 
 class RecordRelationshipRequest(BaseModel):
@@ -49,7 +51,7 @@ class StartProfilingJobRequest(BaseModel):
     job_name: str
     dataset_name: str
     job_type: str
-    columns_to_profile: List[str]
+    columns_to_profile: list[str]
     started_by: str
 
 

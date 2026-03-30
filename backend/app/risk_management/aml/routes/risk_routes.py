@@ -4,13 +4,16 @@ Risk Scoring Routes
 API endpoints for customer risk scoring.
 """
 
-from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.customer_risk_models import (
-    CustomerRiskProfile, CustomerRiskAssessment, CustomerRiskLevel,
-    CustomerType, GeographicRisk, RiskOverrideRequest
+    CustomerRiskAssessment,
+    CustomerRiskLevel,
+    CustomerRiskProfile,
+    CustomerType,
+    GeographicRisk,
 )
 from ..services.risk_scoring_service import risk_scoring_service
 
@@ -79,7 +82,7 @@ async def get_country_risk(country_code: str):
     return risk
 
 
-@router.get("/countries/high-risk", response_model=List[GeographicRisk])
+@router.get("/countries/high-risk", response_model=list[GeographicRisk])
 async def get_high_risk_countries():
     """Get list of high-risk countries"""
     return await risk_scoring_service.get_high_risk_countries()

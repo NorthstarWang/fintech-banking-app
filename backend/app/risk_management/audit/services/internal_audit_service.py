@@ -1,11 +1,18 @@
 """Internal Audit Service - Business logic for internal audit management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
+
 from ..models.internal_audit_models import (
-    InternalAudit, AuditWorkpaper, AuditFinding, AuditReport, AuditFollowUp,
-    AuditType, AuditStatus, FindingSeverity
+    AuditFinding,
+    AuditFollowUp,
+    AuditReport,
+    AuditStatus,
+    AuditType,
+    AuditWorkpaper,
+    FindingSeverity,
+    InternalAudit,
 )
 from ..repositories.internal_audit_repository import internal_audit_repository
 
@@ -18,10 +25,10 @@ class InternalAuditService:
 
     async def create_audit(
         self, audit_name: str, audit_type: AuditType, audit_scope: str,
-        audit_objectives: List[str], business_unit: str,
+        audit_objectives: list[str], business_unit: str,
         audit_period_start: date, audit_period_end: date,
         planned_start_date: date, planned_end_date: date,
-        lead_auditor: str, audit_team: List[str], budgeted_hours: int
+        lead_auditor: str, audit_team: list[str], budgeted_hours: int
     ) -> InternalAudit:
         self._audit_counter += 1
         audit = InternalAudit(
@@ -35,14 +42,14 @@ class InternalAuditService:
         await self.repository.save_audit(audit)
         return audit
 
-    async def start_audit(self, audit_id: UUID) -> Optional[InternalAudit]:
+    async def start_audit(self, audit_id: UUID) -> InternalAudit | None:
         audit = await self.repository.find_audit_by_id(audit_id)
         if audit and audit.status == AuditStatus.PLANNED:
             audit.status = AuditStatus.IN_PROGRESS
             audit.actual_start_date = date.today()
         return audit
 
-    async def complete_audit(self, audit_id: UUID) -> Optional[InternalAudit]:
+    async def complete_audit(self, audit_id: UUID) -> InternalAudit | None:
         audit = await self.repository.find_audit_by_id(audit_id)
         if audit:
             audit.status = AuditStatus.COMPLETED
@@ -81,7 +88,7 @@ class InternalAuditService:
     async def respond_to_finding(
         self, finding_id: UUID, management_response: str, action_plan: str,
         action_owner: str, target_date: date
-    ) -> Optional[AuditFinding]:
+    ) -> AuditFinding | None:
         finding = await self.repository.find_finding_by_id(finding_id)
         if finding:
             finding.management_response = management_response
@@ -112,7 +119,7 @@ class InternalAuditService:
 
     async def follow_up_finding(
         self, finding_id: UUID, audit_id: UUID, follow_up_by: str,
-        implementation_status: str, evidence_reviewed: List[str],
+        implementation_status: str, evidence_reviewed: list[str],
         auditor_assessment: str
     ) -> AuditFollowUp:
         follow_up = AuditFollowUp(
@@ -132,7 +139,7 @@ class InternalAuditService:
 
         return follow_up
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

@@ -1,11 +1,13 @@
 """Master Data Management Routes"""
 
-from typing import List, Dict, Any
-from uuid import UUID
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.master_data_service import master_data_service
 
 router = APIRouter(prefix="/master-data", tags=["Master Data Management"])
@@ -17,16 +19,16 @@ class CreateDomainRequest(BaseModel):
     description: str
     owner: str
     steward: str
-    source_systems: List[str]
-    entity_types: List[str]
+    source_systems: list[str]
+    entity_types: list[str]
 
 
 class CreateEntityRequest(BaseModel):
     domain_id: UUID
     entity_type: str
     entity_name: str
-    attributes: Dict[str, Any]
-    source_records: List[Dict[str, Any]]
+    attributes: dict[str, Any]
+    source_records: list[dict[str, Any]]
     created_by: str
 
 
@@ -35,7 +37,7 @@ class CreateMatchRuleRequest(BaseModel):
     rule_name: str
     rule_description: str
     match_type: str
-    match_fields: List[str]
+    match_fields: list[str]
     match_threshold: Decimal
     created_by: str
     is_blocking_rule: bool = False
@@ -46,7 +48,7 @@ class CreateMergeRuleRequest(BaseModel):
     rule_name: str
     attribute_name: str
     survivorship_rule: str
-    source_priority: List[str] = []
+    source_priority: list[str] = []
 
 
 class CreateMatchCandidateRequest(BaseModel):
@@ -57,21 +59,21 @@ class CreateMatchCandidateRequest(BaseModel):
     record_2_id: str
     record_2_source: str
     match_score: Decimal
-    matched_fields: Dict[str, Decimal]
+    matched_fields: dict[str, Decimal]
 
 
 class MergeEntitiesRequest(BaseModel):
     entity_id: UUID
-    merged_records: List[str]
+    merged_records: list[str]
     merged_by: str
-    survivorship_decisions: Dict[str, str]
+    survivorship_decisions: dict[str, str]
 
 
 class CreateTaskRequest(BaseModel):
     domain_id: UUID
     task_type: str
     description: str
-    entity_ids: List[UUID]
+    entity_ids: list[UUID]
     assigned_to: str
     due_date: date
     priority: str = "normal"
@@ -81,8 +83,8 @@ class AuditEntityRequest(BaseModel):
     entity_id: UUID
     action: str
     performed_by: str
-    previous_state: Dict[str, Any]
-    new_state: Dict[str, Any]
+    previous_state: dict[str, Any]
+    new_state: dict[str, Any]
     reason: str = ""
 
 

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -283,7 +283,7 @@ async def list_subscriptions(
     # Auto-detect if requested
     if auto_detect:
         # Get recent transactions
-        three_months_ago = datetime.utcnow() - timedelta(days=90)
+        three_months_ago = datetime.now(UTC) - timedelta(days=90)
 
         transactions = db_session.query(Transaction).join(
             Account
@@ -396,7 +396,7 @@ async def update_subscription(
     if update_data.notes is not None:
         subscription.notes = update_data.notes
 
-    subscription.updated_at = datetime.utcnow()
+    subscription.updated_at = datetime.now(UTC)
 
     db_session.commit()
     db_session.refresh(subscription)
@@ -477,7 +477,7 @@ async def analyze_subscriptions(
     # Cost trend (mock - last 6 months)
     cost_trend = []
     for i in range(6):
-        month_date = datetime.utcnow() - timedelta(days=i * 30)
+        month_date = datetime.now(UTC) - timedelta(days=i * 30)
         # Add some variation
         variation = 1 + (0.1 * (i % 3 - 1))
         cost_trend.append({
@@ -604,7 +604,7 @@ async def set_cancellation_reminder(
     db_session.refresh(reminder)
 
 
-    return CancellationReminderResponse.from_orm(reminder)
+    return CancellationReminderResponse.model_validate(reminder)
 
 @router.get("/optimize", response_model=OptimizationResponse)
 async def get_optimization_suggestions(
@@ -758,7 +758,7 @@ async def get_optimization_suggestions(
         unused_subscriptions=unused_subscriptions,
         duplicate_services=duplicate_services,
         optimization_score=round(optimization_score, 1),
-        generated_at=datetime.utcnow()
+        generated_at=datetime.now(UTC)
     )
 
 @router.post("", response_model=SubscriptionResponse, status_code=status.HTTP_201_CREATED)
@@ -791,8 +791,8 @@ async def create_subscription(
         start_date=start_date,
         notes=subscription_data.description,
         detected_automatically=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
 
     # Add trial info if applicable
@@ -956,7 +956,7 @@ async def cancel_subscription(
         cancellation_date = date.today()
         message = "Subscription cancelled immediately"
 
-    subscription.updated_at = datetime.utcnow()
+    subscription.updated_at = datetime.now(UTC)
 
     db_session.commit()
 
@@ -993,7 +993,7 @@ async def pause_subscription(
     # Pause subscription
     subscription.status = SubscriptionStatus.PAUSED
     subscription.next_billing_date = pause_data.pause_until
-    subscription.updated_at = datetime.utcnow()
+    subscription.updated_at = datetime.now(UTC)
 
     # Store the resume date in notes (in a real system, would have a separate field)
     subscription.notes = f"{subscription.notes or ''} [Resume: {pause_data.pause_until}]"
@@ -1092,7 +1092,7 @@ async def set_subscription_reminders(
             notes_data["original_notes"] = subscription.notes
 
     subscription.notes = json.dumps(notes_data)
-    subscription.updated_at = datetime.utcnow()
+    subscription.updated_at = datetime.now(UTC)
 
     db_session.commit()
 
@@ -1268,7 +1268,7 @@ async def share_subscription(
             notes_data["original_notes"] = subscription.notes
 
     subscription.notes = json.dumps(notes_data)
-    subscription.updated_at = datetime.utcnow()
+    subscription.updated_at = datetime.now(UTC)
 
     db_session.commit()
 
@@ -1324,8 +1324,8 @@ async def bulk_import_subscriptions(
                 start_date=start_date,
                 notes=sub_data.get("description"),
                 detected_automatically=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
 
             db_session.add(subscription)

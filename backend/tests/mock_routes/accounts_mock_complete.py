@@ -4,7 +4,7 @@ Complete mock implementation for accounts routes.
 from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -65,7 +65,7 @@ async def create_account(
         "balance": request.initial_balance,
         "currency": "USD",
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     if request.credit_limit is not None:
@@ -130,7 +130,7 @@ async def update_account(
     if request.is_active is not None:
         account["is_active"] = request.is_active
     
-    account["updated_at"] = datetime.utcnow().isoformat()
+    account["updated_at"] = datetime.now(timezone.utc).isoformat()
     return account
 
 @router.delete("/{account_id}")
@@ -197,7 +197,7 @@ async def get_balance_history(
     
     # Return mock balance history
     return [{
-        "date": datetime.utcnow().isoformat(),
+        "date": datetime.now(timezone.utc).isoformat(),
         "balance": account["balance"]
     }]
 
@@ -241,7 +241,7 @@ async def transfer_funds(
         "amount": -request.amount,
         "description": request.description,
         "transaction_type": "transfer",
-        "date": datetime.utcnow().isoformat()
+        "date": datetime.now(timezone.utc).isoformat()
     })
     
     # Credit transaction
@@ -251,7 +251,7 @@ async def transfer_funds(
         "amount": request.amount,
         "description": request.description,
         "transaction_type": "transfer",
-        "date": datetime.utcnow().isoformat()
+        "date": datetime.now(timezone.utc).isoformat()
     })
     
     return {

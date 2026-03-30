@@ -1,14 +1,18 @@
 """Portfolio Routes - API endpoints for portfolio management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..models.portfolio_models import (
-    CreditPortfolio, PortfolioSegment, ConcentrationRisk,
-    PortfolioType, PortfolioStatus, ConcentrationRiskType
+    ConcentrationRisk,
+    ConcentrationRiskType,
+    CreditPortfolio,
+    PortfolioSegment,
+    PortfolioStatus,
+    PortfolioType,
 )
 from ..services.portfolio_service import portfolio_service
 
@@ -23,10 +27,10 @@ class CreatePortfolioRequest(BaseModel):
 
 
 class UpdateMetricsRequest(BaseModel):
-    total_exposure: Optional[float] = None
-    expected_loss: Optional[float] = None
-    weighted_average_pd: Optional[float] = None
-    weighted_average_lgd: Optional[float] = None
+    total_exposure: float | None = None
+    expected_loss: float | None = None
+    weighted_average_pd: float | None = None
+    weighted_average_lgd: float | None = None
 
 
 class AddSegmentRequest(BaseModel):
@@ -40,13 +44,13 @@ class ConcentrationRequest(BaseModel):
     dimension_name: str
     dimension_value: str
     exposure_amount: float
-    limit_percentage: Optional[float] = None
+    limit_percentage: float | None = None
 
 
 class StressTestRequest(BaseModel):
     scenario_name: str
     scenario_type: str
-    economic_assumptions: Dict[str, float]
+    economic_assumptions: dict[str, float]
     created_by: str
 
 
@@ -58,10 +62,9 @@ class MigrationRequest(BaseModel):
 @router.post("/", response_model=CreditPortfolio)
 async def create_portfolio(request: CreatePortfolioRequest):
     """Create a new credit portfolio"""
-    portfolio = await portfolio_service.create_portfolio(
+    return await portfolio_service.create_portfolio(
         request.name, request.portfolio_type, request.description, request.manager
     )
-    return portfolio
 
 
 @router.get("/{portfolio_id}", response_model=CreditPortfolio)
@@ -94,7 +97,7 @@ async def add_segment(portfolio_id: UUID, request: AddSegmentRequest):
     return segment
 
 
-@router.get("/{portfolio_id}/segments", response_model=List[PortfolioSegment])
+@router.get("/{portfolio_id}/segments", response_model=list[PortfolioSegment])
 async def get_segments(portfolio_id: UUID):
     """Get portfolio segments"""
     return await portfolio_service.get_portfolio_segments(portfolio_id)
@@ -112,7 +115,7 @@ async def assess_concentration(portfolio_id: UUID, request: ConcentrationRequest
     return concentration
 
 
-@router.get("/{portfolio_id}/concentration", response_model=List[ConcentrationRisk])
+@router.get("/{portfolio_id}/concentration", response_model=list[ConcentrationRisk])
 async def get_concentrations(portfolio_id: UUID):
     """Get portfolio concentration risks"""
     return await portfolio_service.get_concentration_risks(portfolio_id)
@@ -143,8 +146,8 @@ async def run_stress_test(portfolio_id: UUID, request: StressTestRequest):
 
 @router.get("/")
 async def list_portfolios(
-    portfolio_type: Optional[PortfolioType] = None,
-    status: Optional[PortfolioStatus] = None,
+    portfolio_type: PortfolioType | None = None,
+    status: PortfolioStatus | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List portfolios with optional filters"""

@@ -1,9 +1,9 @@
 """Collateral Models - Collateral and security management models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -49,20 +49,20 @@ class Collateral(BaseModel):
     haircut_percentage: float = Field(default=0.0, ge=0, le=100)
     adjusted_value: float
     currency: str = "USD"
-    location: Optional[str] = None
-    registration_number: Optional[str] = None
-    registration_date: Optional[date] = None
+    location: str | None = None
+    registration_number: str | None = None
+    registration_date: date | None = None
     perfection_status: str = "pending"
-    perfection_date: Optional[date] = None
-    insurance_policy: Optional[str] = None
-    insurance_expiry: Optional[date] = None
-    linked_facilities: List[UUID] = []
+    perfection_date: date | None = None
+    insurance_policy: str | None = None
+    insurance_expiry: date | None = None
+    linked_facilities: list[UUID] = []
     total_allocation: float = 0.0
     available_value: float = 0.0
-    last_valuation_date: Optional[date] = None
-    next_valuation_date: Optional[date] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_valuation_date: date | None = None
+    next_valuation_date: date | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CollateralValuation(BaseModel):
@@ -71,42 +71,42 @@ class CollateralValuation(BaseModel):
     valuation_type: ValuationType
     valuation_date: date
     valuer_name: str
-    valuer_company: Optional[str] = None
+    valuer_company: str | None = None
     market_value: float
     forced_sale_value: float
-    insurance_value: Optional[float] = None
-    land_value: Optional[float] = None
-    building_value: Optional[float] = None
+    insurance_value: float | None = None
+    land_value: float | None = None
+    building_value: float | None = None
     valuation_methodology: str
-    assumptions: List[str] = []
-    value_drivers: List[str] = []
-    risk_factors: List[str] = []
-    valuation_report_url: Optional[str] = None
+    assumptions: list[str] = []
+    value_drivers: list[str] = []
+    risk_factors: list[str] = []
+    valuation_report_url: str | None = None
     expiry_date: date
     status: str = "current"
-    approved_by: Optional[str] = None
-    approved_date: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    approved_date: datetime | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CollateralAllocation(BaseModel):
     allocation_id: UUID = Field(default_factory=uuid4)
     collateral_id: UUID
     facility_id: UUID
-    loan_id: Optional[UUID] = None
+    loan_id: UUID | None = None
     allocation_amount: float
     allocation_percentage: float
     priority_ranking: int = 1
     effective_date: date
-    expiry_date: Optional[date] = None
+    expiry_date: date | None = None
     status: str = "active"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CollateralHaircut(BaseModel):
     haircut_id: UUID = Field(default_factory=uuid4)
     collateral_type: CollateralType
-    sub_type: Optional[str] = None
+    sub_type: str | None = None
     standard_haircut: float
     stressed_haircut: float
     currency_haircut: float = 0.0
@@ -116,7 +116,7 @@ class CollateralHaircut(BaseModel):
     effective_date: date
     review_date: date
     approved_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CollateralMonitoring(BaseModel):
@@ -126,14 +126,14 @@ class CollateralMonitoring(BaseModel):
     value_change_percentage: float
     ltv_ratio: float
     margin_call_triggered: bool = False
-    margin_call_amount: Optional[float] = None
+    margin_call_amount: float | None = None
     insurance_status: str
     physical_inspection_due: bool = False
     legal_review_due: bool = False
-    issues_identified: List[str] = []
-    recommendations: List[str] = []
+    issues_identified: list[str] = []
+    recommendations: list[str] = []
     monitored_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Guarantee(BaseModel):
@@ -141,18 +141,18 @@ class Guarantee(BaseModel):
     guarantee_type: str  # corporate, personal, bank, government
     guarantor_id: str
     guarantor_name: str
-    guarantor_rating: Optional[str] = None
+    guarantor_rating: str | None = None
     guaranteed_facility_id: UUID
     guarantee_amount: float
     guarantee_percentage: float
     currency: str = "USD"
     effective_date: date
     expiry_date: date
-    guarantee_document: Optional[str] = None
+    guarantee_document: str | None = None
     status: str = "active"
     legal_enforceability: str = "enforceable"
     recovery_rate_assumption: float = Field(default=0.5, ge=0, le=1)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CollateralStatistics(BaseModel):
@@ -160,7 +160,7 @@ class CollateralStatistics(BaseModel):
     total_original_value: float = 0.0
     total_current_value: float = 0.0
     total_adjusted_value: float = 0.0
-    by_type: Dict[str, float] = {}
-    by_status: Dict[str, int] = {}
+    by_type: dict[str, float] = {}
+    by_status: dict[str, int] = {}
     average_haircut: float = 0.0
     average_ltv: float = 0.0

@@ -1,13 +1,18 @@
 """Credit Limit Routes - API endpoints for credit limit management"""
 
-from typing import Optional, List
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..models.credit_limit_models import (
-    CreditLimit, LimitRequest, LimitReview, LimitBreach, LimitCovenant,
-    LimitType, LimitStatus
+    CreditLimit,
+    LimitBreach,
+    LimitCovenant,
+    LimitRequest,
+    LimitReview,
+    LimitStatus,
+    LimitType,
 )
 from ..services.credit_limit_service import credit_limit_service
 
@@ -21,13 +26,13 @@ class CreateLimitRequest(BaseModel):
     limit_amount: float = Field(gt=0)
     tenor_months: int = Field(gt=0, le=120)
     approved_by: str
-    conditions: List[str] = []
+    conditions: list[str] = []
 
 
 class UtilizeLimitRequest(BaseModel):
     amount: float = Field(gt=0)
     utilization_type: str
-    transaction_reference: Optional[str] = None
+    transaction_reference: str | None = None
 
 
 class SubmitRequestRequest(BaseModel):
@@ -44,7 +49,7 @@ class SubmitRequestRequest(BaseModel):
 
 class ApproveRequestRequest(BaseModel):
     approved_amount: float = Field(gt=0)
-    conditions: List[str] = []
+    conditions: list[str] = []
     approved_by: str
 
 
@@ -66,12 +71,11 @@ class AddCovenantRequest(BaseModel):
 @router.post("/", response_model=CreditLimit)
 async def create_limit(request: CreateLimitRequest):
     """Create a new credit limit"""
-    limit = await credit_limit_service.create_limit(
+    return await credit_limit_service.create_limit(
         request.limit_type, request.entity_id, request.entity_name,
         request.limit_amount, request.tenor_months, request.approved_by,
         request.conditions
     )
-    return limit
 
 
 @router.get("/{limit_id}", response_model=CreditLimit)
@@ -84,7 +88,7 @@ async def get_limit(limit_id: UUID):
 
 
 @router.get("/entity/{entity_id}")
-async def get_entity_limit(entity_id: str, limit_type: Optional[LimitType] = None):
+async def get_entity_limit(entity_id: str, limit_type: LimitType | None = None):
     """Get limit for an entity"""
     limit = await credit_limit_service.get_entity_limit(entity_id, limit_type)
     if not limit:
@@ -106,12 +110,11 @@ async def utilize_limit(limit_id: UUID, request: UtilizeLimitRequest):
 @router.post("/requests", response_model=LimitRequest)
 async def submit_request(request: SubmitRequestRequest):
     """Submit a limit request"""
-    limit_request = await credit_limit_service.submit_limit_request(
+    return await credit_limit_service.submit_limit_request(
         request.request_type, request.limit_type, request.entity_id,
         request.entity_name, request.requested_limit, request.tenor_months,
         request.purpose, request.justification, request.requested_by
     )
-    return limit_request
 
 
 @router.post("/requests/{request_id}/approve", response_model=LimitRequest)
@@ -149,13 +152,13 @@ async def add_covenant(limit_id: UUID, request: AddCovenantRequest):
     return covenant
 
 
-@router.get("/{limit_id}/breaches", response_model=List[LimitBreach])
+@router.get("/{limit_id}/breaches", response_model=list[LimitBreach])
 async def get_breaches(limit_id: UUID):
     """Get breaches for a limit"""
     return await credit_limit_service.get_breaches(limit_id)
 
 
-@router.get("/breaches/all", response_model=List[LimitBreach])
+@router.get("/breaches/all", response_model=list[LimitBreach])
 async def get_all_breaches():
     """Get all limit breaches"""
     return await credit_limit_service.get_breaches()
@@ -163,8 +166,8 @@ async def get_all_breaches():
 
 @router.get("/")
 async def list_limits(
-    limit_type: Optional[LimitType] = None,
-    status: Optional[LimitStatus] = None,
+    limit_type: LimitType | None = None,
+    status: LimitStatus | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List limits with optional filters"""

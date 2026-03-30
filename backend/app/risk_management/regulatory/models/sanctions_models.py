@@ -1,11 +1,12 @@
 """Sanctions Models - Data models for sanctions compliance"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class SanctionsList(str, Enum):
@@ -48,39 +49,39 @@ class SanctionsListEntry(BaseModel):
     list_entry_id: str
     entry_type: str  # individual, entity, vessel, aircraft
     name: str
-    aliases: List[str] = Field(default_factory=list)
-    date_of_birth: Optional[date] = None
-    place_of_birth: Optional[str] = None
-    nationality: Optional[str] = None
-    passport_numbers: List[str] = Field(default_factory=list)
-    id_numbers: List[str] = Field(default_factory=list)
-    addresses: List[str] = Field(default_factory=list)
-    programs: List[str] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
+    date_of_birth: date | None = None
+    place_of_birth: str | None = None
+    nationality: str | None = None
+    passport_numbers: list[str] = Field(default_factory=list)
+    id_numbers: list[str] = Field(default_factory=list)
+    addresses: list[str] = Field(default_factory=list)
+    programs: list[str] = Field(default_factory=list)
     sanctions_type: str
     listed_date: date
-    delisted_date: Optional[date] = None
-    remarks: Optional[str] = None
+    delisted_date: date | None = None
+    remarks: str | None = None
     is_active: bool = True
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ScreeningRequest(BaseModel):
     request_id: UUID = Field(default_factory=uuid4)
     screening_type: ScreeningType
     request_reference: str
-    screening_date: datetime = Field(default_factory=datetime.utcnow)
+    screening_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     requestor: str
-    lists_screened: List[SanctionsList]
+    lists_screened: list[SanctionsList]
     subject_type: str
     subject_name: str
-    subject_dob: Optional[date] = None
-    subject_country: Optional[str] = None
-    subject_id: Optional[str] = None
-    additional_data: Dict[str, Any] = Field(default_factory=dict)
+    subject_dob: date | None = None
+    subject_country: str | None = None
+    subject_id: str | None = None
+    additional_data: dict[str, Any] = Field(default_factory=dict)
     matches_found: int = 0
     status: str = "pending"
-    completed_date: Optional[datetime] = None
-    processing_time_ms: Optional[int] = None
+    completed_date: datetime | None = None
+    processing_time_ms: int | None = None
 
 
 class ScreeningAlert(BaseModel):
@@ -93,16 +94,16 @@ class ScreeningAlert(BaseModel):
     subject_name: str
     match_strength: MatchStrength
     match_score: Decimal
-    match_fields: List[str]
+    match_fields: list[str]
     status: AlertStatus = AlertStatus.NEW
-    assigned_to: Optional[str] = None
-    assigned_date: Optional[datetime] = None
-    decision: Optional[str] = None
-    decision_rationale: Optional[str] = None
-    decided_by: Optional[str] = None
-    decision_date: Optional[datetime] = None
-    escalated_to: Optional[str] = None
-    escalation_date: Optional[datetime] = None
+    assigned_to: str | None = None
+    assigned_date: datetime | None = None
+    decision: str | None = None
+    decision_rationale: str | None = None
+    decided_by: str | None = None
+    decision_date: datetime | None = None
+    escalated_to: str | None = None
+    escalation_date: datetime | None = None
     sla_due_date: datetime
     is_overdue: bool = False
 
@@ -111,25 +112,25 @@ class SanctionsCase(BaseModel):
     case_id: UUID = Field(default_factory=uuid4)
     case_reference: str
     case_type: str  # potential_match, blocked_transaction, license_review
-    source_alert_ids: List[UUID]
-    customer_id: Optional[str] = None
-    transaction_ids: List[str] = Field(default_factory=list)
+    source_alert_ids: list[UUID]
+    customer_id: str | None = None
+    transaction_ids: list[str] = Field(default_factory=list)
     case_status: str = "open"
     priority: str  # high, medium, low
     assigned_to: str
     assigned_date: datetime
-    investigation_notes: List[Dict[str, Any]] = Field(default_factory=list)
-    documents_collected: List[str] = Field(default_factory=list)
+    investigation_notes: list[dict[str, Any]] = Field(default_factory=list)
+    documents_collected: list[str] = Field(default_factory=list)
     ofac_license_required: bool = False
-    license_reference: Optional[str] = None
+    license_reference: str | None = None
     escalated: bool = False
-    escalation_reason: Optional[str] = None
+    escalation_reason: str | None = None
     regulatory_filing_required: bool = False
-    filing_reference: Optional[str] = None
-    final_decision: Optional[str] = None
-    decision_date: Optional[datetime] = None
-    closed_by: Optional[str] = None
-    closed_date: Optional[datetime] = None
+    filing_reference: str | None = None
+    final_decision: str | None = None
+    decision_date: datetime | None = None
+    closed_by: str | None = None
+    closed_date: datetime | None = None
 
 
 class BlockedTransaction(BaseModel):
@@ -147,15 +148,15 @@ class BlockedTransaction(BaseModel):
     blocked_date: datetime
     list_source: SanctionsList
     matched_entry: str
-    case_id: Optional[UUID] = None
+    case_id: UUID | None = None
     status: str = "blocked"
     release_authorized: bool = False
-    release_authorization: Optional[str] = None
-    release_date: Optional[datetime] = None
+    release_authorization: str | None = None
+    release_date: datetime | None = None
     rejected: bool = False
-    rejection_date: Optional[datetime] = None
+    rejection_date: datetime | None = None
     regulatory_reported: bool = False
-    report_date: Optional[datetime] = None
+    report_date: datetime | None = None
 
 
 class SanctionsListUpdate(BaseModel):
@@ -179,9 +180,9 @@ class SanctionsReport(BaseModel):
     report_date: date
     reporting_period: str
     total_screenings: int
-    screenings_by_type: Dict[str, int]
+    screenings_by_type: dict[str, int]
     total_alerts: int
-    alerts_by_strength: Dict[str, int]
+    alerts_by_strength: dict[str, int]
     true_matches: int
     false_positives: int
     false_positive_rate: Decimal
@@ -194,4 +195,4 @@ class SanctionsReport(BaseModel):
     regulatory_filings: int
     list_updates_processed: int
     generated_by: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

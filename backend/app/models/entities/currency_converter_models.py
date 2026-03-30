@@ -6,7 +6,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 
 # Currency converter specific enums
@@ -61,10 +61,7 @@ class CurrencyPair(BaseModel):
     to_type: CurrencyType
 
 class ExchangeRateResponse(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_encoders={Decimal: float}
-    )
+    model_config = ConfigDict(from_attributes=True)
 
     from_currency: str
     to_currency: str
@@ -74,6 +71,10 @@ class ExchangeRateResponse(BaseModel):
     spread_percentage: Decimal
     timestamp: datetime
     source: str = "market"
+
+    @field_serializer('rate', 'bid', 'ask', 'spread_percentage')
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
 
 class ConversionQuoteRequest(BaseModel):
     from_currency: str

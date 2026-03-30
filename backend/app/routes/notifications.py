@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -35,7 +35,7 @@ async def get_notifications(
     # Apply pagination
     notifications = query.offset(offset).limit(limit).all()
 
-    return [NotificationResponse.from_orm(n) for n in notifications]
+    return [NotificationResponse.model_validate(n) for n in notifications]
 
 @router.get("/unread/count")
 async def get_unread_count(
@@ -87,14 +87,14 @@ async def update_notification(
 
     if update_data.is_read and not notification.is_read:
         notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = datetime.now(UTC)
 
         db_session.commit()
         db_session.refresh(notification)
 
         # Log read
 
-    return NotificationResponse.from_orm(notification)
+    return NotificationResponse.model_validate(notification)
 
 @router.put("/mark-all-read")
 async def mark_all_read(
@@ -116,7 +116,7 @@ async def mark_all_read(
     # Update all unread notifications
     count = query.update({
         "is_read": True,
-        "read_at": datetime.utcnow()
+        "read_at": datetime.now(UTC)
     })
 
     db_session.commit()
@@ -206,4 +206,4 @@ async def create_test_notification(
     db_session.commit()
     db_session.refresh(notification)
 
-    return NotificationResponse.from_orm(notification)
+    return NotificationResponse.model_validate(notification)

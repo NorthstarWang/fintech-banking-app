@@ -1,13 +1,21 @@
 """Loss Event Service - Business logic for operational loss tracking"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.loss_event_models import (
-    LossEvent, LossRecovery, LossProvision, LossEventCausality,
-    LossDistribution, OperationalLossCapital, LossEventReport,
-    LossEventType, LossEventStatus, RecoveryType
+    LossDistribution,
+    LossEvent,
+    LossEventCausality,
+    LossEventReport,
+    LossEventStatus,
+    LossEventType,
+    LossProvision,
+    LossRecovery,
+    OperationalLossCapital,
+    RecoveryType,
 )
 from ..repositories.loss_event_repository import loss_event_repository
 
@@ -35,8 +43,8 @@ class LossEventService:
         gross_loss: Decimal,
         reported_by: str,
         near_miss: bool = False,
-        near_miss_amount: Optional[Decimal] = None,
-        related_incident_id: Optional[UUID] = None
+        near_miss_amount: Decimal | None = None,
+        related_incident_id: UUID | None = None
     ) -> LossEvent:
         event = LossEvent(
             event_reference=self._generate_event_reference(),
@@ -60,21 +68,21 @@ class LossEventService:
         await self.repository.save_event(event)
         return event
 
-    async def get_event(self, event_id: UUID) -> Optional[LossEvent]:
+    async def get_event(self, event_id: UUID) -> LossEvent | None:
         return await self.repository.find_event_by_id(event_id)
 
-    async def get_event_by_reference(self, reference: str) -> Optional[LossEvent]:
+    async def get_event_by_reference(self, reference: str) -> LossEvent | None:
         return await self.repository.find_event_by_reference(reference)
 
     async def list_events(
         self,
-        event_type: Optional[LossEventType] = None,
-        status: Optional[LossEventStatus] = None,
-        business_line: Optional[str] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        min_loss: Optional[Decimal] = None
-    ) -> List[LossEvent]:
+        event_type: LossEventType | None = None,
+        status: LossEventStatus | None = None,
+        business_line: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        min_loss: Decimal | None = None
+    ) -> list[LossEvent]:
         events = await self.repository.find_all_events()
 
         if event_type:
@@ -97,7 +105,7 @@ class LossEventService:
         event_id: UUID,
         new_status: LossEventStatus,
         updated_by: str
-    ) -> Optional[LossEvent]:
+    ) -> LossEvent | None:
         event = await self.repository.find_event_by_id(event_id)
         if not event:
             return None
@@ -106,10 +114,10 @@ class LossEventService:
 
         if new_status == LossEventStatus.VALIDATED:
             event.validated_by = updated_by
-            event.validation_date = datetime.utcnow()
+            event.validation_date = datetime.now(UTC)
         elif new_status == LossEventStatus.APPROVED:
             event.approved_by = updated_by
-            event.approval_date = datetime.utcnow()
+            event.approval_date = datetime.now(UTC)
 
         await self.repository.update_event(event)
         return event
@@ -121,7 +129,7 @@ class LossEventService:
         recovery_amount: Decimal,
         recovery_date: date,
         source: str,
-        reference_number: Optional[str] = None
+        reference_number: str | None = None
     ) -> LossRecovery:
         recovery = LossRecovery(
             event_id=event_id,
@@ -144,7 +152,7 @@ class LossEventService:
 
         return recovery
 
-    async def get_event_recoveries(self, event_id: UUID) -> List[LossRecovery]:
+    async def get_event_recoveries(self, event_id: UUID) -> list[LossRecovery]:
         return await self.repository.find_recoveries_by_event(event_id)
 
     async def add_provision(
@@ -170,7 +178,7 @@ class LossEventService:
         self,
         provision_id: UUID,
         release_amount: Decimal
-    ) -> Optional[LossProvision]:
+    ) -> LossProvision | None:
         provision = await self.repository.find_provision_by_id(provision_id)
         if not provision:
             return None
@@ -189,7 +197,7 @@ class LossEventService:
         cause_description: str,
         contributing_factor: bool = False,
         control_failure: bool = False,
-        failed_control_id: Optional[UUID] = None
+        failed_control_id: UUID | None = None
     ) -> LossEventCausality:
         causality = LossEventCausality(
             event_id=event_id,
@@ -373,7 +381,7 @@ class LossEventService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

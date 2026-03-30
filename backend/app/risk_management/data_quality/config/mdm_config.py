@@ -1,9 +1,9 @@
 """Master Data Management Configuration"""
 
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
 from decimal import Decimal
-from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class MatchingStrategy(str, Enum):
@@ -44,17 +44,17 @@ class DomainMatchConfig:
     match_threshold: Decimal
     auto_merge_threshold: Decimal
     review_threshold: Decimal
-    field_configs: Dict[str, MatchFieldConfig]
-    blocking_fields: List[str]
+    field_configs: dict[str, MatchFieldConfig]
+    blocking_fields: list[str]
 
 
 @dataclass
 class SurvivorshipConfig:
     domain_name: str
     default_strategy: SurvivorshipStrategy
-    field_strategies: Dict[str, SurvivorshipStrategy]
-    source_priority: List[str]
-    trust_scores: Dict[str, Decimal]
+    field_strategies: dict[str, SurvivorshipStrategy]
+    source_priority: list[str]
+    trust_scores: dict[str, Decimal]
 
 
 class MDMConfig:
@@ -64,10 +64,10 @@ class MDMConfig:
         self._default_review_threshold = Decimal("0.70")
         self._default_survivorship = SurvivorshipStrategy.MOST_COMPLETE
 
-        self._domain_match_configs: Dict[str, DomainMatchConfig] = {}
-        self._survivorship_configs: Dict[str, SurvivorshipConfig] = {}
+        self._domain_match_configs: dict[str, DomainMatchConfig] = {}
+        self._survivorship_configs: dict[str, SurvivorshipConfig] = {}
 
-        self._source_systems: Dict[str, Dict[str, Any]] = {}
+        self._source_systems: dict[str, dict[str, Any]] = {}
 
     def get_default_match_threshold(self) -> Decimal:
         return self._default_match_threshold
@@ -85,10 +85,10 @@ class MDMConfig:
         self,
         domain_name: str,
         matching_strategy: MatchingStrategy = MatchingStrategy.HYBRID,
-        match_threshold: Decimal = None,
-        auto_merge_threshold: Decimal = None,
-        review_threshold: Decimal = None,
-        blocking_fields: List[str] = None,
+        match_threshold: Decimal | None = None,
+        auto_merge_threshold: Decimal | None = None,
+        review_threshold: Decimal | None = None,
+        blocking_fields: list[str] | None = None,
     ) -> DomainMatchConfig:
         config = DomainMatchConfig(
             domain_name=domain_name,
@@ -108,7 +108,7 @@ class MDMConfig:
         field_name: str,
         match_type: str,
         weight: Decimal,
-        threshold: Decimal = None,
+        threshold: Decimal | None = None,
         is_blocking: bool = False,
         phonetic_matching: bool = False,
     ) -> None:
@@ -125,15 +125,15 @@ class MDMConfig:
         )
         self._domain_match_configs[domain_name].field_configs[field_name] = field_config
 
-    def get_domain_match_config(self, domain_name: str) -> Optional[DomainMatchConfig]:
+    def get_domain_match_config(self, domain_name: str) -> DomainMatchConfig | None:
         return self._domain_match_configs.get(domain_name)
 
     def configure_survivorship(
         self,
         domain_name: str,
         default_strategy: SurvivorshipStrategy = None,
-        source_priority: List[str] = None,
-        trust_scores: Dict[str, Decimal] = None,
+        source_priority: list[str] | None = None,
+        trust_scores: dict[str, Decimal] | None = None,
     ) -> SurvivorshipConfig:
         config = SurvivorshipConfig(
             domain_name=domain_name,
@@ -155,7 +155,7 @@ class MDMConfig:
             self.configure_survivorship(domain_name)
         self._survivorship_configs[domain_name].field_strategies[field_name] = strategy
 
-    def get_survivorship_config(self, domain_name: str) -> Optional[SurvivorshipConfig]:
+    def get_survivorship_config(self, domain_name: str) -> SurvivorshipConfig | None:
         return self._survivorship_configs.get(domain_name)
 
     def register_source_system(
@@ -163,7 +163,7 @@ class MDMConfig:
         source_name: str,
         trust_score: Decimal,
         is_authoritative: bool = False,
-        metadata: Dict[str, Any] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self._source_systems[source_name] = {
             "trust_score": trust_score,
@@ -182,17 +182,17 @@ class MDMConfig:
         if not config:
             if match_score >= self._default_auto_merge_threshold:
                 return MergeAction.AUTO_MERGE
-            elif match_score >= self._default_review_threshold:
+            if match_score >= self._default_review_threshold:
                 return MergeAction.MANUAL_REVIEW
             return MergeAction.REJECT
 
         if match_score >= config.auto_merge_threshold:
             return MergeAction.AUTO_MERGE
-        elif match_score >= config.review_threshold:
+        if match_score >= config.review_threshold:
             return MergeAction.MANUAL_REVIEW
         return MergeAction.REJECT
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "default_match_threshold": float(self._default_match_threshold),
             "default_auto_merge_threshold": float(self._default_auto_merge_threshold),

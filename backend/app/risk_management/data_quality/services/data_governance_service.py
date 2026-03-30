@@ -1,11 +1,18 @@
 """Data Governance Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.data_governance_models import (
-    DataDomain, DataOwnership, DataPolicy, DataStandard, BusinessGlossary,
-    DataAccessRequest, DataPrivacyAssessment, GovernanceMetric
+    BusinessGlossary,
+    DataAccessRequest,
+    DataDomain,
+    DataOwnership,
+    DataPolicy,
+    DataPrivacyAssessment,
+    DataStandard,
+    GovernanceMetric,
 )
 from ..repositories.data_governance_repository import data_governance_repository
 
@@ -29,7 +36,7 @@ class DataGovernanceService:
 
     async def assign_ownership(
         self, asset_id: UUID, asset_name: str, business_owner: str,
-        data_steward: str, technical_owner: str, responsibilities: Dict[str, List[str]]
+        data_steward: str, technical_owner: str, responsibilities: dict[str, list[str]]
     ) -> DataOwnership:
         ownership = DataOwnership(
             asset_id=asset_id, asset_name=asset_name, business_owner=business_owner,
@@ -41,7 +48,7 @@ class DataGovernanceService:
 
     async def create_policy(
         self, policy_code: str, policy_name: str, policy_type: str,
-        description: str, scope: str, requirements: List[str],
+        description: str, scope: str, requirements: list[str],
         owner: str, approver: str
     ) -> DataPolicy:
         policy = DataPolicy(
@@ -55,8 +62,8 @@ class DataGovernanceService:
 
     async def create_standard(
         self, standard_code: str, standard_name: str, standard_type: str,
-        description: str, rules: List[Dict[str, Any]], owner: str,
-        domain_applicability: List[str]
+        description: str, rules: list[dict[str, Any]], owner: str,
+        domain_applicability: list[str]
     ) -> DataStandard:
         standard = DataStandard(
             standard_code=standard_code, standard_name=standard_name,
@@ -69,7 +76,7 @@ class DataGovernanceService:
 
     async def add_glossary_term(
         self, term_name: str, term_definition: str, domain_id: UUID,
-        owner: str, steward: str, synonyms: List[str] = None
+        owner: str, steward: str, synonyms: list[str] | None = None
     ) -> BusinessGlossary:
         term = BusinessGlossary(
             term_name=term_name, term_definition=term_definition, domain_id=domain_id,
@@ -94,19 +101,19 @@ class DataGovernanceService:
 
     async def approve_access_request(
         self, request_id: UUID, approver: str, expiry_date: date
-    ) -> Optional[DataAccessRequest]:
+    ) -> DataAccessRequest | None:
         request = await self.repository.find_access_request_by_id(request_id)
         if request:
             request.status = "approved"
             request.approver = approver
-            request.approval_date = datetime.utcnow()
+            request.approval_date = datetime.now(UTC)
             request.expiry_date = expiry_date
         return request
 
     async def conduct_privacy_assessment(
         self, asset_id: UUID, asset_name: str, assessor: str,
-        contains_pii: bool, pii_categories: List[str], data_subjects: List[str],
-        processing_purposes: List[str], security_controls: List[str]
+        contains_pii: bool, pii_categories: list[str], data_subjects: list[str],
+        processing_purposes: list[str], security_controls: list[str]
     ) -> DataPrivacyAssessment:
         risk_level = "high" if contains_pii and len(pii_categories) > 3 else "medium" if contains_pii else "low"
 
@@ -121,7 +128,7 @@ class DataGovernanceService:
 
     async def record_metric(
         self, metric_name: str, metric_type: str, current_value: float,
-        target_value: float, threshold_value: float, domain_id: UUID = None
+        target_value: float, threshold_value: float, domain_id: UUID | None = None
     ) -> GovernanceMetric:
         status = "green" if current_value >= target_value else "yellow" if current_value >= threshold_value else "red"
 
@@ -133,7 +140,7 @@ class DataGovernanceService:
         await self.repository.save_metric(metric)
         return metric
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

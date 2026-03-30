@@ -1,14 +1,11 @@
 """Exposure Routes - API endpoints for exposure management"""
 
-from typing import Optional, List, Dict, Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..models.exposure_models import (
-    CreditExposure, ExposureAggregate, ExposureLimit,
-    ExposureType, ExposureCategory
-)
+from ..models.exposure_models import CreditExposure, ExposureAggregate, ExposureCategory, ExposureLimit, ExposureType
 from ..services.exposure_service import exposure_service
 
 router = APIRouter(prefix="/credit/exposures", tags=["Credit Exposures"])
@@ -25,9 +22,9 @@ class CreateExposureRequest(BaseModel):
 
 
 class UpdateExposureRequest(BaseModel):
-    gross_exposure: Optional[float] = None
-    collateral_value: Optional[float] = None
-    limit_amount: Optional[float] = None
+    gross_exposure: float | None = None
+    collateral_value: float | None = None
+    limit_amount: float | None = None
 
 
 class SetLimitRequest(BaseModel):
@@ -57,13 +54,12 @@ class MovementRequest(BaseModel):
 @router.post("/", response_model=CreditExposure)
 async def create_exposure(request: CreateExposureRequest):
     """Create a new credit exposure"""
-    exposure = await exposure_service.create_exposure(
+    return await exposure_service.create_exposure(
         request.customer_id, request.customer_name,
         request.exposure_type, request.exposure_category,
         request.gross_exposure, request.limit_amount,
         request.collateral_value
     )
-    return exposure
 
 
 @router.get("/{exposure_id}", response_model=CreditExposure)
@@ -85,7 +81,7 @@ async def update_exposure(exposure_id: UUID, request: UpdateExposureRequest):
     return exposure
 
 
-@router.get("/customer/{customer_id}", response_model=List[CreditExposure])
+@router.get("/customer/{customer_id}", response_model=list[CreditExposure])
 async def get_customer_exposures(customer_id: str):
     """Get all exposures for a customer"""
     return await exposure_service.get_customer_exposures(customer_id)
@@ -142,8 +138,8 @@ async def record_movement(exposure_id: UUID, request: MovementRequest):
 
 @router.get("/")
 async def list_exposures(
-    exposure_type: Optional[ExposureType] = None,
-    category: Optional[ExposureCategory] = None,
+    exposure_type: ExposureType | None = None,
+    category: ExposureCategory | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List exposures with optional filters"""

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -104,7 +104,7 @@ async def create_goal(
         target_date.isoformat() if target_date else "No target date"
 
         # Create response
-        response = GoalResponse.from_orm(new_goal)
+        response = GoalResponse.model_validate(new_goal)
         response.progress_percentage = calculate_goal_progress(new_goal)
 
         return response
@@ -129,7 +129,7 @@ async def get_goals(
 
     results = []
     for goal in goals:
-        response = GoalResponse.from_orm(goal)
+        response = GoalResponse.model_validate(goal)
         response.progress_percentage = calculate_goal_progress(goal)
         results.append(response)
 
@@ -153,7 +153,7 @@ async def get_goals_summary(
 
     goal_responses = []
     for goal in goals:
-        response = GoalResponse.from_orm(goal)
+        response = GoalResponse.model_validate(goal)
         response.progress_percentage = calculate_goal_progress(goal)
         goal_responses.append(response)
 
@@ -184,7 +184,7 @@ async def get_goal(
             detail="Goal not found"
         )
 
-    response = GoalResponse.from_orm(goal)
+    response = GoalResponse.model_validate(goal)
     response.progress_percentage = calculate_goal_progress(goal)
 
     return response
@@ -214,7 +214,7 @@ async def update_goal(
             )
 
         # Validate allocation rules if updating percentage allocation
-        if 'auto_allocate_percentage' in update_data.dict(exclude_unset=True) and goal.account_id:
+        if 'auto_allocate_percentage' in update_data.model_dump(exclude_unset=True) and goal.account_id:
             from ..services.goal_update_service import GoalUpdateService
             validation = GoalUpdateService.validate_allocation_rules(
                 db_session,
@@ -226,7 +226,7 @@ async def update_goal(
                 raise ValidationError(validation['message'])
 
         # Update fields
-        update_dict = update_data.dict(exclude_unset=True)
+        update_dict = update_data.model_dump(exclude_unset=True)
         for field, value in update_dict.items():
             if hasattr(goal, field) and value is not None:
                 setattr(goal, field, value)
@@ -234,13 +234,13 @@ async def update_goal(
         # Check if goal is completed
         if goal.current_amount >= goal.target_amount and goal.status == GoalStatus.ACTIVE.value:
             goal.status = GoalStatus.COMPLETED.value
-            goal.completed_at = datetime.utcnow()
+            goal.completed_at = datetime.now(UTC)
 
-        goal.updated_at = datetime.utcnow()
+        goal.updated_at = datetime.now(UTC)
         db_session.commit()
         db_session.refresh(goal)
 
-        response = GoalResponse.from_orm(goal)
+        response = GoalResponse.model_validate(goal)
         response.progress_percentage = calculate_goal_progress(goal)
 
         return response
@@ -277,7 +277,7 @@ async def contribute_to_goal(
     new_contribution = GoalContribution(
         goal_id=goal_id,
         amount=contribution.amount,
-        contribution_date=datetime.utcnow(),
+        contribution_date=datetime.now(UTC),
         notes=contribution.notes
     )
 
@@ -287,13 +287,13 @@ async def contribute_to_goal(
     # Check if goal is completed
     if goal.current_amount >= goal.target_amount:
         goal.status = GoalStatus.COMPLETED.value
-        goal.completed_at = datetime.utcnow()
+        goal.completed_at = datetime.now(UTC)
 
     db_session.add(new_contribution)
     db_session.commit()
     db_session.refresh(goal)
 
-    response = GoalResponse.from_orm(goal)
+    response = GoalResponse.model_validate(goal)
     response.progress_percentage = calculate_goal_progress(goal)
 
     return response
@@ -349,7 +349,7 @@ async def delete_goal(
 
     # Cancel instead of hard delete
     goal.status = GoalStatus.CANCELLED.value
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Goal cancelled successfully"}

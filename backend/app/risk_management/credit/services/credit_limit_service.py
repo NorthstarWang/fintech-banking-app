@@ -1,40 +1,48 @@
 """Credit Limit Service - Credit limit management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.credit_limit_models import (
-    CreditLimit, LimitRequest, LimitUtilization, LimitReview,
-    LimitBreach, LimitCovenant, LimitStatistics,
-    LimitType, LimitStatus, UtilizationStatus
+    CreditLimit,
+    LimitBreach,
+    LimitCovenant,
+    LimitRequest,
+    LimitReview,
+    LimitStatistics,
+    LimitStatus,
+    LimitType,
+    LimitUtilization,
+    UtilizationStatus,
 )
 
 
 class CreditLimitService:
     def __init__(self):
-        self._limits: Dict[UUID, CreditLimit] = {}
-        self._requests: Dict[UUID, LimitRequest] = {}
-        self._utilizations: List[LimitUtilization] = []
-        self._reviews: Dict[UUID, LimitReview] = {}
-        self._breaches: Dict[UUID, LimitBreach] = {}
-        self._covenants: Dict[UUID, LimitCovenant] = {}
+        self._limits: dict[UUID, CreditLimit] = {}
+        self._requests: dict[UUID, LimitRequest] = {}
+        self._utilizations: list[LimitUtilization] = []
+        self._reviews: dict[UUID, LimitReview] = {}
+        self._breaches: dict[UUID, LimitBreach] = {}
+        self._covenants: dict[UUID, LimitCovenant] = {}
         self._counter = 0
 
     def _generate_number(self, prefix: str) -> str:
         self._counter += 1
-        return f"{prefix}-{datetime.utcnow().strftime('%Y%m%d')}-{self._counter:06d}"
+        return f"{prefix}-{datetime.now(UTC).strftime('%Y%m%d')}-{self._counter:06d}"
 
     def _calculate_utilization_status(self, utilization_pct: float, warning: float, breach: float) -> UtilizationStatus:
         if utilization_pct >= breach:
             return UtilizationStatus.BREACH
-        elif utilization_pct >= warning:
+        if utilization_pct >= warning:
             return UtilizationStatus.WARNING
         return UtilizationStatus.NORMAL
 
     async def create_limit(
         self, limit_type: LimitType, entity_id: str, entity_name: str,
         limit_amount: float, tenor_months: int, approved_by: str,
-        conditions: List[str] = None
+        conditions: list[str] | None = None
     ) -> CreditLimit:
         today = date.today()
         limit = CreditLimit(
@@ -48,17 +56,17 @@ class CreditLimitService:
             expiry_date=today + timedelta(days=30 * tenor_months),
             review_date=today + timedelta(days=365),
             approved_by=approved_by,
-            approved_date=datetime.utcnow(),
+            approved_date=datetime.now(UTC),
             approval_authority="credit_committee",
             conditions=conditions or []
         )
         self._limits[limit.limit_id] = limit
         return limit
 
-    async def get_limit(self, limit_id: UUID) -> Optional[CreditLimit]:
+    async def get_limit(self, limit_id: UUID) -> CreditLimit | None:
         return self._limits.get(limit_id)
 
-    async def get_entity_limit(self, entity_id: str, limit_type: LimitType = None) -> Optional[CreditLimit]:
+    async def get_entity_limit(self, entity_id: str, limit_type: LimitType = None) -> CreditLimit | None:
         for limit in self._limits.values():
             if limit.entity_id == entity_id and limit.status == LimitStatus.ACTIVE:
                 if limit_type is None or limit.limit_type == limit_type:
@@ -66,20 +74,20 @@ class CreditLimitService:
         return None
 
     async def update_limit(
-        self, limit_id: UUID, updates: Dict[str, Any]
-    ) -> Optional[CreditLimit]:
+        self, limit_id: UUID, updates: dict[str, Any]
+    ) -> CreditLimit | None:
         limit = self._limits.get(limit_id)
         if limit:
             for key, value in updates.items():
                 if hasattr(limit, key):
                     setattr(limit, key, value)
-            limit.updated_at = datetime.utcnow()
+            limit.updated_at = datetime.now(UTC)
         return limit
 
     async def utilize_limit(
         self, limit_id: UUID, amount: float, utilization_type: str,
-        transaction_reference: str = None
-    ) -> Optional[LimitUtilization]:
+        transaction_reference: str | None = None
+    ) -> LimitUtilization | None:
         limit = self._limits.get(limit_id)
         if not limit:
             return None
@@ -111,14 +119,14 @@ class CreditLimitService:
         limit.utilization_status = self._calculate_utilization_status(
             limit.utilization_percentage, limit.warning_threshold, limit.breach_threshold
         )
-        limit.updated_at = datetime.utcnow()
+        limit.updated_at = datetime.now(UTC)
 
         return utilization
 
     async def _record_breach(self, limit: CreditLimit, attempted_amount: float) -> LimitBreach:
         breach = LimitBreach(
             limit_id=limit.limit_id,
-            breach_date=datetime.utcnow(),
+            breach_date=datetime.now(UTC),
             breach_type="limit",
             limit_amount=limit.limit_amount,
             utilized_amount=limit.utilized_amount,
@@ -155,22 +163,22 @@ class CreditLimitService:
 
     async def approve_request(
         self, request_id: UUID, approved_amount: float,
-        conditions: List[str], approved_by: str
-    ) -> Optional[LimitRequest]:
+        conditions: list[str], approved_by: str
+    ) -> LimitRequest | None:
         request = self._requests.get(request_id)
         if not request:
             return None
 
         request.status = "approved"
         request.decision = "approved"
-        request.decision_date = datetime.utcnow()
+        request.decision_date = datetime.now(UTC)
         request.approved_amount = approved_amount
         request.conditions = conditions
         request.approval_history.append({
             "approver": approved_by,
             "action": "approved",
             "amount": approved_amount,
-            "date": datetime.utcnow().isoformat()
+            "date": datetime.now(UTC).isoformat()
         })
 
         # Create the limit
@@ -190,7 +198,7 @@ class CreditLimitService:
         self, limit_id: UUID, review_type: str,
         recommended_limit: float, recommendation: str,
         reviewed_by: str
-    ) -> Optional[LimitReview]:
+    ) -> LimitReview | None:
         limit = self._limits.get(limit_id)
         if not limit:
             return None
@@ -212,7 +220,7 @@ class CreditLimitService:
     async def add_covenant(
         self, limit_id: UUID, covenant_type: str, covenant_name: str,
         description: str, threshold_value: float, measurement_frequency: str
-    ) -> Optional[LimitCovenant]:
+    ) -> LimitCovenant | None:
         limit = self._limits.get(limit_id)
         if not limit:
             return None
@@ -230,7 +238,7 @@ class CreditLimitService:
         limit.covenants.append(covenant.model_dump())
         return covenant
 
-    async def get_breaches(self, limit_id: UUID = None) -> List[LimitBreach]:
+    async def get_breaches(self, limit_id: UUID | None = None) -> list[LimitBreach]:
         if limit_id:
             return [b for b in self._breaches.values() if b.limit_id == limit_id]
         return list(self._breaches.values())

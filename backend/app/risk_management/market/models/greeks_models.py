@@ -1,9 +1,9 @@
 """Greeks Models - Options greeks and sensitivities"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -37,7 +37,7 @@ class OptionPosition(BaseModel):
     underlying_price: float
     implied_volatility: float
     portfolio_id: UUID
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GreeksCalculation(BaseModel):
@@ -57,7 +57,7 @@ class GreeksCalculation(BaseModel):
     dollar_theta: float
     dollar_vega: float
     model_used: str = "black_scholes"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PortfolioGreeks(BaseModel):
@@ -73,9 +73,9 @@ class PortfolioGreeks(BaseModel):
     gamma_exposure: float
     vega_exposure: float
     theta_decay: float
-    by_underlying: Dict[str, Dict[str, float]] = {}
-    by_expiry: Dict[str, Dict[str, float]] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    by_underlying: dict[str, dict[str, float]] = {}
+    by_expiry: dict[str, dict[str, float]] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GreeksLimit(BaseModel):
@@ -88,7 +88,7 @@ class GreeksLimit(BaseModel):
     breach_status: bool = False
     effective_date: date
     approved_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GreeksSensitivity(BaseModel):
@@ -103,7 +103,7 @@ class GreeksSensitivity(BaseModel):
     vega_pnl: float
     time_decay_days: int
     theta_pnl: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GreeksStatistics(BaseModel):

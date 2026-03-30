@@ -4,14 +4,21 @@ AML Alert Service
 Handles alert creation, management, and workflow operations.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from ..models.alert_models import (
-    AMLAlert, AlertSummary, AlertStatistics, AlertStatus, AlertSeverity,
-    AlertType, AlertTrigger, AlertEvidence, AlertComment, AlertAssignment,
-    AlertCreateRequest, AlertUpdateRequest, AlertSearchCriteria
+    AlertAssignment,
+    AlertComment,
+    AlertCreateRequest,
+    AlertEvidence,
+    AlertSearchCriteria,
+    AlertSeverity,
+    AlertStatistics,
+    AlertStatus,
+    AlertSummary,
+    AlertUpdateRequest,
+    AMLAlert,
 )
 
 
@@ -19,13 +26,13 @@ class AlertService:
     """Service for managing AML alerts"""
 
     def __init__(self):
-        self._alerts: Dict[UUID, AMLAlert] = {}
+        self._alerts: dict[UUID, AMLAlert] = {}
         self._alert_counter = 0
 
     def _generate_alert_number(self) -> str:
         """Generate unique alert number"""
         self._alert_counter += 1
-        return f"ALT-{datetime.utcnow().strftime('%Y%m%d')}-{self._alert_counter:06d}"
+        return f"ALT-{datetime.now(UTC).strftime('%Y%m%d')}-{self._alert_counter:06d}"
 
     async def create_alert(self, request: AlertCreateRequest, created_by: str) -> AMLAlert:
         """Create a new AML alert"""
@@ -44,7 +51,7 @@ class AlertService:
             triggers=request.triggers,
             tags=request.tags,
             transaction_count=len(request.transaction_ids),
-            due_date=datetime.utcnow() + timedelta(days=self._get_due_days(request.severity))
+            due_date=datetime.now(UTC) + timedelta(days=self._get_due_days(request.severity))
         )
         self._alerts[alert_id] = alert
         return alert
@@ -59,11 +66,11 @@ class AlertService:
         }
         return severity_days.get(severity, 14)
 
-    async def get_alert(self, alert_id: UUID) -> Optional[AMLAlert]:
+    async def get_alert(self, alert_id: UUID) -> AMLAlert | None:
         """Get alert by ID"""
         return self._alerts.get(alert_id)
 
-    async def get_alert_by_number(self, alert_number: str) -> Optional[AMLAlert]:
+    async def get_alert_by_number(self, alert_number: str) -> AMLAlert | None:
         """Get alert by alert number"""
         for alert in self._alerts.values():
             if alert.alert_number == alert_number:
@@ -72,7 +79,7 @@ class AlertService:
 
     async def update_alert(
         self, alert_id: UUID, request: AlertUpdateRequest, updated_by: str
-    ) -> Optional[AMLAlert]:
+    ) -> AMLAlert | None:
         """Update an existing alert"""
         alert = self._alerts.get(alert_id)
         if not alert:
@@ -81,11 +88,11 @@ class AlertService:
         if request.status:
             alert.status = request.status
             if request.status in [AlertStatus.CLOSED_FALSE_POSITIVE, AlertStatus.CLOSED_TRUE_POSITIVE]:
-                alert.closed_at = datetime.utcnow()
+                alert.closed_at = datetime.now(UTC)
 
         if request.severity:
             alert.severity = request.severity
-            alert.due_date = datetime.utcnow() + timedelta(days=self._get_due_days(request.severity))
+            alert.due_date = datetime.now(UTC) + timedelta(days=self._get_due_days(request.severity))
 
         if request.current_assignee:
             alert.current_assignee = request.current_assignee
@@ -99,12 +106,12 @@ class AlertService:
         if request.tags:
             alert.tags = request.tags
 
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
     async def assign_alert(
-        self, alert_id: UUID, assignee: str, assigned_by: str, reason: Optional[str] = None
-    ) -> Optional[AMLAlert]:
+        self, alert_id: UUID, assignee: str, assigned_by: str, reason: str | None = None
+    ) -> AMLAlert | None:
         """Assign alert to an analyst"""
         alert = self._alerts.get(alert_id)
         if not alert:
@@ -121,12 +128,12 @@ class AlertService:
         if alert.status == AlertStatus.NEW:
             alert.status = AlertStatus.ASSIGNED
 
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
     async def add_comment(
         self, alert_id: UUID, author_id: str, author_name: str, content: str, is_internal: bool = True
-    ) -> Optional[AMLAlert]:
+    ) -> AMLAlert | None:
         """Add comment to an alert"""
         alert = self._alerts.get(alert_id)
         if not alert:
@@ -139,24 +146,24 @@ class AlertService:
             is_internal=is_internal
         )
         alert.comments.append(comment)
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
     async def add_evidence(
         self, alert_id: UUID, evidence: AlertEvidence
-    ) -> Optional[AMLAlert]:
+    ) -> AMLAlert | None:
         """Add evidence to an alert"""
         alert = self._alerts.get(alert_id)
         if not alert:
             return None
 
         alert.evidence.append(evidence)
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
     async def escalate_alert(
         self, alert_id: UUID, escalated_by: str, reason: str
-    ) -> Optional[AMLAlert]:
+    ) -> AMLAlert | None:
         """Escalate an alert"""
         alert = self._alerts.get(alert_id)
         if not alert:
@@ -170,12 +177,12 @@ class AlertService:
             is_internal=True
         )
         alert.comments.append(comment)
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
     async def close_alert(
         self, alert_id: UUID, closed_by: str, is_true_positive: bool, notes: str
-    ) -> Optional[AMLAlert]:
+    ) -> AMLAlert | None:
         """Close an alert"""
         alert = self._alerts.get(alert_id)
         if not alert:
@@ -185,7 +192,7 @@ class AlertService:
             AlertStatus.CLOSED_TRUE_POSITIVE if is_true_positive
             else AlertStatus.CLOSED_FALSE_POSITIVE
         )
-        alert.closed_at = datetime.utcnow()
+        alert.closed_at = datetime.now(UTC)
 
         comment = AlertComment(
             author_id=closed_by,
@@ -194,20 +201,20 @@ class AlertService:
             is_internal=True
         )
         alert.comments.append(comment)
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
-    async def link_to_case(self, alert_id: UUID, case_id: UUID) -> Optional[AMLAlert]:
+    async def link_to_case(self, alert_id: UUID, case_id: UUID) -> AMLAlert | None:
         """Link alert to a case"""
         alert = self._alerts.get(alert_id)
         if not alert:
             return None
 
         alert.case_id = case_id
-        alert.updated_at = datetime.utcnow()
+        alert.updated_at = datetime.now(UTC)
         return alert
 
-    async def search_alerts(self, criteria: AlertSearchCriteria) -> List[AlertSummary]:
+    async def search_alerts(self, criteria: AlertSearchCriteria) -> list[AlertSummary]:
         """Search alerts based on criteria"""
         results = []
         for alert in self._alerts.values():
@@ -259,11 +266,9 @@ class AlertService:
             return False
         if criteria.max_risk_score and alert.risk_score > criteria.max_risk_score:
             return False
-        if criteria.overdue_only and alert.due_date and alert.due_date > datetime.utcnow():
+        if criteria.overdue_only and alert.due_date and alert.due_date > datetime.now(UTC):
             return False
-        if criteria.unassigned_only and alert.current_assignee:
-            return False
-        return True
+        return not (criteria.unassigned_only and alert.current_assignee)
 
     async def get_statistics(self) -> AlertStatistics:
         """Get alert statistics"""
@@ -284,7 +289,7 @@ class AlertService:
             stats.by_type[type_key] = stats.by_type.get(type_key, 0) + 1
 
             # Overdue
-            if alert.due_date and alert.due_date < datetime.utcnow() and alert.status not in [
+            if alert.due_date and alert.due_date < datetime.now(UTC) and alert.status not in [
                 AlertStatus.CLOSED_FALSE_POSITIVE, AlertStatus.CLOSED_TRUE_POSITIVE, AlertStatus.SAR_FILED
             ]:
                 stats.overdue_count += 1
@@ -297,14 +302,14 @@ class AlertService:
 
         return stats
 
-    async def get_alerts_for_customer(self, customer_id: str) -> List[AMLAlert]:
+    async def get_alerts_for_customer(self, customer_id: str) -> list[AMLAlert]:
         """Get all alerts for a customer"""
         return [
             alert for alert in self._alerts.values()
             if alert.customer_id == customer_id
         ]
 
-    async def get_open_alerts(self) -> List[AMLAlert]:
+    async def get_open_alerts(self) -> list[AMLAlert]:
         """Get all open alerts"""
         open_statuses = [AlertStatus.NEW, AlertStatus.ASSIGNED, AlertStatus.UNDER_REVIEW]
         return [
@@ -313,7 +318,7 @@ class AlertService:
         ]
 
     async def bulk_assign_alerts(
-        self, alert_ids: List[UUID], assignee: str, assigned_by: str
+        self, alert_ids: list[UUID], assignee: str, assigned_by: str
     ) -> int:
         """Bulk assign multiple alerts"""
         count = 0

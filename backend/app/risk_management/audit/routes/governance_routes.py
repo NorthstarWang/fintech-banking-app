@@ -1,11 +1,13 @@
 """Governance API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..services.governance_service import governance_service
 
 router = APIRouter(prefix="/governance", tags=["Corporate Governance"])
@@ -15,9 +17,9 @@ class FrameworkCreateRequest(BaseModel):
     framework_name: str
     framework_version: str
     description: str
-    principles: List[str]
-    governance_structure: Dict[str, Any]
-    roles_responsibilities: Dict[str, List[str]]
+    principles: list[str]
+    governance_structure: dict[str, Any]
+    roles_responsibilities: dict[str, list[str]]
     approved_by: str
 
 
@@ -26,8 +28,8 @@ class BoardMemberRequest(BaseModel):
     position: str
     member_type: str
     term_end_date: date
-    qualifications: List[str]
-    expertise_areas: List[str]
+    qualifications: list[str]
+    expertise_areas: list[str]
     annual_fee: Decimal
 
 
@@ -36,7 +38,7 @@ class BoardMeetingRequest(BaseModel):
     meeting_date: date
     meeting_time: str
     location: str
-    agenda_items: List[Dict[str, Any]]
+    agenda_items: list[dict[str, Any]]
 
 
 class ConflictDeclarationRequest(BaseModel):
@@ -61,7 +63,7 @@ async def create_framework(request: FrameworkCreateRequest):
     return {"framework_id": str(framework.framework_id), "framework_name": framework.framework_name}
 
 
-@router.get("/frameworks", response_model=List[dict])
+@router.get("/frameworks", response_model=list[dict])
 async def list_frameworks():
     frameworks = await governance_service.repository.find_all_frameworks()
     return [{"framework_id": str(f.framework_id), "framework_name": f.framework_name, "status": f.status} for f in frameworks]
@@ -78,7 +80,7 @@ async def appoint_board_member(request: BoardMemberRequest):
     return {"member_id": str(member.member_id), "member_name": member.member_name}
 
 
-@router.get("/board-members", response_model=List[dict])
+@router.get("/board-members", response_model=list[dict])
 async def list_board_members(active_only: bool = True, independent_only: bool = False):
     if independent_only:
         members = await governance_service.repository.find_independent_members()
@@ -99,14 +101,14 @@ async def schedule_board_meeting(request: BoardMeetingRequest):
     return {"meeting_id": str(meeting.meeting_id), "meeting_date": str(meeting.meeting_date)}
 
 
-@router.get("/board-meetings", response_model=List[dict])
+@router.get("/board-meetings", response_model=list[dict])
 async def list_board_meetings():
     meetings = await governance_service.repository.find_all_board_meetings()
     return [{"meeting_id": str(m.meeting_id), "meeting_type": m.meeting_type, "meeting_date": str(m.meeting_date), "status": m.status} for m in meetings]
 
 
 @router.post("/board-meetings/{meeting_id}/attendance", response_model=dict)
-async def record_attendance(meeting_id: UUID, attendees: List[str] = Query(...), absentees: List[str] = Query(default=[])):
+async def record_attendance(meeting_id: UUID, attendees: list[str] = Query(...), absentees: list[str] = Query(default=[])):
     meeting = await governance_service.record_meeting_attendance(meeting_id, attendees, absentees)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -124,7 +126,7 @@ async def declare_conflict(request: ConflictDeclarationRequest):
     return {"conflict_id": str(conflict.conflict_id), "status": conflict.status}
 
 
-@router.get("/conflicts", response_model=List[dict])
+@router.get("/conflicts", response_model=list[dict])
 async def list_conflicts(pending_only: bool = False):
     if pending_only:
         conflicts = await governance_service.repository.find_pending_conflicts()
@@ -134,7 +136,7 @@ async def list_conflicts(pending_only: bool = False):
 
 
 @router.post("/conflicts/{conflict_id}/review", response_model=dict)
-async def review_conflict(conflict_id: UUID, decision: str = Query(...), mitigation_measures: List[str] = Query(default=[])):
+async def review_conflict(conflict_id: UUID, decision: str = Query(...), mitigation_measures: list[str] = Query(default=[])):
     conflict = await governance_service.review_conflict(conflict_id, decision, mitigation_measures)
     if not conflict:
         raise HTTPException(status_code=404, detail="Conflict not found")

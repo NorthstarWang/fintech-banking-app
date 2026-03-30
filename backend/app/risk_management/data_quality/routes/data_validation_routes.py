@@ -1,9 +1,11 @@
 """Data Validation Routes"""
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..models.data_validation_models import ValidationType
 from ..services.data_validation_service import data_validation_service
 
@@ -18,7 +20,7 @@ class CreateRuleRequest(BaseModel):
     validation_expression: str
     error_message: str
     owner: str
-    target_columns: List[str] = []
+    target_columns: list[str] = []
     severity: str = "error"
     is_blocking: bool = False
 
@@ -27,7 +29,7 @@ class StartExecutionRequest(BaseModel):
     execution_name: str
     execution_type: str
     target_dataset: str
-    rules: List[UUID]
+    rules: list[UUID]
     triggered_by: str
 
 
@@ -38,7 +40,7 @@ class RecordResultRequest(BaseModel):
     validation_type: str
     records_evaluated: int
     records_passed: int
-    error_samples: List[Dict[str, Any]] = []
+    error_samples: list[dict[str, Any]] = []
     execution_time_ms: int = 0
 
 
@@ -56,10 +58,10 @@ class RecordErrorRequest(BaseModel):
 class CreateScheduleRequest(BaseModel):
     schedule_name: str
     target_dataset: str
-    rules: List[UUID]
+    rules: list[UUID]
     cron_expression: str
     created_by: str
-    notification_emails: List[str] = []
+    notification_emails: list[str] = []
 
 
 class ValidateRealtimeRequest(BaseModel):
@@ -67,7 +69,7 @@ class ValidateRealtimeRequest(BaseModel):
     rule_id: UUID
     record_id: str
     is_valid: bool
-    error_details: Optional[str] = None
+    error_details: str | None = None
     action_taken: str = "accepted"
 
 

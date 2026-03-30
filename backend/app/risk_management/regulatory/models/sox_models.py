@@ -1,11 +1,11 @@
 """SOX Models - Data models for Sarbanes-Oxley compliance"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class ControlObjective(str, Enum):
@@ -37,13 +37,13 @@ class SOXProcess(BaseModel):
     process_description: str
     business_unit: str
     process_owner: str
-    financial_statement_areas: List[str]
-    assertions_addressed: List[AssertionType]
+    financial_statement_areas: list[str]
+    assertions_addressed: list[AssertionType]
     materiality_threshold: Decimal
     in_scope: bool = True
     risk_rating: str
-    last_assessment_date: Optional[date] = None
-    next_assessment_date: Optional[date] = None
+    last_assessment_date: date | None = None
+    next_assessment_date: date | None = None
     documentation_location: str
     is_active: bool = True
 
@@ -55,7 +55,7 @@ class SOXControl(BaseModel):
     control_name: str
     control_description: str
     control_objective: ControlObjective
-    assertions: List[AssertionType]
+    assertions: list[AssertionType]
     control_type: str  # preventive, detective
     control_nature: str  # manual, automated, IT-dependent
     control_frequency: str
@@ -65,11 +65,11 @@ class SOXControl(BaseModel):
     evidence_retention: str
     key_control: bool = False
     compensating_control: bool = False
-    compensates_for: Optional[UUID] = None
-    design_effectiveness: Optional[str] = None
-    operating_effectiveness: Optional[str] = None
-    last_test_date: Optional[date] = None
-    next_test_date: Optional[date] = None
+    compensates_for: UUID | None = None
+    design_effectiveness: str | None = None
+    operating_effectiveness: str | None = None
+    last_test_date: date | None = None
+    next_test_date: date | None = None
     status: str = "active"
 
 
@@ -80,11 +80,11 @@ class SOXRisk(BaseModel):
     risk_description: str
     risk_source: str  # fraud, error
     financial_statement_impact: str
-    assertions_impacted: List[AssertionType]
+    assertions_impacted: list[AssertionType]
     likelihood: str
     impact: str
     inherent_risk: str
-    controls_mitigating: List[UUID]
+    controls_mitigating: list[UUID]
     residual_risk: str
     risk_response: str
     management_override_risk: bool = False
@@ -102,8 +102,8 @@ class SOXTestPlan(BaseModel):
     test_procedure: str
     assigned_tester: str
     status: str = "planned"
-    actual_test_date: Optional[date] = None
-    completed_by: Optional[str] = None
+    actual_test_date: date | None = None
+    completed_by: str | None = None
 
 
 class SOXTestResult(BaseModel):
@@ -120,53 +120,53 @@ class SOXTestResult(BaseModel):
     design_conclusion: str  # effective, ineffective
     operating_conclusion: str  # effective, ineffective
     overall_conclusion: str
-    test_evidence: List[str]
-    findings: List[str] = Field(default_factory=list)
-    management_response: Optional[str] = None
-    reviewed_by: Optional[str] = None
-    review_date: Optional[date] = None
+    test_evidence: list[str]
+    findings: list[str] = Field(default_factory=list)
+    management_response: str | None = None
+    reviewed_by: str | None = None
+    review_date: date | None = None
 
 
 class SOXDeficiency(BaseModel):
     deficiency_id: UUID = Field(default_factory=uuid4)
     deficiency_reference: str
     control_id: UUID
-    test_result_id: Optional[UUID] = None
+    test_result_id: UUID | None = None
     deficiency_type: DeficiencyType
     deficiency_description: str
     root_cause: str
     financial_statement_impact: str
-    quantitative_impact: Optional[Decimal] = None
-    qualitative_factors: List[str]
-    compensating_controls: List[UUID]
+    quantitative_impact: Decimal | None = None
+    qualitative_factors: list[str]
+    compensating_controls: list[UUID]
     remediation_plan: str
     remediation_owner: str
     remediation_due_date: date
     status: str = "open"
-    remediation_date: Optional[date] = None
+    remediation_date: date | None = None
     retest_required: bool = True
-    retest_date: Optional[date] = None
-    retest_result: Optional[str] = None
-    closed_by: Optional[str] = None
-    closed_date: Optional[date] = None
+    retest_date: date | None = None
+    retest_result: str | None = None
+    closed_by: str | None = None
+    closed_date: date | None = None
 
 
 class ManagementCertification(BaseModel):
     certification_id: UUID = Field(default_factory=uuid4)
     fiscal_year: int
-    quarter: Optional[int] = None
+    quarter: int | None = None
     certification_type: str  # 302, 906
     certifier_name: str
     certifier_title: str
     certification_date: date
     icfr_effective: bool
     material_weaknesses_exist: bool
-    material_weaknesses_disclosed: List[str]
+    material_weaknesses_disclosed: list[str]
     significant_changes: bool
-    change_description: Optional[str] = None
+    change_description: str | None = None
     certification_statement: str
     signed: bool = False
-    signature_date: Optional[date] = None
+    signature_date: date | None = None
 
 
 class SOXAuditCommittee(BaseModel):
@@ -183,9 +183,9 @@ class SOXAuditCommittee(BaseModel):
     material_weaknesses: int
     remediations_completed: int
     remediations_in_progress: int
-    key_observations: List[str]
-    management_actions: List[str]
-    external_auditor_findings: List[str]
+    key_observations: list[str]
+    management_actions: list[str]
+    external_auditor_findings: list[str]
     icfr_assessment: str
     presented_by: str
     presentation_date: date
@@ -211,4 +211,4 @@ class SOXReport(BaseModel):
     remediation_overdue: int
     certification_status: str
     generated_by: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

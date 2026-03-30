@@ -4,11 +4,12 @@ Transaction Pattern Models
 Defines data structures for transaction pattern analysis and detection.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class PatternType(str, Enum):
@@ -53,11 +54,11 @@ class TransactionNode(BaseModel):
     node_id: str
     node_type: str  # account, customer, external_entity
     node_name: str
-    account_id: Optional[str] = None
-    customer_id: Optional[str] = None
+    account_id: str | None = None
+    customer_id: str | None = None
     is_internal: bool = True
     risk_score: float = 0.0
-    country: Optional[str] = None
+    country: str | None = None
 
 
 class TransactionEdge(BaseModel):
@@ -70,7 +71,7 @@ class TransactionEdge(BaseModel):
     currency: str
     transaction_date: datetime
     transaction_type: str
-    channel: Optional[str] = None
+    channel: str | None = None
 
 
 class TransactionFlow(BaseModel):
@@ -78,8 +79,8 @@ class TransactionFlow(BaseModel):
     flow_id: UUID = Field(default_factory=uuid4)
 
     # Flow structure
-    nodes: List[TransactionNode] = Field(default_factory=list)
-    edges: List[TransactionEdge] = Field(default_factory=list)
+    nodes: list[TransactionNode] = Field(default_factory=list)
+    edges: list[TransactionEdge] = Field(default_factory=list)
 
     # Flow metrics
     total_amount: float = 0.0
@@ -92,8 +93,8 @@ class TransactionFlow(BaseModel):
     duration_hours: float = 0.0
 
     # Geographic span
-    countries_involved: List[str] = Field(default_factory=list)
-    high_risk_jurisdictions: List[str] = Field(default_factory=list)
+    countries_involved: list[str] = Field(default_factory=list)
+    high_risk_jurisdictions: list[str] = Field(default_factory=list)
 
 
 class StructuringPattern(BaseModel):
@@ -102,9 +103,9 @@ class StructuringPattern(BaseModel):
     customer_id: str
 
     # Pattern details
-    transactions: List[str] = Field(default_factory=list)
+    transactions: list[str] = Field(default_factory=list)
     total_amount: float = 0.0
-    individual_amounts: List[float] = Field(default_factory=list)
+    individual_amounts: list[float] = Field(default_factory=list)
     reporting_threshold: float = 10000.0
 
     # Analysis
@@ -119,7 +120,7 @@ class StructuringPattern(BaseModel):
 
     # Confidence
     confidence_score: float = 0.0
-    indicators: List[str] = Field(default_factory=list)
+    indicators: list[str] = Field(default_factory=list)
 
 
 class LayeringPattern(BaseModel):
@@ -128,11 +129,11 @@ class LayeringPattern(BaseModel):
 
     # Entities involved
     origin_entity: str
-    intermediate_entities: List[str] = Field(default_factory=list)
+    intermediate_entities: list[str] = Field(default_factory=list)
     final_entity: str
 
     # Transaction chain
-    transaction_chain: List[str] = Field(default_factory=list)
+    transaction_chain: list[str] = Field(default_factory=list)
     layer_count: int = 0
 
     # Amounts
@@ -145,11 +146,11 @@ class LayeringPattern(BaseModel):
     average_hop_time_hours: float = 0.0
 
     # Geographic
-    jurisdictions_involved: List[str] = Field(default_factory=list)
+    jurisdictions_involved: list[str] = Field(default_factory=list)
 
     # Confidence
     confidence_score: float = 0.0
-    layer_indicators: List[str] = Field(default_factory=list)
+    layer_indicators: list[str] = Field(default_factory=list)
 
 
 class VelocityPattern(BaseModel):
@@ -186,16 +187,16 @@ class GeographicPattern(BaseModel):
     customer_id: str
 
     # Transaction details
-    transaction_ids: List[str] = Field(default_factory=list)
+    transaction_ids: list[str] = Field(default_factory=list)
 
     # Geographic analysis
-    unusual_countries: List[str] = Field(default_factory=list)
-    high_risk_countries: List[str] = Field(default_factory=list)
-    new_countries: List[str] = Field(default_factory=list)
+    unusual_countries: list[str] = Field(default_factory=list)
+    high_risk_countries: list[str] = Field(default_factory=list)
+    new_countries: list[str] = Field(default_factory=list)
 
     # Expected vs Actual
-    expected_countries: List[str] = Field(default_factory=list)
-    actual_countries: List[str] = Field(default_factory=list)
+    expected_countries: list[str] = Field(default_factory=list)
+    actual_countries: list[str] = Field(default_factory=list)
 
     # Risk metrics
     high_risk_amount: float = 0.0
@@ -218,33 +219,33 @@ class DetectedPattern(BaseModel):
     primary_entity_name: str
 
     # Transactions involved
-    transaction_ids: List[str] = Field(default_factory=list)
+    transaction_ids: list[str] = Field(default_factory=list)
     transaction_count: int = 0
     total_amount: float = 0.0
 
     # Detection details
-    detection_date: datetime = Field(default_factory=datetime.utcnow)
+    detection_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     detection_rule_id: str
     detection_rule_name: str
     confidence_score: float = Field(ge=0, le=1)
 
     # Pattern-specific data
-    pattern_details: Dict[str, Any] = Field(default_factory=dict)
+    pattern_details: dict[str, Any] = Field(default_factory=dict)
 
     # Related patterns
-    related_patterns: List[UUID] = Field(default_factory=list)
+    related_patterns: list[UUID] = Field(default_factory=list)
 
     # Alert linkage
-    alert_id: Optional[UUID] = None
+    alert_id: UUID | None = None
 
     # Review
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[datetime] = None
-    review_notes: Optional[str] = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    review_notes: str | None = None
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PatternRule(BaseModel):
@@ -259,28 +260,28 @@ class PatternRule(BaseModel):
     logic_expression: str
 
     # Parameters
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    thresholds: Dict[str, float] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    thresholds: dict[str, float] = Field(default_factory=dict)
 
     # Scoring
     base_severity: PatternSeverity
     score_weight: float = 1.0
 
     # Applicability
-    applicable_products: List[str] = Field(default_factory=list)
-    applicable_customer_types: List[str] = Field(default_factory=list)
-    excluded_customers: List[str] = Field(default_factory=list)
+    applicable_products: list[str] = Field(default_factory=list)
+    applicable_customer_types: list[str] = Field(default_factory=list)
+    excluded_customers: list[str] = Field(default_factory=list)
 
     # Status
     is_active: bool = True
     effective_from: datetime
-    effective_to: Optional[datetime] = None
+    effective_to: datetime | None = None
 
     # Metadata
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_modified_by: Optional[str] = None
-    last_modified_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_modified_by: str | None = None
+    last_modified_at: datetime | None = None
     version: int = 1
 
 
@@ -289,16 +290,16 @@ class PatternAnalysisRequest(BaseModel):
     request_id: UUID = Field(default_factory=uuid4)
 
     # Scope
-    customer_ids: Optional[List[str]] = None
-    account_ids: Optional[List[str]] = None
-    transaction_ids: Optional[List[str]] = None
+    customer_ids: list[str] | None = None
+    account_ids: list[str] | None = None
+    transaction_ids: list[str] | None = None
 
     # Time window
     date_from: datetime
     date_to: datetime
 
     # Analysis type
-    pattern_types: Optional[List[PatternType]] = None
+    pattern_types: list[PatternType] | None = None
     analysis_depth: str = "standard"  # quick, standard, deep
 
     # Thresholds
@@ -306,7 +307,7 @@ class PatternAnalysisRequest(BaseModel):
 
     # Requestor
     requested_by: str
-    requested_at: datetime = Field(default_factory=datetime.utcnow)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PatternAnalysisResult(BaseModel):
@@ -321,20 +322,20 @@ class PatternAnalysisResult(BaseModel):
 
     # Findings
     patterns_detected: int = 0
-    detected_patterns: List[DetectedPattern] = Field(default_factory=list)
+    detected_patterns: list[DetectedPattern] = Field(default_factory=list)
 
     # By type
-    patterns_by_type: Dict[str, int] = Field(default_factory=dict)
-    patterns_by_severity: Dict[str, int] = Field(default_factory=dict)
+    patterns_by_type: dict[str, int] = Field(default_factory=dict)
+    patterns_by_severity: dict[str, int] = Field(default_factory=dict)
 
     # Processing
-    analysis_date: datetime = Field(default_factory=datetime.utcnow)
+    analysis_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processing_time_seconds: float = 0.0
     rules_executed: int = 0
 
     # Alerts generated
     alerts_generated: int = 0
-    alert_ids: List[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
 
 
 class TransactionProfileDeviation(BaseModel):
@@ -354,7 +355,7 @@ class TransactionProfileDeviation(BaseModel):
     z_score: float
 
     # Transactions causing deviation
-    transaction_ids: List[str] = Field(default_factory=list)
+    transaction_ids: list[str] = Field(default_factory=list)
 
     # Time period
     period_start: datetime
@@ -365,5 +366,5 @@ class TransactionProfileDeviation(BaseModel):
     confidence_score: float
 
     # Detection
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     detection_model: str

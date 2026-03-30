@@ -2,7 +2,7 @@
 Mock model classes that mimic SQLAlchemy models for the mock data system.
 """
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -27,8 +27,8 @@ class User(BaseMockModel):
         self.hashed_password = kwargs.get('hashed_password')
         self.is_active = kwargs.get('is_active', True)
         self.is_admin = kwargs.get('is_admin', False)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
-        self.updated_at = kwargs.get('updated_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
+        self.updated_at = kwargs.get('updated_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Account(BaseMockModel):
@@ -41,8 +41,8 @@ class Account(BaseMockModel):
         self.balance = kwargs.get('balance', 0.0)
         self.currency = kwargs.get('currency', 'USD')
         self.is_active = kwargs.get('is_active', True)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
-        self.updated_at = kwargs.get('updated_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
+        self.updated_at = kwargs.get('updated_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Transaction(BaseMockModel):
@@ -56,9 +56,9 @@ class Transaction(BaseMockModel):
         self.description = kwargs.get('description')
         self.category_id = kwargs.get('category_id')
         self.merchant_id = kwargs.get('merchant_id')
-        self.date = kwargs.get('date', datetime.utcnow().isoformat())
+        self.date = kwargs.get('date', datetime.now(UTC).isoformat())
         self.status = kwargs.get('status', 'completed')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Category(BaseMockModel):
@@ -69,7 +69,7 @@ class Category(BaseMockModel):
         self.type = kwargs.get('type')
         self.icon = kwargs.get('icon')
         self.color = kwargs.get('color')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Card(BaseMockModel):
@@ -85,7 +85,7 @@ class Card(BaseMockModel):
         self.current_balance = kwargs.get('current_balance', 0.0)
         self.status = kwargs.get('status', 'active')
         self.expiry_date = kwargs.get('expiry_date')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Budget(BaseMockModel):
@@ -98,7 +98,7 @@ class Budget(BaseMockModel):
         self.period = kwargs.get('period')
         self.start_date = kwargs.get('start_date')
         self.end_date = kwargs.get('end_date')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Goal(BaseMockModel):
@@ -112,7 +112,7 @@ class Goal(BaseMockModel):
         self.deadline = kwargs.get('deadline')
         self.category = kwargs.get('category')
         self.status = kwargs.get('status', 'active')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Notification(BaseMockModel):
@@ -124,7 +124,7 @@ class Notification(BaseMockModel):
         self.message = kwargs.get('message')
         self.type = kwargs.get('type')
         self.is_read = kwargs.get('is_read', False)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Message(BaseMockModel):
@@ -135,7 +135,7 @@ class Message(BaseMockModel):
         self.recipient_id = kwargs.get('recipient_id')
         self.content = kwargs.get('content')
         self.is_read = kwargs.get('is_read', False)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Bill(BaseMockModel):
@@ -147,7 +147,7 @@ class Bill(BaseMockModel):
         self.amount = kwargs.get('amount')
         self.due_date = kwargs.get('due_date')
         self.status = kwargs.get('status', 'pending')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Subscription(BaseMockModel):
@@ -161,7 +161,7 @@ class Subscription(BaseMockModel):
         self.next_billing_date = kwargs.get('next_billing_date')
         self.category = kwargs.get('category')
         self.status = kwargs.get('status', 'active')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class CreditScore(BaseMockModel):
@@ -172,7 +172,7 @@ class CreditScore(BaseMockModel):
         self.score = kwargs.get('score')
         self.agency = kwargs.get('agency')
         self.report_date = kwargs.get('report_date')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class SocialConnection(BaseMockModel):
@@ -182,7 +182,7 @@ class SocialConnection(BaseMockModel):
         self.user_id = kwargs.get('user_id')
         self.connection_id = kwargs.get('connection_id')
         self.status = kwargs.get('status', 'active')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class P2PTransaction(BaseMockModel):
@@ -194,7 +194,7 @@ class P2PTransaction(BaseMockModel):
         self.amount = kwargs.get('amount')
         self.description = kwargs.get('description')
         self.status = kwargs.get('status', 'completed')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class InvestmentAccount(BaseMockModel):
@@ -205,7 +205,7 @@ class InvestmentAccount(BaseMockModel):
         self.account_name = kwargs.get('account_name')
         self.account_type = kwargs.get('account_type')
         self.balance = kwargs.get('balance', 0.0)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Holding(BaseMockModel):
@@ -217,7 +217,7 @@ class Holding(BaseMockModel):
         self.quantity = kwargs.get('quantity')
         self.purchase_price = kwargs.get('purchase_price')
         self.current_price = kwargs.get('current_price')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class Alert(BaseMockModel):
@@ -228,7 +228,7 @@ class Alert(BaseMockModel):
         self.type = kwargs.get('type')
         self.threshold = kwargs.get('threshold')
         self.is_active = kwargs.get('is_active', True)
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class AnalyticsEvent(BaseMockModel):
@@ -238,7 +238,7 @@ class AnalyticsEvent(BaseMockModel):
         self.user_id = kwargs.get('user_id')
         self.event_type = kwargs.get('event_type')
         self.event_data = kwargs.get('event_data', {})
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 # Alias for compatibility
@@ -253,7 +253,7 @@ class BankLink(BaseMockModel):
         self.institution_name = kwargs.get('institution_name')
         self.account_mask = kwargs.get('account_mask')
         self.status = kwargs.get('status', 'active')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class PlaidAccount(BaseMockModel):
@@ -262,7 +262,7 @@ class PlaidAccount(BaseMockModel):
         self.id = kwargs.get('id', str(uuid.uuid4()))
         self.bank_link_id = kwargs.get('bank_link_id')
         self.account_id = kwargs.get('account_id')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)
 
 class TransactionsSyncStatus(BaseMockModel):
@@ -272,5 +272,5 @@ class TransactionsSyncStatus(BaseMockModel):
         self.bank_link_id = kwargs.get('bank_link_id')
         self.last_sync = kwargs.get('last_sync')
         self.status = kwargs.get('status', 'success')
-        self.created_at = kwargs.get('created_at', datetime.utcnow().isoformat())
+        self.created_at = kwargs.get('created_at', datetime.now(UTC).isoformat())
         super().__init__(**kwargs)

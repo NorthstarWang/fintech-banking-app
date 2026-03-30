@@ -1,12 +1,16 @@
 """Committee Service - Business logic for board committee management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
-from decimal import Decimal
+
 from ..models.committee_models import (
-    Committee, CommitteeMeeting, CommitteeResolution, CommitteeReport,
-    CommitteeMember, CommitteeType
+    Committee,
+    CommitteeMeeting,
+    CommitteeMember,
+    CommitteeReport,
+    CommitteeResolution,
+    CommitteeType,
 )
 from ..repositories.committee_repository import committee_repository
 
@@ -18,7 +22,7 @@ class CommitteeService:
 
     async def establish_committee(
         self, committee_name: str, committee_type: CommitteeType, charter: str,
-        mandate: List[str], responsibilities: List[str], minimum_members: int,
+        mandate: list[str], responsibilities: list[str], minimum_members: int,
         meeting_frequency: str
     ) -> Committee:
         committee = Committee(
@@ -32,7 +36,7 @@ class CommitteeService:
 
     async def appoint_member(
         self, committee_id: UUID, member_id: UUID, member_name: str, role: str,
-        term_end_date: date, is_independent: bool, expertise_relevant: List[str]
+        term_end_date: date, is_independent: bool, expertise_relevant: list[str]
     ) -> CommitteeMember:
         membership = CommitteeMember(
             committee_id=committee_id, member_id=member_id, member_name=member_name,
@@ -53,7 +57,7 @@ class CommitteeService:
 
     async def schedule_meeting(
         self, committee_id: UUID, meeting_date: date, meeting_time: str,
-        meeting_type: str, location: str, agenda: List[Dict[str, Any]]
+        meeting_type: str, location: str, agenda: list[dict[str, Any]]
     ) -> CommitteeMeeting:
         meeting = CommitteeMeeting(
             committee_id=committee_id,
@@ -65,9 +69,9 @@ class CommitteeService:
         return meeting
 
     async def record_meeting(
-        self, meeting_id: UUID, attendees: List[str], discussions: List[Dict[str, Any]],
-        decisions: List[Dict[str, Any]], action_items: List[Dict[str, Any]]
-    ) -> Optional[CommitteeMeeting]:
+        self, meeting_id: UUID, attendees: list[str], discussions: list[dict[str, Any]],
+        decisions: list[dict[str, Any]], action_items: list[dict[str, Any]]
+    ) -> CommitteeMeeting | None:
         meeting = await self.repository.find_meeting_by_id(meeting_id)
         if meeting:
             meeting.attendees = attendees
@@ -77,7 +81,7 @@ class CommitteeService:
             meeting.minutes_status = "drafted"
         return meeting
 
-    async def approve_minutes(self, meeting_id: UUID) -> Optional[CommitteeMeeting]:
+    async def approve_minutes(self, meeting_id: UUID) -> CommitteeMeeting | None:
         meeting = await self.repository.find_meeting_by_id(meeting_id)
         if meeting:
             meeting.minutes_status = "approved"
@@ -88,7 +92,7 @@ class CommitteeService:
         self, committee_id: UUID, meeting_id: UUID, subject: str, resolution_text: str,
         proposed_by: str, seconded_by: str, votes_for: int, votes_against: int,
         votes_abstained: int, implementation_required: bool = False,
-        implementation_deadline: date = None, implementation_owner: str = ""
+        implementation_deadline: date | None = None, implementation_owner: str = ""
     ) -> CommitteeResolution:
         self._resolution_counter += 1
         passed = votes_for > votes_against
@@ -107,8 +111,8 @@ class CommitteeService:
 
     async def generate_committee_report(
         self, committee_id: UUID, report_period: str, prepared_by: str,
-        key_activities: List[str], key_decisions: List[str],
-        oversight_activities: List[str], recommendations_to_board: List[str]
+        key_activities: list[str], key_decisions: list[str],
+        oversight_activities: list[str], recommendations_to_board: list[str]
     ) -> CommitteeReport:
         meetings = await self.repository.find_meetings_by_committee(committee_id)
 
@@ -122,7 +126,7 @@ class CommitteeService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

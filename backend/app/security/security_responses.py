@@ -3,7 +3,7 @@ Automated security responses for threat protection.
 
 Automatically responds to security events without manual intervention.
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -153,7 +153,7 @@ class SecurityResponses:
         reason: str,
     ) -> AccountLockout:
         """Lock a user account."""
-        unlock_at = datetime.utcnow() + timedelta(
+        unlock_at = datetime.now(UTC) + timedelta(
             minutes=SecurityResponses.LOCKOUT_DURATION_MINUTES
         )
 
@@ -178,7 +178,7 @@ class SecurityResponses:
         if not lockout:
             return False
 
-        if lockout.unlock_at and datetime.utcnow() > lockout.unlock_at:
+        if lockout.unlock_at and datetime.now(UTC) > lockout.unlock_at:
             # Auto-unlock
             db.delete(lockout)
             db.commit()
@@ -282,7 +282,7 @@ class SecurityResponses:
 
         if incident:
             incident.status = "resolved"
-            incident.resolved_at = datetime.utcnow()
+            incident.resolved_at = datetime.now(UTC)
             db.commit()
 
         return incident

@@ -9,7 +9,3 @@ Comprehensive AML solution including:
 - Risk Scoring
 - Case Management
 """
-
-from .models import *
-from .services import *
-from .repositories import *

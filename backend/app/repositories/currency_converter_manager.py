@@ -3,7 +3,7 @@ Virtual currency converter management (Airtm-like P2P currency exchange).
 """
 import random
 import string
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -178,7 +178,7 @@ class CurrencyConverterManager:
             bid=Decimal(str(bid)),
             ask=Decimal(str(ask)),
             spread_percentage=Decimal(str(base_spread * 100)),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             source="market"
         )
 
@@ -191,8 +191,6 @@ class CurrencyConverterManager:
 
         # Calculate amounts
         from_amount = Decimal(str(request.amount))
-        exchange_rate = rate_info.rate  # Use the rate field
-        raw_to_amount = from_amount * exchange_rate
 
         # Calculate fees (use spread_percentage as fee)
         fee_percentage = rate_info.spread_percentage
@@ -217,13 +215,13 @@ class CurrencyConverterManager:
             'to_currency': request.to_currency,
             'from_amount': float(from_amount),
             'to_amount': float(to_amount),
-            'exchange_rate': float(exchange_rate),
+            'exchange_rate': float(effective_rate),
             'fee_amount': float(fee_amount),
             'fee_percentage': float(fee_percentage),
             'total_cost': float(total_cost),
             'transfer_method': request.transfer_method,
-            'created_at': datetime.utcnow(),
-            'expires_at': datetime.utcnow() + timedelta(minutes=15)
+            'created_at': datetime.now(UTC),
+            'expires_at': datetime.now(UTC) + timedelta(minutes=15)
         }
 
         self.data_manager.conversion_quotes.append(quote_data)
@@ -239,7 +237,7 @@ class CurrencyConverterManager:
             to_currency=request.to_currency,
             from_amount=from_amount,
             to_amount=to_amount,
-            exchange_rate=exchange_rate,
+            exchange_rate=effective_rate,
             fee_amount=fee_amount,
             fee_percentage=fee_percentage,
             total_cost=total_cost,
@@ -248,7 +246,7 @@ class CurrencyConverterManager:
             estimated_completion=estimated_completion,
             expires_at=quote_data['expires_at'],
             breakdown={
-                'exchange_rate': float(exchange_rate),
+                'exchange_rate': float(effective_rate),
                 'spread': float(rate_info.spread_percentage),
                 'platform_fee': float(fee_amount),
                 'network_fee': 0
@@ -267,7 +265,7 @@ class CurrencyConverterManager:
         if not quote:
             raise ValueError("Quote not found or expired")
 
-        if quote['expires_at'] < datetime.utcnow():
+        if quote['expires_at'] < datetime.now(UTC):
             raise ValueError("Quote has expired")
 
         # Create order
@@ -293,12 +291,12 @@ class CurrencyConverterManager:
             'purpose': order_data.purpose,
             'reference': order_data.reference,
             'peer_id': None,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow(),
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC),
             'completed_at': None,
             'tracking_updates': [{
                 'status': TransferStatus.PENDING.value,
-                'timestamp': datetime.utcnow(),
+                'timestamp': datetime.now(UTC),
                 'message': 'Order created'
             }]
         }
@@ -345,8 +343,8 @@ class CurrencyConverterManager:
             'max_transaction': float(offer_data.max_transaction),
             'availability_hours': offer_data.availability_hours,
             'is_active': True,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.peer_offers.append(offer)
@@ -449,8 +447,8 @@ class CurrencyConverterManager:
             'chat_enabled': True,
             'escrow_released': False,
             'dispute_id': None,
-            'created_at': datetime.utcnow(),
-            'expires_at': datetime.utcnow() + timedelta(hours=2),
+            'created_at': datetime.now(UTC),
+            'expires_at': datetime.now(UTC) + timedelta(hours=2),
             'completed_at': None
         }
 
@@ -459,7 +457,7 @@ class CurrencyConverterManager:
         # Update offer
         if 'amount_remaining' in offer:
             offer['amount_remaining'] -= float(trade_request.amount)
-        offer['updated_at'] = datetime.utcnow()
+        offer['updated_at'] = datetime.now(UTC)
 
         return self._trade_to_response(trade)
 
@@ -482,7 +480,7 @@ class CurrencyConverterManager:
                 'locked_balance': 0.0,
                 'pending_balance': 0.0,
                 'total_converted': 0.0,
-                'last_activity': datetime.utcnow()
+                'last_activity': datetime.now(UTC)
             }
             self.data_manager.currency_balances.append(usd_balance)
             user_balances = [usd_balance]
@@ -619,16 +617,16 @@ class CurrencyConverterManager:
         order['status'] = TransferStatus.PROCESSING.value
         order['tracking_updates'].append({
             'status': TransferStatus.PROCESSING.value,
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(UTC),
             'message': 'Payment received, processing conversion'
         })
 
         # Simulate completion (in real system, this would be async)
         order['status'] = TransferStatus.COMPLETED.value
-        order['completed_at'] = datetime.utcnow()
+        order['completed_at'] = datetime.now(UTC)
         order['tracking_updates'].append({
             'status': TransferStatus.COMPLETED.value,
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(UTC),
             'message': 'Conversion completed, funds sent to recipient'
         })
 
@@ -686,7 +684,7 @@ class CurrencyConverterManager:
             max_transaction=Decimal(str(offer['max_transaction'])),
             response_time_minutes=random.randint(1, 15),
             is_online=random.choice([True, True, True, False]),  # 75% chance online
-            last_seen=datetime.utcnow() - timedelta(minutes=random.randint(0, 60)),
+            last_seen=datetime.now(UTC) - timedelta(minutes=random.randint(0, 60)),
             created_at=offer['created_at']
         )
 

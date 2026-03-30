@@ -4,15 +4,23 @@ Watchlist Service
 Handles internal and external watchlist management and screening.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
 import re
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
 
 from ..models.watchlist_models import (
-    WatchlistType, WatchlistCategory, EntityIdentifier, WatchlistEntry,
-    Watchlist, WatchlistMatch, WatchlistScreeningRequest, WatchlistScreeningResult,
-    WatchlistImport, WatchlistAuditLog, WatchlistStatistics
+    EntityIdentifier,
+    Watchlist,
+    WatchlistAuditLog,
+    WatchlistCategory,
+    WatchlistEntry,
+    WatchlistImport,
+    WatchlistMatch,
+    WatchlistScreeningRequest,
+    WatchlistScreeningResult,
+    WatchlistStatistics,
+    WatchlistType,
 )
 
 
@@ -20,10 +28,10 @@ class WatchlistService:
     """Service for watchlist management and screening"""
 
     def __init__(self):
-        self._watchlists: Dict[UUID, Watchlist] = {}
-        self._entries: Dict[UUID, WatchlistEntry] = {}
-        self._matches: Dict[UUID, WatchlistMatch] = {}
-        self._audit_logs: List[WatchlistAuditLog] = []
+        self._watchlists: dict[UUID, Watchlist] = {}
+        self._entries: dict[UUID, WatchlistEntry] = {}
+        self._matches: dict[UUID, WatchlistMatch] = {}
+        self._audit_logs: list[WatchlistAuditLog] = []
         self._initialize_default_watchlists()
 
     def _initialize_default_watchlists(self):
@@ -102,24 +110,24 @@ class WatchlistService:
 
         return watchlist
 
-    async def get_watchlist(self, watchlist_id: UUID) -> Optional[Watchlist]:
+    async def get_watchlist(self, watchlist_id: UUID) -> Watchlist | None:
         """Get watchlist by ID"""
         return self._watchlists.get(watchlist_id)
 
-    async def get_watchlist_by_code(self, code: str) -> Optional[Watchlist]:
+    async def get_watchlist_by_code(self, code: str) -> Watchlist | None:
         """Get watchlist by code"""
         for watchlist in self._watchlists.values():
             if watchlist.watchlist_code == code:
                 return watchlist
         return None
 
-    async def get_all_watchlists(self) -> List[Watchlist]:
+    async def get_all_watchlists(self) -> list[Watchlist]:
         """Get all watchlists"""
         return list(self._watchlists.values())
 
     async def update_watchlist(
-        self, watchlist_id: UUID, updates: Dict[str, Any], updated_by: str
-    ) -> Optional[Watchlist]:
+        self, watchlist_id: UUID, updates: dict[str, Any], updated_by: str
+    ) -> Watchlist | None:
         """Update a watchlist"""
         watchlist = self._watchlists.get(watchlist_id)
         if not watchlist:
@@ -131,7 +139,7 @@ class WatchlistService:
                 old_values[key] = getattr(watchlist, key)
                 setattr(watchlist, key, value)
 
-        watchlist.updated_at = datetime.utcnow()
+        watchlist.updated_at = datetime.now(UTC)
 
         self._log_audit(
             watchlist_id, None, "update",
@@ -142,7 +150,7 @@ class WatchlistService:
         return watchlist
 
     async def add_entry(
-        self, watchlist_id: UUID, entry_data: Dict[str, Any], created_by: str
+        self, watchlist_id: UUID, entry_data: dict[str, Any], created_by: str
     ) -> WatchlistEntry:
         """Add entry to a watchlist"""
         watchlist = self._watchlists.get(watchlist_id)
@@ -178,13 +186,13 @@ class WatchlistService:
 
         return entry
 
-    async def get_entry(self, entry_id: UUID) -> Optional[WatchlistEntry]:
+    async def get_entry(self, entry_id: UUID) -> WatchlistEntry | None:
         """Get watchlist entry by ID"""
         return self._entries.get(entry_id)
 
     async def update_entry(
-        self, entry_id: UUID, updates: Dict[str, Any], updated_by: str
-    ) -> Optional[WatchlistEntry]:
+        self, entry_id: UUID, updates: dict[str, Any], updated_by: str
+    ) -> WatchlistEntry | None:
         """Update a watchlist entry"""
         entry = self._entries.get(entry_id)
         if not entry:
@@ -197,7 +205,7 @@ class WatchlistService:
                 setattr(entry, key, value)
 
         entry.updated_by = updated_by
-        entry.updated_at = datetime.utcnow()
+        entry.updated_at = datetime.now(UTC)
 
         self._log_audit(
             entry.watchlist_id, entry_id, "update",
@@ -209,7 +217,7 @@ class WatchlistService:
 
     async def deactivate_entry(
         self, entry_id: UUID, reason: str, deactivated_by: str
-    ) -> Optional[WatchlistEntry]:
+    ) -> WatchlistEntry | None:
         """Deactivate a watchlist entry"""
         entry = self._entries.get(entry_id)
         if not entry:
@@ -218,7 +226,7 @@ class WatchlistService:
         entry.is_active = False
         entry.status = "inactive"
         entry.updated_by = deactivated_by
-        entry.updated_at = datetime.utcnow()
+        entry.updated_at = datetime.now(UTC)
         entry.internal_notes = f"Deactivated: {reason}"
 
         watchlist = self._watchlists.get(entry.watchlist_id)
@@ -233,10 +241,10 @@ class WatchlistService:
         return entry
 
     async def search_entries(
-        self, query: str, watchlist_ids: Optional[List[UUID]] = None,
-        categories: Optional[List[WatchlistCategory]] = None,
+        self, query: str, watchlist_ids: list[UUID] | None = None,
+        categories: list[WatchlistCategory] | None = None,
         active_only: bool = True
-    ) -> List[WatchlistEntry]:
+    ) -> list[WatchlistEntry]:
         """Search watchlist entries"""
         results = []
         query_lower = query.lower()
@@ -307,7 +315,7 @@ class WatchlistService:
 
     async def _check_match(
         self, request: WatchlistScreeningRequest, entry: WatchlistEntry
-    ) -> Optional[WatchlistMatch]:
+    ) -> WatchlistMatch | None:
         """Check if request matches an entry"""
         # Name matching
         name_score = self._calculate_name_score(request.entity_name, entry.primary_name)
@@ -394,8 +402,8 @@ class WatchlistService:
         return len(intersection) / len(union)
 
     async def review_match(
-        self, match_id: UUID, status: str, reviewed_by: str, notes: Optional[str] = None
-    ) -> Optional[WatchlistMatch]:
+        self, match_id: UUID, status: str, reviewed_by: str, notes: str | None = None
+    ) -> WatchlistMatch | None:
         """Review a watchlist match"""
         match = self._matches.get(match_id)
         if not match:
@@ -403,13 +411,13 @@ class WatchlistService:
 
         match.status = status
         match.reviewed_by = reviewed_by
-        match.reviewed_at = datetime.utcnow()
+        match.reviewed_at = datetime.now(UTC)
         match.review_notes = notes
 
         return match
 
     async def import_entries(
-        self, watchlist_id: UUID, entries_data: List[Dict[str, Any]], imported_by: str
+        self, watchlist_id: UUID, entries_data: list[dict[str, Any]], imported_by: str
     ) -> WatchlistImport:
         """Import multiple entries to a watchlist"""
         import_record = WatchlistImport(
@@ -421,7 +429,7 @@ class WatchlistService:
             created_by=imported_by
         )
 
-        import_record.started_at = datetime.utcnow()
+        import_record.started_at = datetime.now(UTC)
 
         for entry_data in entries_data:
             try:
@@ -435,14 +443,14 @@ class WatchlistService:
                 })
 
         import_record.status = "completed"
-        import_record.completed_at = datetime.utcnow()
+        import_record.completed_at = datetime.now(UTC)
 
         return import_record
 
     def _log_audit(
-        self, watchlist_id: UUID, entry_id: Optional[UUID], action: str,
+        self, watchlist_id: UUID, entry_id: UUID | None, action: str,
         details: str, performed_by: str,
-        previous_values: Optional[Dict] = None, new_values: Optional[Dict] = None
+        previous_values: dict | None = None, new_values: dict | None = None
     ):
         """Log audit entry"""
         audit = WatchlistAuditLog(

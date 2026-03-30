@@ -1,8 +1,9 @@
 """Data Catalog Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -20,24 +21,24 @@ class CatalogEntry(BaseModel):
     domain: str = ""
     classification: str = "internal"
     sensitivity_level: str = "low"
-    tags: List[str] = Field(default_factory=list)
-    keywords: List[str] = Field(default_factory=list)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    tags: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = True
 
 
 class SchemaDefinition(BaseModel):
     schema_id: UUID = Field(default_factory=uuid4)
     entry_id: UUID
-    columns: List[Dict[str, Any]] = Field(default_factory=list)
-    primary_keys: List[str] = Field(default_factory=list)
-    foreign_keys: List[Dict[str, str]] = Field(default_factory=list)
-    indexes: List[Dict[str, Any]] = Field(default_factory=list)
-    constraints: List[Dict[str, Any]] = Field(default_factory=list)
-    partitioning: Optional[Dict[str, Any]] = None
+    columns: list[dict[str, Any]] = Field(default_factory=list)
+    primary_keys: list[str] = Field(default_factory=list)
+    foreign_keys: list[dict[str, str]] = Field(default_factory=list)
+    indexes: list[dict[str, Any]] = Field(default_factory=list)
+    constraints: list[dict[str, Any]] = Field(default_factory=list)
+    partitioning: dict[str, Any] | None = None
     schema_version: str = "1.0"
-    last_modified: datetime = Field(default_factory=datetime.utcnow)
+    last_modified: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DatasetUsage(BaseModel):
@@ -47,7 +48,7 @@ class DatasetUsage(BaseModel):
     user_name: str
     department: str
     access_type: str  # query, export, api_call
-    access_date: datetime = Field(default_factory=datetime.utcnow)
+    access_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     query_text: str = ""
     rows_accessed: int = 0
     duration_ms: int = 0
@@ -59,7 +60,7 @@ class DatasetRating(BaseModel):
     user_id: str
     rating: int  # 1-5
     review: str = ""
-    rating_date: datetime = Field(default_factory=datetime.utcnow)
+    rating_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     helpful_votes: int = 0
 
 
@@ -70,8 +71,8 @@ class DatasetComment(BaseModel):
     user_name: str
     comment_text: str
     comment_type: str = "general"  # general, question, issue, suggestion
-    parent_comment_id: Optional[UUID] = None
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    parent_comment_id: UUID | None = None
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_resolved: bool = False
 
 
@@ -81,17 +82,17 @@ class DatasetBookmark(BaseModel):
     user_id: str
     bookmark_name: str = ""
     notes: str = ""
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SearchHistory(BaseModel):
     search_id: UUID = Field(default_factory=uuid4)
     user_id: str
     search_query: str
-    filters_applied: Dict[str, Any] = Field(default_factory=dict)
+    filters_applied: dict[str, Any] = Field(default_factory=dict)
     results_count: int = 0
-    search_date: datetime = Field(default_factory=datetime.utcnow)
-    clicked_results: List[UUID] = Field(default_factory=list)
+    search_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    clicked_results: list[UUID] = Field(default_factory=list)
 
 
 class CatalogCollection(BaseModel):
@@ -100,10 +101,10 @@ class CatalogCollection(BaseModel):
     description: str
     owner: str
     visibility: str = "private"  # private, team, public
-    entries: List[UUID] = Field(default_factory=list)
-    collaborators: List[str] = Field(default_factory=list)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    entries: list[UUID] = Field(default_factory=list)
+    collaborators: list[str] = Field(default_factory=list)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DataDictionary(BaseModel):
@@ -114,11 +115,11 @@ class DataDictionary(BaseModel):
     description: str
     data_type: str
     format: str = ""
-    allowed_values: List[str] = Field(default_factory=list)
+    allowed_values: list[str] = Field(default_factory=list)
     default_value: str = ""
     is_nullable: bool = True
     is_pii: bool = False
     is_sensitive: bool = False
-    glossary_term_id: Optional[UUID] = None
+    glossary_term_id: UUID | None = None
     owner: str = ""
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))

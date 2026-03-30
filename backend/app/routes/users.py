@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -25,7 +25,7 @@ async def get_current_user_profile(
             detail="User not found"
         )
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 @router.put("/me", response_model=UserResponse)
 async def update_user_profile(
@@ -72,13 +72,13 @@ async def update_user_profile(
     if update_data.timezone is not None:
         user.timezone = update_data.timezone
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(user)
 
     # Log update
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 @router.post("/me/change-password")
 async def change_password(
@@ -107,7 +107,7 @@ async def change_password(
 
     # Update password
     user.password_hash = auth_handler.get_password_hash(new_password)
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db_session.commit()
 
     # Log password change
@@ -166,7 +166,7 @@ async def get_user_statistics(
 
     # Member since
     user = db_session.query(User).filter(User.id == current_user['user_id']).first()
-    days_active = (datetime.utcnow() - user.created_at).days if user else 0
+    days_active = (datetime.now(UTC) - user.created_at).days if user else 0
 
     return {
         "member_since": user.created_at if user else None,
@@ -212,7 +212,7 @@ async def delete_user_account(
 
     # Soft delete - deactivate account
     user.is_active = False
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
 
     # Deactivate all accounts
     db_session.query(Account).filter(
@@ -290,7 +290,7 @@ async def update_user_preferences(
         current_privacy.update(preferences["privacy"])
         user.privacy_settings = current_privacy
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db_session.commit()
 
     # Log preference update
@@ -383,7 +383,7 @@ async def get_user_profile(
         ).count()
 
         profile["stats"] = {
-            "member_since_days": (datetime.utcnow() - user.created_at).days,
+            "member_since_days": (datetime.now(UTC) - user.created_at).days,
             "total_transactions": total_transactions,
             "active_goals": active_goals,
             "total_contacts": db_session.query(Contact).filter(

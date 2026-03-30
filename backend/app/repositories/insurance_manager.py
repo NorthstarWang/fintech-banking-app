@@ -1,7 +1,7 @@
 # SQLAlchemy imports removed - using memory adapter
 import random
 import string
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from app.models.entities.insurance_models import (
@@ -272,7 +272,7 @@ class InsuranceManager:
         policy.data = policy_dict
         policy.title = f"{policy_data.insurance_type.value.title()} Insurance - {policy_data.provider_name}"
         policy.content = f"Policy #{policy_data.policy_number}"
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = datetime.now(UTC)
 
         self.db.commit()
         self.db.refresh(policy)
@@ -320,7 +320,7 @@ class InsuranceManager:
         policy.data["status"] = PolicyStatus.CANCELLED.value
         policy.data["cancellation_date"] = cancellation_date.isoformat()
         policy.data["cancellation_reason"] = reason
-        policy.updated_at = datetime.utcnow()
+        policy.updated_at = datetime.now(UTC)
 
         self.db.commit()
         return True
@@ -387,11 +387,11 @@ class InsuranceManager:
         claim_dict.update({
             "claim_number": claim_number,
             "status": ClaimStatus.SUBMITTED.value,
-            "filed_date": datetime.utcnow().isoformat(),
+            "filed_date": datetime.now(UTC).isoformat(),
             "documents": claim_dict.get("supporting_documents", []),
             "status_history": [{
                 "status": ClaimStatus.SUBMITTED.value,
-                "date": datetime.utcnow().isoformat(),
+                "date": datetime.now(UTC).isoformat(),
                 "notes": "Claim submitted"
             }]
         })
@@ -440,7 +440,7 @@ class InsuranceManager:
         # Add to status history
         history_entry = {
             "status": status.value,
-            "date": datetime.utcnow().isoformat(),
+            "date": datetime.now(UTC).isoformat(),
             "notes": notes or f"Status changed to {status.value}"
         }
 
@@ -458,10 +458,10 @@ class InsuranceManager:
                 except (ValueError, IndexError, AttributeError):
                     claim.data["amount_approved"] = claim.data.get("amount_claimed")
         elif status == ClaimStatus.PAID:
-            claim.data["payment_date"] = datetime.utcnow().isoformat()
+            claim.data["payment_date"] = datetime.now(UTC).isoformat()
             claim.data["amount_paid"] = claim.data.get("amount_approved", claim.data.get("amount_claimed"))
 
-        claim.updated_at = datetime.utcnow()
+        claim.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(claim)
 
@@ -541,10 +541,10 @@ class InsuranceManager:
         claim.data["documents"].append({
             "url": document_url,
             "document_type": document_type,
-            "upload_date": datetime.utcnow().isoformat()
+            "upload_date": datetime.now(UTC).isoformat()
         })
 
-        claim.updated_at = datetime.utcnow()
+        claim.updated_at = datetime.now(UTC)
         self.db.commit()
 
         return True
@@ -664,7 +664,7 @@ class InsuranceManager:
                 coverage_details=quote_request.coverage_options or {},
                 discounts_applied=discounts,
                 quote_id=quote_id,
-                valid_until=datetime.utcnow() + timedelta(days=30)
+                valid_until=datetime.now(UTC) + timedelta(days=30)
             ))
 
         return quotes

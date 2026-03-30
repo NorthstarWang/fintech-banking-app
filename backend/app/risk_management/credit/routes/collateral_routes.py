@@ -1,14 +1,19 @@
 """Collateral Routes - API endpoints for collateral management"""
 
-from typing import Optional, List
 from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..models.collateral_models import (
-    Collateral, CollateralValuation, CollateralAllocation, Guarantee,
-    CollateralType, CollateralStatus, ValuationType
+    Collateral,
+    CollateralAllocation,
+    CollateralStatus,
+    CollateralType,
+    CollateralValuation,
+    Guarantee,
+    ValuationType,
 )
 from ..services.collateral_service import collateral_service
 
@@ -54,11 +59,10 @@ class GuaranteeRequest(BaseModel):
 @router.post("/", response_model=Collateral)
 async def register_collateral(request: RegisterCollateralRequest):
     """Register new collateral"""
-    collateral = await collateral_service.register_collateral(
+    return await collateral_service.register_collateral(
         request.collateral_type, request.description,
         request.owner_id, request.owner_name, request.original_value
     )
-    return collateral
 
 
 @router.get("/{collateral_id}", response_model=Collateral)
@@ -117,15 +121,14 @@ async def monitor_collateral(collateral_id: UUID, request: MonitorRequest):
 @router.post("/guarantees", response_model=Guarantee)
 async def register_guarantee(request: GuaranteeRequest):
     """Register a guarantee"""
-    guarantee = await collateral_service.register_guarantee(
+    return await collateral_service.register_guarantee(
         request.guarantee_type, request.guarantor_id, request.guarantor_name,
         request.guaranteed_facility_id, request.guarantee_amount,
         request.effective_date, request.expiry_date
     )
-    return guarantee
 
 
-@router.get("/customer/{customer_id}", response_model=List[Collateral])
+@router.get("/customer/{customer_id}", response_model=list[Collateral])
 async def get_customer_collaterals(customer_id: str):
     """Get all collateral for a customer"""
     return await collateral_service.get_customer_collaterals(customer_id)
@@ -133,8 +136,8 @@ async def get_customer_collaterals(customer_id: str):
 
 @router.get("/")
 async def list_collaterals(
-    collateral_type: Optional[CollateralType] = None,
-    status: Optional[CollateralStatus] = None,
+    collateral_type: CollateralType | None = None,
+    status: CollateralStatus | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List collaterals with optional filters"""

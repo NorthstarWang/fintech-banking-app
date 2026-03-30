@@ -1,10 +1,10 @@
 """Master Data Match Algorithms"""
 
-from typing import List, Dict, Any, Tuple, Optional
-from decimal import Decimal
-from dataclasses import dataclass
-from enum import Enum
 import re
+from dataclasses import dataclass
+from decimal import Decimal
+from enum import Enum
+from typing import Any
 
 
 class MatchType(str, Enum):
@@ -21,7 +21,7 @@ class MatchResult:
     record_2_id: str
     match_score: Decimal
     match_type: MatchType
-    matched_fields: Dict[str, Decimal]
+    matched_fields: dict[str, Decimal]
     is_match: bool
     confidence_level: str
 
@@ -29,7 +29,7 @@ class MatchResult:
 class MatchAlgorithms:
     def __init__(self):
         self._default_threshold = Decimal("0.85")
-        self._field_weights: Dict[str, Decimal] = {}
+        self._field_weights: dict[str, Decimal] = {}
 
     def exact_match(self, value1: str, value2: str) -> Decimal:
         if value1 is None or value2 is None:
@@ -87,8 +87,7 @@ class MatchAlgorithms:
             return Decimal("0")
 
         match_distance = max(len1, len2) // 2 - 1
-        if match_distance < 0:
-            match_distance = 0
+        match_distance = max(match_distance, 0)
 
         s1_matches = [False] * len1
         s2_matches = [False] * len2
@@ -167,8 +166,7 @@ class MatchAlgorithms:
                 coded += code
             prev_code = code if code else prev_code
 
-        coded = coded[:4].ljust(4, "0")
-        return coded
+        return coded[:4].ljust(4, "0")
 
     def phonetic_match(self, value1: str, value2: str) -> Decimal:
         soundex1 = self.soundex(value1)
@@ -180,14 +178,14 @@ class MatchAlgorithms:
         if soundex1 == soundex2:
             return Decimal("1")
 
-        matches = sum(c1 == c2 for c1, c2 in zip(soundex1, soundex2))
+        matches = sum(c1 == c2 for c1, c2 in zip(soundex1, soundex2, strict=False))
         return Decimal(str(matches / 4))
 
     def composite_match(
         self,
-        record1: Dict[str, Any],
-        record2: Dict[str, Any],
-        field_configs: List[Dict[str, Any]],
+        record1: dict[str, Any],
+        record2: dict[str, Any],
+        field_configs: list[dict[str, Any]],
     ) -> MatchResult:
         field_scores = {}
         weighted_sum = Decimal("0")
@@ -238,7 +236,7 @@ class MatchAlgorithms:
             confidence_level=confidence,
         )
 
-    def _normalize(self, value: str) -> Optional[str]:
+    def _normalize(self, value: str) -> str | None:
         if value is None:
             return None
         return re.sub(r"\s+", " ", str(value).strip().lower())

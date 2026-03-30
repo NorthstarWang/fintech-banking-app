@@ -2,7 +2,7 @@
 Memory-based model classes that provide SQLAlchemy-compatible interface.
 These classes wrap dictionary data with attribute access.
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 
@@ -130,7 +130,7 @@ class BaseMemoryModel(metaclass=ModelMeta):
             self._data['id'] = BaseMemoryModel._id_counter[class_name]
             BaseMemoryModel._id_counter[class_name] += 1
         if 'created_at' not in self._data:
-            self._data['created_at'] = datetime.utcnow()
+            self._data['created_at'] = datetime.now(UTC)
 
     @classmethod
     def _initialize_counters(cls):
@@ -310,7 +310,7 @@ class Transaction(BaseMemoryModel):
 
         self._data.setdefault('status', 'completed')
         if 'transaction_date' not in self._data:
-            self._data['transaction_date'] = datetime.utcnow()
+            self._data['transaction_date'] = datetime.now(UTC)
 
         # Ensure user_id is set if not provided
         if 'user_id' not in self._data and 'account_id' in self._data:
@@ -445,7 +445,7 @@ class GoalContribution(BaseMemoryModel):
         from ..utils.money import format_money
 
         if 'contribution_date' not in self._data:
-            self._data['contribution_date'] = datetime.utcnow()
+            self._data['contribution_date'] = datetime.now(UTC)
         self._data.setdefault('is_automatic', False)
         self._data.setdefault('source_transaction_id', None)
 
@@ -515,7 +515,7 @@ class ConversationParticipant(BaseMemoryModel):
         self._data.setdefault('is_admin', False)
         self._data.setdefault('notification_enabled', True)
         if 'joined_at' not in self._data:
-            self._data['joined_at'] = datetime.utcnow()
+            self._data['joined_at'] = datetime.now(UTC)
 
 
 class Message(BaseMemoryModel):
@@ -543,7 +543,7 @@ class MessageReadReceipt(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'read_at' not in self._data:
-            self._data['read_at'] = datetime.utcnow()
+            self._data['read_at'] = datetime.now(UTC)
 
 
 # Recurring Transaction Models
@@ -620,9 +620,9 @@ class CardSpendingLimit(BaseMemoryModel):
         self._data.setdefault('limit_period', 'daily')
 
         if 'period_start' not in self._data:
-            self._data['period_start'] = datetime.utcnow()
+            self._data['period_start'] = datetime.now(UTC)
         if 'period_end' not in self._data:
-            self._data['period_end'] = datetime.utcnow() + timedelta(days=1)
+            self._data['period_end'] = datetime.now(UTC) + timedelta(days=1)
 
 
 class SpendingLimitPeriod:
@@ -731,7 +731,7 @@ class TwoFactorAuth(BaseMemoryModel):
         super().__init__(**kwargs)
         self._data.setdefault('is_enabled', False)
         self._data.setdefault('method', 'totp')
-        self._data.setdefault('created_at', datetime.utcnow().isoformat())
+        self._data.setdefault('created_at', datetime.now(UTC).isoformat())
 
 
 class UserDevice(BaseMemoryModel):
@@ -741,8 +741,8 @@ class UserDevice(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('is_trusted', False)
-        self._data.setdefault('first_seen', datetime.utcnow().isoformat())
-        self._data.setdefault('last_seen', datetime.utcnow().isoformat())
+        self._data.setdefault('first_seen', datetime.now(UTC).isoformat())
+        self._data.setdefault('last_seen', datetime.now(UTC).isoformat())
 
 
 class SecurityAuditLog(BaseMemoryModel):
@@ -752,7 +752,7 @@ class SecurityAuditLog(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data.setdefault('event_type', 'unknown')
-        self._data.setdefault('timestamp', datetime.utcnow().isoformat())
+        self._data.setdefault('timestamp', datetime.now(UTC).isoformat())
         self._data.setdefault('ip_address', '127.0.0.1')
 
 
@@ -764,7 +764,7 @@ class Log(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'timestamp' not in self._data:
-            self._data['timestamp'] = datetime.utcnow()
+            self._data['timestamp'] = datetime.now(UTC)
 
 
 # DirectMessage Model (for messages system)
@@ -780,7 +780,7 @@ class DirectMessage(BaseMemoryModel):
         self._data.setdefault('message_type', 'text')  # text, transaction, payment_request
         self._data.setdefault('metadata', {})  # For transaction details, etc.
         if 'sent_at' not in self._data:
-            self._data['sent_at'] = datetime.utcnow()
+            self._data['sent_at'] = datetime.now(UTC)
 
 
 class Conversation(BaseMemoryModel):
@@ -830,7 +830,7 @@ class CryptoAsset(BaseMemoryModel):
         self._data['price_usd'] = format_money(self._data.get('price_usd', 0.0))
 
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 class NFTAsset(BaseMemoryModel):
@@ -852,9 +852,9 @@ class NFTAsset(BaseMemoryModel):
             self._data['estimated_value_usd'] = format_money(self._data['estimated_value_usd'])
 
         if 'acquired_at' not in self._data:
-            self._data['acquired_at'] = datetime.utcnow()
+            self._data['acquired_at'] = datetime.now(UTC)
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 class CryptoTransaction(BaseMemoryModel):
@@ -902,9 +902,9 @@ class DeFiPosition(BaseMemoryModel):
         self._data['rewards_usd'] = format_money(self._data.get('rewards_usd', 0.0))
 
         if 'started_at' not in self._data:
-            self._data['started_at'] = datetime.utcnow()
+            self._data['started_at'] = datetime.now(UTC)
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 # Crypto-related enums
@@ -961,10 +961,10 @@ class CreditScore(BaseMemoryModel):
         self._data.setdefault('score_range', 'good')
         self._data.setdefault('factors', [])
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
         if 'next_update' not in self._data:
             # Next update in 30 days
-            self._data['next_update'] = datetime.utcnow()
+            self._data['next_update'] = datetime.now(UTC)
 
 
 class CreditSimulation(BaseMemoryModel):
@@ -982,7 +982,7 @@ class CreditSimulation(BaseMemoryModel):
         self._data.setdefault('impact_factors', [])
         self._data.setdefault('recommendations', [])
         if 'simulation_date' not in self._data:
-            self._data['simulation_date'] = datetime.utcnow()
+            self._data['simulation_date'] = datetime.now(UTC)
 
 
 class CreditAlert(BaseMemoryModel):
@@ -1001,7 +1001,7 @@ class CreditAlert(BaseMemoryModel):
         self._data.setdefault('action_url', None)
         self._data.setdefault('metadata', {})  # Additional alert-specific data
         if 'alert_date' not in self._data:
-            self._data['alert_date'] = datetime.utcnow()
+            self._data['alert_date'] = datetime.now(UTC)
 
 
 class CreditDispute(BaseMemoryModel):
@@ -1021,9 +1021,9 @@ class CreditDispute(BaseMemoryModel):
         self._data.setdefault('resolution_date', None)
         self._data.setdefault('outcome', None)  # removed, corrected, verified, no_change
         if 'filed_date' not in self._data:
-            self._data['filed_date'] = datetime.utcnow()
+            self._data['filed_date'] = datetime.now(UTC)
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 class CreditBuilderAccount(BaseMemoryModel):
@@ -1053,7 +1053,7 @@ class CreditBuilderAccount(BaseMemoryModel):
         self._data['monthly_fee'] = format_money(self._data.get('monthly_fee', 0.0))
 
         if 'opened_date' not in self._data:
-            self._data['opened_date'] = datetime.utcnow()
+            self._data['opened_date'] = datetime.now(UTC)
         if 'last_payment_date' not in self._data:
             self._data['last_payment_date'] = None
 
@@ -1144,7 +1144,7 @@ class UnifiedBalance(BaseMemoryModel):
             self._data[field] = format_money(self._data.get(field, 0.0))
 
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 class AssetBridge(BaseMemoryModel):
@@ -1171,7 +1171,7 @@ class AssetBridge(BaseMemoryModel):
         self._data['total_fees_usd'] = format_money(self._data.get('total_fees_usd', 0.0))
 
         if 'initiated_at' not in self._data:
-            self._data['initiated_at'] = datetime.utcnow()
+            self._data['initiated_at'] = datetime.now(UTC)
         self._data.setdefault('completed_at', None)
 
 
@@ -1190,10 +1190,10 @@ class ConversionRate(BaseMemoryModel):
         self._data.setdefault('is_active', True)
 
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
         if 'valid_until' not in self._data:
             # Default validity of 1 hour
-            self._data['valid_until'] = datetime.utcnow() + timedelta(hours=1)
+            self._data['valid_until'] = datetime.now(UTC) + timedelta(hours=1)
 
 
 class CollateralPosition(BaseMemoryModel):
@@ -1223,7 +1223,7 @@ class CollateralPosition(BaseMemoryModel):
         self._data['amount_borrowed'] = format_money(self._data.get('amount_borrowed', 0.0))
 
         if 'last_updated' not in self._data:
-            self._data['last_updated'] = datetime.utcnow()
+            self._data['last_updated'] = datetime.now(UTC)
 
 
 class UnifiedTransaction(BaseMemoryModel):
@@ -1252,7 +1252,7 @@ class UnifiedTransaction(BaseMemoryModel):
         self._data['total_fees_usd'] = format_money(self._data.get('total_fees_usd', 0.0))
 
         if 'initiated_at' not in self._data:
-            self._data['initiated_at'] = datetime.utcnow()
+            self._data['initiated_at'] = datetime.now(UTC)
         self._data.setdefault('completed_at', None)
 
 
@@ -1372,7 +1372,7 @@ class MessageAttachment(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'uploaded_at' not in self._data:
-            self._data['uploaded_at'] = datetime.utcnow()
+            self._data['uploaded_at'] = datetime.now(UTC)
 
 
 class MessageFolder(BaseMemoryModel):
@@ -1390,7 +1390,7 @@ class MessageFolder(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'created_at' not in self._data:
-            self._data['created_at'] = datetime.utcnow()
+            self._data['created_at'] = datetime.now(UTC)
 
 
 class BlockedUser(BaseMemoryModel):
@@ -1408,7 +1408,7 @@ class BlockedUser(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'blocked_at' not in self._data:
-            self._data['blocked_at'] = datetime.utcnow()
+            self._data['blocked_at'] = datetime.now(UTC)
 
 
 class MessageSettings(BaseMemoryModel):
@@ -1429,9 +1429,9 @@ class MessageSettings(BaseMemoryModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'created_at' not in self._data:
-            self._data['created_at'] = datetime.utcnow()
+            self._data['created_at'] = datetime.now(UTC)
         if 'updated_at' not in self._data:
-            self._data['updated_at'] = datetime.utcnow()
+            self._data['updated_at'] = datetime.now(UTC)
 
 
 # Security Models
@@ -1443,7 +1443,7 @@ class AuditLog(BaseMemoryModel):
         super().__init__(**kwargs)
         self._data.setdefault('event_type', 'action')
         self._data.setdefault('status', 'success')
-        self._data.setdefault('timestamp', datetime.utcnow())
+        self._data.setdefault('timestamp', datetime.now(UTC))
         self._data.setdefault('encrypted', 1)
 
 
@@ -1453,7 +1453,7 @@ class LoginAttempt(BaseMemoryModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._data.setdefault('timestamp', datetime.utcnow())
+        self._data.setdefault('timestamp', datetime.now(UTC))
         self._data.setdefault('success', False)
 
 
@@ -1463,7 +1463,7 @@ class TransactionAnomaly(BaseMemoryModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._data.setdefault('detected_at', datetime.utcnow())
+        self._data.setdefault('detected_at', datetime.now(UTC))
         self._data.setdefault('risk_score', 0.0)
 
 
@@ -1473,7 +1473,7 @@ class SecurityIncident(BaseMemoryModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._data.setdefault('created_at', datetime.utcnow())
+        self._data.setdefault('created_at', datetime.now(UTC))
         self._data.setdefault('severity', 'medium')
         self._data.setdefault('status', 'open')
 
@@ -1484,7 +1484,7 @@ class AccountLockout(BaseMemoryModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._data.setdefault('locked_at', datetime.utcnow())
+        self._data.setdefault('locked_at', datetime.now(UTC))
         self._data.setdefault('is_active', True)
 
 
@@ -1494,8 +1494,8 @@ class TrustedDevice(BaseMemoryModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._data.setdefault('first_seen', datetime.utcnow())
-        self._data.setdefault('last_seen', datetime.utcnow())
+        self._data.setdefault('first_seen', datetime.now(UTC))
+        self._data.setdefault('last_seen', datetime.now(UTC))
         self._data.setdefault('is_trusted', False)
 
 
@@ -1562,7 +1562,7 @@ class Receipt(BaseMemoryModel):
         self._data.setdefault('category', 'other')
 
         if 'receipt_date' not in self._data:
-            self._data['receipt_date'] = datetime.utcnow()
+            self._data['receipt_date'] = datetime.now(UTC)
 
 
 # Export all models and enums

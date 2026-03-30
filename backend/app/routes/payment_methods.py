@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -127,7 +127,7 @@ async def add_card(
         }
     )
 
-    return PaymentMethodResponse.from_orm(payment_method)
+    return PaymentMethodResponse.model_validate(payment_method)
 
 @router.post("/bank", response_model=PaymentMethodResponse, status_code=status.HTTP_201_CREATED)
 async def add_bank_account(
@@ -177,7 +177,7 @@ async def add_bank_account(
         }
     )
 
-    return PaymentMethodResponse.from_orm(payment_method)
+    return PaymentMethodResponse.model_validate(payment_method)
 
 @router.post("/wallet", response_model=PaymentMethodResponse, status_code=status.HTTP_201_CREATED)
 async def add_digital_wallet(
@@ -225,7 +225,7 @@ async def add_digital_wallet(
     db_session.commit()
     db_session.refresh(payment_method)
 
-    return PaymentMethodResponse.from_orm(payment_method)
+    return PaymentMethodResponse.model_validate(payment_method)
 
 @router.get("/", response_model=list[PaymentMethodResponse])
 async def get_payment_methods(
@@ -246,7 +246,7 @@ async def get_payment_methods(
         PaymentMethod.created_at.desc()
     ).all()
 
-    return [PaymentMethodResponse.from_orm(pm) for pm in payment_methods]
+    return [PaymentMethodResponse.model_validate(pm) for pm in payment_methods]
 
 @router.get("/{payment_method_id}", response_model=PaymentMethodResponse)
 async def get_payment_method(
@@ -266,7 +266,7 @@ async def get_payment_method(
             detail="Payment method not found"
         )
 
-    return PaymentMethodResponse.from_orm(payment_method)
+    return PaymentMethodResponse.model_validate(payment_method)
 
 @router.put("/{payment_method_id}", response_model=PaymentMethodResponse)
 async def update_payment_method(
@@ -306,11 +306,11 @@ async def update_payment_method(
             ).update({"is_default": False})
         payment_method.is_default = update_data.is_default
 
-    payment_method.updated_at = datetime.utcnow()
+    payment_method.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(payment_method)
 
-    return PaymentMethodResponse.from_orm(payment_method)
+    return PaymentMethodResponse.model_validate(payment_method)
 
 @router.delete("/{payment_method_id}")
 async def delete_payment_method(
@@ -389,7 +389,7 @@ async def verify_payment_method(
 
     # In production, this would involve micro-deposits or other verification
     payment_method.status = PaymentMethodStatus.ACTIVE
-    payment_method.verified_at = datetime.utcnow()
+    payment_method.verified_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Payment method verified successfully"}

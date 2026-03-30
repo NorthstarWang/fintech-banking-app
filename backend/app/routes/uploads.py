@@ -1,7 +1,7 @@
 import mimetypes
 import os
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -70,7 +70,7 @@ async def upload_message_attachment(
         "file_type": file_type,
         "file_size": file_size,
         "url": f"/uploads/{unique_filename}",
-        "uploaded_at": datetime.utcnow().isoformat()
+        "uploaded_at": datetime.now(UTC).isoformat()
     }
 
 @router.get("/download/{filename}")

@@ -1,14 +1,12 @@
 """Fraud Pattern Routes - API endpoints for fraud pattern management"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..models.fraud_pattern_models import (
-    FraudPattern, PatternMatch, PatternCategory, PatternStatus, RiskLevel
-)
-
+from ..models.fraud_pattern_models import FraudPattern, PatternCategory, PatternMatch, PatternStatus, RiskLevel
 
 router = APIRouter(prefix="/fraud/patterns", tags=["Fraud Patterns"])
 
@@ -16,7 +14,7 @@ router = APIRouter(prefix="/fraud/patterns", tags=["Fraud Patterns"])
 class PatternIndicatorRequest(BaseModel):
     indicator_name: str
     indicator_type: str
-    threshold: Optional[float] = None
+    threshold: float | None = None
     weight: float = Field(default=1.0, ge=0, le=10)
 
 
@@ -25,39 +23,39 @@ class CreatePatternRequest(BaseModel):
     pattern_name: str
     category: PatternCategory
     description: str
-    indicators: List[PatternIndicatorRequest]
+    indicators: list[PatternIndicatorRequest]
     risk_level: RiskLevel = RiskLevel.MEDIUM
     min_confidence_threshold: float = Field(default=0.7, ge=0, le=1)
     created_by: str
 
 
 class UpdatePatternRequest(BaseModel):
-    pattern_name: Optional[str] = None
-    description: Optional[str] = None
-    indicators: Optional[List[PatternIndicatorRequest]] = None
-    risk_level: Optional[RiskLevel] = None
-    min_confidence_threshold: Optional[float] = None
-    status: Optional[PatternStatus] = None
+    pattern_name: str | None = None
+    description: str | None = None
+    indicators: list[PatternIndicatorRequest] | None = None
+    risk_level: RiskLevel | None = None
+    min_confidence_threshold: float | None = None
+    status: PatternStatus | None = None
 
 
 class RecordMatchRequest(BaseModel):
     pattern_id: UUID
     entity_type: str
     entity_id: str
-    matched_indicators: List[str]
+    matched_indicators: list[str]
     confidence_score: float = Field(ge=0, le=1)
-    matched_data: Dict[str, Any] = {}
+    matched_data: dict[str, Any] = {}
 
 
 class ReviewMatchRequest(BaseModel):
     reviewed_by: str
     is_valid: bool
-    review_notes: Optional[str] = None
+    review_notes: str | None = None
 
 
 # In-memory storage for demo
-_patterns: Dict[UUID, FraudPattern] = {}
-_matches: List[PatternMatch] = []
+_patterns: dict[UUID, FraudPattern] = {}
+_matches: list[PatternMatch] = []
 
 
 @router.post("/", response_model=FraudPattern)
@@ -141,11 +139,11 @@ async def deactivate_pattern(pattern_id: UUID):
     return pattern
 
 
-@router.get("/", response_model=List[FraudPattern])
+@router.get("/", response_model=list[FraudPattern])
 async def list_patterns(
-    category: Optional[PatternCategory] = None,
-    status: Optional[PatternStatus] = None,
-    risk_level: Optional[RiskLevel] = None,
+    category: PatternCategory | None = None,
+    status: PatternStatus | None = None,
+    risk_level: RiskLevel | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):
@@ -160,13 +158,13 @@ async def list_patterns(
     return patterns[offset:offset + limit]
 
 
-@router.get("/active", response_model=List[FraudPattern])
+@router.get("/active", response_model=list[FraudPattern])
 async def get_active_patterns():
     """Get all active patterns"""
     return [p for p in _patterns.values() if p.status == PatternStatus.ACTIVE]
 
 
-@router.get("/high-risk", response_model=List[FraudPattern])
+@router.get("/high-risk", response_model=list[FraudPattern])
 async def get_high_risk_patterns():
     """Get high-risk patterns"""
     return [
@@ -218,9 +216,9 @@ async def review_match(match_id: UUID, request: ReviewMatchRequest):
 
 @router.get("/matches")
 async def list_matches(
-    pattern_id: Optional[UUID] = None,
-    entity_type: Optional[str] = None,
-    reviewed: Optional[bool] = None,
+    pattern_id: UUID | None = None,
+    entity_type: str | None = None,
+    reviewed: bool | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):

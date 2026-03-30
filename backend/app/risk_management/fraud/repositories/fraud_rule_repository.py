@@ -1,19 +1,18 @@
 """Fraud Rule Repository - Data access layer for fraud detection rules"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from ..models.fraud_rule_models import (
-    FraudRule, RuleSet, RuleType, RuleStatus, RuleAction
-)
+
+from ..models.fraud_rule_models import FraudRule, RuleAction, RuleSet, RuleStatus, RuleType
 
 
 class FraudRuleRepository:
     def __init__(self):
-        self._rules: Dict[UUID, FraudRule] = {}
-        self._rulesets: Dict[UUID, RuleSet] = {}
-        self._rule_code_index: Dict[str, UUID] = {}
-        self._rule_type_index: Dict[RuleType, List[UUID]] = {}
+        self._rules: dict[UUID, FraudRule] = {}
+        self._rulesets: dict[UUID, RuleSet] = {}
+        self._rule_code_index: dict[str, UUID] = {}
+        self._rule_type_index: dict[RuleType, list[UUID]] = {}
 
     async def save_rule(self, rule: FraudRule) -> FraudRule:
         self._rules[rule.rule_id] = rule
@@ -24,30 +23,30 @@ class FraudRuleRepository:
             self._rule_type_index[rule.rule_type].append(rule.rule_id)
         return rule
 
-    async def find_rule_by_id(self, rule_id: UUID) -> Optional[FraudRule]:
+    async def find_rule_by_id(self, rule_id: UUID) -> FraudRule | None:
         return self._rules.get(rule_id)
 
-    async def find_rule_by_code(self, rule_code: str) -> Optional[FraudRule]:
+    async def find_rule_by_code(self, rule_code: str) -> FraudRule | None:
         rule_id = self._rule_code_index.get(rule_code)
         if rule_id:
             return self._rules.get(rule_id)
         return None
 
-    async def find_rules_by_type(self, rule_type: RuleType) -> List[FraudRule]:
+    async def find_rules_by_type(self, rule_type: RuleType) -> list[FraudRule]:
         rule_ids = self._rule_type_index.get(rule_type, [])
         return [self._rules[rid] for rid in rule_ids if rid in self._rules]
 
-    async def find_active_rules(self) -> List[FraudRule]:
+    async def find_active_rules(self) -> list[FraudRule]:
         return [r for r in self._rules.values() if r.status == RuleStatus.ACTIVE]
 
-    async def find_rules_by_action(self, action: RuleAction) -> List[FraudRule]:
+    async def find_rules_by_action(self, action: RuleAction) -> list[FraudRule]:
         return [r for r in self._rules.values() if r.action == action]
 
-    async def find_rules_by_severity(self, severity: str) -> List[FraudRule]:
+    async def find_rules_by_severity(self, severity: str) -> list[FraudRule]:
         return [r for r in self._rules.values() if r.alert_severity == severity]
 
     async def update_rule(self, rule: FraudRule) -> FraudRule:
-        rule.updated_at = datetime.utcnow()
+        rule.updated_at = datetime.now(UTC)
         rule.version += 1
         self._rules[rule.rule_id] = rule
         return rule
@@ -65,23 +64,23 @@ class FraudRuleRepository:
         self._rulesets[ruleset.ruleset_id] = ruleset
         return ruleset
 
-    async def find_ruleset_by_id(self, ruleset_id: UUID) -> Optional[RuleSet]:
+    async def find_ruleset_by_id(self, ruleset_id: UUID) -> RuleSet | None:
         return self._rulesets.get(ruleset_id)
 
-    async def find_active_rulesets(self) -> List[RuleSet]:
+    async def find_active_rulesets(self) -> list[RuleSet]:
         return [rs for rs in self._rulesets.values() if rs.is_active]
 
-    async def find_rulesets_by_channel(self, channel: str) -> List[RuleSet]:
+    async def find_rulesets_by_channel(self, channel: str) -> list[RuleSet]:
         return [
             rs for rs in self._rulesets.values()
             if channel in rs.applicable_channels
         ]
 
-    async def get_all_rules(self, limit: int = 500, offset: int = 0) -> List[FraudRule]:
+    async def get_all_rules(self, limit: int = 500, offset: int = 0) -> list[FraudRule]:
         rules = sorted(self._rules.values(), key=lambda x: x.created_at, reverse=True)
         return rules[offset:offset + limit]
 
-    async def get_all_rulesets(self, limit: int = 100, offset: int = 0) -> List[RuleSet]:
+    async def get_all_rulesets(self, limit: int = 100, offset: int = 0) -> list[RuleSet]:
         rulesets = sorted(self._rulesets.values(), key=lambda x: x.created_at, reverse=True)
         return rulesets[offset:offset + limit]
 
@@ -91,7 +90,7 @@ class FraudRuleRepository:
     async def count_rulesets(self) -> int:
         return len(self._rulesets)
 
-    async def get_rule_statistics(self) -> Dict[str, Any]:
+    async def get_rule_statistics(self) -> dict[str, Any]:
         active_count = len([r for r in self._rules.values() if r.status == RuleStatus.ACTIVE])
         by_type = {}
         for rule in self._rules.values():
@@ -104,11 +103,11 @@ class FraudRuleRepository:
             "by_type": by_type
         }
 
-    async def increment_hit_count(self, rule_id: UUID) -> Optional[FraudRule]:
+    async def increment_hit_count(self, rule_id: UUID) -> FraudRule | None:
         rule = self._rules.get(rule_id)
         if rule:
             rule.hit_count += 1
-            rule.last_hit_at = datetime.utcnow()
+            rule.last_hit_at = datetime.now(UTC)
         return rule
 
 

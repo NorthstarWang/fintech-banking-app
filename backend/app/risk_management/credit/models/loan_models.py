@@ -1,9 +1,10 @@
 """Loan Models - Loan application and origination risk models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -50,17 +51,17 @@ class LoanApplication(BaseModel):
     annual_income: float
     monthly_debt: float
     debt_to_income_ratio: float = 0.0
-    credit_score: Optional[int] = None
-    application_date: datetime = Field(default_factory=datetime.utcnow)
+    credit_score: int | None = None
+    application_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: LoanStatus = LoanStatus.APPLICATION
-    assigned_underwriter: Optional[str] = None
-    risk_assessment: Optional[Dict[str, Any]] = None
-    decision: Optional[RiskDecision] = None
-    decision_date: Optional[datetime] = None
-    decision_reason: Optional[str] = None
-    conditions: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    assigned_underwriter: str | None = None
+    risk_assessment: dict[str, Any] | None = None
+    decision: RiskDecision | None = None
+    decision_date: datetime | None = None
+    decision_reason: str | None = None
+    conditions: list[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LoanRiskAssessment(BaseModel):
@@ -72,16 +73,16 @@ class LoanRiskAssessment(BaseModel):
     probability_of_default: float = Field(ge=0, le=1)
     loss_given_default: float = Field(ge=0, le=1)
     expected_loss: float
-    risk_factors: List[Dict[str, Any]] = []
-    strengths: List[str] = []
-    weaknesses: List[str] = []
-    mitigating_factors: List[str] = []
+    risk_factors: list[dict[str, Any]] = []
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    mitigating_factors: list[str] = []
     recommended_decision: RiskDecision
-    recommended_amount: Optional[float] = None
-    recommended_rate: Optional[float] = None
-    recommended_term: Optional[int] = None
-    conditions_required: List[str] = []
-    assessment_date: datetime = Field(default_factory=datetime.utcnow)
+    recommended_amount: float | None = None
+    recommended_rate: float | None = None
+    recommended_term: int | None = None
+    conditions_required: list[str] = []
+    assessment_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     assessed_by: str
     model_version: str = "1.0"
 
@@ -102,17 +103,17 @@ class Loan(BaseModel):
     maturity_date: date
     first_payment_date: date
     status: LoanStatus = LoanStatus.ACTIVE
-    collateral_id: Optional[UUID] = None
+    collateral_id: UUID | None = None
     days_past_due: int = 0
-    last_payment_date: Optional[date] = None
-    next_payment_date: Optional[date] = None
+    last_payment_date: date | None = None
+    next_payment_date: date | None = None
     total_payments_made: int = 0
     total_interest_paid: float = 0.0
     total_principal_paid: float = 0.0
     risk_rating: str = "standard"
     watch_list: bool = False
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LoanPayment(BaseModel):
@@ -138,24 +139,24 @@ class DelinquencyRecord(BaseModel):
     loan_id: UUID
     customer_id: str
     delinquency_start_date: date
-    delinquency_end_date: Optional[date] = None
+    delinquency_end_date: date | None = None
     days_delinquent: int
     amount_past_due: float
     delinquency_bucket: str  # 30, 60, 90, 120+
     collection_status: str = "active"
     collection_attempts: int = 0
-    last_contact_date: Optional[date] = None
-    promise_to_pay_date: Optional[date] = None
-    resolution: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_contact_date: date | None = None
+    promise_to_pay_date: date | None = None
+    resolution: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LoanStatistics(BaseModel):
     total_loans: int = 0
     total_principal: float = 0.0
     total_outstanding: float = 0.0
-    by_status: Dict[str, int] = {}
-    by_type: Dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    by_type: dict[str, int] = {}
     average_interest_rate: float = 0.0
     delinquency_rate: float = 0.0
     default_rate: float = 0.0

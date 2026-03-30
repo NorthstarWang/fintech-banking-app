@@ -1,12 +1,11 @@
 import math
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from ..models import (
     Account,
-    Any,
     ChallengeJoinRequest,
     ChallengeParticipant,
     ChallengeStatus,
@@ -63,7 +62,7 @@ async def create_savings_goal(
             )
 
     # Rename fields to match database model
-    goal_dict = goal_data.dict()
+    goal_dict = goal_data.model_dump()
 
     # Handle both 'goal_name' and 'name' field names
     if 'goal_name' in goal_dict:
@@ -91,7 +90,7 @@ async def create_savings_goal(
             goal_dict['target_date'] = datetime.strptime(goal_dict['target_date'], '%Y-%m-%d').date()
     else:
         # Default to 1 year from now if not provided
-        goal_dict['target_date'] = (datetime.utcnow() + timedelta(days=365)).date()
+        goal_dict['target_date'] = (datetime.now(UTC) + timedelta(days=365)).date()
 
     # Create goal
     goal = Goal(
@@ -340,13 +339,13 @@ async def contribute_to_goal(
 
     if goal_completed and goal.status == GoalStatus.ACTIVE:
         goal.status = GoalStatus.COMPLETED
-        goal.completed_at = datetime.utcnow()
+        goal.completed_at = datetime.now(UTC)
 
     # Create contribution record
     contribution_record = GoalContribution(
         goal_id=goal_id,
         amount=amount,
-        contribution_date=datetime.utcnow(),
+        contribution_date=datetime.now(UTC),
         notes=notes or f"Contribution to {goal.name}"
     )
 
@@ -358,7 +357,7 @@ async def contribute_to_goal(
             transaction_type=TransactionType.DEBIT,
             status=TransactionStatus.COMPLETED,
             description=f"Contribution to goal: {goal.name}",
-            transaction_date=datetime.utcnow(),
+            transaction_date=datetime.now(UTC),
             category_id=16  # Savings category
         )
         db_session.add(transaction)
@@ -437,7 +436,7 @@ async def withdraw_from_goal(
             transaction_type=TransactionType.CREDIT,
             status=TransactionStatus.COMPLETED,
             description=f"Withdrawal from goal: {goal.name}",
-            transaction_date=datetime.utcnow(),
+            transaction_date=datetime.now(UTC),
             category_id=16  # Savings category
         )
         db_session.add(transaction)
@@ -804,7 +803,7 @@ async def create_shared_goal(
 
     # Add default target_date if not provided
     if 'target_date' not in goal_dict or not goal_dict['target_date']:
-        goal_dict['target_date'] = (datetime.utcnow() + timedelta(days=365)).date()
+        goal_dict['target_date'] = (datetime.now(UTC) + timedelta(days=365)).date()
     # Convert string to date if needed
     elif isinstance(goal_dict['target_date'], str):
         try:
@@ -880,7 +879,7 @@ def execute_round_up_transfer(
         transaction_type=TransactionType.TRANSFER,
         status=TransactionStatus.COMPLETED,
         description=f"Round-up from {transaction.description[:30]}",
-        transaction_date=datetime.utcnow(),
+        transaction_date=datetime.now(UTC),
         transfer_to_account_id=config.destination_account_id,
         category_id=16  # Assuming 16 is "Savings" category
     )
@@ -949,7 +948,7 @@ async def configure_round_up(
     db_session.commit()
     db_session.refresh(round_up_config)
 
-    return RoundUpConfigResponse.from_orm(round_up_config)
+    return RoundUpConfigResponse.model_validate(round_up_config)
 
 @router.get("/roundup/transactions", response_model=list[RoundUpTransactionResponse])
 async def get_round_up_history(
@@ -959,7 +958,7 @@ async def get_round_up_history(
     db_session: Any = Depends(db.get_db_dependency)
 ):
     """Get round-up transaction history"""
-    since_date = datetime.utcnow() - timedelta(days=days)
+    since_date = datetime.now(UTC) - timedelta(days=days)
 
     query = db_session.query(RoundUpTransaction).join(
         RoundUpConfig
@@ -1029,7 +1028,7 @@ async def create_savings_rule(
         raise ValidationError("Amount required for fixed amount rules")
 
     # Calculate next execution
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     if rule_data.frequency == SavingsRuleFrequency.DAILY:
         next_execution = now + timedelta(days=1)
     elif rule_data.frequency == SavingsRuleFrequency.WEEKLY:
@@ -1066,7 +1065,7 @@ async def create_savings_rule(
     db_session.commit()
     db_session.refresh(savings_rule)
 
-    return SavingsRuleResponse.from_orm(savings_rule)
+    return SavingsRuleResponse.model_validate(savings_rule)
 
 @router.get("/rules", response_model=list[SavingsRuleResponse])
 async def list_savings_rules(
@@ -1084,7 +1083,7 @@ async def list_savings_rules(
 
     rules = query.order_by(SavingsRule.created_at.desc()).all()
 
-    return [SavingsRuleResponse.from_orm(rule) for rule in rules]
+    return [SavingsRuleResponse.model_validate(rule) for rule in rules]
 
 @router.get("/challenges", response_model=list[SavingsChallengeResponse])
 async def list_savings_challenges(
@@ -1263,7 +1262,7 @@ def create_mock_challenges(db_session: Any):
         ).first()
 
         if not existing:
-            start_date = datetime.utcnow() + timedelta(days=idx * 7)
+            start_date = datetime.now(UTC) + timedelta(days=idx * 7)
 
             if challenge_data["challenge_type"] == ChallengeType.WEEKLY_SAVINGS:
                 end_date = start_date + timedelta(days=364)  # 52 weeks

@@ -4,14 +4,19 @@ Risk Scoring Service
 Handles customer and transaction risk scoring calculations.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
+from uuid import UUID
 
 from ..models.customer_risk_models import (
-    CustomerRiskLevel, CustomerType, PEPStatus, RiskFactorCategory,
-    GeographicRisk, RiskFactor, BehaviorProfile, CustomerRiskAssessment,
-    CustomerRiskProfile, RiskScoreCalculation, RiskOverrideRequest
+    CustomerRiskAssessment,
+    CustomerRiskLevel,
+    CustomerRiskProfile,
+    CustomerType,
+    GeographicRisk,
+    PEPStatus,
+    RiskFactor,
+    RiskFactorCategory,
+    RiskOverrideRequest,
 )
 
 
@@ -19,10 +24,10 @@ class RiskScoringService:
     """Service for calculating and managing risk scores"""
 
     def __init__(self):
-        self._risk_profiles: Dict[str, CustomerRiskProfile] = {}
-        self._assessments: Dict[UUID, CustomerRiskAssessment] = {}
-        self._override_requests: Dict[UUID, RiskOverrideRequest] = {}
-        self._country_risks: Dict[str, GeographicRisk] = {}
+        self._risk_profiles: dict[str, CustomerRiskProfile] = {}
+        self._assessments: dict[UUID, CustomerRiskAssessment] = {}
+        self._override_requests: dict[UUID, RiskOverrideRequest] = {}
+        self._country_risks: dict[str, GeographicRisk] = {}
         self._initialize_country_risks()
 
     def _initialize_country_risks(self):
@@ -72,11 +77,11 @@ class RiskScoringService:
             customer_id=customer_id,
             customer_type=customer_type,
             customer_name=customer_name,
-            customer_since=kwargs.get("customer_since", datetime.utcnow()),
+            customer_since=kwargs.get("customer_since", datetime.now(UTC)),
             current_risk_level=CustomerRiskLevel.MEDIUM,
             current_risk_score=50.0,
-            last_assessment_date=datetime.utcnow(),
-            next_review_date=datetime.utcnow().date(),
+            last_assessment_date=datetime.now(UTC),
+            next_review_date=datetime.now(UTC).date(),
             country_of_residence=kwargs.get("country_of_residence", "US"),
             **{k: v for k, v in kwargs.items() if k not in ["customer_since", "country_of_residence"]}
         )
@@ -84,7 +89,7 @@ class RiskScoringService:
         self._risk_profiles[customer_id] = profile
         return profile
 
-    async def get_risk_profile(self, customer_id: str) -> Optional[CustomerRiskProfile]:
+    async def get_risk_profile(self, customer_id: str) -> CustomerRiskProfile | None:
         """Get customer risk profile"""
         return self._risk_profiles.get(customer_id)
 
@@ -148,7 +153,7 @@ class RiskScoringService:
 
         # Set review schedule
         assessment.review_frequency_months = self._get_review_frequency(assessment.risk_level)
-        assessment.next_review_date = datetime.utcnow().date()
+        assessment.next_review_date = datetime.now(UTC).date()
 
         # Store assessment
         self._assessments[assessment.assessment_id] = assessment
@@ -156,7 +161,7 @@ class RiskScoringService:
         # Update profile
         profile.current_risk_score = assessment.overall_risk_score
         profile.current_risk_level = assessment.risk_level
-        profile.last_assessment_date = datetime.utcnow()
+        profile.last_assessment_date = datetime.now(UTC)
         profile.risk_assessment_history.append(assessment)
 
         return assessment
@@ -284,11 +289,11 @@ class RiskScoringService:
 
         if customer_industry in high_risk_industries:
             return 80.0
-        elif customer_industry in medium_risk_industries:
+        if customer_industry in medium_risk_industries:
             return 50.0
         return 25.0
 
-    async def _identify_risk_factors(self, profile: CustomerRiskProfile) -> List[RiskFactor]:
+    async def _identify_risk_factors(self, profile: CustomerRiskProfile) -> list[RiskFactor]:
         """Identify active risk factors for a customer"""
         factors = []
 
@@ -344,9 +349,9 @@ class RiskScoringService:
         """Convert risk score to risk level"""
         if score >= 80:
             return CustomerRiskLevel.VERY_HIGH
-        elif score >= 60:
+        if score >= 60:
             return CustomerRiskLevel.HIGH
-        elif score >= 40:
+        if score >= 40:
             return CustomerRiskLevel.MEDIUM
         return CustomerRiskLevel.LOW
 
@@ -376,7 +381,7 @@ class RiskScoringService:
             reason=reason,
             justification=justification,
             requested_by=requested_by,
-            review_deadline=datetime.utcnow()
+            review_deadline=datetime.now(UTC)
         )
 
         self._override_requests[override.override_id] = override
@@ -384,7 +389,7 @@ class RiskScoringService:
 
     async def approve_override(
         self, override_id: UUID, approved_by: str, notes: str
-    ) -> Optional[RiskOverrideRequest]:
+    ) -> RiskOverrideRequest | None:
         """Approve a risk override request"""
         override = self._override_requests.get(override_id)
         if not override:
@@ -393,7 +398,7 @@ class RiskScoringService:
         override.status = "approved"
         override.approvals.append({
             "approved_by": approved_by,
-            "approved_at": datetime.utcnow().isoformat(),
+            "approved_at": datetime.now(UTC).isoformat(),
             "notes": notes
         })
 
@@ -401,15 +406,15 @@ class RiskScoringService:
         profile = self._risk_profiles.get(override.customer_id)
         if profile:
             profile.current_risk_level = override.requested_risk_level
-            profile.updated_at = datetime.utcnow()
+            profile.updated_at = datetime.now(UTC)
 
         return override
 
-    async def get_country_risk(self, country_code: str) -> Optional[GeographicRisk]:
+    async def get_country_risk(self, country_code: str) -> GeographicRisk | None:
         """Get risk information for a country"""
         return self._country_risks.get(country_code)
 
-    async def get_high_risk_countries(self) -> List[GeographicRisk]:
+    async def get_high_risk_countries(self) -> list[GeographicRisk]:
         """Get list of high-risk countries"""
         return [
             cr for cr in self._country_risks.values()

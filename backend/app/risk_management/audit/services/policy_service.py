@@ -1,11 +1,18 @@
 """Policy Service - Business logic for policy management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
+
 from ..models.policy_models import (
-    Policy, PolicyVersion, PolicyException, PolicyAttestation, PolicyReview,
-    Procedure, PolicyStatus, PolicyCategory
+    Policy,
+    PolicyAttestation,
+    PolicyCategory,
+    PolicyException,
+    PolicyReview,
+    PolicyStatus,
+    PolicyVersion,
+    Procedure,
 )
 from ..repositories.policy_repository import policy_repository
 
@@ -31,13 +38,13 @@ class PolicyService:
         await self.repository.save_policy(policy)
         return policy
 
-    async def approve_policy(self, policy_id: UUID) -> Optional[Policy]:
+    async def approve_policy(self, policy_id: UUID) -> Policy | None:
         policy = await self.repository.find_policy_by_id(policy_id)
         if policy:
             policy.status = PolicyStatus.APPROVED
         return policy
 
-    async def activate_policy(self, policy_id: UUID) -> Optional[Policy]:
+    async def activate_policy(self, policy_id: UUID) -> Policy | None:
         policy = await self.repository.find_policy_by_id(policy_id)
         if policy and policy.status == PolicyStatus.APPROVED:
             policy.status = PolicyStatus.ACTIVE
@@ -46,7 +53,7 @@ class PolicyService:
 
     async def create_version(
         self, policy_id: UUID, version_number: str, change_summary: str,
-        changes_made: List[str], changed_by: str
+        changes_made: list[str], changed_by: str
     ) -> PolicyVersion:
         policy = await self.repository.find_policy_by_id(policy_id)
         prior_version = policy.version if policy else None
@@ -67,7 +74,7 @@ class PolicyService:
     async def request_exception(
         self, policy_id: UUID, requestor: str, business_unit: str, exception_type: str,
         description: str, justification: str, risk_assessment: str,
-        compensating_controls: List[str], duration: str, expiry_date: date
+        compensating_controls: list[str], duration: str, expiry_date: date
     ) -> PolicyException:
         self._exception_counter += 1
         exception = PolicyException(
@@ -82,7 +89,7 @@ class PolicyService:
 
     async def approve_exception(
         self, exception_id: UUID, approved_by: str
-    ) -> Optional[PolicyException]:
+    ) -> PolicyException | None:
         exception = await self.repository.find_exception_by_id(exception_id)
         if exception:
             exception.approved_by = approved_by
@@ -107,7 +114,7 @@ class PolicyService:
     async def review_policy(
         self, policy_id: UUID, reviewer: str, review_type: str,
         current_relevance: str, regulatory_alignment: str, operational_effectiveness: str,
-        gaps_identified: List[str], recommendations: List[str], changes_required: bool
+        gaps_identified: list[str], recommendations: list[str], changes_required: bool
     ) -> PolicyReview:
         review = PolicyReview(
             policy_id=policy_id, review_date=date.today(), reviewer=reviewer,
@@ -127,7 +134,7 @@ class PolicyService:
 
     async def create_procedure(
         self, policy_id: UUID, procedure_code: str, procedure_name: str,
-        description: str, steps: List[Dict[str, Any]], responsible_role: str,
+        description: str, steps: list[dict[str, Any]], responsible_role: str,
         owner: str
     ) -> Procedure:
         procedure = Procedure(
@@ -138,7 +145,7 @@ class PolicyService:
         await self.repository.save_procedure(procedure)
         return procedure
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

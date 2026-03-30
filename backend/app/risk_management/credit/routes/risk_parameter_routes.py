@@ -1,15 +1,20 @@
 """Risk Parameter Routes - API endpoints for PD/LGD/EAD modeling"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Query
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from ..models.risk_parameter_models import (
-    PDModel, LGDModel, EADModel, RiskParameterEstimate,
-    ExpectedLossCalculation, UnexpectedLossCalculation,
-    ParameterType, ModelApproach
+    EADModel,
+    ExpectedLossCalculation,
+    LGDModel,
+    ModelApproach,
+    ParameterType,
+    PDModel,
+    UnexpectedLossCalculation,
 )
 from ..services.risk_parameter_service import risk_parameter_service
 
@@ -53,7 +58,7 @@ class EstimateParametersRequest(BaseModel):
     pd_model_id: UUID
     lgd_model_id: UUID
     ead_model_id: UUID
-    input_factors: Dict[str, Any]
+    input_factors: dict[str, Any]
 
 
 class CalculateELRequest(BaseModel):
@@ -78,8 +83,8 @@ class BacktestRequest(BaseModel):
     parameter_type: ParameterType
     period_start: date
     period_end: date
-    predicted: List[float]
-    actual: List[float]
+    predicted: list[float]
+    actual: list[float]
     backtested_by: str
 
 
@@ -87,18 +92,17 @@ class StressTestRequest(BaseModel):
     parameter_type: ParameterType
     scenario_name: str
     base_value: float
-    stress_factors: Dict[str, float]
+    stress_factors: dict[str, float]
     tested_by: str
 
 
 @router.post("/pd-models", response_model=PDModel)
 async def register_pd_model(request: RegisterPDModelRequest):
     """Register a PD model"""
-    model = await risk_parameter_service.register_pd_model(
+    return await risk_parameter_service.register_pd_model(
         request.model_name, request.segment, request.approach,
         request.methodology, request.ttc_pd, request.pit_pd, request.created_by
     )
-    return model
 
 
 @router.get("/pd-models/{model_id}", response_model=PDModel)
@@ -113,12 +117,11 @@ async def get_pd_model(model_id: UUID):
 @router.post("/lgd-models", response_model=LGDModel)
 async def register_lgd_model(request: RegisterLGDModelRequest):
     """Register an LGD model"""
-    model = await risk_parameter_service.register_lgd_model(
+    return await risk_parameter_service.register_lgd_model(
         request.model_name, request.segment, request.collateral_type,
         request.approach, request.methodology, request.downturn_lgd,
         request.recovery_rate, request.created_by
     )
-    return model
 
 
 @router.get("/lgd-models/{model_id}", response_model=LGDModel)
@@ -133,22 +136,20 @@ async def get_lgd_model(model_id: UUID):
 @router.post("/ead-models", response_model=EADModel)
 async def register_ead_model(request: RegisterEADModelRequest):
     """Register an EAD model"""
-    model = await risk_parameter_service.register_ead_model(
+    return await risk_parameter_service.register_ead_model(
         request.model_name, request.product_type, request.approach,
         request.methodology, request.ccf, request.created_by
     )
-    return model
 
 
 @router.post("/estimate")
 async def estimate_parameters(request: EstimateParametersRequest):
     """Estimate risk parameters for an entity"""
-    estimates = await risk_parameter_service.estimate_parameters(
+    return await risk_parameter_service.estimate_parameters(
         request.entity_id, request.entity_type, request.segment,
         request.pd_model_id, request.lgd_model_id, request.ead_model_id,
         request.input_factors
     )
-    return estimates
 
 
 @router.post("/expected-loss", response_model=ExpectedLossCalculation)

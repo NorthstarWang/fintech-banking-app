@@ -1,13 +1,21 @@
 """KRI Service - Business logic for Key Risk Indicators"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import date
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.kri_models import (
-    KeyRiskIndicator, KRIMeasurement, KRIThresholdBreach, KRITarget,
-    KRITrendAnalysis, KRIDashboard, KRIReport,
-    KRIType, KRICategory, ThresholdStatus, KRITrend
+    KeyRiskIndicator,
+    KRICategory,
+    KRIDashboard,
+    KRIMeasurement,
+    KRITarget,
+    KRIThresholdBreach,
+    KRITrend,
+    KRITrendAnalysis,
+    KRIType,
+    ThresholdStatus,
 )
 from ..repositories.kri_repository import kri_repository
 
@@ -33,17 +41,16 @@ class KRIService:
             if kri.amber_threshold_min and value >= kri.amber_threshold_min:
                 return ThresholdStatus.AMBER
             return ThresholdStatus.GREEN
-        else:
-            if kri.red_threshold_max and value <= kri.red_threshold_max:
-                return ThresholdStatus.RED
-            if kri.amber_threshold_max and value <= kri.amber_threshold_max:
-                return ThresholdStatus.AMBER
-            return ThresholdStatus.GREEN
+        if kri.red_threshold_max and value <= kri.red_threshold_max:
+            return ThresholdStatus.RED
+        if kri.amber_threshold_max and value <= kri.amber_threshold_max:
+            return ThresholdStatus.AMBER
+        return ThresholdStatus.GREEN
 
     def _determine_trend(
         self,
         current_value: Decimal,
-        previous_value: Optional[Decimal],
+        previous_value: Decimal | None,
         higher_is_worse: bool
     ) -> KRITrend:
         if previous_value is None:
@@ -56,10 +63,9 @@ class KRIService:
             if current_value > previous_value:
                 return KRITrend.DETERIORATING
             return KRITrend.IMPROVING
-        else:
-            if current_value < previous_value:
-                return KRITrend.DETERIORATING
-            return KRITrend.IMPROVING
+        if current_value < previous_value:
+            return KRITrend.DETERIORATING
+        return KRITrend.IMPROVING
 
     async def create_kri(
         self,
@@ -73,10 +79,10 @@ class KRIService:
         measurement_frequency: str,
         data_source: str,
         calculation_method: str,
-        green_threshold_max: Optional[Decimal] = None,
-        amber_threshold_min: Optional[Decimal] = None,
-        amber_threshold_max: Optional[Decimal] = None,
-        red_threshold_min: Optional[Decimal] = None,
+        green_threshold_max: Decimal | None = None,
+        amber_threshold_min: Decimal | None = None,
+        amber_threshold_max: Decimal | None = None,
+        red_threshold_min: Decimal | None = None,
         higher_is_worse: bool = True
     ) -> KeyRiskIndicator:
         kri = KeyRiskIndicator(
@@ -101,18 +107,18 @@ class KRIService:
         await self.repository.save_kri(kri)
         return kri
 
-    async def get_kri(self, kri_id: UUID) -> Optional[KeyRiskIndicator]:
+    async def get_kri(self, kri_id: UUID) -> KeyRiskIndicator | None:
         return await self.repository.find_kri_by_id(kri_id)
 
-    async def get_kri_by_code(self, kri_code: str) -> Optional[KeyRiskIndicator]:
+    async def get_kri_by_code(self, kri_code: str) -> KeyRiskIndicator | None:
         return await self.repository.find_kri_by_code(kri_code)
 
     async def list_kris(
         self,
-        category: Optional[KRICategory] = None,
-        business_unit: Optional[str] = None,
+        category: KRICategory | None = None,
+        business_unit: str | None = None,
         is_active: bool = True
-    ) -> List[KeyRiskIndicator]:
+    ) -> list[KeyRiskIndicator]:
         kris = await self.repository.find_all_kris()
 
         if is_active:
@@ -131,7 +137,7 @@ class KRIService:
         measurement_period: str,
         value: Decimal,
         recorded_by: str,
-        notes: Optional[str] = None
+        notes: str | None = None
     ) -> KRIMeasurement:
         kri = await self.repository.find_kri_by_id(kri_id)
         if not kri:
@@ -199,9 +205,9 @@ class KRIService:
     async def get_kri_measurements(
         self,
         kri_id: UUID,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
-    ) -> List[KRIMeasurement]:
+        start_date: date | None = None,
+        end_date: date | None = None
+    ) -> list[KRIMeasurement]:
         measurements = await self.repository.find_measurements_by_kri(kri_id)
 
         if start_date:
@@ -213,9 +219,9 @@ class KRIService:
 
     async def get_kri_breaches(
         self,
-        kri_id: Optional[UUID] = None,
+        kri_id: UUID | None = None,
         status: str = "open"
-    ) -> List[KRIThresholdBreach]:
+    ) -> list[KRIThresholdBreach]:
         if kri_id:
             breaches = await self.repository.find_breaches_by_kri(kri_id)
         else:
@@ -231,7 +237,7 @@ class KRIService:
         breach_id: UUID,
         action_taken: str,
         resolution_notes: str
-    ) -> Optional[KRIThresholdBreach]:
+    ) -> KRIThresholdBreach | None:
         breach = await self.repository.find_breach_by_id(breach_id)
         if not breach:
             return None
@@ -251,7 +257,7 @@ class KRIService:
         target_type: str,
         effective_from: date,
         approved_by: str,
-        rationale: Optional[str] = None
+        rationale: str | None = None
     ) -> KRITarget:
         target = KRITarget(
             kri_id=kri_id,
@@ -342,7 +348,7 @@ class KRIService:
 
     async def generate_dashboard(
         self,
-        business_unit: Optional[str] = None
+        business_unit: str | None = None
     ) -> KRIDashboard:
         kris = await self.list_kris(business_unit=business_unit)
 
@@ -407,7 +413,7 @@ class KRIService:
         await self.repository.save_dashboard(dashboard)
         return dashboard
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

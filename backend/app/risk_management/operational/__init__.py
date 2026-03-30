@@ -10,8 +10,3 @@ Comprehensive operational risk framework including:
 - Vendor Risk Management
 - Technology Risk Management
 """
-
-from .models import *
-from .services import *
-from .repositories import *
-from .routes import *

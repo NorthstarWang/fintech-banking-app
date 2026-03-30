@@ -1,15 +1,25 @@
 """Business Continuity Routes - API endpoints for BCP/DR management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.business_continuity_models import (
-    BusinessProcess, BusinessContinuityPlan, DisasterRecoveryPlan, BCPTest,
-    BCPIncident, CrisisTeamMember, BCPMetrics, BCPStatus, CriticalityLevel,
-    DisasterType, RecoveryStrategy, TestType
+    BCPIncident,
+    BCPMetrics,
+    BCPStatus,
+    BCPTest,
+    BusinessContinuityPlan,
+    BusinessProcess,
+    CrisisTeamMember,
+    CriticalityLevel,
+    DisasterRecoveryPlan,
+    DisasterType,
+    RecoveryStrategy,
+    TestType,
 )
 from ..services.business_continuity_service import business_continuity_service
 
@@ -29,9 +39,9 @@ class RegisterProcessRequest(BaseModel):
     normal_staff: int
     recovery_strategy: RecoveryStrategy
     financial_impact_per_hour: Decimal
-    dependencies: Optional[List[str]] = None
-    systems_required: Optional[List[str]] = None
-    vendors_required: Optional[List[str]] = None
+    dependencies: list[str] | None = None
+    systems_required: list[str] | None = None
+    vendors_required: list[str] | None = None
 
 
 class CreateBCPRequest(BaseModel):
@@ -40,11 +50,11 @@ class CreateBCPRequest(BaseModel):
     business_unit: str
     plan_owner: str
     scope: str
-    objectives: List[str]
-    assumptions: List[str]
-    processes_covered: List[UUID]
-    activation_criteria: List[str]
-    deactivation_criteria: List[str]
+    objectives: list[str]
+    assumptions: list[str]
+    processes_covered: list[UUID]
+    activation_criteria: list[str]
+    deactivation_criteria: list[str]
     document_location: str
 
 
@@ -60,10 +70,10 @@ class CreateDRPRequest(BaseModel):
     backup_frequency: str
     backup_location: str
     backup_retention: str
-    recovery_procedures: List[str]
-    verification_steps: List[str]
+    recovery_procedures: list[str]
+    verification_steps: list[str]
     owner: str
-    dependencies: Optional[List[str]] = None
+    dependencies: list[str] | None = None
 
 
 class ScheduleTestRequest(BaseModel):
@@ -71,10 +81,10 @@ class ScheduleTestRequest(BaseModel):
     test_type: TestType
     test_date: date
     scope: str
-    objectives: List[str]
-    scenarios_tested: List[str]
+    objectives: list[str]
+    scenarios_tested: list[str]
     test_coordinator: str
-    participants: List[str]
+    participants: list[str]
 
 
 class CompleteTestRequest(BaseModel):
@@ -82,17 +92,17 @@ class CompleteTestRequest(BaseModel):
     test_result: str
     rto_achieved: int
     rpo_achieved: int
-    findings: List[str]
-    recommendations: List[str]
-    lessons_learned: List[str]
+    findings: list[str]
+    recommendations: list[str]
+    lessons_learned: list[str]
 
 
 class DeclareIncidentRequest(BaseModel):
     incident_name: str
     disaster_type: DisasterType
     declared_by: str
-    affected_locations: List[str]
-    affected_processes: List[UUID]
+    affected_locations: list[str]
+    affected_processes: list[UUID]
     impact_description: str
     plan_activated: UUID
 
@@ -103,11 +113,11 @@ class AddTeamMemberRequest(BaseModel):
     primary_contact: str
     primary_phone: str
     primary_email: str
-    responsibilities: List[str]
-    alternate_contact: Optional[str] = None
-    alternate_phone: Optional[str] = None
-    backup_person: Optional[str] = None
-    backup_phone: Optional[str] = None
+    responsibilities: list[str]
+    alternate_contact: str | None = None
+    alternate_phone: str | None = None
+    backup_person: str | None = None
+    backup_phone: str | None = None
 
 
 @router.post("/processes", response_model=BusinessProcess)
@@ -141,10 +151,10 @@ async def get_process(process_id: UUID):
     return process
 
 
-@router.get("/processes", response_model=List[BusinessProcess])
+@router.get("/processes", response_model=list[BusinessProcess])
 async def list_processes(
-    criticality: Optional[CriticalityLevel] = Query(None),
-    business_unit: Optional[str] = Query(None)
+    criticality: CriticalityLevel | None = Query(None),
+    business_unit: str | None = Query(None)
 ):
     """List business processes"""
     return await business_continuity_service.list_processes(criticality, business_unit)
@@ -177,10 +187,10 @@ async def get_bcp(plan_id: UUID):
     return plan
 
 
-@router.get("/plans", response_model=List[BusinessContinuityPlan])
+@router.get("/plans", response_model=list[BusinessContinuityPlan])
 async def list_bcps(
-    status: Optional[BCPStatus] = Query(None),
-    business_unit: Optional[str] = Query(None)
+    status: BCPStatus | None = Query(None),
+    business_unit: str | None = Query(None)
 ):
     """List BCPs"""
     return await business_continuity_service.list_bcps(status, business_unit)
@@ -217,10 +227,10 @@ async def create_drp(request: CreateDRPRequest):
     )
 
 
-@router.get("/dr-plans", response_model=List[DisasterRecoveryPlan])
+@router.get("/dr-plans", response_model=list[DisasterRecoveryPlan])
 async def list_drps(
-    status: Optional[BCPStatus] = Query(None),
-    criticality: Optional[CriticalityLevel] = Query(None)
+    status: BCPStatus | None = Query(None),
+    criticality: CriticalityLevel | None = Query(None)
 ):
     """List DRPs"""
     return await business_continuity_service.list_drps(status, criticality)
@@ -260,7 +270,7 @@ async def complete_test(test_id: UUID, request: CompleteTestRequest):
     return test
 
 
-@router.get("/plans/{plan_id}/tests", response_model=List[BCPTest])
+@router.get("/plans/{plan_id}/tests", response_model=list[BCPTest])
 async def get_plan_tests(plan_id: UUID):
     """Get tests for plan"""
     return await business_continuity_service.get_plan_tests(plan_id)
@@ -290,7 +300,7 @@ async def start_recovery(incident_id: UUID):
 
 
 @router.put("/incidents/{incident_id}/complete-recovery", response_model=BCPIncident)
-async def complete_recovery(incident_id: UUID, lessons_learned: List[str]):
+async def complete_recovery(incident_id: UUID, lessons_learned: list[str]):
     """Complete incident recovery"""
     incident = await business_continuity_service.complete_recovery(incident_id, lessons_learned)
     if not incident:
@@ -307,7 +317,7 @@ async def close_incident(incident_id: UUID, financial_impact: Decimal):
     return incident
 
 
-@router.get("/incidents/active", response_model=List[BCPIncident])
+@router.get("/incidents/active", response_model=list[BCPIncident])
 async def get_active_incidents():
     """Get active incidents"""
     return await business_continuity_service.get_active_incidents()
@@ -330,14 +340,14 @@ async def add_team_member(request: AddTeamMemberRequest):
     )
 
 
-@router.get("/teams/{team_name}", response_model=List[CrisisTeamMember])
+@router.get("/teams/{team_name}", response_model=list[CrisisTeamMember])
 async def get_team(team_name: str):
     """Get crisis team"""
     return await business_continuity_service.get_crisis_team(team_name)
 
 
 @router.get("/metrics", response_model=BCPMetrics)
-async def get_metrics(business_unit: Optional[str] = Query(None)):
+async def get_metrics(business_unit: str | None = Query(None)):
     """Get BCP metrics"""
     return await business_continuity_service.generate_metrics(business_unit)
 

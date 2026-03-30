@@ -1,6 +1,6 @@
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -127,15 +127,15 @@ async def mock_bank_sync(
                 current_balance=balance,
                 available_balance=balance * 0.95,  # 95% available
                 is_active=True,
-                last_sync=datetime.utcnow()
+                last_sync=datetime.now(UTC)
             )
 
             db_session.add(linked_account)
 
         # Update bank link status
         bank_link.status = BankLinkStatus.ACTIVE
-        bank_link.last_sync = datetime.utcnow()
-        bank_link.expires_at = datetime.utcnow() + timedelta(days=90)  # 90 day expiry
+        bank_link.last_sync = datetime.now(UTC)
+        bank_link.expires_at = datetime.now(UTC) + timedelta(days=90)  # 90 day expiry
 
         db_session.commit()
 
@@ -383,7 +383,7 @@ async def import_to_internal_account(
     num_transactions = random.randint(10, 30)
     for i in range(num_transactions):
         days_ago = random.randint(1, 30)
-        tx_date = datetime.utcnow() - timedelta(days=days_ago)
+        tx_date = datetime.now(UTC) - timedelta(days=days_ago)
 
         # Random transaction
         is_debit = random.random() > 0.3  # 70% debits
@@ -495,7 +495,7 @@ async def convert_currency(
         amount=amount,
         converted_amount=round(converted_amount, 2),
         exchange_rate=round(exchange_rate, 6),
-        conversion_date=datetime.utcnow()
+        conversion_date=datetime.now(UTC)
     )
 
 @router.get("/statements/generate")
@@ -572,7 +572,7 @@ async def generate_statement(
             }
             for t in transactions
         ],
-        "generated_at": datetime.utcnow().isoformat()
+        "generated_at": datetime.now(UTC).isoformat()
     }
 
     # Log statement generation

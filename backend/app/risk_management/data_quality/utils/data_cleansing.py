@@ -1,23 +1,23 @@
 """Data Cleansing Utilities"""
 
-from typing import List, Dict, Any, Optional, Callable
-from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 
 @dataclass
 class CleansingResult:
     original_value: Any
     cleansed_value: Any
-    transformations_applied: List[str]
+    transformations_applied: list[str]
     was_modified: bool
 
 
 class DataCleansingUtilities:
     def __init__(self):
-        self._transformations: Dict[str, Callable] = {}
+        self._transformations: dict[str, Callable] = {}
         self._register_default_transformations()
 
     def _register_default_transformations(self) -> None:
@@ -35,7 +35,7 @@ class DataCleansingUtilities:
         self._transformations["remove_null_chars"] = self._remove_null_chars
 
     def cleanse_value(
-        self, value: Any, transformations: List[str]
+        self, value: Any, transformations: list[str]
     ) -> CleansingResult:
         original = value
         current_value = value
@@ -57,8 +57,8 @@ class DataCleansingUtilities:
         )
 
     def cleanse_record(
-        self, record: Dict[str, Any], field_transformations: Dict[str, List[str]]
-    ) -> Dict[str, Any]:
+        self, record: dict[str, Any], field_transformations: dict[str, list[str]]
+    ) -> dict[str, Any]:
         cleansed = record.copy()
 
         for field_name, transformations in field_transformations.items():
@@ -69,8 +69,8 @@ class DataCleansingUtilities:
         return cleansed
 
     def cleanse_dataset(
-        self, data: List[Dict[str, Any]], field_transformations: Dict[str, List[str]]
-    ) -> List[Dict[str, Any]]:
+        self, data: list[dict[str, Any]], field_transformations: dict[str, list[str]]
+    ) -> list[dict[str, Any]]:
         return [self.cleanse_record(record, field_transformations) for record in data]
 
     def _trim_whitespace(self, value: Any) -> Any:
@@ -118,7 +118,7 @@ class DataCleansingUtilities:
             digits = re.sub(r"\D", "", value)
             if len(digits) == 10:
                 return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
-            elif len(digits) == 11 and digits[0] == "1":
+            if len(digits) == 11 and digits[0] == "1":
                 digits = digits[1:]
                 return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
         return value
@@ -154,7 +154,7 @@ class DataCleansingUtilities:
     def register_transformation(self, name: str, func: Callable) -> None:
         self._transformations[name] = func
 
-    def get_available_transformations(self) -> List[str]:
+    def get_available_transformations(self) -> list[str]:
         return list(self._transformations.keys())
 
 

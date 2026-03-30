@@ -6,7 +6,7 @@ and automatic lockout capabilities.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 from app.security.anomaly_detection import (
@@ -31,7 +31,8 @@ class TestLoginPatternAnalysis:
         user_id = 1
         ip_address = "192.168.1.1"
         location = "New York, NY"
-        timestamp = datetime.utcnow()
+        # Use a fixed "normal" business hour (10 AM UTC) to avoid time-dependent failures
+        timestamp = datetime.now(timezone.utc).replace(hour=10, minute=0, second=0)
 
         risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
             db_session, user_id, ip_address, location, timestamp
@@ -47,7 +48,7 @@ class TestLoginPatternAnalysis:
         ip_address = "192.168.1.2"
         location = "New York, NY"
         # 3 AM is unusual for most users
-        timestamp = datetime.utcnow().replace(hour=3, minute=0, second=0)
+        timestamp = datetime.now(timezone.utc).replace(hour=3, minute=0, second=0)
 
         risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
             db_session, user_id, ip_address, location, timestamp
@@ -68,7 +69,7 @@ class TestLoginPatternAnalysis:
             user_id,
             old_ip,
             old_location,
-            datetime.utcnow() - timedelta(minutes=60),
+            datetime.now(timezone.utc) - timedelta(minutes=60),
         )
 
         # Try to login from different location immediately
@@ -76,7 +77,7 @@ class TestLoginPatternAnalysis:
         new_location = "Tokyo, Japan"  # Impossible to travel to in 1 hour
 
         risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
-            db_session, user_id, new_ip, new_location, datetime.utcnow()
+            db_session, user_id, new_ip, new_location, datetime.now(timezone.utc)
         )
 
         assert "impossible_travel" in anomalies or risk_score > 0.5
@@ -93,13 +94,13 @@ class TestLoginPatternAnalysis:
             user_id,
             first_ip,
             location,
-            datetime.utcnow() - timedelta(days=1),
+            datetime.now(timezone.utc) - timedelta(days=1),
         )
 
         # Login from new IP
         new_ip = "192.168.1.100"
         risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
-            db_session, user_id, new_ip, location, datetime.utcnow()
+            db_session, user_id, new_ip, location, datetime.now(timezone.utc)
         )
 
         assert "new_ip_address" in anomalies or len(anomalies) > 0
@@ -112,7 +113,7 @@ class TestLoginPatternAnalysis:
 
         # Create multiple rapid login attempts
         for i in range(5):
-            timestamp = datetime.utcnow() + timedelta(seconds=i)
+            timestamp = datetime.now(timezone.utc) + timedelta(seconds=i)
             risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
                 db_session, user_id, ip_address, location, timestamp
             )
@@ -130,7 +131,7 @@ class TestTransactionMonitoring:
         amount = 50.0  # Reasonable amount
         merchant_category = "grocery"
         location = "New York, NY"
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         risk_score, anomalies = AnomalyDetection.analyze_transaction(
             db_session, user_id, amount, merchant_category, location, timestamp
@@ -146,7 +147,7 @@ class TestTransactionMonitoring:
         amount = 5000.0  # Large amount
         merchant_category = "electronics"
         location = "New York, NY"
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         risk_score, anomalies = AnomalyDetection.analyze_transaction(
             db_session, user_id, amount, merchant_category, location, timestamp
@@ -161,7 +162,7 @@ class TestTransactionMonitoring:
         amount = 100.0
         unusual_category = "cryptocurrency_exchange"  # Unusual for most users
         location = "New York, NY"
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         risk_score, anomalies = AnomalyDetection.analyze_transaction(
             db_session, user_id, amount, unusual_category, location, timestamp
@@ -176,7 +177,7 @@ class TestTransactionMonitoring:
 
         # Create multiple rapid transactions
         for i in range(5):
-            timestamp = datetime.utcnow() + timedelta(seconds=i * 10)
+            timestamp = datetime.now(timezone.utc) + timedelta(seconds=i * 10)
             amount = 50.0 + i * 10
             risk_score, anomalies = AnomalyDetection.analyze_transaction(
                 db_session, user_id, amount, "retail", location, timestamp
@@ -197,7 +198,7 @@ class TestTransactionMonitoring:
             amount,
             "retail",
             "New York, NY",
-            datetime.utcnow() - timedelta(hours=1),
+            datetime.now(timezone.utc) - timedelta(hours=1),
         )
 
         # Transaction in Tokyo minutes later (impossible)
@@ -207,7 +208,7 @@ class TestTransactionMonitoring:
             amount,
             "retail",
             "Tokyo, Japan",
-            datetime.utcnow(),
+            datetime.now(timezone.utc),
         )
 
         assert risk_score > 0.0 or len(anomalies) > 0
@@ -222,8 +223,8 @@ class TestRiskScoring:
 
         # Test various login scenarios
         test_cases = [
-            (11, "192.168.1.11", "New York, NY", datetime.utcnow()),
-            (12, "10.0.0.1", "London, UK", datetime.utcnow().replace(hour=2)),
+            (11, "192.168.1.11", "New York, NY", datetime.now(timezone.utc)),
+            (12, "10.0.0.1", "London, UK", datetime.now(timezone.utc).replace(hour=2)),
         ]
 
         for user_id, ip, location, timestamp in test_cases:
@@ -242,7 +243,7 @@ class TestRiskScoring:
             user_id,
             "10.0.0.2",
             "Tokyo, Japan",
-            datetime.utcnow().replace(hour=3),  # Unusual hour + new location
+            datetime.now(timezone.utc).replace(hour=3),  # Unusual hour + new location
         )
 
         # Risk should be higher with multiple anomalies
@@ -269,7 +270,7 @@ class TestAutomaticLockout:
         # Simulate multiple failed login attempts
         failed_count = 0
         for attempt in range(6):
-            timestamp = datetime.utcnow() + timedelta(seconds=attempt)
+            timestamp = datetime.now(timezone.utc) + timedelta(seconds=attempt)
             risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
                 db_session, user_id, ip_address, location, timestamp
             )
@@ -355,7 +356,7 @@ class TestAnomalyDetectionIntegration:
             user_id,
             ip_address,
             location,
-            datetime.utcnow().replace(hour=3),
+            datetime.now(timezone.utc).replace(hour=3),
         )
 
         # 2. If login has high risk, transaction should also be scrutinized
@@ -366,7 +367,7 @@ class TestAnomalyDetectionIntegration:
                 500.0,  # Large transaction
                 "retail",
                 location,
-                datetime.utcnow(),
+                datetime.now(timezone.utc),
             )
 
             assert transaction_risk >= 0.0
@@ -378,7 +379,7 @@ class TestAnomalyDetectionIntegration:
 
         # Suspicious login from new location
         login_risk, _ = AnomalyDetection.analyze_login_attempt(
-            db_session, user_id, ip_address, "Tokyo, Japan", datetime.utcnow()
+            db_session, user_id, ip_address, "Tokyo, Japan", datetime.now(timezone.utc)
         )
 
         # Immediately followed by large transaction
@@ -388,7 +389,7 @@ class TestAnomalyDetectionIntegration:
             5000.0,
             "cryptocurrency_exchange",
             "Tokyo, Japan",
-            datetime.utcnow(),
+            datetime.now(timezone.utc),
         )
 
         # Combined risks should be concerning
@@ -404,7 +405,7 @@ class TestEdgeCases:
         user_id = 20
 
         risk_score, anomalies = AnomalyDetection.analyze_transaction(
-            db_session, user_id, 0.0, "retail", "New York, NY", datetime.utcnow()
+            db_session, user_id, 0.0, "retail", "New York, NY", datetime.now(timezone.utc)
         )
 
         assert 0.0 <= risk_score <= 1.0
@@ -414,7 +415,7 @@ class TestEdgeCases:
         user_id = 21
 
         risk_score, anomalies = AnomalyDetection.analyze_transaction(
-            db_session, user_id, 999999.99, "real_estate", "New York, NY", datetime.utcnow()
+            db_session, user_id, 999999.99, "real_estate", "New York, NY", datetime.now(timezone.utc)
         )
 
         assert risk_score > 0.0  # Should be flagged as high risk
@@ -424,7 +425,7 @@ class TestEdgeCases:
         user_id = 22
 
         risk_score, anomalies = AnomalyDetection.analyze_login_attempt(
-            db_session, user_id, "192.168.1.22", "", datetime.utcnow()
+            db_session, user_id, "192.168.1.22", "", datetime.now(timezone.utc)
         )
 
         assert 0.0 <= risk_score <= 1.0

@@ -1,13 +1,13 @@
 """GDPR Compliance API Routes"""
 
-from typing import List, Optional
-from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.gdpr_models import (
-    ProcessingActivity, DataSubjectConsent, DataSubjectAccessRequest,
-    DataBreach, DataProtectionImpactAssessment, LawfulBasis, DSARType, DSARStatus
+    DSARType,
+    LawfulBasis,
 )
 from ..services.gdpr_service import gdpr_service
 
@@ -18,17 +18,17 @@ class ProcessingActivityRequest(BaseModel):
     activity_name: str
     processing_purpose: str
     lawful_basis: LawfulBasis
-    data_categories: List[str]
-    data_subjects: List[str]
+    data_categories: list[str]
+    data_subjects: list[str]
     retention_period: str
     data_controller: str
-    data_processor: Optional[str] = None
+    data_processor: str | None = None
 
 
 class ConsentRequest(BaseModel):
     data_subject_id: str
     consent_purpose: str
-    consent_scope: List[str]
+    consent_scope: list[str]
     collection_method: str
 
 
@@ -42,7 +42,7 @@ class DSARRequest(BaseModel):
 
 class BreachRequest(BaseModel):
     breach_description: str
-    data_categories_affected: List[str]
+    data_categories_affected: list[str]
     number_of_records: int
     discovered_by: str
 
@@ -68,7 +68,7 @@ async def register_processing_activity(request: ProcessingActivityRequest):
     return {"activity_id": str(activity.activity_id), "risk_level": activity.risk_level}
 
 
-@router.get("/processing-activities", response_model=List[dict])
+@router.get("/processing-activities", response_model=list[dict])
 async def list_processing_activities(high_risk_only: bool = False):
     """List all registered processing activities"""
     if high_risk_only:
@@ -106,7 +106,7 @@ async def withdraw_consent(consent_id: UUID):
     return {"consent_id": str(consent.consent_id), "withdrawn": consent.withdrawn}
 
 
-@router.get("/consents/subject/{subject_id}", response_model=List[dict])
+@router.get("/consents/subject/{subject_id}", response_model=list[dict])
 async def get_subject_consents(subject_id: str):
     """Get all consents for a data subject"""
     consents = await gdpr_service.repository.find_consents_by_subject(subject_id)
@@ -133,7 +133,7 @@ async def complete_dsar(dsar_id: UUID, completed_by: str = Query(...), response_
     return {"dsar_id": str(dsar.dsar_id), "status": dsar.status.value}
 
 
-@router.get("/dsar/pending", response_model=List[dict])
+@router.get("/dsar/pending", response_model=list[dict])
 async def list_pending_dsars():
     """List all pending DSARs"""
     dsars = await gdpr_service.repository.find_pending_dsars()
@@ -165,7 +165,7 @@ async def notify_authority(breach_id: UUID, notification_reference: str = Query(
     return {"breach_id": str(breach.breach_id), "authority_notified": breach.authority_notified}
 
 
-@router.get("/breaches/open", response_model=List[dict])
+@router.get("/breaches/open", response_model=list[dict])
 async def list_open_breaches():
     """List all open data breaches"""
     breaches = await gdpr_service.repository.find_open_breaches()
@@ -184,7 +184,7 @@ async def conduct_dpia(request: DPIARequest):
     return {"dpia_id": str(dpia.dpia_id), "overall_risk_level": dpia.overall_risk_level, "dpo_consultation_required": dpia.dpo_consultation_required}
 
 
-@router.get("/dpia/pending-review", response_model=List[dict])
+@router.get("/dpia/pending-review", response_model=list[dict])
 async def list_pending_dpias():
     """List DPIAs pending review"""
     dpias = await gdpr_service.repository.find_dpias_pending_review()

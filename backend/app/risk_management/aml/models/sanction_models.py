@@ -4,11 +4,11 @@ Sanctions Screening Models
 Defines data structures for sanctions list screening and management.
 """
 
+from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class SanctionListType(str, Enum):
@@ -53,32 +53,32 @@ class SanctionListEntry(BaseModel):
     # Entity information
     entity_type: EntityType
     primary_name: str
-    aliases: List[str] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
 
     # Identification
-    identifiers: Dict[str, str] = Field(default_factory=dict)  # passport, id_number, etc.
+    identifiers: dict[str, str] = Field(default_factory=dict)  # passport, id_number, etc.
 
     # Location information
-    addresses: List[Dict[str, str]] = Field(default_factory=list)
-    nationalities: List[str] = Field(default_factory=list)
-    countries_of_birth: List[str] = Field(default_factory=list)
+    addresses: list[dict[str, str]] = Field(default_factory=list)
+    nationalities: list[str] = Field(default_factory=list)
+    countries_of_birth: list[str] = Field(default_factory=list)
 
     # Dates
-    date_of_birth: Optional[date] = None
-    date_of_birth_range: Optional[Dict[str, date]] = None
-    place_of_birth: Optional[str] = None
+    date_of_birth: date | None = None
+    date_of_birth_range: dict[str, date] | None = None
+    place_of_birth: str | None = None
 
     # Sanction details
-    sanction_programs: List[str] = Field(default_factory=list)
-    sanction_reasons: List[str] = Field(default_factory=list)
-    listing_date: Optional[date] = None
+    sanction_programs: list[str] = Field(default_factory=list)
+    sanction_reasons: list[str] = Field(default_factory=list)
+    listing_date: date | None = None
 
     # Additional information
-    remarks: Optional[str] = None
-    source_url: Optional[str] = None
+    remarks: str | None = None
+    source_url: str | None = None
 
     # Metadata
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = True
 
 
@@ -88,25 +88,25 @@ class ScreeningRequest(BaseModel):
 
     # Entity to screen
     entity_type: EntityType
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     entity_name: str
-    aliases: List[str] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
 
     # Additional identifiers
-    date_of_birth: Optional[date] = None
-    nationalities: List[str] = Field(default_factory=list)
-    addresses: List[Dict[str, str]] = Field(default_factory=list)
-    identifiers: Dict[str, str] = Field(default_factory=dict)
+    date_of_birth: date | None = None
+    nationalities: list[str] = Field(default_factory=list)
+    addresses: list[dict[str, str]] = Field(default_factory=list)
+    identifiers: dict[str, str] = Field(default_factory=dict)
 
     # Screening parameters
-    lists_to_screen: List[SanctionListType] = Field(default_factory=list)
+    lists_to_screen: list[SanctionListType] = Field(default_factory=list)
     match_threshold: float = 0.8
     fuzzy_matching: bool = True
 
     # Request metadata
     screening_type: str = "standard"  # standard, enhanced, batch
     requested_by: str
-    requested_at: datetime = Field(default_factory=datetime.utcnow)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     priority: str = "normal"
 
 
@@ -126,13 +126,13 @@ class MatchDetail(BaseModel):
     dob_match: bool = False
     nationality_match: bool = False
     address_match: bool = False
-    identifier_matches: List[str] = Field(default_factory=list)
+    identifier_matches: list[str] = Field(default_factory=list)
 
     # Matched entity details
     matched_name: str
-    matched_aliases: List[str] = Field(default_factory=list)
-    matched_identifiers: Dict[str, str] = Field(default_factory=dict)
-    sanction_programs: List[str] = Field(default_factory=list)
+    matched_aliases: list[str] = Field(default_factory=list)
+    matched_identifiers: dict[str, str] = Field(default_factory=dict)
+    sanction_programs: list[str] = Field(default_factory=list)
 
 
 class ScreeningResult(BaseModel):
@@ -142,7 +142,7 @@ class ScreeningResult(BaseModel):
 
     # Screened entity
     entity_type: EntityType
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     entity_name: str
 
     # Overall result
@@ -151,20 +151,20 @@ class ScreeningResult(BaseModel):
     highest_match_score: float = 0.0
 
     # Individual matches
-    matches: List[MatchDetail] = Field(default_factory=list)
+    matches: list[MatchDetail] = Field(default_factory=list)
 
     # Lists screened
-    lists_screened: List[SanctionListType] = Field(default_factory=list)
+    lists_screened: list[SanctionListType] = Field(default_factory=list)
 
     # Processing info
-    screening_date: datetime = Field(default_factory=datetime.utcnow)
+    screening_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processing_time_ms: int = 0
 
     # Status
     status: MatchStatus = MatchStatus.PENDING_REVIEW
-    reviewed_by: Optional[str] = None
-    reviewed_at: Optional[datetime] = None
-    review_notes: Optional[str] = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    review_notes: str | None = None
 
 
 class MatchReview(BaseModel):
@@ -179,16 +179,16 @@ class MatchReview(BaseModel):
 
     # Reviewer information
     reviewed_by: str
-    reviewed_at: datetime = Field(default_factory=datetime.utcnow)
+    reviewed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Supporting evidence
-    evidence_notes: Optional[str] = None
-    supporting_documents: List[str] = Field(default_factory=list)
+    evidence_notes: str | None = None
+    supporting_documents: list[str] = Field(default_factory=list)
 
     # Escalation
     escalated: bool = False
-    escalated_to: Optional[str] = None
-    escalation_reason: Optional[str] = None
+    escalated_to: str | None = None
+    escalation_reason: str | None = None
 
 
 class SanctionAlert(BaseModel):
@@ -203,26 +203,26 @@ class SanctionAlert(BaseModel):
 
     # Entity information
     entity_type: EntityType
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     entity_name: str
 
     # Match information
     match_list: SanctionListType
     match_score: float
     matched_name: str
-    sanction_programs: List[str] = Field(default_factory=list)
+    sanction_programs: list[str] = Field(default_factory=list)
 
     # Assignment
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
 
     # Resolution
-    resolution: Optional[str] = None
-    resolved_by: Optional[str] = None
-    resolved_at: Optional[datetime] = None
+    resolution: str | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    due_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    due_date: datetime | None = None
 
 
 class BatchScreeningJob(BaseModel):
@@ -235,7 +235,7 @@ class BatchScreeningJob(BaseModel):
 
     # Scope
     total_entities: int = 0
-    lists_to_screen: List[SanctionListType] = Field(default_factory=list)
+    lists_to_screen: list[SanctionListType] = Field(default_factory=list)
 
     # Progress
     entities_processed: int = 0
@@ -244,8 +244,8 @@ class BatchScreeningJob(BaseModel):
 
     # Status
     status: str = "pending"  # pending, running, completed, failed
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Configuration
     match_threshold: float = 0.8
@@ -253,7 +253,7 @@ class BatchScreeningJob(BaseModel):
 
     # Created by
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SanctionListUpdate(BaseModel):
@@ -273,9 +273,9 @@ class SanctionListUpdate(BaseModel):
     removed_entries: int = 0
 
     # Processing
-    processed_at: datetime = Field(default_factory=datetime.utcnow)
+    processed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processing_time_seconds: int = 0
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
     # Status
     status: str = "completed"
@@ -289,25 +289,25 @@ class WatchlistEntry(BaseModel):
     # Entity information
     entity_type: EntityType
     entity_name: str
-    aliases: List[str] = Field(default_factory=list)
-    identifiers: Dict[str, str] = Field(default_factory=dict)
+    aliases: list[str] = Field(default_factory=list)
+    identifiers: dict[str, str] = Field(default_factory=dict)
 
     # Watchlist details
     reason: str
     risk_level: str
     added_by: str
-    added_at: datetime = Field(default_factory=datetime.utcnow)
+    added_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Validity
-    valid_from: datetime = Field(default_factory=datetime.utcnow)
-    valid_until: Optional[datetime] = None
+    valid_from: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    valid_until: datetime | None = None
     is_active: bool = True
 
     # Review
-    last_reviewed: Optional[datetime] = None
-    reviewed_by: Optional[str] = None
-    next_review: Optional[datetime] = None
+    last_reviewed: datetime | None = None
+    reviewed_by: str | None = None
+    next_review: datetime | None = None
 
     # Notes
-    notes: Optional[str] = None
-    related_case_ids: List[UUID] = Field(default_factory=list)
+    notes: str | None = None
+    related_case_ids: list[UUID] = Field(default_factory=list)

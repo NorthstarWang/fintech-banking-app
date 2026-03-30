@@ -1,11 +1,11 @@
 """Compliance Testing API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
 from uuid import UUID
-from decimal import Decimal
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.compliance_testing_models import TestingType
 from ..services.compliance_testing_service import compliance_testing_service
 
@@ -34,7 +34,7 @@ class TestExecutionRequest(BaseModel):
     sample_size: int
     items_tested: int
     exceptions_found: int
-    evidence_references: List[str]
+    evidence_references: list[str]
     observations: str
     conclusion: str
 
@@ -57,7 +57,7 @@ class RegulatoryChangeRequest(BaseModel):
     summary: str
     detailed_description: str
     impact_assessment: str
-    affected_areas: List[str]
+    affected_areas: list[str]
     assigned_to: str
     implementation_deadline: date
 
@@ -75,7 +75,7 @@ async def create_test_plan(request: TestPlanCreateRequest):
     return {"plan_id": str(plan.plan_id), "plan_reference": plan.plan_reference}
 
 
-@router.get("/test-plans", response_model=List[dict])
+@router.get("/test-plans", response_model=list[dict])
 async def list_test_plans(pending_only: bool = False):
     if pending_only:
         plans = await compliance_testing_service.repository.find_pending_test_plans()
@@ -96,7 +96,7 @@ async def execute_test(request: TestExecutionRequest):
     return {"execution_id": str(execution.execution_id), "test_result": execution.test_result.value}
 
 
-@router.get("/executions", response_model=List[dict])
+@router.get("/executions", response_model=list[dict])
 async def list_executions(failed_only: bool = False):
     if failed_only:
         executions = await compliance_testing_service.repository.find_failed_executions()
@@ -115,7 +115,7 @@ async def record_exception(request: ExceptionRequest):
     return {"exception_id": str(exception.exception_id), "exception_reference": exception.exception_reference}
 
 
-@router.get("/exceptions", response_model=List[dict])
+@router.get("/exceptions", response_model=list[dict])
 async def list_exceptions(open_only: bool = False):
     if open_only:
         exceptions = await compliance_testing_service.repository.find_open_exceptions()
@@ -152,7 +152,7 @@ async def record_regulatory_change(request: RegulatoryChangeRequest):
     return {"change_id": str(change.change_id), "change_reference": change.change_reference}
 
 
-@router.get("/regulatory-changes", response_model=List[dict])
+@router.get("/regulatory-changes", response_model=list[dict])
 async def list_regulatory_changes(pending_only: bool = False):
     if pending_only:
         changes = await compliance_testing_service.repository.find_pending_regulatory_changes()

@@ -3,7 +3,7 @@ Mock implementation for business routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.repositories.data_manager import data_manager
 import uuid
 
@@ -75,7 +75,7 @@ async def create_business_account(data: Dict[str, Any], current_user: Dict[str, 
         "interest_rate": interest_rate,
         "industry": data.get("industry", ""),
         "annual_revenue": data.get("annual_revenue", 0.0),
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "authorized_users": [current_user["username"]]
     }
     
@@ -122,7 +122,7 @@ async def apply_for_credit_line(data: Dict[str, Any], current_user: Dict[str, An
         "term_months": data.get("term_months", 24),
         "interest_rate": interest_rate,
         "status": "approved",
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.business_credit_lines.append(credit_line)
@@ -144,12 +144,12 @@ async def process_payroll(data: Dict[str, Any], current_user: Dict[str, Any] = D
     payroll = {
         "payroll_id": payroll_id,
         "business_account_id": data["business_account_id"],
-        "payroll_date": data.get("payroll_date", datetime.utcnow().isoformat()),
+        "payroll_date": data.get("payroll_date", datetime.now(timezone.utc).isoformat()),
         "employees": data.get("employees", []),
         "total_gross": data.get("total_gross", 0.0),
         "total_net": data.get("total_net", 0.0),
         "total_taxes": data.get("total_taxes", 0.0),
-        "processed_at": datetime.utcnow().isoformat(),
+        "processed_at": datetime.now(timezone.utc).isoformat(),
         "status": "completed"
     }
     
@@ -187,7 +187,7 @@ async def create_invoice(data: Dict[str, Any], current_user: Dict[str, Any] = De
         "line_items": data.get("line_items", []),
         "total_amount": total_amount,
         "status": "pending",
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.business_invoices.append(invoice)
@@ -213,7 +213,7 @@ async def record_expense(data: Dict[str, Any], current_user: Dict[str, Any] = De
         "vendor": data.get("vendor", ""),
         "tax_deductible": data.get("tax_deductible", False),
         "receipt_url": data.get("receipt_url", ""),
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Deduct expense from account balance
@@ -274,7 +274,7 @@ async def create_vendor(data: Dict[str, Any], current_user: Dict[str, Any] = Dep
         "contact_email": data.get("contact_email", ""),
         "payment_terms": data.get("payment_terms", "net_30"),
         "tax_id": data.get("tax_id", ""),
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.business_vendors.append(vendor)
@@ -292,7 +292,7 @@ async def get_cash_flow_analysis(account_id: str, current_user: Dict[str, Any] =
         raise HTTPException(status_code=404, detail="Business account not found")
     
     # Calculate inflows and outflows
-    current_month_start = datetime.utcnow().replace(day=1)
+    current_month_start = datetime.now(timezone.utc).replace(day=1)
     
     # Inflows from paid invoices
     inflows = sum(inv["total_amount"] for inv in data_manager.business_invoices 
@@ -347,7 +347,7 @@ async def add_authorized_user(account_id: str, data: Dict[str, Any], current_use
         "role": data.get("role"),
         "permissions": data.get("permissions", []),
         "added_by": current_user["username"],
-        "added_at": datetime.utcnow().isoformat()
+        "added_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Add username to account's authorized users list
@@ -389,7 +389,7 @@ async def create_recurring_payment(data: Dict[str, Any], current_user: Dict[str,
         "end_date": data.get("end_date"),
         "next_payment_date": next_payment_date.isoformat(),
         "status": "active",
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.business_recurring_payments.append(recurring_payment)
@@ -430,7 +430,7 @@ async def apply_for_loan(data: Dict[str, Any], current_user: Dict[str, Any] = De
         "years_in_business": years_in_business,
         "estimated_rate": estimated_rate,
         "status": status,
-        "applied_at": datetime.utcnow().isoformat()
+        "applied_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.business_loans.append(loan_application)
@@ -458,8 +458,8 @@ async def generate_api_key(account_id: str, data: Dict[str, Any], current_user: 
         "key_name": data.get("key_name"),
         "permissions": data.get("permissions", []),
         "expires_in_days": data.get("expires_in_days", 365),
-        "expires_at": (datetime.utcnow() + timedelta(days=data.get("expires_in_days", 365))).isoformat(),
-        "created_at": datetime.utcnow().isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=data.get("expires_in_days", 365))).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user["username"]
     }
     

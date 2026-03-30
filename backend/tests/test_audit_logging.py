@@ -7,7 +7,7 @@ and comprehensive event logging capabilities.
 
 import pytest
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 from app.security.audit_logging import AuditLog, AuditLogging
@@ -246,7 +246,7 @@ class TestTamperDetection:
             resource="fake_resource",
             details={},
             status="success",
-            created_at=datetime.utcnow() - timedelta(days=30),
+            created_at=datetime.now(timezone.utc) - timedelta(days=30),
         )
 
         db_session.add(fake_log)
@@ -286,7 +286,7 @@ class TestImmutableLogs:
         original_time = log.created_at
 
         # Try to modify creation time
-        log.created_at = datetime.utcnow() - timedelta(days=365)
+        log.created_at = datetime.now(timezone.utc) - timedelta(days=365)
         db_session.commit()
 
         # In a truly immutable system, this would be prevented
@@ -401,7 +401,7 @@ class TestAuditLogQuerying:
         user_id = 20
 
         # Create logs with different timestamps
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for i in range(3):
             log = AuditLog(
                 user_id=user_id,

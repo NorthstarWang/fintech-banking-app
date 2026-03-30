@@ -4,13 +4,17 @@ Entity Resolution Repository
 Data access layer for entity resolution.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 from uuid import UUID
 
 from ..models.entity_resolution_models import (
-    MasterEntity, SourceRecord, MatchCandidate, MergeOperation,
-    SplitOperation, ResolutionJob, EntityType, ResolutionStatus
+    EntityType,
+    MasterEntity,
+    MatchCandidate,
+    MergeOperation,
+    ResolutionJob,
+    ResolutionStatus,
+    SourceRecord,
+    SplitOperation,
 )
 
 
@@ -18,19 +22,19 @@ class EntityResolutionRepository:
     """Repository for entity resolution data access"""
 
     def __init__(self):
-        self._master_entities: Dict[UUID, MasterEntity] = {}
-        self._source_records: Dict[str, SourceRecord] = {}
-        self._candidates: Dict[UUID, MatchCandidate] = {}
-        self._merges: Dict[UUID, MergeOperation] = {}
-        self._splits: Dict[UUID, SplitOperation] = {}
-        self._jobs: Dict[UUID, ResolutionJob] = {}
+        self._master_entities: dict[UUID, MasterEntity] = {}
+        self._source_records: dict[str, SourceRecord] = {}
+        self._candidates: dict[UUID, MatchCandidate] = {}
+        self._merges: dict[UUID, MergeOperation] = {}
+        self._splits: dict[UUID, SplitOperation] = {}
+        self._jobs: dict[UUID, ResolutionJob] = {}
 
     async def create_master_entity(self, entity: MasterEntity) -> MasterEntity:
         """Create a master entity"""
         self._master_entities[entity.entity_id] = entity
         return entity
 
-    async def get_master_entity(self, entity_id: UUID) -> Optional[MasterEntity]:
+    async def get_master_entity(self, entity_id: UUID) -> MasterEntity | None:
         """Get master entity by ID"""
         return self._master_entities.get(entity_id)
 
@@ -46,11 +50,11 @@ class EntityResolutionRepository:
             return True
         return False
 
-    async def find_by_entity_type(self, entity_type: EntityType) -> List[MasterEntity]:
+    async def find_by_entity_type(self, entity_type: EntityType) -> list[MasterEntity]:
         """Find master entities by type"""
         return [e for e in self._master_entities.values() if e.entity_type == entity_type]
 
-    async def search_by_name(self, name: str) -> List[MasterEntity]:
+    async def search_by_name(self, name: str) -> list[MasterEntity]:
         """Search master entities by name"""
         name_lower = name.lower()
         results = []
@@ -67,7 +71,7 @@ class EntityResolutionRepository:
         self._source_records[record.record_id] = record
         return record
 
-    async def get_source_record(self, record_id: str) -> Optional[SourceRecord]:
+    async def get_source_record(self, record_id: str) -> SourceRecord | None:
         """Get source record by ID"""
         return self._source_records.get(record_id)
 
@@ -76,14 +80,14 @@ class EntityResolutionRepository:
         self._source_records[record.record_id] = record
         return record
 
-    async def find_unresolved_records(self) -> List[SourceRecord]:
+    async def find_unresolved_records(self) -> list[SourceRecord]:
         """Find unresolved source records"""
         return [
             r for r in self._source_records.values()
             if r.resolution_status == ResolutionStatus.PENDING
         ]
 
-    async def find_records_by_master(self, master_entity_id: UUID) -> List[SourceRecord]:
+    async def find_records_by_master(self, master_entity_id: UUID) -> list[SourceRecord]:
         """Find source records linked to a master entity"""
         return [
             r for r in self._source_records.values()
@@ -95,11 +99,11 @@ class EntityResolutionRepository:
         self._candidates[candidate.candidate_id] = candidate
         return candidate
 
-    async def get_candidate(self, candidate_id: UUID) -> Optional[MatchCandidate]:
+    async def get_candidate(self, candidate_id: UUID) -> MatchCandidate | None:
         """Get match candidate by ID"""
         return self._candidates.get(candidate_id)
 
-    async def find_pending_candidates(self) -> List[MatchCandidate]:
+    async def find_pending_candidates(self) -> list[MatchCandidate]:
         """Find pending match candidates"""
         return [c for c in self._candidates.values() if c.status == "pending"]
 
@@ -108,7 +112,7 @@ class EntityResolutionRepository:
         self._merges[merge.merge_id] = merge
         return merge
 
-    async def get_merge(self, merge_id: UUID) -> Optional[MergeOperation]:
+    async def get_merge(self, merge_id: UUID) -> MergeOperation | None:
         """Get merge operation by ID"""
         return self._merges.get(merge_id)
 
@@ -117,7 +121,7 @@ class EntityResolutionRepository:
         self._splits[split.split_id] = split
         return split
 
-    async def get_split(self, split_id: UUID) -> Optional[SplitOperation]:
+    async def get_split(self, split_id: UUID) -> SplitOperation | None:
         """Get split operation by ID"""
         return self._splits.get(split_id)
 
@@ -126,11 +130,11 @@ class EntityResolutionRepository:
         self._jobs[job.job_id] = job
         return job
 
-    async def get_job(self, job_id: UUID) -> Optional[ResolutionJob]:
+    async def get_job(self, job_id: UUID) -> ResolutionJob | None:
         """Get resolution job by ID"""
         return self._jobs.get(job_id)
 
-    async def find_running_jobs(self) -> List[ResolutionJob]:
+    async def find_running_jobs(self) -> list[ResolutionJob]:
         """Find running resolution jobs"""
         return [j for j in self._jobs.values() if j.status == "running"]
 

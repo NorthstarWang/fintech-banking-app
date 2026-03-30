@@ -3,7 +3,7 @@ Memory-based adapter to replace SQLAlchemy operations.
 This module provides compatibility layer for existing routes to use memory-based storage.
 """
 from contextlib import contextmanager
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from app.repositories.data_manager import data_manager
@@ -739,7 +739,7 @@ class MemorySession:
             obj_dict['id'] = max_id + 1
 
             if 'created_at' not in obj_dict:
-                obj_dict['created_at'] = datetime.utcnow()
+                obj_dict['created_at'] = datetime.now(UTC)
 
             # Update the original object if it has _data attribute
             if hasattr(obj, '_data'):
@@ -764,7 +764,7 @@ class MemorySession:
                             updated_data = obj._data.copy()
                             # Ensure updated_at is set
                             if 'updated_at' not in updated_data or updated_data['updated_at'] == obj._original_data.get('updated_at'):
-                                updated_data['updated_at'] = datetime.utcnow()
+                                updated_data['updated_at'] = datetime.now(UTC)
                             store[i] = updated_data
                             break
 
@@ -905,7 +905,7 @@ class MemorySession:
         if hasattr(obj, '__tablename__') and obj.__tablename__ == 'logs':
             result = {
                 'id': getattr(obj, 'id', None),
-                'timestamp': getattr(obj, 'timestamp', datetime.utcnow()),
+                'timestamp': getattr(obj, 'timestamp', datetime.now(UTC)),
                 'session_id': getattr(obj, 'session_id', None),
                 'action_type': getattr(obj, 'action_type', None),
                 'payload': getattr(obj, 'payload', {})

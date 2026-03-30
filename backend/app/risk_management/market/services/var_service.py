@@ -1,26 +1,32 @@
 """VaR Service - Value at Risk calculation service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
 import math
+from datetime import date
+from typing import Any
+from uuid import UUID
+
 from ..models.var_models import (
-    VaRCalculation, VaRBacktest, VaRLimit, VaRException,
-    VaRStatistics, VaRMethod, ConfidenceLevel
+    ConfidenceLevel,
+    VaRBacktest,
+    VaRCalculation,
+    VaRException,
+    VaRLimit,
+    VaRMethod,
+    VaRStatistics,
 )
 
 
 class VaRService:
     def __init__(self):
-        self._calculations: Dict[UUID, VaRCalculation] = {}
-        self._backtests: Dict[UUID, VaRBacktest] = {}
-        self._limits: Dict[UUID, VaRLimit] = {}
-        self._exceptions: List[VaRException] = []
+        self._calculations: dict[UUID, VaRCalculation] = {}
+        self._backtests: dict[UUID, VaRBacktest] = {}
+        self._limits: dict[UUID, VaRLimit] = {}
+        self._exceptions: list[VaRException] = []
 
     async def calculate_var(
         self, portfolio_id: UUID, portfolio_value: float,
         method: VaRMethod, confidence_level: ConfidenceLevel,
-        time_horizon: int = 1, returns: List[float] = None
+        time_horizon: int = 1, returns: list[float] | None = None
     ) -> VaRCalculation:
         # Simplified VaR calculation
         cl_map = {"95": 1.645, "99": 2.326, "99.5": 2.576}
@@ -52,15 +58,15 @@ class VaRService:
         self._calculations[calculation.calculation_id] = calculation
         return calculation
 
-    async def get_calculation(self, calculation_id: UUID) -> Optional[VaRCalculation]:
+    async def get_calculation(self, calculation_id: UUID) -> VaRCalculation | None:
         return self._calculations.get(calculation_id)
 
     async def run_backtest(
         self, portfolio_id: UUID, method: VaRMethod,
         confidence_level: ConfidenceLevel,
-        var_predictions: List[float], actual_pnl: List[float]
+        var_predictions: list[float], actual_pnl: list[float]
     ) -> VaRBacktest:
-        exceptions = sum(1 for v, p in zip(var_predictions, actual_pnl) if abs(p) > v)
+        exceptions = sum(1 for v, p in zip(var_predictions, actual_pnl, strict=False) if abs(p) > v)
         total = len(var_predictions)
         exception_rate = exceptions / total if total > 0 else 0
         expected_rate = 1 - float(confidence_level.value) / 100
@@ -116,7 +122,7 @@ class VaRService:
         self._limits[limit.limit_id] = limit
         return limit
 
-    async def check_limit(self, limit_id: UUID, current_var: float) -> Dict[str, Any]:
+    async def check_limit(self, limit_id: UUID, current_var: float) -> dict[str, Any]:
         limit = self._limits.get(limit_id)
         if not limit:
             return {"status": "error", "message": "Limit not found"}

@@ -4,11 +4,12 @@ Fraud Pattern Models
 Defines data structures for fraud pattern recognition.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class FraudPatternType(str, Enum):
@@ -37,11 +38,11 @@ class FraudPattern(BaseModel):
     pattern_name: str
     description: str
 
-    detection_criteria: Dict[str, Any] = Field(default_factory=dict)
+    detection_criteria: dict[str, Any] = Field(default_factory=dict)
     confidence: PatternConfidence = PatternConfidence.MEDIUM
 
-    entities_involved: List[str] = Field(default_factory=list)
-    transactions_involved: List[str] = Field(default_factory=list)
+    entities_involved: list[str] = Field(default_factory=list)
+    transactions_involved: list[str] = Field(default_factory=list)
 
     total_amount: float = 0.0
     transaction_count: int = 0
@@ -52,17 +53,17 @@ class FraudPattern(BaseModel):
 
     risk_score: float = Field(ge=0, le=100)
 
-    alert_id: Optional[UUID] = None
-    case_id: Optional[UUID] = None
+    alert_id: UUID | None = None
+    case_id: UUID | None = None
 
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     detected_by: str
 
     is_confirmed: bool = False
-    confirmed_by: Optional[str] = None
-    confirmed_at: Optional[datetime] = None
+    confirmed_by: str | None = None
+    confirmed_at: datetime | None = None
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PatternDefinition(BaseModel):
@@ -71,8 +72,8 @@ class PatternDefinition(BaseModel):
     pattern_name: str
     description: str
 
-    detection_rules: List[Dict[str, Any]] = Field(default_factory=list)
-    thresholds: Dict[str, float] = Field(default_factory=dict)
+    detection_rules: list[dict[str, Any]] = Field(default_factory=list)
+    thresholds: dict[str, float] = Field(default_factory=dict)
 
     lookback_period_hours: int = 24
     min_events_required: int = 1
@@ -84,8 +85,8 @@ class PatternDefinition(BaseModel):
     is_active: bool = True
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class VelocityPattern(BaseModel):
@@ -100,17 +101,17 @@ class VelocityPattern(BaseModel):
     actual_value: float
     excess_percentage: float
 
-    events: List[Dict[str, Any]] = Field(default_factory=list)
+    events: list[dict[str, Any]] = Field(default_factory=list)
 
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GeoAnomalyPattern(BaseModel):
     pattern_id: UUID = Field(default_factory=uuid4)
     customer_id: str
 
-    location_1: Dict[str, Any]
-    location_2: Dict[str, Any]
+    location_1: dict[str, Any]
+    location_2: dict[str, Any]
 
     distance_km: float
     time_diff_minutes: float
@@ -121,7 +122,7 @@ class GeoAnomalyPattern(BaseModel):
     event_1_id: str
     event_2_id: str
 
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class MulePattern(BaseModel):
@@ -130,8 +131,8 @@ class MulePattern(BaseModel):
     suspected_mule_id: str
     suspected_mule_account: str
 
-    incoming_transactions: List[Dict[str, Any]] = Field(default_factory=list)
-    outgoing_transactions: List[Dict[str, Any]] = Field(default_factory=list)
+    incoming_transactions: list[dict[str, Any]] = Field(default_factory=list)
+    outgoing_transactions: list[dict[str, Any]] = Field(default_factory=list)
 
     total_incoming: float = 0.0
     total_outgoing: float = 0.0
@@ -142,16 +143,16 @@ class MulePattern(BaseModel):
 
     time_span_hours: float = 0.0
 
-    risk_indicators: List[str] = Field(default_factory=list)
+    risk_indicators: list[str] = Field(default_factory=list)
     confidence: PatternConfidence = PatternConfidence.MEDIUM
 
-    detected_at: datetime = Field(default_factory=datetime.utcnow)
+    detected_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PatternStatistics(BaseModel):
     total_patterns_detected: int = 0
-    by_pattern_type: Dict[str, int] = Field(default_factory=dict)
-    by_confidence: Dict[str, int] = Field(default_factory=dict)
+    by_pattern_type: dict[str, int] = Field(default_factory=dict)
+    by_confidence: dict[str, int] = Field(default_factory=dict)
     confirmed_patterns: int = 0
     false_positives: int = 0
     total_amount_involved: float = 0.0

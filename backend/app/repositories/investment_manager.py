@@ -3,7 +3,7 @@ Investment management repository for handling ETF, stock, and crypto trading ope
 """
 import random
 import string
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -75,8 +75,8 @@ class InvestmentManager:
             'total_return_percent': 0.0,
             'is_retirement': account_data.is_retirement,
             'risk_tolerance': account_data.risk_tolerance.value,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.investment_accounts.append(account)
@@ -94,7 +94,7 @@ class InvestmentManager:
             'positions_count': 0,
             'asset_allocation': {'cash': 100.0},
             'risk_score': 1.0,  # Low risk for cash
-            'created_at': datetime.utcnow()
+            'created_at': datetime.now(UTC)
         }
 
         self.data_manager.investment_portfolios.append(portfolio)
@@ -196,7 +196,7 @@ class InvestmentManager:
             'time_in_force': order_data.time_in_force,
             'extended_hours': order_data.extended_hours,
             'commission': self._calculate_commission(order_data),
-            'submitted_at': datetime.utcnow(),
+            'submitted_at': datetime.now(UTC),
             'filled_at': None,
             'cancelled_at': None
         }
@@ -227,7 +227,7 @@ class InvestmentManager:
             return False
 
         order['status'] = OrderStatus.CANCELLED.value
-        order['cancelled_at'] = datetime.utcnow()
+        order['cancelled_at'] = datetime.now(UTC)
 
         return True
 
@@ -265,8 +265,8 @@ class InvestmentManager:
             'name': watchlist_data.name,
             'description': watchlist_data.description,
             'symbols': watchlist_data.symbols,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.investment_watchlists.append(watchlist)
@@ -467,7 +467,7 @@ class InvestmentManager:
         order['status'] = OrderStatus.FILLED.value
         order['filled_quantity'] = order['quantity']
         order['average_fill_price'] = fill_price
-        order['filled_at'] = datetime.utcnow()
+        order['filled_at'] = datetime.now(UTC)
 
         # Update account balance and positions
         account = next((a for a in self.data_manager.investment_accounts
@@ -714,7 +714,7 @@ class InvestmentManager:
             high_price=Decimal(str(round(high_price, 2))),
             low_price=Decimal(str(round(low_price, 2))),
             close_price=Decimal(str(round(base_price, 2))),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(UTC)
         )
 
     # Response conversion methods
@@ -798,7 +798,7 @@ class InvestmentManager:
             time_in_force=order.get('time_in_force', 'day'),
             extended_hours=order.get('extended_hours', False),
             commission=Decimal(str(order.get('commission', 0))),
-            submitted_at=order.get('submitted_at', datetime.utcnow()),
+            submitted_at=order.get('submitted_at', datetime.now(UTC)),
             filled_at=order.get('filled_at'),
             cancelled_at=order.get('cancelled_at')
         )

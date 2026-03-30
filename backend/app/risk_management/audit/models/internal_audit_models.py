@@ -1,10 +1,9 @@
 """Internal Audit Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
-from decimal import Decimal
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -42,22 +41,22 @@ class InternalAudit(BaseModel):
     audit_name: str
     audit_type: AuditType
     audit_scope: str
-    audit_objectives: List[str]
+    audit_objectives: list[str]
     business_unit: str
     audit_period_start: date
     audit_period_end: date
     planned_start_date: date
     planned_end_date: date
-    actual_start_date: Optional[date] = None
-    actual_end_date: Optional[date] = None
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
     lead_auditor: str
-    audit_team: List[str]
+    audit_team: list[str]
     status: AuditStatus = AuditStatus.PLANNED
     risk_rating: str = "medium"
     budgeted_hours: int = 0
     actual_hours: int = 0
     methodology: str = ""
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AuditWorkpaper(BaseModel):
@@ -69,8 +68,8 @@ class AuditWorkpaper(BaseModel):
     section: str
     prepared_by: str
     prepared_date: date
-    reviewed_by: Optional[str] = None
-    review_date: Optional[date] = None
+    reviewed_by: str | None = None
+    review_date: date | None = None
     status: str = "draft"
     description: str = ""
     testing_objective: str = ""
@@ -79,7 +78,7 @@ class AuditWorkpaper(BaseModel):
     population_size: int = 0
     exceptions_found: int = 0
     conclusion: str = ""
-    attachments: List[str] = Field(default_factory=list)
+    attachments: list[str] = Field(default_factory=list)
 
 
 class AuditFinding(BaseModel):
@@ -96,13 +95,13 @@ class AuditFinding(BaseModel):
     management_response: str = ""
     action_plan: str = ""
     action_owner: str = ""
-    target_date: Optional[date] = None
+    target_date: date | None = None
     status: str = "open"
     validated: bool = False
-    validation_date: Optional[date] = None
-    validated_by: Optional[str] = None
+    validation_date: date | None = None
+    validated_by: str | None = None
     repeat_finding: bool = False
-    prior_finding_reference: Optional[str] = None
+    prior_finding_reference: str | None = None
 
 
 class AuditReport(BaseModel):
@@ -114,18 +113,18 @@ class AuditReport(BaseModel):
     executive_summary: str
     scope_summary: str
     methodology_summary: str
-    findings_summary: Dict[str, int] = Field(default_factory=dict)
+    findings_summary: dict[str, int] = Field(default_factory=dict)
     overall_opinion: str
-    key_observations: List[str] = Field(default_factory=list)
-    positive_observations: List[str] = Field(default_factory=list)
+    key_observations: list[str] = Field(default_factory=list)
+    positive_observations: list[str] = Field(default_factory=list)
     drafted_by: str
     drafted_date: date
-    reviewed_by: Optional[str] = None
-    review_date: Optional[date] = None
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
-    issued_date: Optional[date] = None
-    distribution_list: List[str] = Field(default_factory=list)
+    reviewed_by: str | None = None
+    review_date: date | None = None
+    approved_by: str | None = None
+    approval_date: date | None = None
+    issued_date: date | None = None
+    distribution_list: list[str] = Field(default_factory=list)
     status: str = "draft"
 
 
@@ -136,10 +135,10 @@ class AuditFollowUp(BaseModel):
     follow_up_date: date
     follow_up_by: str
     implementation_status: str
-    evidence_reviewed: List[str] = Field(default_factory=list)
+    evidence_reviewed: list[str] = Field(default_factory=list)
     management_update: str = ""
     auditor_assessment: str = ""
     remaining_risk: str = ""
-    revised_target_date: Optional[date] = None
+    revised_target_date: date | None = None
     closed: bool = False
-    closed_date: Optional[date] = None
+    closed_date: date | None = None

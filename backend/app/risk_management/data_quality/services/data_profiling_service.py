@@ -1,12 +1,17 @@
 """Data Profiling Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.data_profiling_models import (
-    DataProfile, ColumnProfile, DataDistribution, DataRelationship,
-    ProfilingJob, DataAnomaly
+    ColumnProfile,
+    DataAnomaly,
+    DataDistribution,
+    DataProfile,
+    DataRelationship,
+    ProfilingJob,
 )
 from ..repositories.data_profiling_repository import data_profiling_repository
 
@@ -53,7 +58,7 @@ class DataProfilingService:
 
     async def record_distribution(
         self, profile_id: UUID, column_name: str, distribution_type: str,
-        buckets: List[Dict[str, Any]], percentiles: Dict[str, Decimal] = None
+        buckets: list[dict[str, Any]], percentiles: dict[str, Decimal] | None = None
     ) -> DataDistribution:
         distribution = DataDistribution(
             profile_id=profile_id, column_name=column_name,
@@ -77,7 +82,7 @@ class DataProfilingService:
         return relationship
 
     async def create_profiling_job(
-        self, job_name: str, job_type: str, target_tables: List[str],
+        self, job_name: str, job_type: str, target_tables: list[str],
         created_by: str, sample_percentage: Decimal = Decimal("100")
     ) -> ProfilingJob:
         job = ProfilingJob(
@@ -88,12 +93,12 @@ class DataProfilingService:
         return job
 
     async def complete_job(
-        self, job_id: UUID, records_profiled: int, columns_profiled: int, errors: List[str] = None
-    ) -> Optional[ProfilingJob]:
+        self, job_id: UUID, records_profiled: int, columns_profiled: int, errors: list[str] | None = None
+    ) -> ProfilingJob | None:
         job = await self.repository.find_job_by_id(job_id)
         if job:
             job.status = "completed" if not errors else "completed_with_errors"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = datetime.now(UTC)
             job.records_profiled = records_profiled
             job.columns_profiled = columns_profiled
             job.errors = errors or []
@@ -101,7 +106,7 @@ class DataProfilingService:
 
     async def detect_anomaly(
         self, profile_id: UUID, column_name: str, anomaly_type: str,
-        description: str, severity: str, affected_records: int, sample_values: List[str]
+        description: str, severity: str, affected_records: int, sample_values: list[str]
     ) -> DataAnomaly:
         anomaly = DataAnomaly(
             profile_id=profile_id, column_name=column_name, anomaly_type=anomaly_type,
@@ -111,7 +116,7 @@ class DataProfilingService:
         await self.repository.save_anomaly(anomaly)
         return anomaly
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

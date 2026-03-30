@@ -1,21 +1,26 @@
 """ML Model Repository - Data access layer for machine learning models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.ml_models import (
-    MLModel, ModelPrediction, ModelTrainingJob,
-    ModelPerformanceMetrics, ModelType, ModelStatus
+    MLModel,
+    ModelPerformanceMetrics,
+    ModelPrediction,
+    ModelStatus,
+    ModelTrainingJob,
+    ModelType,
 )
 
 
 class MLModelRepository:
     def __init__(self):
-        self._models: Dict[UUID, MLModel] = {}
-        self._predictions: List[ModelPrediction] = []
-        self._training_jobs: Dict[UUID, ModelTrainingJob] = {}
-        self._metrics: Dict[UUID, List[ModelPerformanceMetrics]] = {}
-        self._model_name_index: Dict[str, UUID] = {}
+        self._models: dict[UUID, MLModel] = {}
+        self._predictions: list[ModelPrediction] = []
+        self._training_jobs: dict[UUID, ModelTrainingJob] = {}
+        self._metrics: dict[UUID, list[ModelPerformanceMetrics]] = {}
+        self._model_name_index: dict[str, UUID] = {}
 
     async def save_model(self, model: MLModel) -> MLModel:
         self._models[model.model_id] = model
@@ -23,27 +28,27 @@ class MLModelRepository:
         self._model_name_index[model_key] = model.model_id
         return model
 
-    async def find_model_by_id(self, model_id: UUID) -> Optional[MLModel]:
+    async def find_model_by_id(self, model_id: UUID) -> MLModel | None:
         return self._models.get(model_id)
 
-    async def find_model_by_name_version(self, name: str, version: str) -> Optional[MLModel]:
+    async def find_model_by_name_version(self, name: str, version: str) -> MLModel | None:
         model_key = f"{name}:{version}"
         model_id = self._model_name_index.get(model_key)
         if model_id:
             return self._models.get(model_id)
         return None
 
-    async def find_models_by_type(self, model_type: ModelType) -> List[MLModel]:
+    async def find_models_by_type(self, model_type: ModelType) -> list[MLModel]:
         return [m for m in self._models.values() if m.model_type == model_type]
 
-    async def find_active_models(self) -> List[MLModel]:
+    async def find_active_models(self) -> list[MLModel]:
         return [m for m in self._models.values() if m.status == ModelStatus.ACTIVE]
 
-    async def find_models_by_status(self, status: ModelStatus) -> List[MLModel]:
+    async def find_models_by_status(self, status: ModelStatus) -> list[MLModel]:
         return [m for m in self._models.values() if m.status == status]
 
     async def update_model(self, model: MLModel) -> MLModel:
-        model.updated_at = datetime.utcnow()
+        model.updated_at = datetime.now(UTC)
         self._models[model.model_id] = model
         return model
 
@@ -61,16 +66,16 @@ class MLModelRepository:
         self._predictions.append(prediction)
         return prediction
 
-    async def find_predictions_by_model(self, model_id: UUID, limit: int = 100) -> List[ModelPrediction]:
+    async def find_predictions_by_model(self, model_id: UUID, limit: int = 100) -> list[ModelPrediction]:
         predictions = [p for p in self._predictions if p.model_id == model_id]
         return sorted(predictions, key=lambda x: x.predicted_at, reverse=True)[:limit]
 
-    async def find_fraud_predictions(self, limit: int = 100) -> List[ModelPrediction]:
+    async def find_fraud_predictions(self, limit: int = 100) -> list[ModelPrediction]:
         predictions = [p for p in self._predictions if p.is_fraud]
         return sorted(predictions, key=lambda x: x.fraud_score, reverse=True)[:limit]
 
-    async def find_recent_predictions(self, hours: int = 24, limit: int = 500) -> List[ModelPrediction]:
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+    async def find_recent_predictions(self, hours: int = 24, limit: int = 500) -> list[ModelPrediction]:
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         predictions = [p for p in self._predictions if p.predicted_at >= cutoff]
         return sorted(predictions, key=lambda x: x.predicted_at, reverse=True)[:limit]
 
@@ -78,14 +83,14 @@ class MLModelRepository:
         self._training_jobs[job.job_id] = job
         return job
 
-    async def find_training_job_by_id(self, job_id: UUID) -> Optional[ModelTrainingJob]:
+    async def find_training_job_by_id(self, job_id: UUID) -> ModelTrainingJob | None:
         return self._training_jobs.get(job_id)
 
-    async def find_training_jobs_by_model(self, model_id: UUID) -> List[ModelTrainingJob]:
+    async def find_training_jobs_by_model(self, model_id: UUID) -> list[ModelTrainingJob]:
         jobs = [j for j in self._training_jobs.values() if j.model_id == model_id]
         return sorted(jobs, key=lambda x: x.started_at, reverse=True)
 
-    async def find_running_jobs(self) -> List[ModelTrainingJob]:
+    async def find_running_jobs(self) -> list[ModelTrainingJob]:
         return [j for j in self._training_jobs.values() if j.status == "running"]
 
     async def update_training_job(self, job: ModelTrainingJob) -> ModelTrainingJob:
@@ -98,23 +103,23 @@ class MLModelRepository:
         self._metrics[model_id].append(metrics)
         return metrics
 
-    async def find_metrics_by_model(self, model_id: UUID) -> List[ModelPerformanceMetrics]:
+    async def find_metrics_by_model(self, model_id: UUID) -> list[ModelPerformanceMetrics]:
         return self._metrics.get(model_id, [])
 
-    async def find_latest_metrics(self, model_id: UUID) -> Optional[ModelPerformanceMetrics]:
+    async def find_latest_metrics(self, model_id: UUID) -> ModelPerformanceMetrics | None:
         metrics = self._metrics.get(model_id, [])
         if metrics:
             return sorted(metrics, key=lambda x: x.evaluated_at, reverse=True)[0]
         return None
 
-    async def get_model_statistics(self) -> Dict[str, Any]:
+    async def get_model_statistics(self) -> dict[str, Any]:
         total_models = len(self._models)
         active_models = len([m for m in self._models.values() if m.status == ModelStatus.ACTIVE])
         by_type = {}
         for model in self._models.values():
             type_key = model.model_type.value
             by_type[type_key] = by_type.get(type_key, 0) + 1
-        today = datetime.utcnow().date()
+        today = datetime.now(UTC).date()
         predictions_today = len([p for p in self._predictions if p.predicted_at.date() == today])
         return {
             "total_models": total_models,
@@ -125,7 +130,7 @@ class MLModelRepository:
             "running_jobs": len([j for j in self._training_jobs.values() if j.status == "running"])
         }
 
-    async def get_all_models(self, limit: int = 100, offset: int = 0) -> List[MLModel]:
+    async def get_all_models(self, limit: int = 100, offset: int = 0) -> list[MLModel]:
         models = sorted(self._models.values(), key=lambda x: x.created_at, reverse=True)
         return models[offset:offset + limit]
 

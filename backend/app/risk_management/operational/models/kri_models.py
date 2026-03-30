@@ -1,11 +1,12 @@
 """KRI Models - Key Risk Indicator data models"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class KRIType(str, Enum):
@@ -50,18 +51,18 @@ class KeyRiskIndicator(BaseModel):
     measurement_frequency: str  # daily, weekly, monthly, quarterly
     data_source: str
     calculation_method: str
-    green_threshold_min: Optional[Decimal] = None
-    green_threshold_max: Optional[Decimal] = None
-    amber_threshold_min: Optional[Decimal] = None
-    amber_threshold_max: Optional[Decimal] = None
-    red_threshold_min: Optional[Decimal] = None
-    red_threshold_max: Optional[Decimal] = None
+    green_threshold_min: Decimal | None = None
+    green_threshold_max: Decimal | None = None
+    amber_threshold_min: Decimal | None = None
+    amber_threshold_max: Decimal | None = None
+    red_threshold_min: Decimal | None = None
+    red_threshold_max: Decimal | None = None
     higher_is_worse: bool = True
-    related_risks: List[UUID] = Field(default_factory=list)
+    related_risks: list[UUID] = Field(default_factory=list)
     is_active: bool = True
     created_date: date = Field(default_factory=date.today)
-    last_modified: datetime = Field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    last_modified: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class KRIMeasurement(BaseModel):
@@ -70,17 +71,17 @@ class KRIMeasurement(BaseModel):
     measurement_date: date
     measurement_period: str
     value: Decimal
-    previous_value: Optional[Decimal] = None
+    previous_value: Decimal | None = None
     threshold_status: ThresholdStatus
     trend: KRITrend
-    variance_from_target: Optional[Decimal] = None
-    variance_percentage: Optional[Decimal] = None
+    variance_from_target: Decimal | None = None
+    variance_percentage: Decimal | None = None
     breach_occurred: bool = False
-    breach_type: Optional[str] = None
+    breach_type: str | None = None
     data_quality_flag: bool = False
-    notes: Optional[str] = None
+    notes: str | None = None
     recorded_by: str
-    recorded_at: datetime = Field(default_factory=datetime.utcnow)
+    recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class KRIThresholdBreach(BaseModel):
@@ -91,13 +92,13 @@ class KRIThresholdBreach(BaseModel):
     breach_type: str  # amber, red
     breach_value: Decimal
     threshold_breached: Decimal
-    breach_duration: Optional[int] = None  # days
+    breach_duration: int | None = None  # days
     escalated: bool = False
-    escalation_date: Optional[datetime] = None
-    escalated_to: Optional[str] = None
-    action_taken: Optional[str] = None
-    resolution_date: Optional[date] = None
-    resolution_notes: Optional[str] = None
+    escalation_date: datetime | None = None
+    escalated_to: str | None = None
+    action_taken: str | None = None
+    resolution_date: date | None = None
+    resolution_notes: str | None = None
     status: str = "open"
 
 
@@ -108,10 +109,10 @@ class KRITarget(BaseModel):
     target_value: Decimal
     target_type: str  # absolute, percentage, range
     effective_from: date
-    effective_to: Optional[date] = None
+    effective_to: date | None = None
     approved_by: str
     approval_date: date
-    rationale: Optional[str] = None
+    rationale: str | None = None
     is_active: bool = True
 
 
@@ -134,13 +135,13 @@ class KRITrendAnalysis(BaseModel):
     red_percentage: Decimal
     breach_count: int
     volatility: Decimal
-    forecast_next_period: Optional[Decimal] = None
+    forecast_next_period: Decimal | None = None
 
 
 class KRIDashboard(BaseModel):
     dashboard_id: UUID = Field(default_factory=uuid4)
     dashboard_date: date
-    business_unit: Optional[str] = None
+    business_unit: str | None = None
     total_kris: int
     active_kris: int
     green_count: int
@@ -151,9 +152,9 @@ class KRIDashboard(BaseModel):
     stable_count: int
     deteriorating_count: int
     data_quality_issues: int
-    kri_summary: List[Dict[str, Any]]
-    top_concerns: List[Dict[str, Any]]
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    kri_summary: list[dict[str, Any]]
+    top_concerns: list[dict[str, Any]]
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class KRIReport(BaseModel):
@@ -163,16 +164,16 @@ class KRIReport(BaseModel):
     period: str
     period_start: date
     period_end: date
-    business_unit: Optional[str] = None
+    business_unit: str | None = None
     kri_count: int
     measurements_count: int
-    status_distribution: Dict[str, int]
-    trend_distribution: Dict[str, int]
+    status_distribution: dict[str, int]
+    trend_distribution: dict[str, int]
     total_breaches: int
     amber_breaches: int
     red_breaches: int
     average_breach_duration: float
     escalation_count: int
     resolution_rate: Decimal
-    top_breached_kris: List[Dict[str, Any]]
+    top_breached_kris: list[dict[str, Any]]
     generated_by: str

@@ -1,23 +1,30 @@
 """Portfolio Service - Credit portfolio risk management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.portfolio_models import (
-    CreditPortfolio, PortfolioSegment, ConcentrationRisk,
-    PortfolioMigration, PortfolioStressTest, VintageAnalysis,
-    PortfolioStatistics, PortfolioType, PortfolioStatus, ConcentrationRiskType
+    ConcentrationRisk,
+    ConcentrationRiskType,
+    CreditPortfolio,
+    PortfolioMigration,
+    PortfolioSegment,
+    PortfolioStatistics,
+    PortfolioStressTest,
+    PortfolioType,
+    VintageAnalysis,
 )
 
 
 class PortfolioService:
     def __init__(self):
-        self._portfolios: Dict[UUID, CreditPortfolio] = {}
-        self._segments: Dict[UUID, PortfolioSegment] = {}
-        self._concentrations: Dict[UUID, ConcentrationRisk] = {}
-        self._migrations: Dict[UUID, PortfolioMigration] = {}
-        self._stress_tests: Dict[UUID, PortfolioStressTest] = {}
-        self._vintages: Dict[UUID, VintageAnalysis] = {}
+        self._portfolios: dict[UUID, CreditPortfolio] = {}
+        self._segments: dict[UUID, PortfolioSegment] = {}
+        self._concentrations: dict[UUID, ConcentrationRisk] = {}
+        self._migrations: dict[UUID, PortfolioMigration] = {}
+        self._stress_tests: dict[UUID, PortfolioStressTest] = {}
+        self._vintages: dict[UUID, VintageAnalysis] = {}
 
     async def create_portfolio(
         self, name: str, portfolio_type: PortfolioType,
@@ -32,24 +39,24 @@ class PortfolioService:
         self._portfolios[portfolio.portfolio_id] = portfolio
         return portfolio
 
-    async def get_portfolio(self, portfolio_id: UUID) -> Optional[CreditPortfolio]:
+    async def get_portfolio(self, portfolio_id: UUID) -> CreditPortfolio | None:
         return self._portfolios.get(portfolio_id)
 
     async def update_portfolio_metrics(
-        self, portfolio_id: UUID, metrics: Dict[str, Any]
-    ) -> Optional[CreditPortfolio]:
+        self, portfolio_id: UUID, metrics: dict[str, Any]
+    ) -> CreditPortfolio | None:
         portfolio = self._portfolios.get(portfolio_id)
         if portfolio:
             for key, value in metrics.items():
                 if hasattr(portfolio, key):
                     setattr(portfolio, key, value)
-            portfolio.updated_at = datetime.utcnow()
+            portfolio.updated_at = datetime.now(UTC)
         return portfolio
 
     async def add_segment(
         self, portfolio_id: UUID, segment_name: str,
         segment_type: str, exposure_amount: float
-    ) -> Optional[PortfolioSegment]:
+    ) -> PortfolioSegment | None:
         portfolio = self._portfolios.get(portfolio_id)
         if not portfolio:
             return None
@@ -68,14 +75,14 @@ class PortfolioService:
         self._segments[segment.segment_id] = segment
         return segment
 
-    async def get_portfolio_segments(self, portfolio_id: UUID) -> List[PortfolioSegment]:
+    async def get_portfolio_segments(self, portfolio_id: UUID) -> list[PortfolioSegment]:
         return [s for s in self._segments.values() if s.portfolio_id == portfolio_id]
 
     async def assess_concentration_risk(
         self, portfolio_id: UUID, concentration_type: ConcentrationRiskType,
         dimension_name: str, dimension_value: str, exposure_amount: float,
-        limit_percentage: float = None
-    ) -> Optional[ConcentrationRisk]:
+        limit_percentage: float | None = None
+    ) -> ConcentrationRisk | None:
         portfolio = self._portfolios.get(portfolio_id)
         if not portfolio:
             return None
@@ -98,12 +105,12 @@ class PortfolioService:
         self._concentrations[concentration.concentration_id] = concentration
         return concentration
 
-    async def get_concentration_risks(self, portfolio_id: UUID) -> List[ConcentrationRisk]:
+    async def get_concentration_risks(self, portfolio_id: UUID) -> list[ConcentrationRisk]:
         return [c for c in self._concentrations.values() if c.portfolio_id == portfolio_id]
 
     async def calculate_migration_matrix(
         self, portfolio_id: UUID, period_start: date, period_end: date
-    ) -> Optional[PortfolioMigration]:
+    ) -> PortfolioMigration | None:
         portfolio = self._portfolios.get(portfolio_id)
         if not portfolio:
             return None
@@ -131,8 +138,8 @@ class PortfolioService:
 
     async def run_stress_test(
         self, portfolio_id: UUID, scenario_name: str, scenario_type: str,
-        economic_assumptions: Dict[str, float], created_by: str
-    ) -> Optional[PortfolioStressTest]:
+        economic_assumptions: dict[str, float], created_by: str
+    ) -> PortfolioStressTest | None:
         portfolio = self._portfolios.get(portfolio_id)
         if not portfolio:
             return None
@@ -164,7 +171,7 @@ class PortfolioService:
     async def analyze_vintage(
         self, portfolio_id: UUID, vintage_period: str,
         origination_amount: float, current_balance: float
-    ) -> Optional[VintageAnalysis]:
+    ) -> VintageAnalysis | None:
         analysis = VintageAnalysis(
             portfolio_id=portfolio_id,
             vintage_period=vintage_period,

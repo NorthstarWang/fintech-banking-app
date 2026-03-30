@@ -1,8 +1,9 @@
 """Data Lineage Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -16,9 +17,9 @@ class DataAsset(BaseModel):
     owner: str = ""
     steward: str = ""
     classification: str = ""
-    tags: List[str] = Field(default_factory=list)
-    created_date: datetime = Field(default_factory=datetime.utcnow)
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    tags: list[str] = Field(default_factory=list)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = True
 
 
@@ -32,7 +33,7 @@ class DataFlow(BaseModel):
     transformation_logic: str = ""
     schedule: str = ""
     frequency: str = ""
-    last_execution: Optional[datetime] = None
+    last_execution: datetime | None = None
     status: str = "active"
     created_by: str = ""
 
@@ -48,7 +49,7 @@ class ColumnLineage(BaseModel):
     confidence_score: float = 1.0
     discovered_method: str = "manual"  # manual, parsed, inferred
     verified: bool = False
-    verified_by: Optional[str] = None
+    verified_by: str | None = None
 
 
 class DataPipeline(BaseModel):
@@ -56,31 +57,31 @@ class DataPipeline(BaseModel):
     pipeline_name: str
     pipeline_type: str  # batch, streaming, real_time
     description: str = ""
-    source_systems: List[str] = Field(default_factory=list)
-    target_systems: List[str] = Field(default_factory=list)
-    flows: List[UUID] = Field(default_factory=list)
+    source_systems: list[str] = Field(default_factory=list)
+    target_systems: list[str] = Field(default_factory=list)
+    flows: list[UUID] = Field(default_factory=list)
     schedule: str = ""
     owner: str = ""
     status: str = "active"
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ImpactAnalysis(BaseModel):
     analysis_id: UUID = Field(default_factory=uuid4)
     asset_id: UUID
     analysis_type: str  # upstream, downstream, full
-    analysis_date: datetime = Field(default_factory=datetime.utcnow)
-    upstream_assets: List[Dict[str, Any]] = Field(default_factory=list)
-    downstream_assets: List[Dict[str, Any]] = Field(default_factory=list)
-    affected_reports: List[str] = Field(default_factory=list)
-    affected_processes: List[str] = Field(default_factory=list)
+    analysis_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    upstream_assets: list[dict[str, Any]] = Field(default_factory=list)
+    downstream_assets: list[dict[str, Any]] = Field(default_factory=list)
+    affected_reports: list[str] = Field(default_factory=list)
+    affected_processes: list[str] = Field(default_factory=list)
     risk_assessment: str = ""
     performed_by: str = ""
 
 
 class LineageSnapshot(BaseModel):
     snapshot_id: UUID = Field(default_factory=uuid4)
-    snapshot_date: datetime = Field(default_factory=datetime.utcnow)
+    snapshot_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     snapshot_type: str  # scheduled, on_demand, change_triggered
     assets_captured: int = 0
     flows_captured: int = 0
@@ -94,10 +95,10 @@ class DataTransformation(BaseModel):
     flow_id: UUID
     transformation_name: str
     transformation_type: str  # mapping, aggregation, filter, join, pivot
-    source_columns: List[str] = Field(default_factory=list)
-    target_columns: List[str] = Field(default_factory=list)
+    source_columns: list[str] = Field(default_factory=list)
+    target_columns: list[str] = Field(default_factory=list)
     logic: str = ""
     sql_expression: str = ""
     business_rule: str = ""
     documented_by: str = ""
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))

@@ -3,7 +3,7 @@ Insurance management repository for handling all insurance-related operations wi
 """
 import random
 import string
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from app.models.entities.insurance_models import (
@@ -77,8 +77,8 @@ class InsuranceManager:
             'beneficiaries': policy_data.beneficiaries or [],
             'coverage_details': policy_data.coverage_details or {},
             'documents': [],
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.insurance_policies.append(policy)
@@ -124,7 +124,7 @@ class InsuranceManager:
             if field in allowed_fields:
                 policy[field] = value
 
-        policy['updated_at'] = datetime.utcnow()
+        policy['updated_at'] = datetime.now(UTC)
 
         return self._policy_to_response(policy)
 
@@ -140,7 +140,7 @@ class InsuranceManager:
         policy['status'] = PolicyStatus.CANCELLED.value
         policy['cancellation_date'] = cancellation_date
         policy['cancellation_reason'] = reason
-        policy['updated_at'] = datetime.utcnow()
+        policy['updated_at'] = datetime.now(UTC)
 
         return True
 
@@ -165,7 +165,7 @@ class InsuranceManager:
             'claim_type': claim_data.claim_type,
             'status': ClaimStatus.SUBMITTED.value,
             'incident_date': claim_data.incident_date,
-            'filed_date': datetime.utcnow(),
+            'filed_date': datetime.now(UTC),
             'amount_claimed': float(claim_data.amount_claimed),
             'amount_approved': None,
             'amount_paid': None,
@@ -177,13 +177,13 @@ class InsuranceManager:
             'documents': claim_data.supporting_documents or [],
             'status_history': [{
                 'status': ClaimStatus.SUBMITTED.value,
-                'date': datetime.utcnow(),
+                'date': datetime.now(UTC),
                 'notes': 'Claim submitted'
             }],
             'payment_date': None,
             'appeal_deadline': None,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.insurance_claims.append(claim)
@@ -241,7 +241,7 @@ class InsuranceManager:
         # Add to status history
         history_entry = {
             'status': status.value,
-            'date': datetime.utcnow(),
+            'date': datetime.now(UTC),
             'notes': notes or f'Status changed to {status.value}'
         }
         claim['status_history'].append(history_entry)
@@ -261,10 +261,10 @@ class InsuranceManager:
             claim['denial_reason'] = notes or 'Claim does not meet policy requirements'
             claim['appeal_deadline'] = date.today() + timedelta(days=30)
         elif status == ClaimStatus.PAID:
-            claim['payment_date'] = datetime.utcnow()
+            claim['payment_date'] = datetime.now(UTC)
             claim['amount_paid'] = claim['amount_approved']
 
-        claim['updated_at'] = datetime.utcnow()
+        claim['updated_at'] = datetime.now(UTC)
 
         return self._claim_to_response(claim)
 
@@ -346,7 +346,7 @@ class InsuranceManager:
                 coverage_details=quote_request.coverage_options or {},
                 discounts_applied=discounts,
                 quote_id=quote_id,
-                valid_until=datetime.utcnow() + timedelta(days=30)
+                valid_until=datetime.now(UTC) + timedelta(days=30)
             ))
 
         return quotes

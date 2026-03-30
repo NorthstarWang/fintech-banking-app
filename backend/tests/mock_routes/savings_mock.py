@@ -3,7 +3,7 @@ Mock implementation for savings routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -61,8 +61,8 @@ async def create_savings_goal(data: Dict[str, Any], current_user: Dict[str, Any]
         "auto_transfer_frequency": data.get("auto_transfer_frequency", "monthly"),
         "is_shared": data.get("is_shared", False),
         "shared_with": data.get("shared_with", []),
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Calculate progress percentage
@@ -216,7 +216,7 @@ async def update_savings_goal(goal_id: str, data: Dict[str, Any], current_user: 
                    "auto_transfer_enabled", "auto_transfer_amount", "auto_transfer_frequency"]:
             goal[key] = value
     
-    goal["updated_at"] = datetime.utcnow().isoformat()
+    goal["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Recalculate progress
     if goal["target_amount"] > 0:
@@ -273,7 +273,7 @@ async def add_contribution(
     
     # Add to goal
     goal["current_amount"] = goal.get("current_amount", 0) + amount
-    goal["updated_at"] = datetime.utcnow().isoformat()
+    goal["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Recalculate progress
     if goal["target_amount"] > 0:
@@ -288,7 +288,7 @@ async def add_contribution(
         "user_id": current_user["id"],
         "amount": amount,
         "type": "contribution",
-        "contribution_date": datetime.utcnow().isoformat(),
+        "contribution_date": datetime.now(timezone.utc).isoformat(),
         "account_id": account_id,
         "balance_after": goal["current_amount"]
     }
@@ -334,7 +334,7 @@ async def withdraw_from_goal(
     
     # Withdraw from goal
     goal["current_amount"] -= amount
-    goal["updated_at"] = datetime.utcnow().isoformat()
+    goal["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Recalculate progress
     if goal["target_amount"] > 0:
@@ -360,7 +360,7 @@ async def withdraw_from_goal(
         "user_id": current_user["id"],
         "amount": -amount,  # Negative for withdrawal
         "type": "withdrawal",
-        "contribution_date": datetime.utcnow().isoformat(),
+        "contribution_date": datetime.now(timezone.utc).isoformat(),
         "account_id": account_id,
         "reason": data.get("reason", ""),
         "balance_after": goal["current_amount"]
@@ -478,7 +478,7 @@ async def setup_auto_transfer(
     goal["auto_transfer_day"] = data.get("day_of_month", 1)
     goal["auto_transfer_account_id"] = data.get("from_account_id") or data.get("account_id")
     goal["auto_transfer_start_date"] = data.get("start_date")
-    goal["updated_at"] = datetime.utcnow().isoformat()
+    goal["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     return {
         "message": "Automated transfer set up successfully",
@@ -504,10 +504,10 @@ async def get_milestones(goal_id: str, current_user: Dict[str, Any] = Depends(ge
     progress = goal.get("progress_percentage", 0)
     
     milestones = [
-        {"percentage": 25, "reached": progress >= 25, "reached_at": datetime.utcnow().isoformat() if progress >= 25 else None},
-        {"percentage": 50, "reached": progress >= 50, "reached_at": datetime.utcnow().isoformat() if progress >= 50 else None},
-        {"percentage": 75, "reached": progress >= 75, "reached_at": datetime.utcnow().isoformat() if progress >= 75 else None},
-        {"percentage": 100, "reached": progress >= 100, "reached_at": datetime.utcnow().isoformat() if progress >= 100 else None}
+        {"percentage": 25, "reached": progress >= 25, "reached_at": datetime.now(timezone.utc).isoformat() if progress >= 25 else None},
+        {"percentage": 50, "reached": progress >= 50, "reached_at": datetime.now(timezone.utc).isoformat() if progress >= 50 else None},
+        {"percentage": 75, "reached": progress >= 75, "reached_at": datetime.now(timezone.utc).isoformat() if progress >= 75 else None},
+        {"percentage": 100, "reached": progress >= 100, "reached_at": datetime.now(timezone.utc).isoformat() if progress >= 100 else None}
     ]
     
     return milestones
@@ -525,8 +525,8 @@ async def complete_goal(goal_id: str, current_user: Dict[str, Any] = Depends(get
         raise HTTPException(status_code=404, detail="Savings goal not found")
     
     goal["status"] = "completed"
-    goal["completed_at"] = datetime.utcnow().isoformat()
-    goal["updated_at"] = datetime.utcnow().isoformat()
+    goal["completed_at"] = datetime.now(timezone.utc).isoformat()
+    goal["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Return the updated goal with completion status
     goal_copy = goal.copy()

@@ -1,10 +1,12 @@
 """Committee API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.committee_models import CommitteeType
 from ..services.committee_service import committee_service
 
@@ -15,8 +17,8 @@ class CommitteeCreateRequest(BaseModel):
     committee_name: str
     committee_type: CommitteeType
     charter: str
-    mandate: List[str]
-    responsibilities: List[str]
+    mandate: list[str]
+    responsibilities: list[str]
     minimum_members: int
     meeting_frequency: str
 
@@ -28,7 +30,7 @@ class MemberAppointmentRequest(BaseModel):
     role: str
     term_end_date: date
     is_independent: bool
-    expertise_relevant: List[str]
+    expertise_relevant: list[str]
 
 
 class MeetingScheduleRequest(BaseModel):
@@ -37,7 +39,7 @@ class MeetingScheduleRequest(BaseModel):
     meeting_time: str
     meeting_type: str
     location: str
-    agenda: List[Dict[str, Any]]
+    agenda: list[dict[str, Any]]
 
 
 class ResolutionRequest(BaseModel):
@@ -51,7 +53,7 @@ class ResolutionRequest(BaseModel):
     votes_against: int
     votes_abstained: int
     implementation_required: bool = False
-    implementation_deadline: Optional[date] = None
+    implementation_deadline: date | None = None
     implementation_owner: str = ""
 
 
@@ -66,7 +68,7 @@ async def establish_committee(request: CommitteeCreateRequest):
     return {"committee_id": str(committee.committee_id), "committee_name": committee.committee_name}
 
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=list[dict])
 async def list_committees(active_only: bool = True):
     if active_only:
         committees = await committee_service.repository.find_active_committees()
@@ -86,7 +88,7 @@ async def appoint_member(request: MemberAppointmentRequest):
     return {"membership_id": str(member.membership_id), "role": member.role}
 
 
-@router.get("/{committee_id}/members", response_model=List[dict])
+@router.get("/{committee_id}/members", response_model=list[dict])
 async def get_committee_members(committee_id: UUID):
     members = await committee_service.repository.find_members_by_committee(committee_id)
     return [{"membership_id": str(m.membership_id), "member_name": m.member_name, "role": m.role} for m in members]
@@ -102,7 +104,7 @@ async def schedule_meeting(request: MeetingScheduleRequest):
     return {"meeting_id": str(meeting.meeting_id), "meeting_reference": meeting.meeting_reference}
 
 
-@router.get("/{committee_id}/meetings", response_model=List[dict])
+@router.get("/{committee_id}/meetings", response_model=list[dict])
 async def get_committee_meetings(committee_id: UUID):
     meetings = await committee_service.repository.find_meetings_by_committee(committee_id)
     return [{"meeting_id": str(m.meeting_id), "meeting_reference": m.meeting_reference, "meeting_date": str(m.meeting_date)} for m in meetings]
@@ -111,10 +113,10 @@ async def get_committee_meetings(committee_id: UUID):
 @router.post("/meetings/{meeting_id}/record", response_model=dict)
 async def record_meeting(
     meeting_id: UUID,
-    attendees: List[str] = Query(...),
-    discussions: List[Dict[str, Any]] = Query(default=[]),
-    decisions: List[Dict[str, Any]] = Query(default=[]),
-    action_items: List[Dict[str, Any]] = Query(default=[])
+    attendees: list[str] = Query(...),
+    discussions: list[dict[str, Any]] = Query(default=[]),
+    decisions: list[dict[str, Any]] = Query(default=[]),
+    action_items: list[dict[str, Any]] = Query(default=[])
 ):
     meeting = await committee_service.record_meeting(meeting_id, attendees, discussions, decisions, action_items)
     if not meeting:
@@ -145,7 +147,7 @@ async def pass_resolution(request: ResolutionRequest):
     return {"resolution_id": str(resolution.resolution_id), "resolution_reference": resolution.resolution_reference, "passed": resolution.passed}
 
 
-@router.get("/{committee_id}/resolutions", response_model=List[dict])
+@router.get("/{committee_id}/resolutions", response_model=list[dict])
 async def get_committee_resolutions(committee_id: UUID):
     resolutions = await committee_service.repository.find_resolutions_by_committee(committee_id)
     return [{"resolution_id": str(r.resolution_id), "resolution_reference": r.resolution_reference, "subject": r.subject, "passed": r.passed} for r in resolutions]

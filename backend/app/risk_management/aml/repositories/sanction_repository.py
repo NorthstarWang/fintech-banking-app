@@ -4,13 +4,14 @@ Sanction Repository
 Data access layer for sanctions screening data.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 from uuid import UUID
 
 from ..models.sanction_models import (
-    SanctionListEntry, SanctionListType, ScreeningResult, MatchStatus,
-    BatchScreeningJob
+    BatchScreeningJob,
+    MatchStatus,
+    SanctionListEntry,
+    SanctionListType,
+    ScreeningResult,
 )
 
 
@@ -18,16 +19,16 @@ class SanctionRepository:
     """Repository for sanctions data access"""
 
     def __init__(self):
-        self._entries: Dict[UUID, SanctionListEntry] = {}
-        self._results: Dict[UUID, ScreeningResult] = {}
-        self._jobs: Dict[UUID, BatchScreeningJob] = {}
+        self._entries: dict[UUID, SanctionListEntry] = {}
+        self._results: dict[UUID, ScreeningResult] = {}
+        self._jobs: dict[UUID, BatchScreeningJob] = {}
 
     async def create_entry(self, entry: SanctionListEntry) -> SanctionListEntry:
         """Create a new sanction entry"""
         self._entries[entry.entry_id] = entry
         return entry
 
-    async def get_entry(self, entry_id: UUID) -> Optional[SanctionListEntry]:
+    async def get_entry(self, entry_id: UUID) -> SanctionListEntry | None:
         """Get entry by ID"""
         return self._entries.get(entry_id)
 
@@ -43,15 +44,15 @@ class SanctionRepository:
             return True
         return False
 
-    async def find_by_list_type(self, list_type: SanctionListType) -> List[SanctionListEntry]:
+    async def find_by_list_type(self, list_type: SanctionListType) -> list[SanctionListEntry]:
         """Find entries by list type"""
         return [e for e in self._entries.values() if e.list_type == list_type]
 
-    async def find_active(self) -> List[SanctionListEntry]:
+    async def find_active(self) -> list[SanctionListEntry]:
         """Find active entries"""
         return [e for e in self._entries.values() if e.is_active]
 
-    async def search_by_name(self, name: str) -> List[SanctionListEntry]:
+    async def search_by_name(self, name: str) -> list[SanctionListEntry]:
         """Search entries by name"""
         name_lower = name.lower()
         results = []
@@ -68,19 +69,19 @@ class SanctionRepository:
         self._results[result.result_id] = result
         return result
 
-    async def get_result(self, result_id: UUID) -> Optional[ScreeningResult]:
+    async def get_result(self, result_id: UUID) -> ScreeningResult | None:
         """Get screening result by ID"""
         return self._results.get(result_id)
 
-    async def find_results_by_entity(self, entity_id: str) -> List[ScreeningResult]:
+    async def find_results_by_entity(self, entity_id: str) -> list[ScreeningResult]:
         """Find screening results by entity ID"""
         return [r for r in self._results.values() if r.entity_id == entity_id]
 
-    async def find_results_with_matches(self) -> List[ScreeningResult]:
+    async def find_results_with_matches(self) -> list[ScreeningResult]:
         """Find results with potential matches"""
         return [r for r in self._results.values() if r.has_matches]
 
-    async def find_pending_reviews(self) -> List[ScreeningResult]:
+    async def find_pending_reviews(self) -> list[ScreeningResult]:
         """Find results pending review"""
         return [
             r for r in self._results.values()
@@ -92,11 +93,11 @@ class SanctionRepository:
         self._jobs[job.job_id] = job
         return job
 
-    async def get_job(self, job_id: UUID) -> Optional[BatchScreeningJob]:
+    async def get_job(self, job_id: UUID) -> BatchScreeningJob | None:
         """Get batch job by ID"""
         return self._jobs.get(job_id)
 
-    async def find_running_jobs(self) -> List[BatchScreeningJob]:
+    async def find_running_jobs(self) -> list[BatchScreeningJob]:
         """Find running batch jobs"""
         return [j for j in self._jobs.values() if j.status == "running"]
 
@@ -104,9 +105,9 @@ class SanctionRepository:
         """Count total entries"""
         return len(self._entries)
 
-    async def count_by_list_type(self) -> Dict[str, int]:
+    async def count_by_list_type(self) -> dict[str, int]:
         """Count entries by list type"""
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for entry in self._entries.values():
             key = entry.list_type.value
             counts[key] = counts.get(key, 0) + 1

@@ -1,13 +1,19 @@
 """Compliance Testing Service - Business logic for compliance testing"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.compliance_testing_models import (
-    ComplianceTestPlan, ComplianceTestExecution, ComplianceException,
-    ComplianceMonitoring, RegulatoryChange, ComplianceReport,
-    TestingType, TestResult
+    ComplianceException,
+    ComplianceMonitoring,
+    ComplianceReport,
+    ComplianceTestExecution,
+    ComplianceTestPlan,
+    RegulatoryChange,
+    TestingType,
+    TestResult,
 )
 from ..repositories.compliance_testing_repository import compliance_testing_repository
 
@@ -39,7 +45,7 @@ class ComplianceTestingService:
 
     async def execute_test(
         self, plan_id: UUID, tester: str, population_size: int, sample_size: int,
-        items_tested: int, exceptions_found: int, evidence_references: List[str],
+        items_tested: int, exceptions_found: int, evidence_references: list[str],
         observations: str, conclusion: str
     ) -> ComplianceTestExecution:
         exception_rate = Decimal(str(exceptions_found / items_tested * 100)) if items_tested > 0 else Decimal("0")
@@ -85,7 +91,7 @@ class ComplianceTestingService:
     async def remediate_exception(
         self, exception_id: UUID, root_cause: str, remediation_action: str,
         remediation_owner: str, remediation_due_date: date
-    ) -> Optional[ComplianceException]:
+    ) -> ComplianceException | None:
         exception = await self.repository.find_exception_by_id(exception_id)
         if exception:
             exception.root_cause = root_cause
@@ -97,7 +103,7 @@ class ComplianceTestingService:
 
     async def create_monitoring(
         self, regulation: str, monitoring_area: str, monitoring_period: str,
-        metrics: List[Dict[str, Any]], thresholds: Dict[str, Decimal],
+        metrics: list[dict[str, Any]], thresholds: dict[str, Decimal],
         monitoring_frequency: str, owner: str
     ) -> ComplianceMonitoring:
         monitoring = ComplianceMonitoring(
@@ -113,7 +119,7 @@ class ComplianceTestingService:
     async def record_regulatory_change(
         self, regulation: str, regulator: str, change_type: str, effective_date: date,
         summary: str, detailed_description: str, impact_assessment: str,
-        affected_areas: List[str], assigned_to: str, implementation_deadline: date
+        affected_areas: list[str], assigned_to: str, implementation_deadline: date
     ) -> RegulatoryChange:
         change = RegulatoryChange(
             change_reference=f"RC-{date.today().strftime('%Y%m%d')}-001",
@@ -127,8 +133,8 @@ class ComplianceTestingService:
         return change
 
     async def generate_report(
-        self, report_period: str, prepared_by: str, regulations_covered: List[str],
-        key_findings: List[str], recommendations: List[str], overall_compliance_status: str
+        self, report_period: str, prepared_by: str, regulations_covered: list[str],
+        key_findings: list[str], recommendations: list[str], overall_compliance_status: str
     ) -> ComplianceReport:
         executions = await self.repository.find_all_executions()
         exceptions = await self.repository.find_all_exceptions()
@@ -150,7 +156,7 @@ class ComplianceTestingService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

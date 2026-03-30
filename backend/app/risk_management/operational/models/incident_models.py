@@ -1,11 +1,12 @@
 """Incident Models - Data models for operational incident management"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class IncidentSeverity(str, Enum):
@@ -55,35 +56,35 @@ class Incident(BaseModel):
     severity: IncidentSeverity
     status: IncidentStatus = IncidentStatus.OPEN
     reported_by: str
-    reported_date: datetime = Field(default_factory=datetime.utcnow)
+    reported_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     occurred_date: datetime
     detected_date: datetime
-    resolved_date: Optional[datetime] = None
-    closed_date: Optional[datetime] = None
+    resolved_date: datetime | None = None
+    closed_date: datetime | None = None
     business_unit: str
-    affected_systems: List[str] = Field(default_factory=list)
-    impact_types: List[IncidentImpact] = Field(default_factory=list)
-    estimated_loss: Optional[Decimal] = None
-    actual_loss: Optional[Decimal] = None
-    root_cause: Optional[str] = None
-    remediation_actions: List[str] = Field(default_factory=list)
-    assigned_to: Optional[str] = None
+    affected_systems: list[str] = Field(default_factory=list)
+    impact_types: list[IncidentImpact] = Field(default_factory=list)
+    estimated_loss: Decimal | None = None
+    actual_loss: Decimal | None = None
+    root_cause: str | None = None
+    remediation_actions: list[str] = Field(default_factory=list)
+    assigned_to: str | None = None
     escalated: bool = False
     escalation_level: int = 0
     regulatory_reportable: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class IncidentTimeline(BaseModel):
     timeline_id: UUID = Field(default_factory=uuid4)
     incident_id: UUID
-    event_time: datetime = Field(default_factory=datetime.utcnow)
+    event_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
     event_type: str
     description: str
     performed_by: str
-    old_status: Optional[IncidentStatus] = None
-    new_status: Optional[IncidentStatus] = None
-    attachments: List[str] = Field(default_factory=list)
+    old_status: IncidentStatus | None = None
+    new_status: IncidentStatus | None = None
+    attachments: list[str] = Field(default_factory=list)
 
 
 class IncidentEscalation(BaseModel):
@@ -92,10 +93,10 @@ class IncidentEscalation(BaseModel):
     escalation_level: int
     escalated_to: str
     escalated_by: str
-    escalation_time: datetime = Field(default_factory=datetime.utcnow)
+    escalation_time: datetime = Field(default_factory=lambda: datetime.now(UTC))
     reason: str
     acknowledged: bool = False
-    acknowledged_time: Optional[datetime] = None
+    acknowledged_time: datetime | None = None
 
 
 class IncidentRootCauseAnalysis(BaseModel):
@@ -103,31 +104,31 @@ class IncidentRootCauseAnalysis(BaseModel):
     incident_id: UUID
     analysis_date: date
     analyst: str
-    root_causes: List[str]
-    contributing_factors: List[str]
+    root_causes: list[str]
+    contributing_factors: list[str]
     methodology: str  # 5 Whys, Fishbone, etc.
     findings: str
-    recommendations: List[str]
-    preventive_measures: List[str]
+    recommendations: list[str]
+    preventive_measures: list[str]
     status: str = "draft"
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    approved_by: str | None = None
+    approval_date: date | None = None
 
 
 class IncidentCorrectiveAction(BaseModel):
     action_id: UUID = Field(default_factory=uuid4)
     incident_id: UUID
-    analysis_id: Optional[UUID] = None
+    analysis_id: UUID | None = None
     action_type: str  # immediate, short_term, long_term
     description: str
     assigned_to: str
     due_date: date
     status: str = "pending"
-    completion_date: Optional[date] = None
+    completion_date: date | None = None
     verification_required: bool = True
-    verified_by: Optional[str] = None
-    verification_date: Optional[date] = None
-    effectiveness_rating: Optional[int] = None
+    verified_by: str | None = None
+    verification_date: date | None = None
+    effectiveness_rating: int | None = None
 
 
 class IncidentReport(BaseModel):
@@ -137,13 +138,13 @@ class IncidentReport(BaseModel):
     period_start: date
     period_end: date
     total_incidents: int
-    incidents_by_severity: Dict[str, int]
-    incidents_by_category: Dict[str, int]
-    incidents_by_status: Dict[str, int]
+    incidents_by_severity: dict[str, int]
+    incidents_by_category: dict[str, int]
+    incidents_by_status: dict[str, int]
     total_estimated_loss: Decimal
     total_actual_loss: Decimal
     average_resolution_time: float  # hours
     escalation_rate: float
-    trending_categories: List[str]
+    trending_categories: list[str]
     generated_by: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)

@@ -1,9 +1,9 @@
 """Data Completeness Analysis Utilities"""
 
-from typing import List, Dict, Any, Optional, Set
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass, field
+from typing import Any
 from uuid import uuid4
 
 
@@ -24,7 +24,7 @@ class RecordCompletenessResult:
     record_id: str
     total_fields: int
     complete_fields: int
-    incomplete_fields: List[str]
+    incomplete_fields: list[str]
     completeness_rate: Decimal
 
 
@@ -35,7 +35,7 @@ class DatasetCompletenessReport:
     total_records: int
     total_fields: int
     overall_completeness: Decimal
-    field_results: List[FieldCompletenessResult]
+    field_results: list[FieldCompletenessResult]
     incomplete_records_count: int
     fully_complete_records_count: int
     analyzed_at: datetime
@@ -43,16 +43,16 @@ class DatasetCompletenessReport:
 
 class DataCompletenessUtilities:
     def __init__(self):
-        self._required_fields: Dict[str, Set[str]] = {}
-        self._field_thresholds: Dict[str, Decimal] = {}
+        self._required_fields: dict[str, set[str]] = {}
+        self._field_thresholds: dict[str, Decimal] = {}
         self._default_threshold = Decimal("95")
 
     def analyze_field_completeness(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
         is_required: bool = False,
-        threshold: Decimal = None,
+        threshold: Decimal | None = None,
     ) -> FieldCompletenessResult:
         total = len(data)
         null_count = 0
@@ -84,9 +84,9 @@ class DataCompletenessUtilities:
 
     def analyze_record_completeness(
         self,
-        record: Dict[str, Any],
+        record: dict[str, Any],
         record_id: str = "",
-        required_fields: List[str] = None,
+        required_fields: list[str] | None = None,
     ) -> RecordCompletenessResult:
         fields_to_check = required_fields or list(record.keys())
         total_fields = len(fields_to_check)
@@ -112,9 +112,9 @@ class DataCompletenessUtilities:
 
     def analyze_dataset_completeness(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         dataset_name: str = "dataset",
-        required_fields: List[str] = None,
+        required_fields: list[str] | None = None,
         id_field: str = "id",
     ) -> DatasetCompletenessReport:
         if not data:
@@ -127,7 +127,7 @@ class DataCompletenessUtilities:
                 field_results=[],
                 incomplete_records_count=0,
                 fully_complete_records_count=0,
-                analyzed_at=datetime.utcnow(),
+                analyzed_at=datetime.now(UTC),
             )
 
         all_fields = set()
@@ -172,16 +172,16 @@ class DataCompletenessUtilities:
             field_results=field_results,
             incomplete_records_count=incomplete_records,
             fully_complete_records_count=fully_complete,
-            analyzed_at=datetime.utcnow(),
+            analyzed_at=datetime.now(UTC),
         )
 
     def find_incomplete_records(
         self,
-        data: List[Dict[str, Any]],
-        required_fields: List[str],
+        data: list[dict[str, Any]],
+        required_fields: list[str],
         id_field: str = "id",
         threshold: Decimal = Decimal("100"),
-    ) -> List[RecordCompletenessResult]:
+    ) -> list[RecordCompletenessResult]:
         incomplete = []
 
         for i, record in enumerate(data):
@@ -194,8 +194,8 @@ class DataCompletenessUtilities:
 
     def get_completeness_trend(
         self,
-        historical_reports: List[DatasetCompletenessReport],
-    ) -> List[Dict[str, Any]]:
+        historical_reports: list[DatasetCompletenessReport],
+    ) -> list[dict[str, Any]]:
         trend = []
         for report in sorted(historical_reports, key=lambda r: r.analyzed_at):
             trend.append({
@@ -206,10 +206,10 @@ class DataCompletenessUtilities:
             })
         return trend
 
-    def set_required_fields(self, dataset_name: str, fields: List[str]) -> None:
+    def set_required_fields(self, dataset_name: str, fields: list[str]) -> None:
         self._required_fields[dataset_name] = set(fields)
 
-    def get_required_fields(self, dataset_name: str) -> Set[str]:
+    def get_required_fields(self, dataset_name: str) -> set[str]:
         return self._required_fields.get(dataset_name, set())
 
     def set_field_threshold(self, field_name: str, threshold: Decimal) -> None:

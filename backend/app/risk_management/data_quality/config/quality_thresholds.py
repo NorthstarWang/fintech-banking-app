@@ -1,9 +1,9 @@
 """Quality Thresholds Configuration"""
 
-from typing import Dict, Any, Optional
-from decimal import Decimal
 from dataclasses import dataclass, field
+from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 
 class ThresholdLevel(str, Enum):
@@ -25,7 +25,7 @@ class DimensionThreshold:
 class DatasetThreshold:
     dataset_name: str
     overall_threshold: Decimal
-    dimension_thresholds: Dict[str, DimensionThreshold] = field(default_factory=dict)
+    dimension_thresholds: dict[str, DimensionThreshold] = field(default_factory=dict)
 
 
 class QualityThresholds:
@@ -68,9 +68,9 @@ class QualityThresholds:
                 acceptable_threshold=Decimal("99"),
             ),
         }
-        self._dataset_thresholds: Dict[str, DatasetThreshold] = {}
+        self._dataset_thresholds: dict[str, DatasetThreshold] = {}
 
-    def get_dimension_threshold(self, dimension: str) -> Optional[DimensionThreshold]:
+    def get_dimension_threshold(self, dimension: str) -> DimensionThreshold | None:
         return self._global_thresholds.get(dimension)
 
     def set_dimension_threshold(
@@ -96,19 +96,18 @@ class QualityThresholds:
 
         if score < threshold.critical_threshold:
             return ThresholdLevel.CRITICAL
-        elif score < threshold.warning_threshold:
+        if score < threshold.warning_threshold:
             return ThresholdLevel.WARNING
-        else:
-            return ThresholdLevel.ACCEPTABLE
+        return ThresholdLevel.ACCEPTABLE
 
-    def get_dataset_threshold(self, dataset_name: str) -> Optional[DatasetThreshold]:
+    def get_dataset_threshold(self, dataset_name: str) -> DatasetThreshold | None:
         return self._dataset_thresholds.get(dataset_name)
 
     def set_dataset_threshold(
         self,
         dataset_name: str,
         overall_threshold: Decimal,
-        dimension_overrides: Dict[str, DimensionThreshold] = None,
+        dimension_overrides: dict[str, DimensionThreshold] | None = None,
     ) -> None:
         self._dataset_thresholds[dataset_name] = DatasetThreshold(
             dataset_name=dataset_name,
@@ -118,16 +117,16 @@ class QualityThresholds:
 
     def get_effective_threshold(
         self, dataset_name: str, dimension: str
-    ) -> Optional[DimensionThreshold]:
+    ) -> DimensionThreshold | None:
         dataset_threshold = self._dataset_thresholds.get(dataset_name)
         if dataset_threshold and dimension in dataset_threshold.dimension_thresholds:
             return dataset_threshold.dimension_thresholds[dimension]
         return self._global_thresholds.get(dimension)
 
-    def get_all_dimensions(self) -> Dict[str, DimensionThreshold]:
+    def get_all_dimensions(self) -> dict[str, DimensionThreshold]:
         return self._global_thresholds.copy()
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         return {
             "global_thresholds": {
                 dim: {

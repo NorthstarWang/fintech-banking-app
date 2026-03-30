@@ -3,7 +3,7 @@ Mock implementation for cards routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -85,7 +85,7 @@ async def create_card(
         "expiry_date": data.get("expiry_date", "12/28"),
         "status": "active",
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Add linked_account_id for debit cards
@@ -149,7 +149,7 @@ async def update_card(
         card["is_active"] = data["is_active"]
         card["status"] = "active" if data["is_active"] else "inactive"
     
-    card["updated_at"] = datetime.utcnow().isoformat()
+    card["updated_at"] = datetime.now(timezone.utc).isoformat()
     return card
 
 @router.post("/{card_id}/deactivate")
@@ -210,7 +210,7 @@ async def get_card_statement(
     
     return {
         "card_id": card_id,
-        "statement_date": datetime.utcnow().isoformat(),
+        "statement_date": datetime.now(timezone.utc).isoformat(),
         "transactions": [],
         "total_spent": 0,
         "payment_due": 0
@@ -246,7 +246,7 @@ async def make_payment(
         "message": "Payment processed",
         "amount": amount,
         "new_balance": new_balance,
-        "payment_id": f"PMT-{card_id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        "payment_id": f"PMT-{card_id}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     }
 
 @router.get("/{card_id}/rewards")

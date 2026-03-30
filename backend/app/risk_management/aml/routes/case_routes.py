@@ -4,14 +4,20 @@ AML Case Routes
 API endpoints for AML case management.
 """
 
-from typing import List
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.case_models import (
-    AMLCase, CaseSummary, CaseStatistics, CaseStatus,
-    CaseCreateRequest, CaseUpdateRequest, CaseSearchCriteria,
-    InvestigationFinding, CaseDocument, RelatedEntity
+    AMLCase,
+    CaseCreateRequest,
+    CaseDocument,
+    CaseSearchCriteria,
+    CaseStatistics,
+    CaseSummary,
+    CaseUpdateRequest,
+    InvestigationFinding,
+    RelatedEntity,
 )
 from ..services.case_service import case_service
 
@@ -107,7 +113,7 @@ async def close_case(
     return case
 
 
-@router.post("/search", response_model=List[CaseSummary])
+@router.post("/search", response_model=list[CaseSummary])
 async def search_cases(criteria: CaseSearchCriteria):
     """Search cases based on criteria"""
     return await case_service.search_cases(criteria)

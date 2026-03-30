@@ -1,12 +1,19 @@
 """Master Data Management Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.master_data_models import (
-    MasterDataDomain, MasterEntity, MatchRule, MergeRule, MatchCandidate,
-    MergeHistory, DataStewardshipTask, GoldenRecordAudit, EntityStatus
+    DataStewardshipTask,
+    GoldenRecordAudit,
+    MasterDataDomain,
+    MasterEntity,
+    MatchCandidate,
+    MatchRule,
+    MergeHistory,
+    MergeRule,
 )
 from ..repositories.master_data_repository import master_data_repository
 
@@ -19,7 +26,7 @@ class MasterDataService:
 
     async def create_domain(
         self, domain_name: str, domain_code: str, description: str,
-        owner: str, steward: str, source_systems: List[str], entity_types: List[str]
+        owner: str, steward: str, source_systems: list[str], entity_types: list[str]
     ) -> MasterDataDomain:
         domain = MasterDataDomain(
             domain_name=domain_name, domain_code=domain_code, description=description,
@@ -31,7 +38,7 @@ class MasterDataService:
 
     async def create_master_entity(
         self, domain_id: UUID, entity_type: str, entity_name: str,
-        attributes: Dict[str, Any], source_records: List[Dict[str, Any]],
+        attributes: dict[str, Any], source_records: list[dict[str, Any]],
         created_by: str
     ) -> MasterEntity:
         self._entity_counter += 1
@@ -46,7 +53,7 @@ class MasterDataService:
 
     async def create_match_rule(
         self, domain_id: UUID, rule_name: str, rule_description: str,
-        match_type: str, match_fields: List[str], match_threshold: Decimal,
+        match_type: str, match_fields: list[str], match_threshold: Decimal,
         created_by: str, is_blocking_rule: bool = False
     ) -> MatchRule:
         rule = MatchRule(
@@ -60,7 +67,7 @@ class MasterDataService:
 
     async def create_merge_rule(
         self, domain_id: UUID, rule_name: str, attribute_name: str,
-        survivorship_rule: str, source_priority: List[str] = None
+        survivorship_rule: str, source_priority: list[str] | None = None
     ) -> MergeRule:
         rule = MergeRule(
             domain_id=domain_id, rule_name=rule_name, attribute_name=attribute_name,
@@ -72,7 +79,7 @@ class MasterDataService:
     async def create_match_candidate(
         self, domain_id: UUID, entity_type: str, record_1_id: str, record_1_source: str,
         record_2_id: str, record_2_source: str, match_score: Decimal,
-        matched_fields: Dict[str, Decimal]
+        matched_fields: dict[str, Decimal]
     ) -> MatchCandidate:
         candidate = MatchCandidate(
             domain_id=domain_id, entity_type=entity_type,
@@ -83,17 +90,17 @@ class MasterDataService:
         await self.repository.save_match_candidate(candidate)
         return candidate
 
-    async def confirm_match(self, candidate_id: UUID, reviewed_by: str) -> Optional[MatchCandidate]:
+    async def confirm_match(self, candidate_id: UUID, reviewed_by: str) -> MatchCandidate | None:
         candidate = await self.repository.find_match_candidate_by_id(candidate_id)
         if candidate:
             candidate.match_status = "confirmed"
             candidate.reviewed_by = reviewed_by
-            candidate.review_date = datetime.utcnow()
+            candidate.review_date = datetime.now(UTC)
         return candidate
 
     async def merge_entities(
-        self, entity_id: UUID, merged_records: List[str], merged_by: str,
-        survivorship_decisions: Dict[str, str]
+        self, entity_id: UUID, merged_records: list[str], merged_by: str,
+        survivorship_decisions: dict[str, str]
     ) -> MergeHistory:
         merge = MergeHistory(
             entity_id=entity_id, merged_records=merged_records,
@@ -105,30 +112,30 @@ class MasterDataService:
 
     async def create_stewardship_task(
         self, domain_id: UUID, task_type: str, description: str,
-        entity_ids: List[UUID], assigned_to: str, due_date: date, priority: str = "normal"
+        entity_ids: list[UUID], assigned_to: str, due_date: date, priority: str = "normal"
     ) -> DataStewardshipTask:
         self._task_counter += 1
         task = DataStewardshipTask(
             domain_id=domain_id, task_type=task_type, description=description,
             entity_ids=entity_ids, priority=priority, assigned_to=assigned_to,
-            assigned_date=datetime.utcnow(), due_date=due_date
+            assigned_date=datetime.now(UTC), due_date=due_date
         )
         await self.repository.save_task(task)
         return task
 
     async def complete_task(
         self, task_id: UUID, resolution: str
-    ) -> Optional[DataStewardshipTask]:
+    ) -> DataStewardshipTask | None:
         task = await self.repository.find_task_by_id(task_id)
         if task:
             task.status = "completed"
             task.resolution = resolution
-            task.completed_date = datetime.utcnow()
+            task.completed_date = datetime.now(UTC)
         return task
 
     async def audit_entity_change(
         self, entity_id: UUID, action: str, performed_by: str,
-        previous_state: Dict[str, Any], new_state: Dict[str, Any], reason: str = ""
+        previous_state: dict[str, Any], new_state: dict[str, Any], reason: str = ""
     ) -> GoldenRecordAudit:
         audit = GoldenRecordAudit(
             entity_id=entity_id, action=action, performed_by=performed_by,
@@ -137,7 +144,7 @@ class MasterDataService:
         await self.repository.save_audit(audit)
         return audit
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

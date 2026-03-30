@@ -1,11 +1,11 @@
 """RCSA Models - Risk Control Self-Assessment data models"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
-from decimal import Decimal
+from datetime import date
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class RiskCategory(str, Enum):
@@ -59,17 +59,17 @@ class RCSAAssessment(BaseModel):
     due_date: date
     status: AssessmentStatus = AssessmentStatus.DRAFT
     assessor: str
-    reviewer: Optional[str] = None
-    approver: Optional[str] = None
-    review_date: Optional[date] = None
-    approval_date: Optional[date] = None
-    next_assessment_date: Optional[date] = None
-    overall_risk_rating: Optional[str] = None
-    overall_control_rating: Optional[str] = None
+    reviewer: str | None = None
+    approver: str | None = None
+    review_date: date | None = None
+    approval_date: date | None = None
+    next_assessment_date: date | None = None
+    overall_risk_rating: str | None = None
+    overall_control_rating: str | None = None
     total_risks_identified: int = 0
     total_controls_assessed: int = 0
     action_items_count: int = 0
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RCSARisk(BaseModel):
@@ -88,13 +88,13 @@ class RCSARisk(BaseModel):
     residual_impact: RiskImpact
     residual_risk_score: int
     residual_risk_rating: str
-    target_likelihood: Optional[RiskLikelihood] = None
-    target_impact: Optional[RiskImpact] = None
-    target_risk_score: Optional[int] = None
+    target_likelihood: RiskLikelihood | None = None
+    target_impact: RiskImpact | None = None
+    target_risk_score: int | None = None
     risk_appetite: str
     within_appetite: bool = True
     trend: str = "stable"  # increasing, stable, decreasing
-    controls_mapped: List[UUID] = Field(default_factory=list)
+    controls_mapped: list[UUID] = Field(default_factory=list)
     action_required: bool = False
 
 
@@ -111,40 +111,40 @@ class RCSAControl(BaseModel):
     design_effectiveness: ControlEffectiveness
     operating_effectiveness: ControlEffectiveness
     overall_effectiveness: ControlEffectiveness
-    last_test_date: Optional[date] = None
-    next_test_date: Optional[date] = None
-    test_results: Optional[str] = None
-    risks_mitigated: List[UUID] = Field(default_factory=list)
-    gaps_identified: List[str] = Field(default_factory=list)
+    last_test_date: date | None = None
+    next_test_date: date | None = None
+    test_results: str | None = None
+    risks_mitigated: list[UUID] = Field(default_factory=list)
+    gaps_identified: list[str] = Field(default_factory=list)
     improvement_required: bool = False
 
 
 class RCSAActionItem(BaseModel):
     action_id: UUID = Field(default_factory=uuid4)
     assessment_id: UUID
-    risk_id: Optional[UUID] = None
-    control_id: Optional[UUID] = None
+    risk_id: UUID | None = None
+    control_id: UUID | None = None
     action_type: str  # risk_mitigation, control_improvement, gap_remediation
     action_description: str
     assigned_to: str
     due_date: date
     priority: str  # high, medium, low
     status: str = "open"
-    completion_date: Optional[date] = None
+    completion_date: date | None = None
     verification_required: bool = True
-    verified_by: Optional[str] = None
-    verification_date: Optional[date] = None
-    notes: Optional[str] = None
+    verified_by: str | None = None
+    verification_date: date | None = None
+    notes: str | None = None
 
 
 class RiskHeatmap(BaseModel):
     heatmap_id: UUID = Field(default_factory=uuid4)
-    assessment_id: Optional[UUID] = None
+    assessment_id: UUID | None = None
     generated_date: date
     heatmap_type: str  # inherent, residual
-    business_unit: Optional[str] = None
-    matrix_data: List[List[int]]  # 5x5 matrix with counts
-    risk_distribution: Dict[str, int]
+    business_unit: str | None = None
+    matrix_data: list[list[int]]  # 5x5 matrix with counts
+    risk_distribution: dict[str, int]
     high_risk_count: int
     medium_risk_count: int
     low_risk_count: int
@@ -156,7 +156,7 @@ class RCSAReport(BaseModel):
     report_date: date
     report_type: str
     period: str
-    business_unit: Optional[str] = None
+    business_unit: str | None = None
     assessments_completed: int
     assessments_pending: int
     total_risks: int

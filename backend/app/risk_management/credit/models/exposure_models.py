@@ -1,9 +1,9 @@
 """Exposure Models - Credit exposure calculation models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -28,7 +28,7 @@ class CreditExposure(BaseModel):
     exposure_id: UUID = Field(default_factory=uuid4)
     customer_id: str
     customer_name: str
-    facility_id: Optional[UUID] = None
+    facility_id: UUID | None = None
     exposure_type: ExposureType
     exposure_category: ExposureCategory
     gross_exposure: float
@@ -42,12 +42,12 @@ class CreditExposure(BaseModel):
     limit_amount: float
     limit_utilization: float = 0.0
     currency: str = "USD"
-    maturity_date: Optional[date] = None
+    maturity_date: date | None = None
     risk_weight: float = Field(default=1.0, ge=0)
     risk_weighted_assets: float = 0.0
     expected_loss: float = 0.0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExposureAggregate(BaseModel):
@@ -63,10 +63,10 @@ class ExposureAggregate(BaseModel):
     weighted_average_pd: float
     weighted_average_lgd: float
     expected_loss: float
-    limit_amount: Optional[float] = None
+    limit_amount: float | None = None
     limit_utilization: float = 0.0
     as_of_date: date = Field(default_factory=lambda: date.today())
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExposureLimit(BaseModel):
@@ -82,26 +82,26 @@ class ExposureLimit(BaseModel):
     breach_threshold: float = 1.0
     status: str = "active"  # active, warning, breach
     effective_date: date
-    expiry_date: Optional[date] = None
+    expiry_date: date | None = None
     approved_by: str
     approved_date: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class LargeExposure(BaseModel):
     exposure_id: UUID = Field(default_factory=uuid4)
     customer_id: str
     customer_name: str
-    group_id: Optional[str] = None
-    group_name: Optional[str] = None
+    group_id: str | None = None
+    group_name: str | None = None
     total_exposure: float
     exposure_as_percentage_of_capital: float
     regulatory_limit_percentage: float = 25.0
     breach_status: bool = False
-    breach_amount: Optional[float] = None
-    exemptions: List[str] = []
+    breach_amount: float | None = None
+    exemptions: list[str] = []
     reporting_date: date
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CounterpartyExposure(BaseModel):
@@ -109,7 +109,7 @@ class CounterpartyExposure(BaseModel):
     counterparty_name: str
     counterparty_type: str  # bank, corporate, sovereign, retail
     internal_rating: str
-    external_rating: Optional[str] = None
+    external_rating: str | None = None
     country: str
     industry: str
     total_on_balance: float
@@ -121,7 +121,7 @@ class CounterpartyExposure(BaseModel):
     netting_benefits: float = 0.0
     collateral_held: float = 0.0
     net_exposure: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExposureMovement(BaseModel):
@@ -133,8 +133,8 @@ class ExposureMovement(BaseModel):
     new_exposure: float
     change_amount: float
     change_reason: str
-    approved_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExposureStatistics(BaseModel):
@@ -142,7 +142,7 @@ class ExposureStatistics(BaseModel):
     total_net_exposure: float = 0.0
     total_ead: float = 0.0
     total_rwa: float = 0.0
-    by_type: Dict[str, float] = {}
-    by_category: Dict[str, float] = {}
+    by_type: dict[str, float] = {}
+    by_category: dict[str, float] = {}
     number_of_exposures: int = 0
     average_utilization: float = 0.0

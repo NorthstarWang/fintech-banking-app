@@ -5,7 +5,7 @@ Creates append-only logs with cryptographic hash chains for tamper detection.
 """
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -61,7 +61,7 @@ class AuditLogger:
             "action": action,
             "resource_type": resource_type,
             "resource_id": resource_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "details": details or {},
             "ip_address": ip_address,
             "previous_hash": previous_hash,

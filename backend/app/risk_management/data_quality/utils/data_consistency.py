@@ -1,9 +1,9 @@
 """Data Consistency Analysis Utilities"""
 
-from typing import List, Dict, Any, Optional, Set, Tuple
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass, field
+from typing import Any
 from uuid import uuid4
 
 
@@ -12,8 +12,8 @@ class ConsistencyRule:
     rule_id: str
     rule_name: str
     rule_type: str
-    source_fields: List[str]
-    parameters: Dict[str, Any]
+    source_fields: list[str]
+    parameters: dict[str, Any]
     error_message: str
 
 
@@ -23,7 +23,7 @@ class ConsistencyViolation:
     rule_id: str
     rule_name: str
     record_id: str
-    field_values: Dict[str, Any]
+    field_values: dict[str, Any]
     violation_details: str
     severity: str
 
@@ -36,14 +36,14 @@ class ConsistencyCheckResult:
     consistent_records: int
     inconsistent_records: int
     consistency_rate: Decimal
-    violations: List[ConsistencyViolation]
+    violations: list[ConsistencyViolation]
     checked_at: datetime
 
 
 class DataConsistencyUtilities:
     def __init__(self):
-        self._rules: Dict[str, ConsistencyRule] = {}
-        self._cross_field_validators: Dict[str, callable] = {}
+        self._rules: dict[str, ConsistencyRule] = {}
+        self._cross_field_validators: dict[str, callable] = {}
         self._register_default_validators()
 
     def _register_default_validators(self) -> None:
@@ -57,8 +57,8 @@ class DataConsistencyUtilities:
         self,
         rule_name: str,
         rule_type: str,
-        source_fields: List[str],
-        parameters: Dict[str, Any] = None,
+        source_fields: list[str],
+        parameters: dict[str, Any] | None = None,
         error_message: str = "",
     ) -> ConsistencyRule:
         rule = ConsistencyRule(
@@ -74,7 +74,7 @@ class DataConsistencyUtilities:
 
     def check_consistency(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         rule: ConsistencyRule,
         id_field: str = "id",
     ) -> ConsistencyCheckResult:
@@ -88,7 +88,7 @@ class DataConsistencyUtilities:
                 inconsistent_records=0,
                 consistency_rate=Decimal("100"),
                 violations=[],
-                checked_at=datetime.utcnow(),
+                checked_at=datetime.now(UTC),
             )
 
         violations = []
@@ -124,14 +124,14 @@ class DataConsistencyUtilities:
             inconsistent_records=total - consistent_count,
             consistency_rate=consistency_rate,
             violations=violations,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(UTC),
         )
 
     def check_all_rules(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         id_field: str = "id",
-    ) -> List[ConsistencyCheckResult]:
+    ) -> list[ConsistencyCheckResult]:
         results = []
         for rule in self._rules.values():
             result = self.check_consistency(data, rule, id_field)
@@ -139,8 +139,8 @@ class DataConsistencyUtilities:
         return results
 
     def _validate_date_order(
-        self, record: Dict[str, Any], rule: ConsistencyRule
-    ) -> Tuple[bool, str]:
+        self, record: dict[str, Any], rule: ConsistencyRule
+    ) -> tuple[bool, str]:
         fields = rule.source_fields
         if len(fields) < 2:
             return True, ""
@@ -168,8 +168,8 @@ class DataConsistencyUtilities:
         return True, ""
 
     def _validate_numeric_comparison(
-        self, record: Dict[str, Any], rule: ConsistencyRule
-    ) -> Tuple[bool, str]:
+        self, record: dict[str, Any], rule: ConsistencyRule
+    ) -> tuple[bool, str]:
         fields = rule.source_fields
         if len(fields) < 2:
             return True, ""
@@ -190,13 +190,13 @@ class DataConsistencyUtilities:
 
             if operator == "<=" and num1 > num2:
                 return False, f"{field1} ({num1}) > {field2} ({num2})"
-            elif operator == "<" and num1 >= num2:
+            if operator == "<" and num1 >= num2:
                 return False, f"{field1} ({num1}) >= {field2} ({num2})"
-            elif operator == ">=" and num1 < num2:
+            if operator == ">=" and num1 < num2:
                 return False, f"{field1} ({num1}) < {field2} ({num2})"
-            elif operator == ">" and num1 <= num2:
+            if operator == ">" and num1 <= num2:
                 return False, f"{field1} ({num1}) <= {field2} ({num2})"
-            elif operator == "==" and num1 != num2:
+            if operator == "==" and num1 != num2:
                 return False, f"{field1} ({num1}) != {field2} ({num2})"
         except (ValueError, TypeError):
             return False, f"Non-numeric values in {field1} or {field2}"
@@ -204,8 +204,8 @@ class DataConsistencyUtilities:
         return True, ""
 
     def _validate_conditional_required(
-        self, record: Dict[str, Any], rule: ConsistencyRule
-    ) -> Tuple[bool, str]:
+        self, record: dict[str, Any], rule: ConsistencyRule
+    ) -> tuple[bool, str]:
         condition_field = rule.parameters.get("condition_field")
         condition_value = rule.parameters.get("condition_value")
         required_fields = rule.source_fields
@@ -222,8 +222,8 @@ class DataConsistencyUtilities:
         return True, ""
 
     def _validate_mutual_exclusion(
-        self, record: Dict[str, Any], rule: ConsistencyRule
-    ) -> Tuple[bool, str]:
+        self, record: dict[str, Any], rule: ConsistencyRule
+    ) -> tuple[bool, str]:
         fields = rule.source_fields
         non_null_count = 0
 
@@ -240,8 +240,8 @@ class DataConsistencyUtilities:
         return True, ""
 
     def _validate_sum_equals(
-        self, record: Dict[str, Any], rule: ConsistencyRule
-    ) -> Tuple[bool, str]:
+        self, record: dict[str, Any], rule: ConsistencyRule
+    ) -> tuple[bool, str]:
         sum_fields = rule.source_fields[:-1]
         total_field = rule.source_fields[-1]
         tolerance = float(rule.parameters.get("tolerance", 0.01))
@@ -253,11 +253,11 @@ class DataConsistencyUtilities:
             if abs(calculated_sum - expected_total) > tolerance:
                 return False, f"Sum of {sum_fields} ({calculated_sum}) != {total_field} ({expected_total})"
         except (ValueError, TypeError):
-            return False, f"Non-numeric values in sum calculation"
+            return False, "Non-numeric values in sum calculation"
 
         return True, ""
 
-    def get_rules(self) -> Dict[str, ConsistencyRule]:
+    def get_rules(self) -> dict[str, ConsistencyRule]:
         return self._rules.copy()
 
     def register_validator(self, name: str, validator: callable) -> None:

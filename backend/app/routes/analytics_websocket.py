@@ -4,13 +4,13 @@ WebSocket endpoint for real-time analytics streaming.
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
 from ..services.event_streaming import event_streaming_service
-from ..utils.auth import get_current_user_ws, get_current_user
+from ..utils.auth import get_current_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ async def analytics_websocket_endpoint(websocket: WebSocket):
         await websocket.send_json({
             "type": "connection_established",
             "message": "Connected to analytics stream",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         })
 
         # Main event loop
@@ -123,11 +123,11 @@ async def analytics_websocket_endpoint(websocket: WebSocket):
                             "data": event
                         })
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send heartbeat every 30 seconds
                     await websocket.send_json({
                         "type": "heartbeat",
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now(UTC).isoformat()
                     })
 
                 # Check for messages from client
@@ -146,7 +146,7 @@ async def analytics_websocket_endpoint(websocket: WebSocket):
                             "event_types": event_types
                         })
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
                 except json.JSONDecodeError:
                     logger.warning("Invalid JSON received from client")
@@ -193,8 +193,7 @@ async def trigger_analytics_event(
 
     if success:
         return {"status": "success", "message": "Event captured"}
-    else:
-        return JSONResponse(
-            status_code=400,
-            content={"status": "error", "error": error}
-        )
+    return JSONResponse(
+        status_code=400,
+        content={"status": "error", "error": error}
+    )

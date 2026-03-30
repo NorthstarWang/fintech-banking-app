@@ -1,14 +1,21 @@
 """KRI Routes - API endpoints for Key Risk Indicators"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.kri_models import (
-    KeyRiskIndicator, KRIMeasurement, KRIThresholdBreach, KRITarget,
-    KRITrendAnalysis, KRIDashboard, KRIReport, KRIType, KRICategory
+    KeyRiskIndicator,
+    KRICategory,
+    KRIDashboard,
+    KRIMeasurement,
+    KRITarget,
+    KRIThresholdBreach,
+    KRITrendAnalysis,
+    KRIType,
 )
 from ..services.kri_service import kri_service
 
@@ -26,10 +33,10 @@ class CreateKRIRequest(BaseModel):
     measurement_frequency: str
     data_source: str
     calculation_method: str
-    green_threshold_max: Optional[Decimal] = None
-    amber_threshold_min: Optional[Decimal] = None
-    amber_threshold_max: Optional[Decimal] = None
-    red_threshold_min: Optional[Decimal] = None
+    green_threshold_max: Decimal | None = None
+    amber_threshold_min: Decimal | None = None
+    amber_threshold_max: Decimal | None = None
+    red_threshold_min: Decimal | None = None
     higher_is_worse: bool = True
 
 
@@ -38,7 +45,7 @@ class RecordMeasurementRequest(BaseModel):
     measurement_period: str
     value: Decimal
     recorded_by: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class SetTargetRequest(BaseModel):
@@ -47,7 +54,7 @@ class SetTargetRequest(BaseModel):
     target_type: str
     effective_from: date
     approved_by: str
-    rationale: Optional[str] = None
+    rationale: str | None = None
 
 
 class ResolveBreachRequest(BaseModel):
@@ -95,10 +102,10 @@ async def get_kri_by_code(kri_code: str):
     return kri
 
 
-@router.get("/", response_model=List[KeyRiskIndicator])
+@router.get("/", response_model=list[KeyRiskIndicator])
 async def list_kris(
-    category: Optional[KRICategory] = Query(None),
-    business_unit: Optional[str] = Query(None),
+    category: KRICategory | None = Query(None),
+    business_unit: str | None = Query(None),
     is_active: bool = Query(True)
 ):
     """List KRIs"""
@@ -118,19 +125,19 @@ async def record_measurement(kri_id: UUID, request: RecordMeasurementRequest):
     )
 
 
-@router.get("/{kri_id}/measurements", response_model=List[KRIMeasurement])
+@router.get("/{kri_id}/measurements", response_model=list[KRIMeasurement])
 async def get_measurements(
     kri_id: UUID,
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None)
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None)
 ):
     """Get KRI measurements"""
     return await kri_service.get_kri_measurements(kri_id, start_date, end_date)
 
 
-@router.get("/breaches", response_model=List[KRIThresholdBreach])
+@router.get("/breaches", response_model=list[KRIThresholdBreach])
 async def get_breaches(
-    kri_id: Optional[UUID] = Query(None),
+    kri_id: UUID | None = Query(None),
     status: str = Query("open")
 ):
     """Get KRI breaches"""
@@ -173,7 +180,7 @@ async def analyze_trend(
 
 
 @router.get("/dashboard", response_model=KRIDashboard)
-async def get_dashboard(business_unit: Optional[str] = Query(None)):
+async def get_dashboard(business_unit: str | None = Query(None)):
     """Get KRI dashboard"""
     return await kri_service.generate_dashboard(business_unit)
 

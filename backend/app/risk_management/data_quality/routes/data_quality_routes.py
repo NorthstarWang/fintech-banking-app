@@ -1,10 +1,12 @@
 """Data Quality Routes"""
 
-from typing import List, Dict, Any, Optional
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.data_quality_service import data_quality_service
 
 router = APIRouter(prefix="/data-quality", tags=["Data Quality"])
@@ -15,7 +17,7 @@ class CreateRuleRequest(BaseModel):
     rule_description: str
     dimension: str
     target_dataset: str
-    target_columns: List[str]
+    target_columns: list[str]
     rule_expression: str
     error_message: str
     owner: str
@@ -54,7 +56,7 @@ class CreateThresholdRequest(BaseModel):
     threshold_value: Decimal
     comparison_operator: str
     action_on_breach: str
-    notification_emails: List[str]
+    notification_emails: list[str]
     created_by: str
 
 
@@ -73,7 +75,7 @@ class CreateSLARequest(BaseModel):
     target_value: Decimal
     measurement_frequency: str
     owner: str
-    stakeholders: List[str]
+    stakeholders: list[str]
 
 
 @router.post("/rules")
@@ -122,7 +124,7 @@ async def complete_check(
     check_id: UUID,
     records_checked: int,
     records_passed: int,
-    error_details: Optional[List[Dict[str, Any]]] = None,
+    error_details: list[dict[str, Any]] | None = None,
 ):
     check = await data_quality_service.complete_check(
         check_id=check_id,

@@ -1,23 +1,29 @@
 """Credit Score Service - Credit scoring and assessment"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.credit_score_models import (
-    CreditScore, CreditScoreFactor, CreditScoreHistory,
-    CreditScoreRequest, ScoreSimulation, CreditScoreStatistics,
-    ScoreType, ScoreCategory, CreditScoreSource
+    CreditScore,
+    CreditScoreFactor,
+    CreditScoreHistory,
+    CreditScoreRequest,
+    CreditScoreStatistics,
+    ScoreCategory,
+    ScoreSimulation,
+    ScoreType,
 )
 
 
 class CreditScoreService:
     def __init__(self):
-        self._scores: Dict[UUID, CreditScore] = {}
-        self._customer_scores: Dict[str, List[UUID]] = {}
-        self._requests: Dict[UUID, CreditScoreRequest] = {}
+        self._scores: dict[UUID, CreditScore] = {}
+        self._customer_scores: dict[str, list[UUID]] = {}
+        self._requests: dict[UUID, CreditScoreRequest] = {}
         self._score_factors = self._initialize_factors()
 
-    def _initialize_factors(self) -> Dict[str, CreditScoreFactor]:
+    def _initialize_factors(self) -> dict[str, CreditScoreFactor]:
         return {
             "payment_history": CreditScoreFactor(
                 factor_code="PAY_HIST",
@@ -51,14 +57,13 @@ class CreditScoreService:
     def _calculate_category(self, score: int) -> ScoreCategory:
         if score >= 800:
             return ScoreCategory.EXCELLENT
-        elif score >= 740:
+        if score >= 740:
             return ScoreCategory.GOOD
-        elif score >= 670:
+        if score >= 670:
             return ScoreCategory.FAIR
-        elif score >= 580:
+        if score >= 580:
             return ScoreCategory.POOR
-        else:
-            return ScoreCategory.VERY_POOR
+        return ScoreCategory.VERY_POOR
 
     async def calculate_score(self, customer_id: str, score_type: ScoreType = ScoreType.INTERNAL) -> CreditScore:
         # Simulate score calculation
@@ -73,7 +78,7 @@ class CreditScoreService:
             score_category=self._calculate_category(score_value),
             positive_factors=["On-time payments", "Low credit utilization"],
             negative_factors=["Short credit history"],
-            valid_until=datetime.utcnow() + timedelta(days=30)
+            valid_until=datetime.now(UTC) + timedelta(days=30)
         )
 
         self._scores[score.score_id] = score
@@ -83,10 +88,10 @@ class CreditScoreService:
 
         return score
 
-    async def get_score(self, score_id: UUID) -> Optional[CreditScore]:
+    async def get_score(self, score_id: UUID) -> CreditScore | None:
         return self._scores.get(score_id)
 
-    async def get_customer_score(self, customer_id: str) -> Optional[CreditScore]:
+    async def get_customer_score(self, customer_id: str) -> CreditScore | None:
         score_ids = self._customer_scores.get(customer_id, [])
         if score_ids:
             latest_id = score_ids[-1]
@@ -101,7 +106,7 @@ class CreditScoreService:
             return CreditScoreHistory(customer_id=customer_id)
 
         score_values = [s.score_value for s in scores]
-        history = CreditScoreHistory(
+        return CreditScoreHistory(
             customer_id=customer_id,
             scores=scores,
             average_score=sum(score_values) / len(score_values),
@@ -111,7 +116,6 @@ class CreditScoreService:
                 "improving" if scores[-1].score_value > scores[-2].score_value else "declining"
             )
         )
-        return history
 
     async def request_score(self, customer_id: str, purpose: str, requested_by: str) -> CreditScoreRequest:
         request = CreditScoreRequest(
@@ -123,7 +127,7 @@ class CreditScoreService:
         self._requests[request.request_id] = request
         return request
 
-    async def simulate_score(self, customer_id: str, scenarios: List[Dict[str, Any]], created_by: str) -> ScoreSimulation:
+    async def simulate_score(self, customer_id: str, scenarios: list[dict[str, Any]], created_by: str) -> ScoreSimulation:
         current_score = await self.get_customer_score(customer_id)
         current_value = current_score.score_value if current_score else 700
 
@@ -137,7 +141,7 @@ class CreditScoreService:
 
         simulated_value = min(850, max(300, current_value + simulated_change))
 
-        simulation = ScoreSimulation(
+        return ScoreSimulation(
             customer_id=customer_id,
             current_score=current_value,
             simulated_score=simulated_value,
@@ -145,7 +149,6 @@ class CreditScoreService:
             simulation_scenarios=scenarios,
             created_by=created_by
         )
-        return simulation
 
     async def get_statistics(self) -> CreditScoreStatistics:
         stats = CreditScoreStatistics(total_scores=len(self._scores))

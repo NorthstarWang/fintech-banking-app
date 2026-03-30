@@ -4,7 +4,7 @@ Complete mock implementation for transactions routes.
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -113,8 +113,8 @@ async def create_transaction(
         "merchant": merchant,
         "tags": tags or [],
         "notes": request.get("notes", ""),
-        "date": datetime.utcnow().isoformat(),
-        "created_at": datetime.utcnow().isoformat()
+        "date": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Update account balance
@@ -164,8 +164,8 @@ async def transfer_funds(
         "description": request.description,
         "transaction_type": "transfer",
         "category": "Transfer",
-        "date": datetime.utcnow().isoformat(),
-        "created_at": datetime.utcnow().isoformat()
+        "date": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     data_manager.transactions.append(debit_trans)
     
@@ -177,8 +177,8 @@ async def transfer_funds(
         "description": request.description,
         "transaction_type": "transfer",
         "category": "Transfer",
-        "date": datetime.utcnow().isoformat(),
-        "created_at": datetime.utcnow().isoformat()
+        "date": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     data_manager.transactions.append(credit_trans)
     
@@ -266,7 +266,7 @@ async def update_transaction(
     if request.notes is not None:
         transaction["notes"] = request.notes
     
-    transaction["updated_at"] = datetime.utcnow().isoformat()
+    transaction["updated_at"] = datetime.now(timezone.utc).isoformat()
     return transaction
 
 @router.delete("/{transaction_id}")

@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -115,7 +115,7 @@ async def get_credit_score(
     ).order_by(CreditScore.last_updated.desc()).first()
 
     # Generate new score if none exists or if it's outdated
-    if not credit_score or (datetime.utcnow() - credit_score.last_updated).days > 30:
+    if not credit_score or (datetime.now(UTC) - credit_score.last_updated).days > 30:
         score_value = generate_mock_credit_score(current_user['user_id'])
         score_range = calculate_credit_score_range(score_value)
         factors = generate_score_factors(score_value)
@@ -131,8 +131,8 @@ async def get_credit_score(
             credit_mix_score=factors[3]["score"],
             new_credit_score=factors[4]["score"],
             factors=factors,
-            last_updated=datetime.utcnow(),
-            next_update=datetime.utcnow() + timedelta(days=30)
+            last_updated=datetime.now(UTC),
+            next_update=datetime.now(UTC) + timedelta(days=30)
         )
 
         db_session.add(credit_score)
@@ -140,7 +140,7 @@ async def get_credit_score(
         db_session.refresh(credit_score)
 
 
-    return CreditScoreResponse.from_orm(credit_score)
+    return CreditScoreResponse.model_validate(credit_score)
 
 @router.get("/history", response_model=CreditHistoryResponse)
 async def get_credit_history(
@@ -150,7 +150,7 @@ async def get_credit_history(
 ):
     """Get credit score history"""
     # Get historical scores
-    since_date = datetime.utcnow() - timedelta(days=months * 30)
+    since_date = datetime.now(UTC) - timedelta(days=months * 30)
 
     scores = db_session.query(CreditScore).filter(
         CreditScore.user_id == current_user['user_id'],
@@ -163,7 +163,7 @@ async def get_credit_history(
         scores_data = []
 
         for i in range(months):
-            month_date = datetime.utcnow() - timedelta(days=i * 30)
+            month_date = datetime.now(UTC) - timedelta(days=i * 30)
             # Add some variation
             variation = random.randint(-10, 15)
             score = max(300, min(850, current_score - (i * 2) + variation))
@@ -448,7 +448,7 @@ async def get_credit_tips(
     return CreditTipsResponse(
         tips=tips,
         personalized=True,
-        generated_at=datetime.utcnow()
+        generated_at=datetime.now(UTC)
     )
 
 @router.get("/report", response_model=CreditReportResponse)
@@ -508,15 +508,15 @@ async def generate_credit_report(
     inquiries = [
         {
             "creditor": "Example Bank",
-            "date": (datetime.utcnow() - timedelta(days=45)).isoformat(),
+            "date": (datetime.now(UTC) - timedelta(days=45)).isoformat(),
             "type": "Hard Inquiry"
         }
     ]
 
     # Generate report
     return CreditReportResponse(
-        report_id=f"CR{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-        generated_at=datetime.utcnow(),
+        report_id=f"CR{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}",
+        generated_at=datetime.now(UTC),
         user_info={
             "name": f"{user.first_name} {user.last_name}",
             "current_address": "123 Main St, Anytown, USA",  # Mock
@@ -724,9 +724,9 @@ async def update_dispute_status(
     if 'outcome' in status_update:
         dispute.outcome = status_update['outcome']
         if dispute.outcome in ['removed', 'corrected']:
-            dispute.resolution_date = datetime.utcnow()
+            dispute.resolution_date = datetime.now(UTC)
 
-    dispute.last_updated = datetime.utcnow()
+    dispute.last_updated = datetime.now(UTC)
 
     db_session.commit()
     db_session.refresh(dispute)
@@ -840,11 +840,11 @@ async def make_credit_builder_payment(
     # Process payment
     payment_amount = payment_data['amount']
     account.current_balance = max(0, account.current_balance - payment_amount)
-    account.last_payment_date = datetime.utcnow()
+    account.last_payment_date = datetime.now(UTC)
 
     # Add to payment history
     payment_record = {
-        'date': datetime.utcnow().isoformat(),
+        'date': datetime.now(UTC).isoformat(),
         'amount': payment_amount,
         'on_time': payment_data.get('on_time', True)
     }
@@ -909,7 +909,7 @@ async def simulate_credit_change(
     # Update score
     credit_score.score = new_score
     credit_score.score_range = calculate_credit_score_range(new_score)
-    credit_score.last_updated = datetime.utcnow()
+    credit_score.last_updated = datetime.now(UTC)
 
     # Create alert
     severity = 'critical' if change <= -10 else 'warning' if change < 0 else 'info'

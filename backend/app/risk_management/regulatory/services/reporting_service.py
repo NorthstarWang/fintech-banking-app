@@ -1,13 +1,22 @@
 """Reporting Service - Business logic for regulatory reporting"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.reporting_models import (
-    RegulatoryReport, ReportSchedule, ReportValidation, ReportDataElement,
-    ReportingException, ReportAmendment, ReportingCalendar, ReportMetrics,
-    ReportFrequency, ReportStatus, Regulator
+    Regulator,
+    RegulatoryReport,
+    ReportAmendment,
+    ReportDataElement,
+    ReportFrequency,
+    ReportingCalendar,
+    ReportingException,
+    ReportMetrics,
+    ReportSchedule,
+    ReportStatus,
+    ReportValidation,
 )
 from ..repositories.reporting_repository import reporting_repository
 
@@ -29,33 +38,33 @@ class ReportingService:
         await self.repository.save_report(report)
         return report
 
-    async def get_report(self, report_id: UUID) -> Optional[RegulatoryReport]:
+    async def get_report(self, report_id: UUID) -> RegulatoryReport | None:
         return await self.repository.find_report_by_id(report_id)
 
     async def submit_report(
         self, report_id: UUID, submitted_by: str, submission_reference: str
-    ) -> Optional[RegulatoryReport]:
+    ) -> RegulatoryReport | None:
         report = await self.repository.find_report_by_id(report_id)
         if report and report.status == ReportStatus.APPROVED:
             report.status = ReportStatus.SUBMITTED
             report.submitted_by = submitted_by
-            report.submission_date = datetime.utcnow()
+            report.submission_date = datetime.now(UTC)
             report.submission_reference = submission_reference
         return report
 
     async def approve_report(
         self, report_id: UUID, approved_by: str
-    ) -> Optional[RegulatoryReport]:
+    ) -> RegulatoryReport | None:
         report = await self.repository.find_report_by_id(report_id)
         if report and report.status == ReportStatus.PENDING_REVIEW:
             report.status = ReportStatus.APPROVED
             report.approved_by = approved_by
-            report.approval_date = datetime.utcnow()
+            report.approval_date = datetime.now(UTC)
         return report
 
     async def create_schedule(
         self, report_code: str, report_name: str, regulator: Regulator, frequency: ReportFrequency,
-        reporting_offset_days: int, entity_id: str, owner: str, data_sources: List[str],
+        reporting_offset_days: int, entity_id: str, owner: str, data_sources: list[str],
         next_due_date: date
     ) -> ReportSchedule:
         schedule = ReportSchedule(
@@ -68,7 +77,7 @@ class ReportingService:
 
     async def validate_report(
         self, report_id: UUID, validation_rule_id: str, rule_description: str,
-        rule_type: str, expected_value: Optional[str], actual_value: str
+        rule_type: str, expected_value: str | None, actual_value: str
     ) -> ReportValidation:
         passed = expected_value is None or expected_value == actual_value
         validation = ReportValidation(
@@ -86,7 +95,7 @@ class ReportingService:
         element = ReportDataElement(
             report_id=report_id, element_code=element_code, element_name=element_name, schedule=schedule,
             line_item=line_item, column=column, value=value, data_type=data_type, source_system=source_system,
-            extraction_date=datetime.utcnow()
+            extraction_date=datetime.now(UTC)
         )
         await self.repository.save_data_element(element)
         return element
@@ -106,7 +115,7 @@ class ReportingService:
 
     async def create_amendment(
         self, original_report_id: UUID, amended_report_id: UUID, amendment_reason: str,
-        changes_summary: str, elements_changed: List[Dict[str, Any]], materiality_assessment: str,
+        changes_summary: str, elements_changed: list[dict[str, Any]], materiality_assessment: str,
         approved_by: str
     ) -> ReportAmendment:
         amendment = ReportAmendment(
@@ -152,7 +161,7 @@ class ReportingService:
         await self.repository.save_metrics(metrics)
         return metrics
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

@@ -2,7 +2,7 @@
 Credit card recommendation and application management.
 """
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 
@@ -281,7 +281,7 @@ class CreditCardManager:
                     'card_offer_id': rec['card_offer_id'],
                     'recommendation_score': rec['match_score'] / 100,
                     'reason': ', '.join(rec['reasons']),
-                    'created_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC)
                 })
 
         return recommendations[:5]  # Return top 5 recommendations
@@ -311,8 +311,8 @@ class CreditCardManager:
                 'credit_score_at_application': credit_score,
                 'requested_credit_limit': requested_credit_limit or 0,
                 'approved_credit_limit': 0,
-                'application_date': datetime.utcnow(),
-                'decision_date': datetime.utcnow(),
+                'application_date': datetime.now(UTC),
+                'decision_date': datetime.now(UTC),
                 'rejection_reason': f"Credit score {credit_score} below minimum {offer['min_credit_score']}"
             }
             self.data_manager.card_applications.append(application)
@@ -347,8 +347,8 @@ class CreditCardManager:
             'credit_score_at_application': credit_score,
             'requested_credit_limit': requested_credit_limit or 0,
             'approved_credit_limit': approved_limit,
-            'application_date': datetime.utcnow(),
-            'decision_date': datetime.utcnow() + timedelta(seconds=5),  # Instant decision
+            'application_date': datetime.now(UTC),
+            'decision_date': datetime.now(UTC) + timedelta(seconds=5),  # Instant decision
             'rejection_reason': None if is_approved else 'Risk assessment'
         }
 
@@ -489,8 +489,8 @@ class CreditCardManager:
             'apr': float(offer['apr_range'].split('-')[0].replace('%', '')),
             'annual_fee': offer['annual_fee'],
             'status': 'active',
-            'created_at': datetime.utcnow(),
-            'expiry_date': (datetime.utcnow() + timedelta(days=365*4)).strftime('%m/%y')
+            'created_at': datetime.now(UTC),
+            'expiry_date': (datetime.now(UTC) + timedelta(days=365*4)).strftime('%m/%y')
         }
 
         self.data_manager.cards.append(card)

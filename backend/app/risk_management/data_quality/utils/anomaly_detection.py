@@ -1,13 +1,11 @@
 """Data Anomaly Detection Utilities"""
 
-from typing import List, Dict, Any, Optional, Tuple
-from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass
-from enum import Enum
-from uuid import uuid4
-from collections import Counter
 import math
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
+from uuid import uuid4
 
 
 class AnomalyType(str, Enum):
@@ -36,7 +34,7 @@ class DetectedAnomaly:
     field_name: str
     description: str
     affected_records: int
-    sample_values: List[Any]
+    sample_values: list[Any]
     detection_method: str
     detected_at: datetime
 
@@ -50,7 +48,7 @@ class AnomalyDetectionResult:
     high_count: int
     medium_count: int
     low_count: int
-    anomalies: List[DetectedAnomaly]
+    anomalies: list[DetectedAnomaly]
     analysis_time_ms: int
     analyzed_at: datetime
 
@@ -62,9 +60,9 @@ class AnomalyDetectionUtilities:
 
     def detect_numeric_outliers_iqr(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
-    ) -> List[DetectedAnomaly]:
+    ) -> list[DetectedAnomaly]:
         values = [
             float(r.get(field_name))
             for r in data
@@ -99,7 +97,7 @@ class AnomalyDetectionUtilities:
                     affected_records=len(outliers),
                     sample_values=outliers[:5],
                     detection_method="iqr",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -107,9 +105,9 @@ class AnomalyDetectionUtilities:
 
     def detect_numeric_outliers_zscore(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
-    ) -> List[DetectedAnomaly]:
+    ) -> list[DetectedAnomaly]:
         values = [
             float(r.get(field_name))
             for r in data
@@ -142,7 +140,7 @@ class AnomalyDetectionUtilities:
                     affected_records=len(outliers),
                     sample_values=outliers[:5],
                     detection_method="zscore",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -150,9 +148,9 @@ class AnomalyDetectionUtilities:
 
     def detect_missing_patterns(
         self,
-        data: List[Dict[str, Any]],
-        fields: List[str],
-    ) -> List[DetectedAnomaly]:
+        data: list[dict[str, Any]],
+        fields: list[str],
+    ) -> list[DetectedAnomaly]:
         anomalies = []
 
         for field_name in fields:
@@ -178,7 +176,7 @@ class AnomalyDetectionUtilities:
                     affected_records=null_count,
                     sample_values=[],
                     detection_method="null_analysis",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -186,13 +184,13 @@ class AnomalyDetectionUtilities:
 
     def detect_cardinality_anomalies(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
-        expected_cardinality: str = None,
-    ) -> List[DetectedAnomaly]:
+        expected_cardinality: str | None = None,
+    ) -> list[DetectedAnomaly]:
         values = [r.get(field_name) for r in data if r.get(field_name) is not None]
         total = len(values)
-        distinct = len(set(str(v) for v in values))
+        distinct = len({str(v) for v in values})
 
         if total == 0:
             return []
@@ -213,7 +211,7 @@ class AnomalyDetectionUtilities:
                     affected_records=duplicates,
                     sample_values=[],
                     detection_method="cardinality_check",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -228,7 +226,7 @@ class AnomalyDetectionUtilities:
                     affected_records=distinct,
                     sample_values=[],
                     detection_method="cardinality_check",
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -236,11 +234,11 @@ class AnomalyDetectionUtilities:
 
     def detect_all_anomalies(
         self,
-        data: List[Dict[str, Any]],
-        numeric_fields: List[str] = None,
+        data: list[dict[str, Any]],
+        numeric_fields: list[str] | None = None,
         check_missing: bool = True,
     ) -> AnomalyDetectionResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         all_anomalies = []
 
         if not data:
@@ -254,7 +252,7 @@ class AnomalyDetectionUtilities:
                 low_count=0,
                 anomalies=[],
                 analysis_time_ms=0,
-                analyzed_at=datetime.utcnow(),
+                analyzed_at=datetime.now(UTC),
             )
 
         all_fields = list(data[0].keys()) if data else []
@@ -271,7 +269,7 @@ class AnomalyDetectionUtilities:
         if check_missing:
             all_anomalies.extend(self.detect_missing_patterns(data, all_fields))
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         analysis_time = int((end_time - start_time).total_seconds() * 1000)
 
         return AnomalyDetectionResult(

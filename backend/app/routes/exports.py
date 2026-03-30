@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 
-from ..models import Any, ExportFormat, ExportRequest, ExportResponse, Transaction
+from ..models import ExportFormat, ExportRequest, ExportResponse, Transaction
 from ..storage.memory_adapter import db
 from ..utils.auth import get_current_user
 from ..utils.validators import ValidationError

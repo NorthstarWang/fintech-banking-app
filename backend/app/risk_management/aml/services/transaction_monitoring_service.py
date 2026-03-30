@@ -4,16 +4,17 @@ Transaction Monitoring Service
 Real-time and batch transaction monitoring for AML detection.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
-import asyncio
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
 
-from ..models.alert_models import AlertType, AlertSeverity, AlertCreateRequest, AlertTrigger
 from ..models.transaction_pattern_models import (
-    PatternType, PatternSeverity, DetectedPattern, PatternRule,
-    PatternAnalysisRequest, PatternAnalysisResult, StructuringPattern,
-    VelocityPattern, TransactionProfileDeviation
+    DetectedPattern,
+    PatternAnalysisRequest,
+    PatternAnalysisResult,
+    PatternRule,
+    PatternSeverity,
+    PatternType,
 )
 
 
@@ -21,8 +22,8 @@ class TransactionMonitoringService:
     """Service for real-time and batch transaction monitoring"""
 
     def __init__(self):
-        self._rules: Dict[UUID, PatternRule] = {}
-        self._detection_results: Dict[UUID, PatternAnalysisResult] = {}
+        self._rules: dict[UUID, PatternRule] = {}
+        self._detection_results: dict[UUID, PatternAnalysisResult] = {}
         self._initialize_default_rules()
 
     def _initialize_default_rules(self):
@@ -38,7 +39,7 @@ class TransactionMonitoringService:
                 thresholds={"count_threshold": 3, "total_threshold": 25000},
                 base_severity=PatternSeverity.HIGH,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
             PatternRule(
@@ -51,7 +52,7 @@ class TransactionMonitoringService:
                 thresholds={"threshold_multiplier": 3.0, "min_transactions": 5},
                 base_severity=PatternSeverity.MEDIUM,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
             PatternRule(
@@ -64,7 +65,7 @@ class TransactionMonitoringService:
                 thresholds={"ratio_threshold": 0.9, "min_amount": 5000},
                 base_severity=PatternSeverity.HIGH,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
             PatternRule(
@@ -77,7 +78,7 @@ class TransactionMonitoringService:
                 thresholds={"alert_threshold": 1},
                 base_severity=PatternSeverity.HIGH,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
             PatternRule(
@@ -90,7 +91,7 @@ class TransactionMonitoringService:
                 thresholds={"min_amount": 1000},
                 base_severity=PatternSeverity.MEDIUM,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
             PatternRule(
@@ -103,7 +104,7 @@ class TransactionMonitoringService:
                 thresholds={"threshold": 10000},
                 base_severity=PatternSeverity.LOW,
                 is_active=True,
-                effective_from=datetime.utcnow(),
+                effective_from=datetime.now(UTC),
                 created_by="system"
             ),
         ]
@@ -112,8 +113,8 @@ class TransactionMonitoringService:
             self._rules[rule.rule_id] = rule
 
     async def monitor_transaction(
-        self, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> List[DetectedPattern]:
+        self, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> list[DetectedPattern]:
         """Monitor a single transaction in real-time"""
         detected_patterns = []
 
@@ -128,28 +129,28 @@ class TransactionMonitoringService:
         return detected_patterns
 
     async def _evaluate_rule(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Evaluate a single rule against a transaction"""
 
         if rule.pattern_type == PatternType.STRUCTURING:
             return await self._check_structuring(rule, transaction, customer_profile)
-        elif rule.pattern_type == PatternType.VELOCITY_SPIKE:
+        if rule.pattern_type == PatternType.VELOCITY_SPIKE:
             return await self._check_velocity(rule, transaction, customer_profile)
-        elif rule.pattern_type == PatternType.RAPID_MOVEMENT:
+        if rule.pattern_type == PatternType.RAPID_MOVEMENT:
             return await self._check_rapid_movement(rule, transaction, customer_profile)
-        elif rule.pattern_type == PatternType.GEOGRAPHIC_ANOMALY:
+        if rule.pattern_type == PatternType.GEOGRAPHIC_ANOMALY:
             return await self._check_geographic(rule, transaction, customer_profile)
-        elif rule.pattern_type == PatternType.DORMANT_ACTIVATION:
+        if rule.pattern_type == PatternType.DORMANT_ACTIVATION:
             return await self._check_dormant_activation(rule, transaction, customer_profile)
-        elif rule.pattern_type == PatternType.AMOUNT_ANOMALY:
+        if rule.pattern_type == PatternType.AMOUNT_ANOMALY:
             return await self._check_amount_anomaly(rule, transaction, customer_profile)
 
         return None
 
     async def _check_structuring(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for structuring patterns"""
         threshold = rule.parameters.get("threshold", 10000)
         amount = transaction.get("amount", 0)
@@ -181,8 +182,8 @@ class TransactionMonitoringService:
         return None
 
     async def _check_velocity(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for velocity anomalies"""
         current_velocity = customer_profile.get("current_transaction_velocity", 0)
         baseline_velocity = customer_profile.get("baseline_transaction_velocity", 1)
@@ -210,8 +211,8 @@ class TransactionMonitoringService:
         return None
 
     async def _check_rapid_movement(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for rapid movement of funds"""
         last_large_credit = customer_profile.get("last_large_credit")
         min_amount = rule.thresholds.get("min_amount", 5000)
@@ -222,7 +223,7 @@ class TransactionMonitoringService:
             transaction.get("type") == "debit" and
             transaction.get("amount", 0) >= min_amount
         ):
-            time_diff = (datetime.utcnow() - last_large_credit.get("timestamp", datetime.utcnow())).total_seconds() / 3600
+            time_diff = (datetime.now(UTC) - last_large_credit.get("timestamp", datetime.now(UTC))).total_seconds() / 3600
 
             if time_diff < threshold_hours:
                 ratio = transaction.get("amount", 0) / last_large_credit.get("amount", 1)
@@ -249,8 +250,8 @@ class TransactionMonitoringService:
         return None
 
     async def _check_geographic(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for high-risk geographic involvement"""
         high_risk_countries = rule.parameters.get("high_risk_countries", [])
         country = transaction.get("counterparty_country", "")
@@ -276,8 +277,8 @@ class TransactionMonitoringService:
         return None
 
     async def _check_dormant_activation(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for dormant account activation"""
         days_since_activity = customer_profile.get("days_since_last_activity", 0)
         threshold_days = rule.parameters.get("dormancy_threshold_days", 180)
@@ -304,8 +305,8 @@ class TransactionMonitoringService:
         return None
 
     async def _check_amount_anomaly(
-        self, rule: PatternRule, transaction: Dict[str, Any], customer_profile: Dict[str, Any]
-    ) -> Optional[DetectedPattern]:
+        self, rule: PatternRule, transaction: dict[str, Any], customer_profile: dict[str, Any]
+    ) -> DetectedPattern | None:
         """Check for large transaction amounts"""
         threshold = rule.thresholds.get("threshold", 10000)
         amount = transaction.get("amount", 0)
@@ -336,7 +337,7 @@ class TransactionMonitoringService:
         """Run batch pattern analysis"""
         result = PatternAnalysisResult(
             request_id=request.request_id,
-            analysis_date=datetime.utcnow()
+            analysis_date=datetime.now(UTC)
         )
 
         # Simulate batch processing
@@ -347,11 +348,11 @@ class TransactionMonitoringService:
         self._detection_results[result.result_id] = result
         return result
 
-    async def get_rules(self) -> List[PatternRule]:
+    async def get_rules(self) -> list[PatternRule]:
         """Get all monitoring rules"""
         return list(self._rules.values())
 
-    async def get_rule(self, rule_id: UUID) -> Optional[PatternRule]:
+    async def get_rule(self, rule_id: UUID) -> PatternRule | None:
         """Get a specific rule"""
         return self._rules.get(rule_id)
 
@@ -360,7 +361,7 @@ class TransactionMonitoringService:
         self._rules[rule.rule_id] = rule
         return rule
 
-    async def update_rule(self, rule_id: UUID, updates: Dict[str, Any]) -> Optional[PatternRule]:
+    async def update_rule(self, rule_id: UUID, updates: dict[str, Any]) -> PatternRule | None:
         """Update an existing rule"""
         rule = self._rules.get(rule_id)
         if not rule:
@@ -370,18 +371,18 @@ class TransactionMonitoringService:
             if hasattr(rule, key):
                 setattr(rule, key, value)
 
-        rule.last_modified_at = datetime.utcnow()
+        rule.last_modified_at = datetime.now(UTC)
         rule.version += 1
         return rule
 
-    async def toggle_rule(self, rule_id: UUID, is_active: bool) -> Optional[PatternRule]:
+    async def toggle_rule(self, rule_id: UUID, is_active: bool) -> PatternRule | None:
         """Enable or disable a rule"""
         rule = self._rules.get(rule_id)
         if not rule:
             return None
 
         rule.is_active = is_active
-        rule.last_modified_at = datetime.utcnow()
+        rule.last_modified_at = datetime.now(UTC)
         return rule
 
 

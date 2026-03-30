@@ -1,10 +1,10 @@
 """
 Virtual currency converter API routes (Airtm-like P2P exchange).
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from typing import Any
 
 from app.models.entities.currency_converter_models import (
     ConversionHistoryResponse,
@@ -25,7 +25,7 @@ from app.models.entities.currency_converter_models import (
     TransferStatus,
     VerificationLevel,
 )
-from app.models.enums import OfferStatus, TradeStatus
+from app.models.enums import OfferStatus
 from app.repositories.currency_converter_manager import CurrencyConverterManager
 from app.repositories.data_manager import data_manager
 from app.utils.auth import get_current_user
@@ -82,7 +82,7 @@ async def get_all_rates(
             bid=bid,
             ask=ask,
             spread_percentage=0.2,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             source="market"
         ))
     return rates
@@ -111,7 +111,7 @@ async def get_specific_rate(
         bid=bid,
         ask=ask,
         spread_percentage=0.2,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         source="market"
     )
 
@@ -153,7 +153,7 @@ async def execute_conversion(
     # Create conversion transaction
     transaction_id = f"TXN-{len(data_manager.conversion_quotes) + 1:06d}"
 
-    result = {
+    return {
         "transaction_id": transaction_id,
         "status": "completed",
         "from_currency": quote['from_currency'],
@@ -162,10 +162,9 @@ async def execute_conversion(
         "to_amount": quote['to_amount'],
         "exchange_rate": quote['exchange_rate'],
         "fee_amount": quote['fee_amount'],
-        "completed_at": datetime.utcnow().isoformat()
+        "completed_at": datetime.now(UTC).isoformat()
     }
 
-    return result
 
 @router.get("/conversions")
 async def get_conversion_history(
@@ -225,7 +224,7 @@ async def get_p2p_offers(
     offers = []
     for offer_dict in data_manager.peer_offers:
         # Skip inactive offers
-        if offer_dict.get('status') == 'cancelled' or offer_dict.get('is_active') == False:
+        if offer_dict.get('status') == 'cancelled' or offer_dict.get('is_active') is False:
             continue
 
         # Skip user's own offers unless explicitly requested
@@ -268,10 +267,10 @@ async def get_p2p_offers(
                 payment_methods=[pm if isinstance(pm, str) else pm.value for pm in offer_dict.get('payment_methods', ['bank_transfer'])],
                 status=offer_dict.get('status', 'active'),
                 expires_at=offer_dict.get('expires_at'),
-                created_at=offer_dict.get('created_at', datetime.utcnow())
+                created_at=offer_dict.get('created_at', datetime.now(UTC))
             )
             offers.append(response)
-        except Exception as e:
+        except Exception:
             # Skip offers that can't be converted
             continue
 
@@ -305,7 +304,7 @@ async def get_offer_details(
         payment_methods=[pm if isinstance(pm, str) else pm.value for pm in offer_dict.get('payment_methods', ['bank_transfer'])],
         status=offer_dict.get('status', 'active'),
         expires_at=offer_dict.get('expires_at'),
-        created_at=offer_dict.get('created_at', datetime.utcnow())
+        created_at=offer_dict.get('created_at', datetime.now(UTC))
     )
 
 @router.post("/p2p/offers", response_model=PeerOfferResponse)
@@ -332,8 +331,8 @@ async def create_peer_offer(
             'max_amount': offer_data.get('max_amount', 1000.0),
             'payment_methods': offer_data.get('payment_methods', ['bank_transfer']),
             'status': OfferStatus.ACTIVE.value,
-            'created_at': datetime.utcnow(),
-            'expires_at': datetime.utcnow() + timedelta(hours=offer_data.get('expires_in_hours', 24)),
+            'created_at': datetime.now(UTC),
+            'expires_at': datetime.now(UTC) + timedelta(hours=offer_data.get('expires_in_hours', 24)),
             'completed_trades': 0,
             'user_rating': 4.5
         }
@@ -359,10 +358,9 @@ async def create_peer_offer(
             expires_at=new_offer['expires_at'],
             created_at=new_offer['created_at']
         )
-    else:
-        # Original PeerOfferCreate format
-        offer = PeerOfferCreate(**offer_data)
-        return converter_manager.create_peer_offer(current_user["user_id"], offer)
+    # Original PeerOfferCreate format
+    offer = PeerOfferCreate(**offer_data)
+    return converter_manager.create_peer_offer(current_user["user_id"], offer)
 
 @router.delete("/p2p/offers/{offer_id}", status_code=204)
 async def cancel_p2p_offer(
@@ -378,7 +376,6 @@ async def cancel_p2p_offer(
 
     offer['status'] = 'cancelled'
     offer['is_active'] = False
-    return None  # 204 No Content
 
 @router.get("/p2p/offers/search", response_model=list[PeerOfferResponse])
 async def search_peer_offers(
@@ -481,7 +478,7 @@ async def release_p2p_funds(
 
     trade['status'] = TransferStatus.COMPLETED.value
     trade['escrow_released'] = True
-    trade['completed_at'] = datetime.utcnow()
+    trade['completed_at'] = datetime.now(UTC)
 
     return {"message": "Funds released successfully"}
 

@@ -4,11 +4,12 @@ Fraud Investigation Models
 Defines data structures for fraud investigation workflow.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class InvestigationStatus(str, Enum):
@@ -43,13 +44,13 @@ class InvestigationStep(BaseModel):
     status: str = "pending"
     is_required: bool = True
 
-    assigned_to: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    assigned_to: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
-    result: Optional[str] = None
-    notes: Optional[str] = None
-    evidence: List[str] = Field(default_factory=list)
+    result: str | None = None
+    notes: str | None = None
+    evidence: list[str] = Field(default_factory=list)
 
 
 class CustomerContact(BaseModel):
@@ -57,14 +58,14 @@ class CustomerContact(BaseModel):
     contact_type: str
     contact_method: str
 
-    contacted_at: datetime = Field(default_factory=datetime.utcnow)
+    contacted_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     contacted_by: str
 
     outcome: str
     notes: str
 
     follow_up_required: bool = False
-    follow_up_date: Optional[datetime] = None
+    follow_up_date: datetime | None = None
 
 
 class FraudInvestigation(BaseModel):
@@ -72,7 +73,7 @@ class FraudInvestigation(BaseModel):
     investigation_number: str
 
     case_id: UUID
-    alert_ids: List[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
 
     investigation_type: InvestigationType = InvestigationType.STANDARD
     status: InvestigationStatus = InvestigationStatus.PENDING
@@ -81,37 +82,37 @@ class FraudInvestigation(BaseModel):
     customer_name: str
 
     disputed_amount: float = 0.0
-    disputed_transactions: List[str] = Field(default_factory=list)
+    disputed_transactions: list[str] = Field(default_factory=list)
 
-    steps: List[InvestigationStep] = Field(default_factory=list)
+    steps: list[InvestigationStep] = Field(default_factory=list)
     current_step: int = 0
 
-    customer_contacts: List[CustomerContact] = Field(default_factory=list)
+    customer_contacts: list[CustomerContact] = Field(default_factory=list)
 
-    assigned_investigator: Optional[str] = None
-    supervisor: Optional[str] = None
+    assigned_investigator: str | None = None
+    supervisor: str | None = None
 
     priority: str = "medium"
     sla_deadline: datetime
 
-    outcome: Optional[InvestigationOutcome] = None
-    outcome_reason: Optional[str] = None
+    outcome: InvestigationOutcome | None = None
+    outcome_reason: str | None = None
 
-    liability_decision: Optional[str] = None
+    liability_decision: str | None = None
     refund_amount: float = 0.0
     refund_processed: bool = False
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
 
     regulatory_reported: bool = False
     law_enforcement_involved: bool = False
 
-    documents: List[Dict[str, Any]] = Field(default_factory=list)
-    notes: List[Dict[str, Any]] = Field(default_factory=list)
+    documents: list[dict[str, Any]] = Field(default_factory=list)
+    notes: list[dict[str, Any]] = Field(default_factory=list)
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DisputeRecord(BaseModel):
@@ -124,23 +125,23 @@ class DisputeRecord(BaseModel):
     transaction_id: str
     transaction_date: datetime
     transaction_amount: float
-    merchant_name: Optional[str] = None
+    merchant_name: str | None = None
 
     dispute_reason: str
     customer_statement: str
 
     provisional_credit_given: bool = False
     provisional_credit_amount: float = 0.0
-    provisional_credit_date: Optional[datetime] = None
+    provisional_credit_date: datetime | None = None
 
-    final_decision: Optional[str] = None
-    final_decision_date: Optional[datetime] = None
+    final_decision: str | None = None
+    final_decision_date: datetime | None = None
 
     chargeback_filed: bool = False
-    chargeback_date: Optional[datetime] = None
-    chargeback_status: Optional[str] = None
+    chargeback_date: datetime | None = None
+    chargeback_status: str | None = None
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class InvestigationTemplate(BaseModel):
@@ -150,22 +151,22 @@ class InvestigationTemplate(BaseModel):
 
     description: str
 
-    required_steps: List[Dict[str, Any]] = Field(default_factory=list)
-    optional_steps: List[Dict[str, Any]] = Field(default_factory=list)
+    required_steps: list[dict[str, Any]] = Field(default_factory=list)
+    optional_steps: list[dict[str, Any]] = Field(default_factory=list)
 
     default_sla_hours: int = 48
 
     is_active: bool = True
 
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class InvestigationStatistics(BaseModel):
     total_investigations: int = 0
-    by_status: Dict[str, int] = Field(default_factory=dict)
-    by_type: Dict[str, int] = Field(default_factory=dict)
-    by_outcome: Dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_type: dict[str, int] = Field(default_factory=dict)
+    by_outcome: dict[str, int] = Field(default_factory=dict)
     total_disputed_amount: float = 0.0
     total_refunded: float = 0.0
     average_resolution_days: float = 0.0

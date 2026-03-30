@@ -4,11 +4,12 @@ Customer Risk Models
 Defines data structures for customer risk assessment and profiling.
 """
 
+from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class CustomerRiskLevel(str, Enum):
@@ -59,9 +60,9 @@ class GeographicRisk(BaseModel):
     risk_score: float
     is_sanctioned: bool = False
     is_high_risk_jurisdiction: bool = False
-    fatf_status: Optional[str] = None
-    corruption_index: Optional[float] = None
-    aml_index: Optional[float] = None
+    fatf_status: str | None = None
+    corruption_index: float | None = None
+    aml_index: float | None = None
 
 
 class RiskFactor(BaseModel):
@@ -73,9 +74,9 @@ class RiskFactor(BaseModel):
     description: str
     weight: float = 1.0
     score: float
-    evidence: Optional[str] = None
-    identified_at: datetime = Field(default_factory=datetime.utcnow)
-    expires_at: Optional[datetime] = None
+    evidence: str | None = None
+    identified_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    expires_at: datetime | None = None
     source: str = "system"
 
 
@@ -91,22 +92,22 @@ class BehaviorProfile(BaseModel):
     max_transaction_size: float = 0.0
 
     # Time patterns
-    typical_transaction_days: List[int] = Field(default_factory=list)  # 0-6
-    typical_transaction_hours: List[int] = Field(default_factory=list)  # 0-23
+    typical_transaction_days: list[int] = Field(default_factory=list)  # 0-6
+    typical_transaction_hours: list[int] = Field(default_factory=list)  # 0-23
 
     # Geographic patterns
-    typical_countries: List[str] = Field(default_factory=list)
+    typical_countries: list[str] = Field(default_factory=list)
     high_risk_country_exposure: float = 0.0
 
     # Channel patterns
-    primary_channels: List[str] = Field(default_factory=list)
+    primary_channels: list[str] = Field(default_factory=list)
 
     # Product patterns
-    product_types_used: List[str] = Field(default_factory=list)
+    product_types_used: list[str] = Field(default_factory=list)
 
     # Counterparty patterns
     unique_counterparties_per_month: float = 0.0
-    recurring_counterparties: List[str] = Field(default_factory=list)
+    recurring_counterparties: list[str] = Field(default_factory=list)
 
     # Calculated metrics
     velocity_score: float = 0.0
@@ -116,15 +117,15 @@ class BehaviorProfile(BaseModel):
     # Timestamps
     profile_period_start: datetime
     profile_period_end: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CustomerRiskAssessment(BaseModel):
     """Customer risk assessment result"""
     assessment_id: UUID = Field(default_factory=uuid4)
     customer_id: str
-    assessment_date: datetime = Field(default_factory=datetime.utcnow)
+    assessment_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Risk classification
     risk_level: CustomerRiskLevel
@@ -144,29 +145,29 @@ class CustomerRiskAssessment(BaseModel):
     industry_risk_score: float = 0.0
 
     # Risk factors
-    risk_factors: List[RiskFactor] = Field(default_factory=list)
+    risk_factors: list[RiskFactor] = Field(default_factory=list)
 
     # Special statuses
     pep_status: PEPStatus = PEPStatus.NOT_PEP
-    pep_details: Optional[str] = None
+    pep_details: str | None = None
     sanctions_status: bool = False
-    sanctions_details: Optional[str] = None
+    sanctions_details: str | None = None
     adverse_media_flag: bool = False
-    adverse_media_details: Optional[str] = None
+    adverse_media_details: str | None = None
 
     # Approval
     requires_approval: bool = False
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
-    approval_notes: Optional[str] = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    approval_notes: str | None = None
 
     # Next review
-    next_review_date: Optional[date] = None
+    next_review_date: date | None = None
     review_frequency_months: int = 12
 
     # Metadata
     assessment_type: str = "periodic"  # periodic, event-triggered, onboarding
-    triggered_by: Optional[str] = None
+    triggered_by: str | None = None
     model_version: str = "1.0"
 
 
@@ -179,7 +180,7 @@ class CustomerRiskProfile(BaseModel):
     customer_type: CustomerType
     customer_name: str
     customer_since: datetime
-    relationship_manager: Optional[str] = None
+    relationship_manager: str | None = None
 
     # Current risk status
     current_risk_level: CustomerRiskLevel
@@ -188,15 +189,15 @@ class CustomerRiskProfile(BaseModel):
     next_review_date: date
 
     # Risk history
-    risk_assessment_history: List[CustomerRiskAssessment] = Field(default_factory=list)
+    risk_assessment_history: list[CustomerRiskAssessment] = Field(default_factory=list)
 
     # Geographic exposure
     country_of_residence: str
-    countries_of_operation: List[str] = Field(default_factory=list)
-    geographic_risks: List[GeographicRisk] = Field(default_factory=list)
+    countries_of_operation: list[str] = Field(default_factory=list)
+    geographic_risks: list[GeographicRisk] = Field(default_factory=list)
 
     # Behavior profile
-    behavior_profile: Optional[BehaviorProfile] = None
+    behavior_profile: BehaviorProfile | None = None
 
     # Special flags
     pep_status: PEPStatus = PEPStatus.NOT_PEP
@@ -207,11 +208,11 @@ class CustomerRiskProfile(BaseModel):
 
     # EDD requirements
     requires_edd: bool = False
-    edd_reason: Optional[str] = None
-    edd_last_completed: Optional[datetime] = None
+    edd_reason: str | None = None
+    edd_last_completed: datetime | None = None
 
     # Active risk factors
-    active_risk_factors: List[RiskFactor] = Field(default_factory=list)
+    active_risk_factors: list[RiskFactor] = Field(default_factory=list)
 
     # Alerts and cases
     open_alerts_count: int = 0
@@ -219,28 +220,28 @@ class CustomerRiskProfile(BaseModel):
     total_sars_filed: int = 0
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RiskScoreCalculation(BaseModel):
     """Details of risk score calculation"""
     calculation_id: UUID = Field(default_factory=uuid4)
     customer_id: str
-    calculation_date: datetime = Field(default_factory=datetime.utcnow)
+    calculation_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Input factors
-    input_factors: List[Dict[str, Any]] = Field(default_factory=list)
+    input_factors: list[dict[str, Any]] = Field(default_factory=list)
 
     # Weights applied
-    category_weights: Dict[str, float] = Field(default_factory=dict)
+    category_weights: dict[str, float] = Field(default_factory=dict)
 
     # Intermediate scores
-    category_scores: Dict[str, float] = Field(default_factory=dict)
+    category_scores: dict[str, float] = Field(default_factory=dict)
 
     # Final calculation
     weighted_score: float
-    adjustments: List[Dict[str, Any]] = Field(default_factory=list)
+    adjustments: list[dict[str, Any]] = Field(default_factory=list)
     final_score: float
     risk_level: CustomerRiskLevel
 
@@ -258,19 +259,19 @@ class RiskOverrideRequest(BaseModel):
     requested_risk_level: CustomerRiskLevel
     reason: str
     justification: str
-    supporting_documents: List[str] = Field(default_factory=list)
+    supporting_documents: list[str] = Field(default_factory=list)
     requested_by: str
-    requested_at: datetime = Field(default_factory=datetime.utcnow)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     review_deadline: datetime
 
     # Approval chain
-    requires_approval_from: List[str] = Field(default_factory=list)
-    approvals: List[Dict[str, Any]] = Field(default_factory=list)
+    requires_approval_from: list[str] = Field(default_factory=list)
+    approvals: list[dict[str, Any]] = Field(default_factory=list)
     status: str = "pending"  # pending, approved, rejected
 
     # Validity
-    valid_from: Optional[datetime] = None
-    valid_until: Optional[datetime] = None
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
 
 
 class CustomerRiskSummary(BaseModel):

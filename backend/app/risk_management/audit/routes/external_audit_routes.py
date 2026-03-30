@@ -1,12 +1,13 @@
 """External Audit API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.external_audit_models import ExternalAuditType, AuditOpinion
+
+from ..models.external_audit_models import AuditOpinion, ExternalAuditType
 from ..services.external_audit_service import external_audit_service
 
 router = APIRouter(prefix="/external-audit", tags=["External Audit"])
@@ -79,8 +80,8 @@ async def create_engagement(request: EngagementCreateRequest):
     return {"engagement_id": str(engagement.engagement_id), "engagement_reference": engagement.engagement_reference}
 
 
-@router.get("/engagements", response_model=List[dict])
-async def list_engagements(fiscal_year: Optional[int] = None):
+@router.get("/engagements", response_model=list[dict])
+async def list_engagements(fiscal_year: int | None = None):
     if fiscal_year:
         engagements = await external_audit_service.repository.find_engagements_by_year(fiscal_year)
     else:
@@ -106,8 +107,8 @@ async def create_pbc_request(request: PBCCreateRequest):
     return {"pbc_id": str(pbc.pbc_id), "pbc_reference": pbc.pbc_reference}
 
 
-@router.get("/pbc-requests", response_model=List[dict])
-async def list_pbc_requests(engagement_id: Optional[UUID] = None, pending_only: bool = False):
+@router.get("/pbc-requests", response_model=list[dict])
+async def list_pbc_requests(engagement_id: UUID | None = None, pending_only: bool = False):
     if engagement_id:
         pbcs = await external_audit_service.repository.find_pbcs_by_engagement(engagement_id)
     elif pending_only:
@@ -118,7 +119,7 @@ async def list_pbc_requests(engagement_id: Optional[UUID] = None, pending_only: 
 
 
 @router.post("/pbc-requests/{pbc_id}/submit", response_model=dict)
-async def submit_pbc(pbc_id: UUID, submitted_by: str = Query(...), file_references: List[str] = Query(default=[])):
+async def submit_pbc(pbc_id: UUID, submitted_by: str = Query(...), file_references: list[str] = Query(default=[])):
     pbc = await external_audit_service.submit_pbc(pbc_id, submitted_by, file_references)
     if not pbc:
         raise HTTPException(status_code=404, detail="PBC request not found")

@@ -1,12 +1,17 @@
 """Governance Service - Business logic for corporate governance"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.governance_models import (
-    GovernanceFramework, BoardMember, BoardMeeting, GovernancePolicy,
-    ConflictOfInterest, GovernanceAssessment
+    BoardMeeting,
+    BoardMember,
+    ConflictOfInterest,
+    GovernanceAssessment,
+    GovernanceFramework,
+    GovernancePolicy,
 )
 from ..repositories.governance_repository import governance_repository
 
@@ -17,8 +22,8 @@ class GovernanceService:
 
     async def create_framework(
         self, framework_name: str, framework_version: str, description: str,
-        principles: List[str], governance_structure: Dict[str, Any],
-        roles_responsibilities: Dict[str, List[str]], approved_by: str
+        principles: list[str], governance_structure: dict[str, Any],
+        roles_responsibilities: dict[str, list[str]], approved_by: str
     ) -> GovernanceFramework:
         framework = GovernanceFramework(
             framework_name=framework_name, framework_version=framework_version,
@@ -32,7 +37,7 @@ class GovernanceService:
 
     async def appoint_board_member(
         self, member_name: str, position: str, member_type: str,
-        term_end_date: date, qualifications: List[str], expertise_areas: List[str],
+        term_end_date: date, qualifications: list[str], expertise_areas: list[str],
         annual_fee: Decimal
     ) -> BoardMember:
         member = BoardMember(
@@ -46,7 +51,7 @@ class GovernanceService:
 
     async def schedule_board_meeting(
         self, meeting_type: str, meeting_date: date, meeting_time: str,
-        location: str, agenda_items: List[Dict[str, Any]]
+        location: str, agenda_items: list[dict[str, Any]]
     ) -> BoardMeeting:
         meeting = BoardMeeting(
             meeting_type=meeting_type, meeting_date=meeting_date,
@@ -56,8 +61,8 @@ class GovernanceService:
         return meeting
 
     async def record_meeting_attendance(
-        self, meeting_id: UUID, attendees: List[str], absentees: List[str]
-    ) -> Optional[BoardMeeting]:
+        self, meeting_id: UUID, attendees: list[str], absentees: list[str]
+    ) -> BoardMeeting | None:
         meeting = await self.repository.find_board_meeting_by_id(meeting_id)
         if meeting:
             meeting.attendees = attendees
@@ -67,9 +72,9 @@ class GovernanceService:
         return meeting
 
     async def approve_meeting_minutes(
-        self, meeting_id: UUID, minutes_prepared_by: str, resolutions: List[Dict[str, Any]],
-        action_items: List[Dict[str, Any]]
-    ) -> Optional[BoardMeeting]:
+        self, meeting_id: UUID, minutes_prepared_by: str, resolutions: list[dict[str, Any]],
+        action_items: list[dict[str, Any]]
+    ) -> BoardMeeting | None:
         meeting = await self.repository.find_board_meeting_by_id(meeting_id)
         if meeting:
             meeting.minutes_prepared_by = minutes_prepared_by
@@ -82,7 +87,7 @@ class GovernanceService:
     async def create_governance_policy(
         self, policy_code: str, policy_name: str, policy_category: str,
         description: str, scope: str, owner: str, approver: str,
-        key_provisions: List[str]
+        key_provisions: list[str]
     ) -> GovernancePolicy:
         policy = GovernancePolicy(
             policy_code=policy_code, policy_name=policy_name, policy_category=policy_category,
@@ -109,8 +114,8 @@ class GovernanceService:
         return conflict
 
     async def review_conflict(
-        self, conflict_id: UUID, decision: str, mitigation_measures: List[str]
-    ) -> Optional[ConflictOfInterest]:
+        self, conflict_id: UUID, decision: str, mitigation_measures: list[str]
+    ) -> ConflictOfInterest | None:
         conflict = await self.repository.find_conflict_by_id(conflict_id)
         if conflict:
             conflict.review_date = date.today()
@@ -121,8 +126,8 @@ class GovernanceService:
 
     async def conduct_assessment(
         self, assessment_year: int, assessment_type: str, assessor: str,
-        areas_assessed: List[str], findings: List[Dict[str, Any]],
-        recommendations: List[Dict[str, Any]], overall_rating: str,
+        areas_assessed: list[str], findings: list[dict[str, Any]],
+        recommendations: list[dict[str, Any]], overall_rating: str,
         board_effectiveness_score: Decimal
     ) -> GovernanceAssessment:
         assessment = GovernanceAssessment(
@@ -134,7 +139,7 @@ class GovernanceService:
         await self.repository.save_assessment(assessment)
         return assessment
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

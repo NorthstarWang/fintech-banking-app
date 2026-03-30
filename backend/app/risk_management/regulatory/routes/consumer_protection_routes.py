@@ -1,14 +1,14 @@
 """Consumer Protection Compliance API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.consumer_protection_models import (
-    ComplaintCategory, ComplaintStatus, FairLendingProtectedClass
-)
+
+from ..models.consumer_protection_models import ComplaintCategory, ComplaintStatus, FairLendingProtectedClass
 from ..services.consumer_protection_service import consumer_protection_service
 
 router = APIRouter(prefix="/consumer-protection", tags=["Consumer Protection"])
@@ -21,14 +21,14 @@ class ComplaintCreateRequest(BaseModel):
     category: ComplaintCategory
     product_type: str
     description: str
-    amount_disputed: Optional[Decimal] = None
+    amount_disputed: Decimal | None = None
     regulatory_complaint: bool = False
-    regulator_reference: Optional[str] = None
+    regulator_reference: str | None = None
 
 
 class ComplaintResolveRequest(BaseModel):
     resolution: str
-    resolution_amount: Optional[Decimal] = None
+    resolution_amount: Decimal | None = None
     root_cause: str
     systemic_issue: bool = False
 
@@ -82,8 +82,8 @@ class UDAPReviewRequest(BaseModel):
     unfair_assessment: str
     deceptive_assessment: str
     abusive_assessment: str
-    issues_identified: List[Dict[str, Any]]
-    recommendations: List[str]
+    issues_identified: list[dict[str, Any]]
+    recommendations: list[str]
 
 
 class ServicememberProtectionRequest(BaseModel):
@@ -91,8 +91,8 @@ class ServicememberProtectionRequest(BaseModel):
     account_id: str
     military_status: str
     verification_method: str
-    protections_applied: List[str]
-    interest_rate_reduction: Optional[Decimal] = None
+    protections_applied: list[str]
+    interest_rate_reduction: Decimal | None = None
 
 
 @router.post("/complaints", response_model=dict)
@@ -113,9 +113,9 @@ async def create_complaint(request: ComplaintCreateRequest):
     }
 
 
-@router.get("/complaints", response_model=List[dict])
+@router.get("/complaints", response_model=list[dict])
 async def list_complaints(
-    status: Optional[ComplaintStatus] = None,
+    status: ComplaintStatus | None = None,
     open_only: bool = False,
     regulatory_only: bool = False
 ):
@@ -161,7 +161,7 @@ async def resolve_complaint(complaint_id: UUID, request: ComplaintResolveRequest
     return {"complaint_id": str(complaint.complaint_id), "status": complaint.status.value}
 
 
-@router.get("/complaints/customer/{customer_id}", response_model=List[dict])
+@router.get("/complaints/customer/{customer_id}", response_model=list[dict])
 async def get_customer_complaints(customer_id: str):
     """Get complaints for a specific customer"""
     complaints = await consumer_protection_service.repository.find_complaints_by_customer(customer_id)
@@ -187,10 +187,10 @@ async def perform_fair_lending_analysis(request: FairLendingAnalysisRequest):
     }
 
 
-@router.get("/fair-lending", response_model=List[dict])
+@router.get("/fair-lending", response_model=list[dict])
 async def list_fair_lending_analyses(
     with_findings_only: bool = False,
-    protected_class: Optional[str] = None
+    protected_class: str | None = None
 ):
     """List fair lending analyses"""
     if with_findings_only:
@@ -216,7 +216,7 @@ async def create_tila_disclosure(request: TILADisclosureRequest):
     return {"disclosure_id": str(disclosure.disclosure_id), "loan_id": disclosure.loan_id}
 
 
-@router.get("/tila-disclosures/loan/{loan_id}", response_model=List[dict])
+@router.get("/tila-disclosures/loan/{loan_id}", response_model=list[dict])
 async def get_loan_tila_disclosures(loan_id: str):
     """Get TILA disclosures for a loan"""
     disclosures = await consumer_protection_service.repository.find_tila_by_loan(loan_id)
@@ -236,7 +236,7 @@ async def create_respa_disclosure(request: RESPADisclosureRequest):
     return {"disclosure_id": str(disclosure.disclosure_id), "loan_id": disclosure.loan_id}
 
 
-@router.get("/respa-disclosures/loan/{loan_id}", response_model=List[dict])
+@router.get("/respa-disclosures/loan/{loan_id}", response_model=list[dict])
 async def get_loan_respa_disclosures(loan_id: str):
     """Get RESPA disclosures for a loan"""
     disclosures = await consumer_protection_service.repository.find_respa_by_loan(loan_id)
@@ -259,7 +259,7 @@ async def perform_udap_review(request: UDAPReviewRequest):
     }
 
 
-@router.get("/udap-reviews", response_model=List[dict])
+@router.get("/udap-reviews", response_model=list[dict])
 async def list_udap_reviews(requiring_remediation: bool = False, high_risk_only: bool = False):
     """List UDAP reviews"""
     if requiring_remediation:
@@ -286,14 +286,14 @@ async def register_servicemember_protection(request: ServicememberProtectionRequ
     }
 
 
-@router.get("/servicemember-protections/{customer_id}", response_model=List[dict])
+@router.get("/servicemember-protections/{customer_id}", response_model=list[dict])
 async def get_customer_servicemember_protections(customer_id: str):
     """Get servicemember protections for a customer"""
     protections = await consumer_protection_service.repository.find_servicemember_by_customer(customer_id)
     return [{"protection_id": str(p.protection_id), "military_status": p.military_status, "protections_applied": p.protections_applied} for p in protections]
 
 
-@router.get("/servicemember-protections", response_model=List[dict])
+@router.get("/servicemember-protections", response_model=list[dict])
 async def list_active_servicemember_protections():
     """List all active servicemember protections"""
     protections = await consumer_protection_service.repository.find_active_servicemember_protections()

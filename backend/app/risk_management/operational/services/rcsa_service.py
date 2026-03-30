@@ -1,12 +1,21 @@
 """RCSA Service - Business logic for Risk Control Self-Assessment"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
+from typing import Any
 from uuid import UUID
-from decimal import Decimal
+
 from ..models.rcsa_models import (
-    RCSAAssessment, RCSARisk, RCSAControl, RCSAActionItem, RiskHeatmap, RCSAReport,
-    RiskCategory, RiskLikelihood, RiskImpact, ControlEffectiveness, AssessmentStatus
+    AssessmentStatus,
+    ControlEffectiveness,
+    RCSAActionItem,
+    RCSAAssessment,
+    RCSAControl,
+    RCSAReport,
+    RCSARisk,
+    RiskCategory,
+    RiskHeatmap,
+    RiskImpact,
+    RiskLikelihood,
 )
 from ..repositories.rcsa_repository import rcsa_repository
 
@@ -39,9 +48,9 @@ class RCSAService:
     def _get_risk_rating(self, score: int) -> str:
         if score >= 20:
             return "critical"
-        elif score >= 12:
+        if score >= 12:
             return "high"
-        elif score >= 6:
+        if score >= 6:
             return "medium"
         return "low"
 
@@ -67,14 +76,14 @@ class RCSAService:
         await self.repository.save_assessment(assessment)
         return assessment
 
-    async def get_assessment(self, assessment_id: UUID) -> Optional[RCSAAssessment]:
+    async def get_assessment(self, assessment_id: UUID) -> RCSAAssessment | None:
         return await self.repository.find_assessment_by_id(assessment_id)
 
     async def list_assessments(
         self,
-        status: Optional[AssessmentStatus] = None,
-        business_unit: Optional[str] = None
-    ) -> List[RCSAAssessment]:
+        status: AssessmentStatus | None = None,
+        business_unit: str | None = None
+    ) -> list[RCSAAssessment]:
         assessments = await self.repository.find_all_assessments()
 
         if status:
@@ -88,9 +97,9 @@ class RCSAService:
         self,
         assessment_id: UUID,
         new_status: AssessmentStatus,
-        reviewer: Optional[str] = None,
-        approver: Optional[str] = None
-    ) -> Optional[RCSAAssessment]:
+        reviewer: str | None = None,
+        approver: str | None = None
+    ) -> RCSAAssessment | None:
         assessment = await self.repository.find_assessment_by_id(assessment_id)
         if not assessment:
             return None
@@ -158,7 +167,7 @@ class RCSAService:
 
         return risk
 
-    async def get_assessment_risks(self, assessment_id: UUID) -> List[RCSARisk]:
+    async def get_assessment_risks(self, assessment_id: UUID) -> list[RCSARisk]:
         return await self.repository.find_risks_by_assessment(assessment_id)
 
     async def add_control(
@@ -172,13 +181,13 @@ class RCSAService:
         frequency: str,
         design_effectiveness: ControlEffectiveness,
         operating_effectiveness: ControlEffectiveness,
-        risks_mitigated: List[UUID] = None
+        risks_mitigated: list[UUID] | None = None
     ) -> RCSAControl:
         self._control_counter += 1
 
         if design_effectiveness == ControlEffectiveness.EFFECTIVE and operating_effectiveness == ControlEffectiveness.EFFECTIVE:
             overall = ControlEffectiveness.EFFECTIVE
-        elif design_effectiveness == ControlEffectiveness.INEFFECTIVE or operating_effectiveness == ControlEffectiveness.INEFFECTIVE:
+        elif ControlEffectiveness.INEFFECTIVE in (design_effectiveness, operating_effectiveness):
             overall = ControlEffectiveness.INEFFECTIVE
         else:
             overall = ControlEffectiveness.PARTIALLY_EFFECTIVE
@@ -208,7 +217,7 @@ class RCSAService:
 
         return control
 
-    async def get_assessment_controls(self, assessment_id: UUID) -> List[RCSAControl]:
+    async def get_assessment_controls(self, assessment_id: UUID) -> list[RCSAControl]:
         return await self.repository.find_controls_by_assessment(assessment_id)
 
     async def add_action_item(
@@ -219,8 +228,8 @@ class RCSAService:
         assigned_to: str,
         due_date: date,
         priority: str,
-        risk_id: Optional[UUID] = None,
-        control_id: Optional[UUID] = None
+        risk_id: UUID | None = None,
+        control_id: UUID | None = None
     ) -> RCSAActionItem:
         action = RCSAActionItem(
             assessment_id=assessment_id,
@@ -246,7 +255,7 @@ class RCSAService:
         self,
         action_id: UUID,
         verified_by: str
-    ) -> Optional[RCSAActionItem]:
+    ) -> RCSAActionItem | None:
         action = await self.repository.find_action_item_by_id(action_id)
         if not action:
             return None
@@ -258,13 +267,13 @@ class RCSAService:
 
         return action
 
-    async def get_assessment_actions(self, assessment_id: UUID) -> List[RCSAActionItem]:
+    async def get_assessment_actions(self, assessment_id: UUID) -> list[RCSAActionItem]:
         return await self.repository.find_action_items_by_assessment(assessment_id)
 
     async def generate_heatmap(
         self,
-        assessment_id: Optional[UUID] = None,
-        business_unit: Optional[str] = None,
+        assessment_id: UUID | None = None,
+        business_unit: str | None = None,
         heatmap_type: str = "residual"
     ) -> RiskHeatmap:
         if assessment_id:
@@ -314,7 +323,7 @@ class RCSAService:
         self,
         report_type: str,
         period: str,
-        business_unit: Optional[str] = None,
+        business_unit: str | None = None,
         generated_by: str = "system"
     ) -> RCSAReport:
         assessments = await self.list_assessments(business_unit=business_unit)
@@ -371,7 +380,7 @@ class RCSAService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

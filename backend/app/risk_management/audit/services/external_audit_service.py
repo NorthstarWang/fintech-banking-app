@@ -1,12 +1,19 @@
 """External Audit Service - Business logic for external audit management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.external_audit_models import (
-    ExternalAuditEngagement, PBCRequest, AuditAdjustment, ExternalAuditFinding,
-    AuditOpinionLetter, ManagementRepresentationLetter, ExternalAuditType, AuditOpinion
+    AuditAdjustment,
+    AuditOpinion,
+    AuditOpinionLetter,
+    ExternalAuditEngagement,
+    ExternalAuditFinding,
+    ExternalAuditType,
+    ManagementRepresentationLetter,
+    PBCRequest,
 )
 from ..repositories.external_audit_repository import external_audit_repository
 
@@ -36,7 +43,7 @@ class ExternalAuditService:
         await self.repository.save_engagement(engagement)
         return engagement
 
-    async def start_engagement(self, engagement_id: UUID) -> Optional[ExternalAuditEngagement]:
+    async def start_engagement(self, engagement_id: UUID) -> ExternalAuditEngagement | None:
         engagement = await self.repository.find_engagement_by_id(engagement_id)
         if engagement:
             engagement.status = "in_progress"
@@ -58,8 +65,8 @@ class ExternalAuditService:
         return pbc
 
     async def submit_pbc(
-        self, pbc_id: UUID, submitted_by: str, file_references: List[str]
-    ) -> Optional[PBCRequest]:
+        self, pbc_id: UUID, submitted_by: str, file_references: list[str]
+    ) -> PBCRequest | None:
         pbc = await self.repository.find_pbc_by_id(pbc_id)
         if pbc:
             pbc.status = "submitted"
@@ -82,7 +89,7 @@ class ExternalAuditService:
         await self.repository.save_adjustment(adjustment)
         return adjustment
 
-    async def accept_adjustment(self, adjustment_id: UUID) -> Optional[AuditAdjustment]:
+    async def accept_adjustment(self, adjustment_id: UUID) -> AuditAdjustment | None:
         adjustment = await self.repository.find_adjustment_by_id(adjustment_id)
         if adjustment:
             adjustment.management_accepted = True
@@ -124,7 +131,7 @@ class ExternalAuditService:
         return opinion
 
     async def create_rep_letter(
-        self, engagement_id: UUID, fiscal_year_end: date, representations: List[Dict[str, Any]],
+        self, engagement_id: UUID, fiscal_year_end: date, representations: list[dict[str, Any]],
         signed_by_ceo: str, signed_by_cfo: str
     ) -> ManagementRepresentationLetter:
         letter = ManagementRepresentationLetter(
@@ -135,7 +142,7 @@ class ExternalAuditService:
         await self.repository.save_rep_letter(letter)
         return letter
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

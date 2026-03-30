@@ -1,19 +1,18 @@
 """Fraud Pattern Repository - Data access layer for fraud patterns"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
-from ..models.fraud_pattern_models import (
-    FraudPattern, PatternMatch, PatternCategory, PatternStatus, RiskLevel
-)
+
+from ..models.fraud_pattern_models import FraudPattern, PatternCategory, PatternMatch, PatternStatus, RiskLevel
 
 
 class FraudPatternRepository:
     def __init__(self):
-        self._patterns: Dict[UUID, FraudPattern] = {}
-        self._matches: List[PatternMatch] = []
-        self._code_index: Dict[str, UUID] = {}
-        self._category_index: Dict[PatternCategory, List[UUID]] = {}
+        self._patterns: dict[UUID, FraudPattern] = {}
+        self._matches: list[PatternMatch] = []
+        self._code_index: dict[str, UUID] = {}
+        self._category_index: dict[PatternCategory, list[UUID]] = {}
 
     async def save_pattern(self, pattern: FraudPattern) -> FraudPattern:
         self._patterns[pattern.pattern_id] = pattern
@@ -24,30 +23,30 @@ class FraudPatternRepository:
             self._category_index[pattern.category].append(pattern.pattern_id)
         return pattern
 
-    async def find_pattern_by_id(self, pattern_id: UUID) -> Optional[FraudPattern]:
+    async def find_pattern_by_id(self, pattern_id: UUID) -> FraudPattern | None:
         return self._patterns.get(pattern_id)
 
-    async def find_pattern_by_code(self, pattern_code: str) -> Optional[FraudPattern]:
+    async def find_pattern_by_code(self, pattern_code: str) -> FraudPattern | None:
         pattern_id = self._code_index.get(pattern_code)
         if pattern_id:
             return self._patterns.get(pattern_id)
         return None
 
-    async def find_patterns_by_category(self, category: PatternCategory) -> List[FraudPattern]:
+    async def find_patterns_by_category(self, category: PatternCategory) -> list[FraudPattern]:
         pattern_ids = self._category_index.get(category, [])
         return [self._patterns[pid] for pid in pattern_ids if pid in self._patterns]
 
-    async def find_active_patterns(self) -> List[FraudPattern]:
+    async def find_active_patterns(self) -> list[FraudPattern]:
         return [p for p in self._patterns.values() if p.status == PatternStatus.ACTIVE]
 
-    async def find_patterns_by_risk_level(self, risk_level: RiskLevel) -> List[FraudPattern]:
+    async def find_patterns_by_risk_level(self, risk_level: RiskLevel) -> list[FraudPattern]:
         return [p for p in self._patterns.values() if p.risk_level == risk_level]
 
-    async def find_high_risk_patterns(self) -> List[FraudPattern]:
+    async def find_high_risk_patterns(self) -> list[FraudPattern]:
         return [p for p in self._patterns.values() if p.risk_level in [RiskLevel.HIGH, RiskLevel.CRITICAL]]
 
     async def update_pattern(self, pattern: FraudPattern) -> FraudPattern:
-        pattern.updated_at = datetime.utcnow()
+        pattern.updated_at = datetime.now(UTC)
         self._patterns[pattern.pattern_id] = pattern
         return pattern
 
@@ -65,27 +64,27 @@ class FraudPatternRepository:
         pattern = self._patterns.get(match.pattern_id)
         if pattern:
             pattern.match_count += 1
-            pattern.last_match_at = datetime.utcnow()
+            pattern.last_match_at = datetime.now(UTC)
         return match
 
-    async def find_matches_by_pattern(self, pattern_id: UUID, limit: int = 100) -> List[PatternMatch]:
+    async def find_matches_by_pattern(self, pattern_id: UUID, limit: int = 100) -> list[PatternMatch]:
         matches = [m for m in self._matches if m.pattern_id == pattern_id]
         return sorted(matches, key=lambda x: x.matched_at, reverse=True)[:limit]
 
-    async def find_matches_by_entity(self, entity_type: str, entity_id: str, limit: int = 100) -> List[PatternMatch]:
+    async def find_matches_by_entity(self, entity_type: str, entity_id: str, limit: int = 100) -> list[PatternMatch]:
         matches = [m for m in self._matches if m.entity_type == entity_type and m.entity_id == entity_id]
         return sorted(matches, key=lambda x: x.matched_at, reverse=True)[:limit]
 
-    async def find_matches_by_confidence(self, min_confidence: float, limit: int = 100) -> List[PatternMatch]:
+    async def find_matches_by_confidence(self, min_confidence: float, limit: int = 100) -> list[PatternMatch]:
         matches = [m for m in self._matches if m.confidence_score >= min_confidence]
         return sorted(matches, key=lambda x: x.confidence_score, reverse=True)[:limit]
 
-    async def find_recent_matches(self, hours: int = 24, limit: int = 500) -> List[PatternMatch]:
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+    async def find_recent_matches(self, hours: int = 24, limit: int = 500) -> list[PatternMatch]:
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         matches = [m for m in self._matches if m.matched_at >= cutoff]
         return sorted(matches, key=lambda x: x.matched_at, reverse=True)[:limit]
 
-    async def find_unreviewed_matches(self, limit: int = 100) -> List[PatternMatch]:
+    async def find_unreviewed_matches(self, limit: int = 100) -> list[PatternMatch]:
         matches = [m for m in self._matches if not m.reviewed]
         return sorted(matches, key=lambda x: x.matched_at, reverse=True)[:limit]
 
@@ -96,7 +95,7 @@ class FraudPatternRepository:
                 break
         return match
 
-    async def get_pattern_statistics(self) -> Dict[str, Any]:
+    async def get_pattern_statistics(self) -> dict[str, Any]:
         total_patterns = len(self._patterns)
         active_patterns = len([p for p in self._patterns.values() if p.status == PatternStatus.ACTIVE])
         by_category = {}
@@ -107,7 +106,7 @@ class FraudPatternRepository:
         for pattern in self._patterns.values():
             risk_key = pattern.risk_level.value
             by_risk_level[risk_key] = by_risk_level.get(risk_key, 0) + 1
-        today = datetime.utcnow().date()
+        today = datetime.now(UTC).date()
         matches_today = len([m for m in self._matches if m.matched_at.date() == today])
         return {
             "total_patterns": total_patterns,
@@ -118,7 +117,7 @@ class FraudPatternRepository:
             "matches_today": matches_today
         }
 
-    async def get_all_patterns(self, limit: int = 200, offset: int = 0) -> List[FraudPattern]:
+    async def get_all_patterns(self, limit: int = 200, offset: int = 0) -> list[FraudPattern]:
         patterns = sorted(self._patterns.values(), key=lambda x: x.created_at, reverse=True)
         return patterns[offset:offset + limit]
 

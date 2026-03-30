@@ -1,11 +1,13 @@
 """Regulatory Capital Management API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.capital_models import CapitalInstrumentType
 from ..services.capital_service import capital_service
 
@@ -21,8 +23,8 @@ class InstrumentRegistrationRequest(BaseModel):
     nominal_amount: Decimal
     carrying_amount: Decimal
     eligible_amount: Decimal
-    maturity_date: Optional[date] = None
-    coupon_rate: Optional[Decimal] = None
+    maturity_date: date | None = None
+    coupon_rate: Decimal | None = None
 
 
 class DeductionRequest(BaseModel):
@@ -44,8 +46,8 @@ class CapitalPlanRequest(BaseModel):
     target_cet1_ratio: Decimal
     target_tier1_ratio: Decimal
     target_total_ratio: Decimal
-    planned_issuances: List[Dict[str, Any]]
-    planned_redemptions: List[Dict[str, Any]]
+    planned_issuances: list[dict[str, Any]]
+    planned_redemptions: list[dict[str, Any]]
 
 
 class StressTestRequest(BaseModel):
@@ -79,8 +81,8 @@ async def register_instrument(request: InstrumentRegistrationRequest):
     return {"instrument_id": str(instrument.instrument_id), "tier": instrument.tier}
 
 
-@router.get("/instruments", response_model=List[dict])
-async def list_instruments(tier: Optional[str] = None, active_only: bool = True):
+@router.get("/instruments", response_model=list[dict])
+async def list_instruments(tier: str | None = None, active_only: bool = True):
     """List capital instruments"""
     if tier:
         instruments = await capital_service.repository.find_instruments_by_tier(tier)
@@ -119,8 +121,8 @@ async def record_deduction(request: DeductionRequest):
     return {"deduction_id": str(deduction.deduction_id), "tier": deduction.tier}
 
 
-@router.get("/deductions", response_model=List[dict])
-async def list_deductions(reporting_date: Optional[date] = None, tier: Optional[str] = None):
+@router.get("/deductions", response_model=list[dict])
+async def list_deductions(reporting_date: date | None = None, tier: str | None = None):
     """List capital deductions"""
     if reporting_date:
         deductions = await capital_service.repository.find_deductions_by_date(reporting_date)
@@ -177,8 +179,8 @@ async def create_capital_plan(request: CapitalPlanRequest):
     return {"plan_id": str(plan.plan_id), "plan_name": plan.plan_name}
 
 
-@router.get("/plans", response_model=List[dict])
-async def list_capital_plans(year: Optional[int] = None, approved_only: bool = False):
+@router.get("/plans", response_model=list[dict])
+async def list_capital_plans(year: int | None = None, approved_only: bool = False):
     """List capital plans"""
     if year:
         plans = await capital_service.repository.find_plans_by_year(year)
@@ -205,8 +207,8 @@ async def run_stress_test(request: StressTestRequest):
     }
 
 
-@router.get("/stress-tests", response_model=List[dict])
-async def list_stress_tests(scenario_type: Optional[str] = None):
+@router.get("/stress-tests", response_model=list[dict])
+async def list_stress_tests(scenario_type: str | None = None):
     """List capital stress tests"""
     if scenario_type:
         tests = await capital_service.repository.find_stress_tests_by_scenario(scenario_type)
@@ -226,7 +228,7 @@ async def set_capital_limit(request: CapitalLimitRequest):
     return {"limit_id": str(limit.limit_id), "status": limit.status}
 
 
-@router.get("/limits/breached", response_model=List[dict])
+@router.get("/limits/breached", response_model=list[dict])
 async def list_breached_limits():
     """List breached capital limits"""
     limits = await capital_service.repository.find_breached_limits()

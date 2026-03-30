@@ -1,13 +1,19 @@
 """Capital Service - Business logic for regulatory capital management"""
 
-from typing import Optional, List, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+
 from ..models.capital_models import (
-    CapitalInstrument, CapitalDeduction, CapitalPosition, CapitalPlan,
-    StressTestCapital, CapitalLimit, CapitalAllocation, CapitalReport,
-    CapitalInstrumentType, DeductionType, CapitalTier
+    CapitalDeduction,
+    CapitalInstrument,
+    CapitalInstrumentType,
+    CapitalLimit,
+    CapitalPlan,
+    CapitalPosition,
+    CapitalReport,
+    DeductionType,
+    StressTestCapital,
 )
 from ..repositories.capital_repository import capital_repository
 
@@ -83,7 +89,7 @@ class CapitalService:
     async def create_capital_plan(
         self, plan_name: str, plan_year: int, entity_id: str, baseline_capital: Decimal,
         target_cet1_ratio: Decimal, target_tier1_ratio: Decimal, target_total_ratio: Decimal,
-        planned_issuances: List[Dict[str, Any]], planned_redemptions: List[Dict[str, Any]]
+        planned_issuances: list[dict[str, Any]], planned_redemptions: list[dict[str, Any]]
     ) -> CapitalPlan:
         plan = CapitalPlan(
             plan_name=plan_name, plan_year=plan_year, entity_id=entity_id, baseline_capital=baseline_capital,
@@ -146,7 +152,7 @@ class CapitalService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

@@ -2,7 +2,7 @@
 Comprehensive tests for the analytics and event streaming system.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.services.event_schemas import EventType, TransactionEvent
 from app.services.event_streaming import (
     EventStreamingService,
@@ -37,7 +37,7 @@ class TestEventBuffer:
     def test_event_ordering(self):
         """Test events are ordered correctly."""
         buffer = EventBuffer()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Add events out of order
         event2 = TransactionEvent(
@@ -100,7 +100,7 @@ class TestEventDeduplicator:
     def test_duplicate_content_hash(self):
         """Test semantic deduplication via content hash."""
         dedup = EventDeduplicator()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         event1 = TransactionEvent(
             event_id="test-1",

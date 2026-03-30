@@ -1,21 +1,25 @@
 """Commodity Service - Commodity risk management service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
 from uuid import UUID
+
 from ..models.commodity_models import (
-    CommodityPosition, CommodityCurve, CommodityExposure,
-    CommodityScenario, CommodityRiskStatistics,
-    CommodityType, CommodityPositionType
+    CommodityCurve,
+    CommodityExposure,
+    CommodityPosition,
+    CommodityPositionType,
+    CommodityRiskStatistics,
+    CommodityScenario,
+    CommodityType,
 )
 
 
 class CommodityService:
     def __init__(self):
-        self._positions: Dict[UUID, CommodityPosition] = {}
-        self._curves: Dict[UUID, CommodityCurve] = {}
-        self._exposures: Dict[UUID, CommodityExposure] = {}
-        self._scenarios: Dict[UUID, CommodityScenario] = {}
+        self._positions: dict[UUID, CommodityPosition] = {}
+        self._curves: dict[UUID, CommodityCurve] = {}
+        self._exposures: dict[UUID, CommodityExposure] = {}
+        self._scenarios: dict[UUID, CommodityScenario] = {}
 
     async def create_position(
         self, commodity_type: CommodityType, position_type: CommodityPositionType,
@@ -44,12 +48,12 @@ class CommodityService:
         self._positions[position.position_id] = position
         return position
 
-    async def get_position(self, position_id: UUID) -> Optional[CommodityPosition]:
+    async def get_position(self, position_id: UUID) -> CommodityPosition | None:
         return self._positions.get(position_id)
 
     async def create_curve(
         self, commodity_name: str, commodity_type: CommodityType,
-        contract_months: List[str], prices: List[float]
+        contract_months: list[str], prices: list[float]
     ) -> CommodityCurve:
         # Determine curve shape
         if len(prices) >= 2:
@@ -104,7 +108,7 @@ class CommodityService:
 
     async def run_scenario(
         self, scenario_name: str, scenario_type: str,
-        price_shocks: Dict[str, float], volatility_shocks: Dict[str, float]
+        price_shocks: dict[str, float], volatility_shocks: dict[str, float]
     ) -> CommodityScenario:
         pnl_impact = 0
         for position in self._positions.values():
@@ -125,7 +129,7 @@ class CommodityService:
         self._scenarios[scenario.scenario_id] = scenario
         return scenario
 
-    async def get_portfolio_positions(self, portfolio_id: UUID) -> List[CommodityPosition]:
+    async def get_portfolio_positions(self, portfolio_id: UUID) -> list[CommodityPosition]:
         return [p for p in self._positions.values() if p.portfolio_id == portfolio_id]
 
     async def get_statistics(self) -> CommodityRiskStatistics:

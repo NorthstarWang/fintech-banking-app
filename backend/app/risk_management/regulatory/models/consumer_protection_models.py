@@ -1,11 +1,12 @@
 """Consumer Protection Models - Data models for consumer protection compliance"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class ComplaintCategory(str, Enum):
@@ -51,25 +52,25 @@ class ConsumerComplaint(BaseModel):
     contact_method: str  # phone, email, mail, in_person, regulator
     received_date: datetime
     category: ComplaintCategory
-    subcategory: Optional[str] = None
+    subcategory: str | None = None
     product_type: str
-    account_number: Optional[str] = None
+    account_number: str | None = None
     description: str
-    relief_requested: Optional[str] = None
-    amount_disputed: Optional[Decimal] = None
+    relief_requested: str | None = None
+    amount_disputed: Decimal | None = None
     status: ComplaintStatus = ComplaintStatus.RECEIVED
     priority: str = "normal"
-    acknowledgment_date: Optional[datetime] = None
-    assigned_to: Optional[str] = None
-    assigned_date: Optional[datetime] = None
+    acknowledgment_date: datetime | None = None
+    assigned_to: str | None = None
+    assigned_date: datetime | None = None
     sla_due_date: date
     regulatory_complaint: bool = False
-    regulator_reference: Optional[str] = None
-    resolution: Optional[str] = None
-    resolution_amount: Optional[Decimal] = None
-    resolution_date: Optional[datetime] = None
-    customer_satisfaction: Optional[int] = None
-    root_cause: Optional[str] = None
+    regulator_reference: str | None = None
+    resolution: str | None = None
+    resolution_amount: Decimal | None = None
+    resolution_date: datetime | None = None
+    customer_satisfaction: int | None = None
+    root_cause: str | None = None
     systemic_issue: bool = False
 
 
@@ -89,13 +90,13 @@ class FairLendingAnalysis(BaseModel):
     protected_group_approval_rate: Decimal
     rate_disparity: Decimal
     statistical_significance: bool
-    average_pricing_control: Optional[Decimal] = None
-    average_pricing_protected: Optional[Decimal] = None
-    pricing_disparity: Optional[Decimal] = None
-    findings: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    average_pricing_control: Decimal | None = None
+    average_pricing_protected: Decimal | None = None
+    pricing_disparity: Decimal | None = None
+    findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     analyst: str
-    reviewed_by: Optional[str] = None
+    reviewed_by: str | None = None
     status: str = "draft"
 
 
@@ -115,17 +116,17 @@ class TILADisclosure(BaseModel):
     payment_frequency: str
     number_of_payments: int
     prepayment_penalty: bool = False
-    prepayment_penalty_amount: Optional[Decimal] = None
+    prepayment_penalty_amount: Decimal | None = None
     balloon_payment: bool = False
-    balloon_amount: Optional[Decimal] = None
+    balloon_amount: Decimal | None = None
     variable_rate: bool = False
-    rate_index: Optional[str] = None
+    rate_index: str | None = None
     delivered_date: date
     delivery_method: str
-    signed_date: Optional[date] = None
-    right_to_cancel_date: Optional[date] = None
+    signed_date: date | None = None
+    right_to_cancel_date: date | None = None
     compliant: bool = True
-    compliance_issues: List[str] = Field(default_factory=list)
+    compliance_issues: list[str] = Field(default_factory=list)
 
 
 class RESPADisclosure(BaseModel):
@@ -147,7 +148,7 @@ class RESPADisclosure(BaseModel):
     deposit: Decimal
     seller_credits: Decimal
     tolerance_exceeded: bool = False
-    tolerance_items: List[Dict[str, Any]] = Field(default_factory=list)
+    tolerance_items: list[dict[str, Any]] = Field(default_factory=list)
     delivered_date: date
     delivery_method: str
     timing_compliant: bool = True
@@ -163,12 +164,12 @@ class UDAPReview(BaseModel):
     unfair_assessment: str
     deceptive_assessment: str
     abusive_assessment: str
-    issues_identified: List[Dict[str, Any]]
+    issues_identified: list[dict[str, Any]]
     risk_rating: str
-    recommendations: List[str]
+    recommendations: list[str]
     remediation_required: bool = False
-    remediation_items: List[Dict[str, Any]] = Field(default_factory=list)
-    approved_by: Optional[str] = None
+    remediation_items: list[dict[str, Any]] = Field(default_factory=list)
+    approved_by: str | None = None
     status: str = "pending"
 
 
@@ -181,13 +182,13 @@ class ServicememberProtection(BaseModel):
     verification_method: str
     scra_benefits_applied: bool = False
     mla_benefits_applied: bool = False
-    interest_rate_reduction: Optional[Decimal] = None
-    effective_date: Optional[date] = None
-    end_date: Optional[date] = None
-    deployment_date: Optional[date] = None
-    return_date: Optional[date] = None
-    protections_applied: List[str]
-    notes: Optional[str] = None
+    interest_rate_reduction: Decimal | None = None
+    effective_date: date | None = None
+    end_date: date | None = None
+    deployment_date: date | None = None
+    return_date: date | None = None
+    protections_applied: list[str]
+    notes: str | None = None
 
 
 class ConsumerProtectionReport(BaseModel):
@@ -195,8 +196,8 @@ class ConsumerProtectionReport(BaseModel):
     report_date: date
     reporting_period: str
     total_complaints: int
-    complaints_by_category: Dict[str, int]
-    complaints_by_status: Dict[str, int]
+    complaints_by_category: dict[str, int]
+    complaints_by_status: dict[str, int]
     average_resolution_days: float
     sla_compliance_rate: Decimal
     regulatory_complaints: int
@@ -211,4 +212,4 @@ class ConsumerProtectionReport(BaseModel):
     servicemember_accounts: int
     training_completion_rate: Decimal
     generated_by: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

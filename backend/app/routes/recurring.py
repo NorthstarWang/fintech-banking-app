@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -98,7 +98,7 @@ async def create_recurring_rule(
 
     # Log creation
 
-    return RecurringRuleResponse.from_orm(new_rule)
+    return RecurringRuleResponse.model_validate(new_rule)
 
 @router.get("/", response_model=list[RecurringRuleResponse])
 async def get_recurring_rules(
@@ -116,7 +116,7 @@ async def get_recurring_rules(
 
     rules = query.order_by(RecurringRule.next_occurrence).all()
 
-    return [RecurringRuleResponse.from_orm(rule) for rule in rules]
+    return [RecurringRuleResponse.model_validate(rule) for rule in rules]
 
 @router.get("/{rule_id}", response_model=RecurringRuleResponse)
 async def get_recurring_rule(
@@ -136,7 +136,7 @@ async def get_recurring_rule(
             detail="Recurring rule not found"
         )
 
-    return RecurringRuleResponse.from_orm(rule)
+    return RecurringRuleResponse.model_validate(rule)
 
 @router.put("/{rule_id}/toggle")
 async def toggle_recurring_rule(
@@ -207,9 +207,9 @@ async def execute_recurring_rule(
         transaction_type=rule.transaction_type,
         status=TransactionStatus.COMPLETED,
         description=f"Recurring: {rule.name}",
-        transaction_date=datetime.utcnow(),
+        transaction_date=datetime.now(UTC),
         recurring_rule_id=rule.id,
-        reference_number=f"REC-{rule.id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        reference_number=f"REC-{rule.id}-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
     )
 
     # Update account balance

@@ -4,7 +4,7 @@ Processes financial data to provide actionable insights.
 """
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from statistics import mean, stdev
 from typing import Any
 
@@ -66,14 +66,14 @@ class AnalyticsEngine:
         """Get cached value if not expired."""
         if key in self._cache:
             value, timestamp = self._cache[key]
-            if (datetime.utcnow() - timestamp).total_seconds() < self._cache_ttl:
+            if (datetime.now(UTC) - timestamp).total_seconds() < self._cache_ttl:
                 return value
             del self._cache[key]
         return None
 
     def _set_cached(self, key: str, value: Any):
         """Set cached value with timestamp."""
-        self._cache[key] = (value, datetime.utcnow())
+        self._cache[key] = (value, datetime.now(UTC))
 
     def calculate_transaction_velocity(
         self,
@@ -88,7 +88,7 @@ class AnalyticsEngine:
         if cached:
             return cached
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(UTC) - timedelta(days=days)
         accounts = self._get_user_accounts(user_id)
         account_ids = [acc['id'] for acc in accounts]
 
@@ -157,7 +157,7 @@ class AnalyticsEngine:
         if cached:
             return cached
 
-        start_date = datetime.utcnow() - timedelta(days=period_days)
+        start_date = datetime.now(UTC) - timedelta(days=period_days)
         accounts = self._get_user_accounts(user_id)
         account_ids = [acc['id'] for acc in accounts]
 
@@ -293,7 +293,7 @@ class AnalyticsEngine:
         """
         Smart anomaly detection for unusual financial activities.
         """
-        start_date = datetime.utcnow() - timedelta(days=lookback_days)
+        start_date = datetime.now(UTC) - timedelta(days=lookback_days)
         accounts = self._get_user_accounts(user_id)
         account_ids = [acc['id'] for acc in accounts]
 
@@ -330,7 +330,7 @@ class AnalyticsEngine:
                     'amount': amount,
                     'baseline_average': round(avg_amount, 2),
                     'description': f"Transaction amount ${amount:.2f} is {amount/avg_amount:.1f}x your average",
-                    'detected_at': datetime.utcnow().isoformat()
+                    'detected_at': datetime.now(UTC).isoformat()
                 })
 
             if amount > threshold_3std and std_amount > 0:
@@ -342,11 +342,11 @@ class AnalyticsEngine:
                     'amount': amount,
                     'standard_deviations': round(std_devs, 2),
                     'description': f"Transaction is {std_devs:.1f} standard deviations from normal",
-                    'detected_at': datetime.utcnow().isoformat()
+                    'detected_at': datetime.now(UTC).isoformat()
                 })
 
         # Detect velocity spikes (many transactions in short time)
-        recent_24h = [tx for tx in transactions if tx.get('transaction_date') >= datetime.utcnow() - timedelta(days=1)]
+        recent_24h = [tx for tx in transactions if tx.get('transaction_date') >= datetime.now(UTC) - timedelta(days=1)]
         avg_daily_txs = len(transactions) / lookback_days
 
         if len(recent_24h) > avg_daily_txs * 3:
@@ -356,7 +356,7 @@ class AnalyticsEngine:
                 'transaction_count': len(recent_24h),
                 'baseline_daily': round(avg_daily_txs, 1),
                 'description': f"{len(recent_24h)} transactions in 24h vs average of {avg_daily_txs:.1f}/day",
-                'detected_at': datetime.utcnow().isoformat()
+                'detected_at': datetime.now(UTC).isoformat()
             })
 
         return anomalies
@@ -478,7 +478,7 @@ class AnalyticsEngine:
 
             # Check upcoming payment
             if loan.get('next_payment_date'):
-                days_until_payment = (loan.get('next_payment_date') - datetime.utcnow().date()).days
+                days_until_payment = (loan.get('next_payment_date') - datetime.now(UTC).date()).days
                 if days_until_payment < 0:
                     risk_factors.append(f"Loan {loan.get('id')}: Payment overdue by {abs(days_until_payment)} days")
                     loan_risk += min(abs(days_until_payment) * 2, 50)
@@ -558,7 +558,7 @@ class AnalyticsEngine:
                 continue
 
             # Get spending for this budget's category in current period
-            today = datetime.utcnow().date()
+            today = datetime.now(UTC).date()
             if budget.get('period') == 'monthly':
                 period_start = today.replace(day=1)
                 period_end = (period_start + relativedelta(months=1)) - timedelta(days=1)
@@ -642,7 +642,7 @@ class AnalyticsEngine:
         if cached:
             return cached
 
-        start_date = datetime.utcnow() - relativedelta(months=months)
+        start_date = datetime.now(UTC) - relativedelta(months=months)
         accounts = self._get_user_accounts(user_id)
         account_ids = [acc['id'] for acc in accounts]
 

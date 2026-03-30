@@ -1,9 +1,10 @@
 """Data Accuracy Analysis Utilities"""
 
-from typing import List, Dict, Any, Optional, Callable
-from decimal import Decimal
-from datetime import datetime
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 
@@ -14,7 +15,7 @@ class AccuracyRule:
     field_name: str
     accuracy_type: str
     reference_source: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
 
 
 @dataclass
@@ -37,15 +38,15 @@ class AccuracyCheckResult:
     accurate_records: int
     inaccurate_records: int
     accuracy_rate: Decimal
-    discrepancies: List[AccuracyDiscrepancy]
+    discrepancies: list[AccuracyDiscrepancy]
     checked_at: datetime
 
 
 class DataAccuracyUtilities:
     def __init__(self):
-        self._rules: Dict[str, AccuracyRule] = {}
-        self._reference_data: Dict[str, Dict[str, Any]] = {}
-        self._accuracy_validators: Dict[str, Callable] = {}
+        self._rules: dict[str, AccuracyRule] = {}
+        self._reference_data: dict[str, dict[str, Any]] = {}
+        self._accuracy_validators: dict[str, Callable] = {}
         self._register_default_validators()
 
     def _register_default_validators(self) -> None:
@@ -59,7 +60,7 @@ class DataAccuracyUtilities:
     def register_reference_data(
         self,
         source_name: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> None:
         self._reference_data[source_name] = data
 
@@ -69,7 +70,7 @@ class DataAccuracyUtilities:
         field_name: str,
         accuracy_type: str,
         reference_source: str = "",
-        parameters: Dict[str, Any] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> AccuracyRule:
         rule = AccuracyRule(
             rule_id=str(uuid4()),
@@ -84,7 +85,7 @@ class DataAccuracyUtilities:
 
     def check_accuracy(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         rule: AccuracyRule,
         id_field: str = "id",
     ) -> AccuracyCheckResult:
@@ -98,7 +99,7 @@ class DataAccuracyUtilities:
                 inaccurate_records=0,
                 accuracy_rate=Decimal("100"),
                 discrepancies=[],
-                checked_at=datetime.utcnow(),
+                checked_at=datetime.now(UTC),
             )
 
         discrepancies = []
@@ -136,11 +137,11 @@ class DataAccuracyUtilities:
             inaccurate_records=total - accurate_count,
             accuracy_rate=accuracy_rate,
             discrepancies=discrepancies,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(UTC),
         )
 
     def _validate_exact_match(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         actual = record.get(rule.field_name)
         expected = rule.parameters.get("expected_value")
@@ -150,7 +151,7 @@ class DataAccuracyUtilities:
         return False, expected, "value_mismatch"
 
     def _validate_range_check(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         actual = record.get(rule.field_name)
         min_val = rule.parameters.get("min_value")
@@ -170,7 +171,7 @@ class DataAccuracyUtilities:
             return False, "numeric", "non_numeric_value"
 
     def _validate_reference_lookup(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         actual = record.get(rule.field_name)
         reference_source = rule.reference_source
@@ -193,7 +194,7 @@ class DataAccuracyUtilities:
         return True, actual, ""
 
     def _validate_format_check(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         import re
         actual = record.get(rule.field_name)
@@ -207,7 +208,7 @@ class DataAccuracyUtilities:
         return False, f"pattern: {pattern}", "format_violation"
 
     def _validate_business_rule(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         rule_expression = rule.parameters.get("expression")
         if not rule_expression:
@@ -222,7 +223,7 @@ class DataAccuracyUtilities:
             return False, rule_expression, "rule_evaluation_error"
 
     def _validate_cross_reference(
-        self, record: Dict[str, Any], rule: AccuracyRule
+        self, record: dict[str, Any], rule: AccuracyRule
     ) -> tuple:
         source_field = rule.field_name
         target_field = rule.parameters.get("target_field")
@@ -236,7 +237,7 @@ class DataAccuracyUtilities:
 
         if relationship == "equal" and source_val != target_val:
             return False, target_val, "cross_reference_mismatch"
-        elif relationship == "less_than":
+        if relationship == "less_than":
             try:
                 if float(source_val) >= float(target_val):
                     return False, f"< {target_val}", "cross_reference_violation"
@@ -245,7 +246,7 @@ class DataAccuracyUtilities:
 
         return True, target_val, ""
 
-    def get_rules(self) -> Dict[str, AccuracyRule]:
+    def get_rules(self) -> dict[str, AccuracyRule]:
         return self._rules.copy()
 
     def register_validator(self, name: str, validator: Callable) -> None:

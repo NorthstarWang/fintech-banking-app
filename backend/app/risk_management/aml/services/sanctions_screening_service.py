@@ -4,15 +4,21 @@ Sanctions Screening Service
 Handles sanctions list screening and management.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID, uuid4
 import re
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
 
 from ..models.sanction_models import (
-    SanctionListType, MatchStatus, EntityType, SanctionListEntry,
-    ScreeningRequest, ScreeningResult, MatchDetail, MatchReview,
-    SanctionAlert, BatchScreeningJob, SanctionListUpdate, WatchlistEntry
+    BatchScreeningJob,
+    EntityType,
+    MatchDetail,
+    MatchReview,
+    SanctionListEntry,
+    SanctionListType,
+    SanctionListUpdate,
+    ScreeningRequest,
+    ScreeningResult,
 )
 
 
@@ -20,9 +26,9 @@ class SanctionsScreeningService:
     """Service for sanctions screening operations"""
 
     def __init__(self):
-        self._sanction_entries: Dict[UUID, SanctionListEntry] = {}
-        self._screening_results: Dict[UUID, ScreeningResult] = {}
-        self._batch_jobs: Dict[UUID, BatchScreeningJob] = {}
+        self._sanction_entries: dict[UUID, SanctionListEntry] = {}
+        self._screening_results: dict[UUID, ScreeningResult] = {}
+        self._batch_jobs: dict[UUID, BatchScreeningJob] = {}
         self._initialize_sample_data()
 
     def _initialize_sample_data(self):
@@ -123,14 +129,14 @@ class SanctionsScreeningService:
         if matches:
             result.highest_match_score = max(m.match_score for m in matches)
 
-        result.screening_date = datetime.utcnow()
+        result.screening_date = datetime.now(UTC)
         self._screening_results[result.result_id] = result
 
         return result
 
     async def _check_match(
         self, request: ScreeningRequest, entry: SanctionListEntry
-    ) -> Optional[MatchDetail]:
+    ) -> MatchDetail | None:
         """Check if request entity matches a sanctions entry"""
         # Check primary name
         name_score = self._calculate_name_similarity(request.entity_name, entry.primary_name)
@@ -142,18 +148,15 @@ class SanctionsScreeningService:
         ]
         if alias_scores:
             best_alias_score = max(alias_scores)
-            if best_alias_score > name_score:
-                name_score = best_alias_score
+            name_score = max(name_score, best_alias_score)
 
         # Check request aliases against entry
         for req_alias in request.aliases:
             score = self._calculate_name_similarity(req_alias, entry.primary_name)
-            if score > name_score:
-                name_score = score
+            name_score = max(name_score, score)
             for entry_alias in entry.aliases:
                 score = self._calculate_name_similarity(req_alias, entry_alias)
-                if score > name_score:
-                    name_score = score
+                name_score = max(name_score, score)
 
         # Check date of birth if available
         dob_match = False
@@ -193,7 +196,7 @@ class SanctionsScreeningService:
         )
 
     async def batch_screen(
-        self, entities: List[Dict[str, Any]], job_name: str, created_by: str
+        self, entities: list[dict[str, Any]], job_name: str, created_by: str
     ) -> BatchScreeningJob:
         """Start a batch screening job"""
         job = BatchScreeningJob(
@@ -209,7 +212,7 @@ class SanctionsScreeningService:
 
         # Process batch (in real implementation, this would be async)
         job.status = "running"
-        job.started_at = datetime.utcnow()
+        job.started_at = datetime.now(UTC)
 
         for entity in entities:
             request = ScreeningRequest(
@@ -229,7 +232,7 @@ class SanctionsScreeningService:
                 job.errors_count += 1
 
         job.status = "completed"
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(UTC)
 
         return job
 
@@ -244,17 +247,17 @@ class SanctionsScreeningService:
 
         return review
 
-    async def get_screening_result(self, result_id: UUID) -> Optional[ScreeningResult]:
+    async def get_screening_result(self, result_id: UUID) -> ScreeningResult | None:
         """Get a screening result by ID"""
         return self._screening_results.get(result_id)
 
-    async def get_batch_job(self, job_id: UUID) -> Optional[BatchScreeningJob]:
+    async def get_batch_job(self, job_id: UUID) -> BatchScreeningJob | None:
         """Get a batch job by ID"""
         return self._batch_jobs.get(job_id)
 
     async def get_sanction_entries(
-        self, list_type: Optional[SanctionListType] = None
-    ) -> List[SanctionListEntry]:
+        self, list_type: SanctionListType | None = None
+    ) -> list[SanctionListEntry]:
         """Get sanctions list entries"""
         entries = list(self._sanction_entries.values())
         if list_type:
@@ -267,8 +270,8 @@ class SanctionsScreeningService:
         return entry
 
     async def update_sanction_entry(
-        self, entry_id: UUID, updates: Dict[str, Any]
-    ) -> Optional[SanctionListEntry]:
+        self, entry_id: UUID, updates: dict[str, Any]
+    ) -> SanctionListEntry | None:
         """Update a sanctions list entry"""
         entry = self._sanction_entries.get(entry_id)
         if not entry:
@@ -278,18 +281,18 @@ class SanctionsScreeningService:
             if hasattr(entry, key):
                 setattr(entry, key, value)
 
-        entry.last_updated = datetime.utcnow()
+        entry.last_updated = datetime.now(UTC)
         return entry
 
     async def import_list_update(self, update: SanctionListUpdate) -> SanctionListUpdate:
         """Import updates to a sanctions list"""
         # In real implementation, this would parse and import the list
-        update.processed_at = datetime.utcnow()
+        update.processed_at = datetime.now(UTC)
         update.status = "completed"
         update.applied = True
         return update
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         """Get sanctions screening statistics"""
         return {
             "total_entries": len(self._sanction_entries),

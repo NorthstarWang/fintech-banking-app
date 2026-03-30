@@ -4,14 +4,23 @@ AML Case Service
 Handles case management for AML investigations.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from ..models.case_models import (
-    AMLCase, CaseSummary, CaseStatistics, CaseStatus, CasePriority, CaseCategory,
-    InvestigationFinding, CaseTimeline, CaseDocument, RelatedEntity, CaseAssignment,
-    CaseCreateRequest, CaseUpdateRequest, CaseSearchCriteria
+    AMLCase,
+    CaseAssignment,
+    CaseCreateRequest,
+    CaseDocument,
+    CasePriority,
+    CaseSearchCriteria,
+    CaseStatistics,
+    CaseStatus,
+    CaseSummary,
+    CaseTimeline,
+    CaseUpdateRequest,
+    InvestigationFinding,
+    RelatedEntity,
 )
 
 
@@ -19,13 +28,13 @@ class CaseService:
     """Service for managing AML investigation cases"""
 
     def __init__(self):
-        self._cases: Dict[UUID, AMLCase] = {}
+        self._cases: dict[UUID, AMLCase] = {}
         self._case_counter = 0
 
     def _generate_case_number(self) -> str:
         """Generate unique case number"""
         self._case_counter += 1
-        return f"CASE-{datetime.utcnow().strftime('%Y%m%d')}-{self._case_counter:06d}"
+        return f"CASE-{datetime.now(UTC).strftime('%Y%m%d')}-{self._case_counter:06d}"
 
     async def create_case(self, request: CaseCreateRequest, created_by: str) -> AMLCase:
         """Create a new AML case"""
@@ -42,7 +51,7 @@ class CaseService:
             primary_subject_name=request.primary_subject_name,
             alert_ids=request.alert_ids,
             tags=request.tags,
-            due_date=datetime.utcnow() + timedelta(days=self._get_due_days(request.priority))
+            due_date=datetime.now(UTC) + timedelta(days=self._get_due_days(request.priority))
         )
 
         # Add initial timeline entry
@@ -67,11 +76,11 @@ class CaseService:
         }
         return priority_days.get(priority, 60)
 
-    async def get_case(self, case_id: UUID) -> Optional[AMLCase]:
+    async def get_case(self, case_id: UUID) -> AMLCase | None:
         """Get case by ID"""
         return self._cases.get(case_id)
 
-    async def get_case_by_number(self, case_number: str) -> Optional[AMLCase]:
+    async def get_case_by_number(self, case_number: str) -> AMLCase | None:
         """Get case by case number"""
         for case in self._cases.values():
             if case.case_number == case_number:
@@ -80,7 +89,7 @@ class CaseService:
 
     async def update_case(
         self, case_id: UUID, request: CaseUpdateRequest, updated_by: str
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Update an existing case"""
         case = self._cases.get(case_id)
         if not case:
@@ -96,9 +105,9 @@ class CaseService:
             changes.append(f"Status changed from {case.status.value} to {request.status.value}")
             case.status = request.status
             if request.status == CaseStatus.OPEN and not case.opened_at:
-                case.opened_at = datetime.utcnow()
+                case.opened_at = datetime.now(UTC)
             elif request.status in [CaseStatus.CLOSED_NO_ACTION, CaseStatus.CLOSED_WITH_ACTION]:
-                case.closed_at = datetime.utcnow()
+                case.closed_at = datetime.now(UTC)
 
         if request.priority and request.priority != case.priority:
             changes.append(f"Priority changed from {case.priority.value} to {request.priority.value}")
@@ -133,31 +142,31 @@ class CaseService:
             )
             case.timeline.append(timeline_entry)
 
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
-    async def open_case(self, case_id: UUID, opened_by: str) -> Optional[AMLCase]:
+    async def open_case(self, case_id: UUID, opened_by: str) -> AMLCase | None:
         """Open a case for investigation"""
         case = self._cases.get(case_id)
         if not case:
             return None
 
         case.status = CaseStatus.OPEN
-        case.opened_at = datetime.utcnow()
+        case.opened_at = datetime.now(UTC)
 
         timeline_entry = CaseTimeline(
             activity_type="case_opened",
-            description=f"Case opened for investigation",
+            description="Case opened for investigation",
             actor_id=opened_by,
             actor_name=opened_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
     async def assign_case(
         self, case_id: UUID, assignee: str, assigned_by: str, role: str = "investigator"
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Assign case to an investigator"""
         case = self._cases.get(case_id)
         if not case:
@@ -181,12 +190,12 @@ class CaseService:
             actor_name=assigned_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
     async def add_finding(
         self, case_id: UUID, finding: InvestigationFinding
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Add investigation finding to case"""
         case = self._cases.get(case_id)
         if not case:
@@ -201,12 +210,12 @@ class CaseService:
             actor_name=finding.created_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
     async def add_document(
         self, case_id: UUID, document: CaseDocument
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Add document to case"""
         case = self._cases.get(case_id)
         if not case:
@@ -221,12 +230,12 @@ class CaseService:
             actor_name=document.uploaded_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
     async def add_related_entity(
         self, case_id: UUID, entity: RelatedEntity, added_by: str
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Add related entity to case"""
         case = self._cases.get(case_id)
         if not case:
@@ -241,10 +250,10 @@ class CaseService:
             actor_name=added_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
-    async def link_alert(self, case_id: UUID, alert_id: UUID, linked_by: str) -> Optional[AMLCase]:
+    async def link_alert(self, case_id: UUID, alert_id: UUID, linked_by: str) -> AMLCase | None:
         """Link an alert to the case"""
         case = self._cases.get(case_id)
         if not case:
@@ -260,13 +269,13 @@ class CaseService:
                 actor_name=linked_by
             )
             case.timeline.append(timeline_entry)
-            case.updated_at = datetime.utcnow()
+            case.updated_at = datetime.now(UTC)
 
         return case
 
     async def escalate_case(
         self, case_id: UUID, escalated_by: str, reason: str
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Escalate a case"""
         case = self._cases.get(case_id)
         if not case:
@@ -281,12 +290,12 @@ class CaseService:
             actor_name=escalated_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
     async def close_case(
         self, case_id: UUID, closed_by: str, resolution_type: str, resolution_summary: str
-    ) -> Optional[AMLCase]:
+    ) -> AMLCase | None:
         """Close a case"""
         case = self._cases.get(case_id)
         if not case:
@@ -299,7 +308,7 @@ class CaseService:
         case.resolution_type = resolution_type
         case.resolution_summary = resolution_summary
         case.resolved_by = closed_by
-        case.closed_at = datetime.utcnow()
+        case.closed_at = datetime.now(UTC)
 
         timeline_entry = CaseTimeline(
             activity_type="case_closed",
@@ -308,10 +317,10 @@ class CaseService:
             actor_name=closed_by
         )
         case.timeline.append(timeline_entry)
-        case.updated_at = datetime.utcnow()
+        case.updated_at = datetime.now(UTC)
         return case
 
-    async def search_cases(self, criteria: CaseSearchCriteria) -> List[CaseSummary]:
+    async def search_cases(self, criteria: CaseSearchCriteria) -> list[CaseSummary]:
         """Search cases based on criteria"""
         results = []
         for case in self._cases.values():
@@ -366,16 +375,14 @@ class CaseService:
             return False
         if criteria.sar_required is not None and case.sar_required != criteria.sar_required:
             return False
-        if criteria.overdue_only and case.due_date and case.due_date > datetime.utcnow():
-            return False
-        return True
+        return not (criteria.overdue_only and case.due_date and case.due_date > datetime.now(UTC))
 
     async def get_statistics(self) -> CaseStatistics:
         """Get case statistics"""
         stats = CaseStatistics()
         stats.total_cases = len(self._cases)
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         for case in self._cases.values():
@@ -407,7 +414,7 @@ class CaseService:
 
         return stats
 
-    async def get_cases_for_subject(self, subject_id: str) -> List[AMLCase]:
+    async def get_cases_for_subject(self, subject_id: str) -> list[AMLCase]:
         """Get all cases for a subject"""
         return [
             case for case in self._cases.values()

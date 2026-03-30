@@ -4,7 +4,7 @@ Creates realistic, interconnected data for testing.
 """
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 
@@ -30,7 +30,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'password_hash': _hash_password('password123'),
             'is_active': True,
             'is_admin': False,
-            'created_at': (datetime.utcnow() - timedelta(days=365)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=365)).isoformat()
         },
         {
             'id': 'user-2',
@@ -42,7 +42,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'password_hash': _hash_password('password123'),
             'is_active': True,
             'is_admin': False,
-            'created_at': (datetime.utcnow() - timedelta(days=300)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=300)).isoformat()
         },
         {
             'id': 'user-3',
@@ -54,7 +54,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'password_hash': _hash_password('admin123'),
             'is_active': True,
             'is_admin': True,
-            'created_at': (datetime.utcnow() - timedelta(days=400)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=400)).isoformat()
         }
     ]
     data_manager.users.extend(users)
@@ -111,7 +111,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
         user_accounts = [acc for acc in data_manager.accounts if acc['user_id'] == user['id']]
 
         for day_offset in range(90):
-            date = datetime.utcnow() - timedelta(days=day_offset)
+            date = datetime.now(UTC) - timedelta(days=day_offset)
 
             # Generate 0-5 transactions per day
             num_transactions = random.randint(0, 5)
@@ -156,7 +156,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'card_number': f"****{random.randint(1000, 9999)}",
                 'card_type': 'debit',
                 'card_status': 'active',
-                'expiry_date': (datetime.utcnow() + timedelta(days=1095)).strftime('%m/%y'),
+                'expiry_date': (datetime.now(UTC) + timedelta(days=1095)).strftime('%m/%y'),
                 'created_at': checking_acc['created_at']
             }
             data_manager.cards.append(card)
@@ -172,7 +172,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'card_type': 'credit',
                 'card_status': 'active',
                 'credit_limit': 10000.00,
-                'expiry_date': (datetime.utcnow() + timedelta(days=1095)).strftime('%m/%y'),
+                'expiry_date': (datetime.now(UTC) + timedelta(days=1095)).strftime('%m/%y'),
                 'created_at': credit_acc['created_at']
             }
             data_manager.cards.append(card)
@@ -184,7 +184,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'user_id': user['id'],
             'score': random.randint(650, 850),
             'provider': 'Equifax',
-            'date': datetime.utcnow().isoformat(),
+            'date': datetime.now(UTC).isoformat(),
             'factors': [
                 'Payment History: Excellent',
                 'Credit Utilization: Low',
@@ -202,9 +202,9 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'category_id': category['id'],
                 'amount': float(random.randint(200, 1000)),
                 'period': 'monthly',
-                'start_date': datetime.utcnow().replace(day=1).isoformat(),
+                'start_date': datetime.now(UTC).replace(day=1).isoformat(),
                 'is_active': True,
-                'created_at': (datetime.utcnow() - timedelta(days=30)).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(days=30)).isoformat()
             }
             data_manager.budgets.append(budget)
 
@@ -224,10 +224,10 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'name': template['name'],
                 'target_amount': float(template['target']),
                 'current_amount': float(random.randint(0, template['target'])),
-                'target_date': (datetime.utcnow() + timedelta(days=random.randint(180, 730))).isoformat(),
+                'target_date': (datetime.now(UTC) + timedelta(days=random.randint(180, 730))).isoformat(),
                 'category': template['category'],
                 'is_active': True,
-                'created_at': (datetime.utcnow() - timedelta(days=60)).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(days=60)).isoformat()
             }
             data_manager.goals.append(goal)
 
@@ -251,7 +251,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'category_id': 'cat-4',  # Bills & Utilities
                 'is_active': True,
                 'auto_pay': random.choice([True, False]),
-                'created_at': (datetime.utcnow() - timedelta(days=90)).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(days=90)).isoformat()
             }
             data_manager.bills.append(bill)
 
@@ -277,9 +277,9 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                     'amount': template['amount'],
                     'frequency': 'monthly',
                     'category_id': template['category'],
-                    'next_billing_date': (datetime.utcnow() + timedelta(days=random.randint(1, 30))).isoformat(),
+                    'next_billing_date': (datetime.now(UTC) + timedelta(days=random.randint(1, 30))).isoformat(),
                     'is_active': True,
-                    'created_at': (datetime.utcnow() - timedelta(days=random.randint(30, 365))).isoformat()
+                    'created_at': (datetime.now(UTC) - timedelta(days=random.randint(30, 365))).isoformat()
                 }
                 data_manager.subscriptions.append(sub)
 
@@ -291,7 +291,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'user_id': users[0]['id'],
             'connected_user_id': users[1]['id'],
             'connection_type': 'friend',
-            'created_at': (datetime.utcnow() - timedelta(days=100)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=100)).isoformat()
         }
         data_manager.social_connections.append(connection)
 
@@ -301,7 +301,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'user_id': users[1]['id'],
             'connected_user_id': users[0]['id'],
             'connection_type': 'friend',
-            'created_at': (datetime.utcnow() - timedelta(days=100)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=100)).isoformat()
         }
         data_manager.social_connections.append(connection_reverse)
 
@@ -320,7 +320,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'recipient_id': users[(i + 1) % 2]['id'],
             'message': template,
             'is_read': i < 2,  # First two are read
-            'created_at': (datetime.utcnow() - timedelta(hours=i * 24)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(hours=i * 24)).isoformat()
         }
         data_manager.messages.append(message)
 
@@ -333,7 +333,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'amount': 25.00,
             'description': 'Lunch split',
             'status': 'completed',
-            'created_at': (datetime.utcnow() - timedelta(days=2)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=2)).isoformat()
         },
         {
             'id': 'p2p-2',
@@ -342,7 +342,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'amount': 50.00,
             'description': 'Concert tickets',
             'status': 'completed',
-            'created_at': (datetime.utcnow() - timedelta(days=5)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=5)).isoformat()
         }
     ]
     data_manager.p2p_transactions.extend(p2p_transactions)
@@ -357,7 +357,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'title': 'Large Transaction Alert',
                 'message': 'A transaction of $500+ was made on your account',
                 'is_read': False,
-                'created_at': (datetime.utcnow() - timedelta(hours=2)).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(hours=2)).isoformat()
             },
             {
                 'id': f"{user['id']}-notif-2",
@@ -366,7 +366,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'title': 'Budget Alert',
                 'message': "You've used 80% of your Food & Dining budget",
                 'is_read': True,
-                'created_at': (datetime.utcnow() - timedelta(days=1)).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(days=1)).isoformat()
             }
         ]
         data_manager.notifications.extend(notifications)
@@ -380,7 +380,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'title': 'New Login Detected',
             'message': 'A new login was detected from Chrome on Windows',
             'is_active': True,
-            'created_at': (datetime.utcnow() - timedelta(hours=1)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(hours=1)).isoformat()
         }
     ]
     data_manager.alerts.extend(alerts)
@@ -394,7 +394,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'account_type': 'brokerage',
             'total_value': float(random.randint(10000, 100000)),
             'cash_balance': float(random.randint(1000, 5000)),
-            'created_at': (datetime.utcnow() - timedelta(days=180)).isoformat()
+            'created_at': (datetime.now(UTC) - timedelta(days=180)).isoformat()
         }
         data_manager.investment_accounts.append(inv_account)
 
@@ -416,7 +416,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
                 'quantity': random.randint(10, 100),
                 'purchase_price': stock['price'] * random.uniform(0.8, 1.0),
                 'current_price': stock['price'],
-                'created_at': (datetime.utcnow() - timedelta(days=random.randint(30, 150))).isoformat()
+                'created_at': (datetime.now(UTC) - timedelta(days=random.randint(30, 150))).isoformat()
             }
             data_manager.holdings.append(holding)
 
@@ -426,7 +426,7 @@ def generate_mock_data(data_manager: Any, seed: int = 42):
             'user_id': user['id'],
             'symbol': stocks[3]['symbol'],
             'name': stocks[3]['name'],
-            'added_at': (datetime.utcnow() - timedelta(days=10)).isoformat()
+            'added_at': (datetime.now(UTC) - timedelta(days=10)).isoformat()
         }
         data_manager.watchlist.append(watchlist_item)
 

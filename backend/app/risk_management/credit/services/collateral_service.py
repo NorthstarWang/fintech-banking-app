@@ -1,23 +1,30 @@
 """Collateral Service - Collateral and security management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.collateral_models import (
-    Collateral, CollateralValuation, CollateralAllocation,
-    CollateralHaircut, CollateralMonitoring, Guarantee,
-    CollateralStatistics, CollateralType, CollateralStatus, ValuationType
+    Collateral,
+    CollateralAllocation,
+    CollateralHaircut,
+    CollateralMonitoring,
+    CollateralStatistics,
+    CollateralType,
+    CollateralValuation,
+    Guarantee,
+    ValuationType,
 )
 
 
 class CollateralService:
     def __init__(self):
-        self._collaterals: Dict[UUID, Collateral] = {}
-        self._valuations: Dict[UUID, CollateralValuation] = {}
-        self._allocations: Dict[UUID, CollateralAllocation] = {}
-        self._haircuts: Dict[UUID, CollateralHaircut] = {}
-        self._monitoring: Dict[UUID, CollateralMonitoring] = {}
-        self._guarantees: Dict[UUID, Guarantee] = {}
+        self._collaterals: dict[UUID, Collateral] = {}
+        self._valuations: dict[UUID, CollateralValuation] = {}
+        self._allocations: dict[UUID, CollateralAllocation] = {}
+        self._haircuts: dict[UUID, CollateralHaircut] = {}
+        self._monitoring: dict[UUID, CollateralMonitoring] = {}
+        self._guarantees: dict[UUID, Guarantee] = {}
         self._counter = 0
         self._initialize_haircuts()
 
@@ -45,7 +52,7 @@ class CollateralService:
 
     def _generate_code(self) -> str:
         self._counter += 1
-        return f"COL-{datetime.utcnow().strftime('%Y%m%d')}-{self._counter:06d}"
+        return f"COL-{datetime.now(UTC).strftime('%Y%m%d')}-{self._counter:06d}"
 
     def _get_haircut(self, col_type: CollateralType) -> float:
         for haircut in self._haircuts.values():
@@ -75,25 +82,25 @@ class CollateralService:
         self._collaterals[collateral.collateral_id] = collateral
         return collateral
 
-    async def get_collateral(self, collateral_id: UUID) -> Optional[Collateral]:
+    async def get_collateral(self, collateral_id: UUID) -> Collateral | None:
         return self._collaterals.get(collateral_id)
 
     async def update_collateral(
-        self, collateral_id: UUID, updates: Dict[str, Any]
-    ) -> Optional[Collateral]:
+        self, collateral_id: UUID, updates: dict[str, Any]
+    ) -> Collateral | None:
         collateral = self._collaterals.get(collateral_id)
         if collateral:
             for key, value in updates.items():
                 if hasattr(collateral, key):
                     setattr(collateral, key, value)
-            collateral.updated_at = datetime.utcnow()
+            collateral.updated_at = datetime.now(UTC)
         return collateral
 
     async def record_valuation(
         self, collateral_id: UUID, valuation_type: ValuationType,
         market_value: float, forced_sale_value: float,
         valuer_name: str, methodology: str
-    ) -> Optional[CollateralValuation]:
+    ) -> CollateralValuation | None:
         collateral = self._collaterals.get(collateral_id)
         if not collateral:
             return None
@@ -122,7 +129,7 @@ class CollateralService:
     async def allocate_collateral(
         self, collateral_id: UUID, facility_id: UUID,
         allocation_amount: float, priority_ranking: int = 1
-    ) -> Optional[CollateralAllocation]:
+    ) -> CollateralAllocation | None:
         collateral = self._collaterals.get(collateral_id)
         if not collateral:
             return None
@@ -163,7 +170,7 @@ class CollateralService:
 
     async def monitor_collateral(
         self, collateral_id: UUID, monitored_by: str
-    ) -> Optional[CollateralMonitoring]:
+    ) -> CollateralMonitoring | None:
         collateral = self._collaterals.get(collateral_id)
         if not collateral:
             return None
@@ -206,7 +213,7 @@ class CollateralService:
         self._guarantees[guarantee.guarantee_id] = guarantee
         return guarantee
 
-    async def get_customer_collaterals(self, customer_id: str) -> List[Collateral]:
+    async def get_customer_collaterals(self, customer_id: str) -> list[Collateral]:
         return [c for c in self._collaterals.values() if c.owner_id == customer_id]
 
     async def get_statistics(self) -> CollateralStatistics:

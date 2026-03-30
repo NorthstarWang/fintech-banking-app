@@ -1,9 +1,10 @@
 """Data Lineage Routes"""
 
-from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.data_lineage_service import data_lineage_service
 
 router = APIRouter(prefix="/data-lineage", tags=["Data Lineage"])
@@ -17,7 +18,7 @@ class RegisterAssetRequest(BaseModel):
     description: str = ""
     owner: str = ""
     steward: str = ""
-    tags: List[str] = []
+    tags: list[str] = []
 
 
 class CreateFlowRequest(BaseModel):
@@ -45,8 +46,8 @@ class CreatePipelineRequest(BaseModel):
     pipeline_name: str
     pipeline_type: str
     description: str
-    source_systems: List[str]
-    target_systems: List[str]
+    source_systems: list[str]
+    target_systems: list[str]
     owner: str
 
 
@@ -54,8 +55,8 @@ class AddTransformationRequest(BaseModel):
     flow_id: UUID
     transformation_name: str
     transformation_type: str
-    source_columns: List[str]
-    target_columns: List[str]
+    source_columns: list[str]
+    target_columns: list[str]
     logic: str
     documented_by: str
 

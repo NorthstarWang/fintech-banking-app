@@ -4,7 +4,7 @@ Simplified data manager for mock testing system.
 import hashlib
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.models import AssetClass
@@ -244,7 +244,7 @@ class DataManager:
                 'phone': '',
                 'currency': 'USD',
                 'timezone': 'UTC',
-                'created_at': datetime.utcnow(),
+                'created_at': datetime.now(UTC),
                 'updated_at': None,
                 'last_login': None
             }
@@ -311,7 +311,7 @@ class DataManager:
                 'id': len(self.merchants) + 1,
                 'name': name,
                 'category_id': random.choice(expense_categories)['id'] if expense_categories else None,
-                'created_at': datetime.utcnow()
+                'created_at': datetime.now(UTC)
             }
             self.merchants.append(merchant)
 
@@ -336,7 +336,7 @@ class DataManager:
                 'balance': format_money(random.uniform(1000, 10000)) if demo_mode else 5000.00,
                 'currency': 'USD',
                 'is_active': True,
-                'created_at': datetime.utcnow()
+                'created_at': datetime.now(UTC)
             }
             self.accounts.append(checking)
             account_id_counter += 1
@@ -351,7 +351,7 @@ class DataManager:
                 'currency': 'USD',
                 'interest_rate': 2.5,
                 'is_active': True,
-                'created_at': datetime.utcnow()
+                'created_at': datetime.now(UTC)
             }
             self.accounts.append(savings)
             account_id_counter += 1
@@ -367,7 +367,7 @@ class DataManager:
                     'credit_limit': format_money(random.choice([5000, 10000, 15000, 20000])),
                     'currency': 'USD',
                     'is_active': True,
-                    'created_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC)
                 }
                 self.accounts.append(credit_card)
                 account_id_counter += 1
@@ -399,12 +399,12 @@ class DataManager:
             monthly_spending = {}
 
             # Calculate days to cover: from Jan 1 of last year to today
-            today = datetime.utcnow()
-            start_of_last_year = datetime(today.year - 1, 1, 1)
+            today = datetime.now(UTC)
+            start_of_last_year = datetime(today.year - 1, 1, 1, tzinfo=UTC)
             days_to_generate = (today - start_of_last_year).days
 
             for days_ago in range(days_to_generate):
-                date = datetime.utcnow() - timedelta(days=days_ago)
+                date = datetime.now(UTC) - timedelta(days=days_ago)
                 month_key = f"{date.year}-{date.month:02d}"
 
                 if month_key not in monthly_spending:
@@ -577,13 +577,13 @@ class DataManager:
 
             # Add recurring transactions for the last 3 months
             for month_offset in range(3):
-                current_date = datetime.utcnow() - timedelta(days=month_offset * 30)
+                current_date = datetime.now(UTC) - timedelta(days=month_offset * 30)
                 month_start = current_date.replace(day=1)
 
                 for recurring in recurring_transactions:
                     if random.random() < 0.9:  # 90% chance to have the recurring transaction
                         transaction_date = month_start.replace(day=recurring['day'])
-                        if transaction_date <= datetime.utcnow():
+                        if transaction_date <= datetime.now(UTC):
                             category = next((c for c in self.categories if c['name'] == recurring['category']), None)
                             if category:
                                 transaction = {
@@ -670,14 +670,14 @@ class DataManager:
                 # Set appropriate start dates based on period
                 if period == 'weekly':
                     # Start on Monday of current week
-                    today = datetime.utcnow().date()
+                    today = datetime.now(UTC).date()
                     start_date = today - timedelta(days=today.weekday())
                 elif period == 'monthly':
                     # Start on 1st of current month
-                    start_date = datetime.utcnow().replace(day=1).date()
+                    start_date = datetime.now(UTC).replace(day=1).date()
                 else:  # yearly
                     # Start on Jan 1st of current year
-                    start_date = datetime.utcnow().replace(month=1, day=1).date()
+                    start_date = datetime.now(UTC).replace(month=1, day=1).date()
 
                 budget = {
                     'id': budget_id_counter,
@@ -688,7 +688,7 @@ class DataManager:
                     'start_date': start_date,
                     'alert_threshold': 0.8,
                     'is_active': True,
-                    'created_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC)
                 }
                 self.budgets.append(budget)
                 budget_id_counter += 1
@@ -750,10 +750,10 @@ class DataManager:
                     'name': goal_name,
                     'target_amount': format_money(target_amount),
                     'current_amount': format_money(random.uniform(0, target_amount * 0.7)),
-                    'target_date': (datetime.utcnow() + timedelta(days=random.randint(90, 365))).date(),
+                    'target_date': (datetime.now(UTC) + timedelta(days=random.randint(90, 365))).date(),
                     'status': 'active',  # Use lowercase for enum
                     'account_id': savings_account['id'],  # Link to savings account
-                    'created_at': datetime.utcnow(),
+                    'created_at': datetime.now(UTC),
                     # Automatic allocation fields
                     'auto_allocate_percentage': round(allocation_percentage, 2),
                     'auto_allocate_fixed_amount': 0.0,
@@ -805,7 +805,7 @@ class DataManager:
                     'title': title,
                     'message': message,
                     'is_read': random.random() < 0.7,
-                    'created_at': (datetime.utcnow() - timedelta(hours=random.randint(1, 72)))
+                    'created_at': (datetime.now(UTC) - timedelta(hours=random.randint(1, 72)))
                 }
                 self.notifications.append(notification)
 
@@ -835,7 +835,7 @@ class DataManager:
                         'contact_id': contact_user['id'],
                         'status': 'accepted',
                         'is_favorite': random.random() < 0.3,
-                        'created_at': datetime.utcnow()
+                        'created_at': datetime.now(UTC)
                     }
                     self.contacts.append(contact)
 
@@ -844,7 +844,7 @@ class DataManager:
                         'id': len(self.conversations) + 1,
                         'is_group': False,
                         'created_by_id': user['id'],
-                        'created_at': datetime.utcnow()
+                        'created_at': datetime.now(UTC)
                     }
                     self.conversations.append(conversation)
 
@@ -855,7 +855,7 @@ class DataManager:
                             'conversation_id': conversation['id'],
                             'user_id': participant_user['id'],
                             'is_admin': participant_user['id'] == user['id'],
-                            'joined_at': datetime.utcnow()
+                            'joined_at': datetime.now(UTC)
                         }
                         self.conversation_participants.append(participant)
 
@@ -878,7 +878,7 @@ class DataManager:
                             'content': random.choice(message_templates),
                             'message_type': 'text',
                             'status': 'read',
-                            'created_at': (datetime.utcnow() - timedelta(hours=random.randint(1, 168)))
+                            'created_at': (datetime.now(UTC) - timedelta(hours=random.randint(1, 168)))
                         }
                         self.messages.append(message)
 
@@ -903,7 +903,7 @@ class DataManager:
                 'expiry_year': random.randint(2025, 2030),
                 'is_default': True,
                 'status': 'active',
-                'created_at': datetime.utcnow()
+                'created_at': datetime.now(UTC)
             }
             self.payment_methods.append(payment_method)
 
@@ -920,7 +920,7 @@ class DataManager:
                     'expiry_year': random.randint(2025, 2030),
                     'is_default': False,
                     'status': 'active',
-                    'created_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC)
                 }
                 self.payment_methods.append(payment_method2)
 
@@ -990,7 +990,7 @@ class DataManager:
 
             # Generate 3-10 messages per conversation
             num_messages = random.randint(3, 10)
-            base_time = datetime.utcnow() - timedelta(days=random.randint(1, 30))
+            base_time = datetime.now(UTC) - timedelta(days=random.randint(1, 30))
 
             for i in range(num_messages):
                 # Alternate senders for natural conversation flow
@@ -1091,11 +1091,11 @@ class DataManager:
                         'status': 'active',
                         'credit_limit': None,
                         'current_balance': 0.0,
-                        'expiry_date': (datetime.utcnow() + timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d'),
+                        'expiry_date': (datetime.now(UTC) + timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d'),
                         'is_contactless_enabled': True,
                         'is_online_enabled': True,
                         'is_international_enabled': random.choice([True, False]),
-                        'created_at': datetime.utcnow() - timedelta(days=random.randint(30, 730))
+                        'created_at': datetime.now(UTC) - timedelta(days=random.randint(30, 730))
                     }
                     self.cards.append(card)
                     card_id += 1
@@ -1119,15 +1119,15 @@ class DataManager:
                         'available_credit': format_money(credit_limit - current_balance),
                         'interest_rate': random.choice([14.99, 17.99, 19.99, 22.99, 24.99]),
                         'minimum_payment': format_money(max(25, current_balance * 0.02)),
-                        'payment_due_date': (datetime.utcnow() + timedelta(days=random.randint(15, 25))).strftime('%Y-%m-%d'),
+                        'payment_due_date': (datetime.now(UTC) + timedelta(days=random.randint(15, 25))).strftime('%Y-%m-%d'),
                         'rewards_program': random.choice(['cash_back', 'points', 'miles', None]),
                         'rewards_rate': random.choice([1.0, 1.5, 2.0, 3.0]) if random.random() > 0.3 else None,
                         'rewards_balance': random.randint(0, 50000) if random.random() > 0.3 else 0,
-                        'expiry_date': (datetime.utcnow() + timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d'),
+                        'expiry_date': (datetime.now(UTC) + timedelta(days=random.randint(365, 1460))).strftime('%Y-%m-%d'),
                         'is_contactless_enabled': True,
                         'is_online_enabled': True,
                         'is_international_enabled': True,
-                        'created_at': datetime.utcnow() - timedelta(days=random.randint(180, 1095))
+                        'created_at': datetime.now(UTC) - timedelta(days=random.randint(180, 1095))
                     }
                     self.cards.append(card)
                     card_id += 1
@@ -1153,11 +1153,11 @@ class DataManager:
                             'spent_amount': format_money(random.uniform(0, 500)),
                             'single_use': random.choice([True, False, False, False]),
                             'merchant_restrictions': random.choice([[], ['Amazon'], ['Netflix', 'Spotify'], []]),
-                            'expiry_date': (datetime.utcnow() + timedelta(days=random.randint(7, 90))).strftime('%Y-%m-%d'),
+                            'expiry_date': (datetime.now(UTC) + timedelta(days=random.randint(7, 90))).strftime('%Y-%m-%d'),
                             'is_contactless_enabled': False,
                             'is_online_enabled': True,
                             'is_international_enabled': False,
-                            'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 60))
+                            'created_at': datetime.now(UTC) - timedelta(days=random.randint(1, 60))
                         }
                         self.cards.append(card)
                         card_id += 1
@@ -1190,21 +1190,21 @@ class DataManager:
                 payment_method = next((pm for pm in self.payment_methods if pm['user_id'] == user['id']), None)
 
                 # Calculate proper start_date and next_billing_date
-                start_date = datetime.utcnow().date() - timedelta(days=random.randint(30, 365))
+                start_date = datetime.now(UTC).date() - timedelta(days=random.randint(30, 365))
 
                 # Calculate next billing date based on cycle
                 if cycle == "weekly":
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=7)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=7)
                 elif cycle == "monthly":
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=30)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=30)
                 elif cycle == "quarterly":
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=90)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=90)
                 elif cycle == "semi_annual":
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=180)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=180)
                 elif cycle == "annual":
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=365)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=365)
                 else:
-                    next_billing_date = datetime.utcnow().date() + timedelta(days=30)
+                    next_billing_date = datetime.now(UTC).date() + timedelta(days=30)
 
                 subscription = {
                     'id': len(self.subscriptions) + 1,
@@ -1219,8 +1219,8 @@ class DataManager:
                     'next_billing_date': next_billing_date,
                     'payment_method_id': payment_method['id'] if payment_method else None,
                     'detected_automatically': random.random() < 0.3,
-                    'created_at': datetime.utcnow(),
-                    'updated_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC),
+                    'updated_at': datetime.now(UTC)
                 }
                 self.subscriptions.append(subscription)
 
@@ -1289,7 +1289,7 @@ class DataManager:
 
                 # Generate invoice date (within last 6 months)
                 days_ago = random.randint(0, 180)
-                issue_date = datetime.utcnow() - timedelta(days=days_ago)
+                issue_date = datetime.now(UTC) - timedelta(days=days_ago)
 
                 # Payment terms
                 payment_terms = random.choice(['due_on_receipt', 'net_15', 'net_30', 'net_45', 'net_60'])
@@ -1307,7 +1307,7 @@ class DataManager:
                 invoice_number = f"INV-{issue_date.strftime('%Y%m')}-{invoice_id_counter:04d}"
 
                 # Determine status based on dates
-                now = datetime.utcnow()
+                now = datetime.now(UTC)
                 if due_date > now:
                     # Not yet due
                     if random.random() < 0.7:
@@ -1526,7 +1526,7 @@ class DataManager:
                     'annual_income': random.randint(30000, 200000),
                     'monthly_expenses': random.randint(1000, 5000),
                     'status': random.choice(['pending', 'approved', 'rejected']),
-                    'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 90))
+                    'created_at': datetime.now(UTC) - timedelta(days=random.randint(1, 90))
                 }
                 self.loan_applications.append(application)
 
@@ -1545,7 +1545,7 @@ class DataManager:
                             'term_months': application['term_months'],
                             'monthly_payment': application['requested_amount'] * (1 + interest_rate/100) / application['term_months'],
                             'total_cost': application['requested_amount'] * (1 + interest_rate/100),
-                            'expires_at': datetime.utcnow() + timedelta(days=7)
+                            'expires_at': datetime.now(UTC) + timedelta(days=7)
                         }
                         self.loan_offers.append(offer)
 
@@ -1564,8 +1564,8 @@ class DataManager:
                                 'monthly_payment': offer['monthly_payment'],
                                 'remaining_balance': offer['approved_amount'],
                                 'status': 'active',
-                                'originated_date': datetime.utcnow() - timedelta(days=random.randint(30, 365)),
-                                'next_payment_date': datetime.utcnow() + timedelta(days=random.randint(1, 30))
+                                'originated_date': datetime.now(UTC) - timedelta(days=random.randint(30, 365)),
+                                'next_payment_date': datetime.now(UTC) + timedelta(days=random.randint(1, 30))
                             }
                             self.loans.append(loan)
 
@@ -1625,8 +1625,8 @@ class DataManager:
                     'premium_frequency': random.choice(['monthly', 'quarterly', 'annual']),
                     'deductible': random.choice([250, 500, 1000, 2500]),
                     'status': random.choice(['active', 'pending', 'expired']),
-                    'start_date': datetime.utcnow() - timedelta(days=random.randint(30, 730)),
-                    'end_date': datetime.utcnow() + timedelta(days=random.randint(30, 365))
+                    'start_date': datetime.now(UTC) - timedelta(days=random.randint(30, 730)),
+                    'end_date': datetime.now(UTC) + timedelta(days=random.randint(30, 365))
                 }
                 self.insurance_policies.append(policy)
 
@@ -1651,7 +1651,7 @@ class DataManager:
                         'amount_claimed': random.randint(500, min(10000, policy['coverage_amount'])),
                         'amount_approved': 0,
                         'status': random.choice(['pending', 'approved', 'rejected', 'processing']),
-                        'filed_date': datetime.utcnow() - timedelta(days=random.randint(1, 60)),
+                        'filed_date': datetime.now(UTC) - timedelta(days=random.randint(1, 60)),
                         'description': 'Mock insurance claim'
                     }
                     if claim['status'] == 'approved':
@@ -1754,8 +1754,8 @@ class DataManager:
                     'total_return_percent': random.uniform(-10, 25),
                     'is_retirement': account_type == 'retirement_401k',
                     'risk_tolerance': random.choice(['conservative', 'moderate', 'aggressive']),
-                    'created_at': datetime.utcnow() - timedelta(days=random.randint(90, 730)),
-                    'updated_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC) - timedelta(days=random.randint(90, 730)),
+                    'updated_at': datetime.now(UTC)
                 }
                 self.investment_accounts.append(account)
 
@@ -1830,7 +1830,7 @@ class DataManager:
                         'total_amount': 0,  # Will calculate
                         'commission': random.uniform(0, 10),
                         'status': 'completed',
-                        'executed_at': datetime.utcnow() - timedelta(days=random.randint(1, 90))
+                        'executed_at': datetime.now(UTC) - timedelta(days=random.randint(1, 90))
                     })
                     self.investment_trades[-1]['total_amount'] = (
                         self.investment_trades[-1]['shares'] * self.investment_trades[-1]['price'] +
@@ -1906,7 +1906,7 @@ class DataManager:
                     'card_offer_id': card['id'],
                     'recommendation_score': random.uniform(0.7, 1.0),
                     'reason': f"Based on your {credit_score} credit score",
-                    'created_at': datetime.utcnow()
+                    'created_at': datetime.now(UTC)
                 })
 
             # Create 0-2 card applications
@@ -1921,7 +1921,7 @@ class DataManager:
                         'credit_score_at_application': credit_score,
                         'requested_credit_limit': random.randint(1000, 10000),
                         'approved_credit_limit': random.randint(1000, 10000) if random.random() > 0.3 else 0,
-                        'application_date': datetime.utcnow() - timedelta(days=random.randint(1, 60))
+                        'application_date': datetime.now(UTC) - timedelta(days=random.randint(1, 60))
                     })
 
     def _generate_currency_data(self):
@@ -2018,8 +2018,8 @@ class DataManager:
                 'max_amount': round(amount, 2),
                 'payment_methods': random.sample(payment_methods, random.randint(1, 3)),
                 'status': 'active',
-                'created_at': datetime.utcnow() - timedelta(hours=random.randint(1, 48)),
-                'expires_at': datetime.utcnow() + timedelta(hours=random.randint(1, 24)),
+                'created_at': datetime.now(UTC) - timedelta(hours=random.randint(1, 48)),
+                'expires_at': datetime.now(UTC) + timedelta(hours=random.randint(1, 24)),
                 'completed_trades': random.randint(0, 100),
                 'user_rating': round(random.uniform(4.0, 5.0), 1)
             })
@@ -2031,11 +2031,11 @@ class DataManager:
 
             trade_amount = random.uniform(offer['min_amount'], offer['max_amount'])
             status = random.choice(['completed', 'pending', 'processing'])
-            completed_at = datetime.utcnow() - timedelta(days=random.randint(0, 29)) if status == 'completed' else None
+            completed_at = datetime.now(UTC) - timedelta(days=random.randint(0, 29)) if status == 'completed' else None
 
             self.p2p_trades.append({
                 'id': i + 1,
-                'trade_number': f"P2P-{datetime.utcnow().strftime('%Y%m%d')}-{i+1:06d}",
+                'trade_number': f"P2P-{datetime.now(UTC).strftime('%Y%m%d')}-{i+1:06d}",
                 'offer_id': offer['id'],
                 'buyer_id': buyer['id'],
                 'seller_id': offer['user_id'],
@@ -2050,8 +2050,8 @@ class DataManager:
                 'status': status,
                 'escrow_released': status == 'completed',
                 'dispute_id': None,
-                'created_at': datetime.utcnow() - timedelta(days=random.randint(1, 30)),
-                'expires_at': datetime.utcnow() + timedelta(hours=2),
+                'created_at': datetime.now(UTC) - timedelta(days=random.randint(1, 30)),
+                'expires_at': datetime.now(UTC) + timedelta(hours=2),
                 'completed_at': completed_at
             })
 
@@ -2079,8 +2079,8 @@ class DataManager:
                 'fee_amount': round(amount * fee_percent, 2),
                 'fee_percentage': fee_percent * 100,
                 'total_amount': round(amount * (1 + fee_percent), 2),
-                'expires_at': datetime.utcnow() + timedelta(minutes=15),
-                'created_at': datetime.utcnow()
+                'expires_at': datetime.now(UTC) + timedelta(minutes=15),
+                'created_at': datetime.now(UTC)
             })
 
 
@@ -2106,8 +2106,8 @@ class AuthService:
             'id': str(uuid.uuid4()),
             'user_id': user_id,
             'token': token,
-            'created_at': datetime.utcnow(),
-            'expires_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'expires_at': datetime.now(UTC)
         }
         self.data_manager.sessions.append(session)
         return token
@@ -2139,7 +2139,7 @@ class AuthService:
             'password_hash': hashlib.sha256(password.encode()).hexdigest(),
             'is_active': True,
             'is_admin': False,
-            'created_at': datetime.utcnow()
+            'created_at': datetime.now(UTC)
         }
         self.data_manager.users.append(user)
         return user

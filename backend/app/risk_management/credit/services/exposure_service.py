@@ -1,23 +1,30 @@
 """Exposure Service - Credit exposure calculation and management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.exposure_models import (
-    CreditExposure, ExposureAggregate, ExposureLimit, LargeExposure,
-    CounterpartyExposure, ExposureMovement, ExposureStatistics,
-    ExposureType, ExposureCategory
+    CounterpartyExposure,
+    CreditExposure,
+    ExposureAggregate,
+    ExposureCategory,
+    ExposureLimit,
+    ExposureMovement,
+    ExposureStatistics,
+    ExposureType,
+    LargeExposure,
 )
 
 
 class ExposureService:
     def __init__(self):
-        self._exposures: Dict[UUID, CreditExposure] = {}
-        self._aggregates: Dict[UUID, ExposureAggregate] = {}
-        self._limits: Dict[UUID, ExposureLimit] = {}
-        self._large_exposures: Dict[UUID, LargeExposure] = {}
-        self._counterparties: Dict[UUID, CounterpartyExposure] = {}
-        self._movements: List[ExposureMovement] = []
+        self._exposures: dict[UUID, CreditExposure] = {}
+        self._aggregates: dict[UUID, ExposureAggregate] = {}
+        self._limits: dict[UUID, ExposureLimit] = {}
+        self._large_exposures: dict[UUID, LargeExposure] = {}
+        self._counterparties: dict[UUID, CounterpartyExposure] = {}
+        self._movements: list[ExposureMovement] = []
 
     async def create_exposure(
         self, customer_id: str, customer_name: str,
@@ -50,21 +57,21 @@ class ExposureService:
         self._exposures[exposure.exposure_id] = exposure
         return exposure
 
-    async def get_exposure(self, exposure_id: UUID) -> Optional[CreditExposure]:
+    async def get_exposure(self, exposure_id: UUID) -> CreditExposure | None:
         return self._exposures.get(exposure_id)
 
     async def update_exposure(
-        self, exposure_id: UUID, updates: Dict[str, Any]
-    ) -> Optional[CreditExposure]:
+        self, exposure_id: UUID, updates: dict[str, Any]
+    ) -> CreditExposure | None:
         exposure = self._exposures.get(exposure_id)
         if exposure:
             for key, value in updates.items():
                 if hasattr(exposure, key):
                     setattr(exposure, key, value)
-            exposure.updated_at = datetime.utcnow()
+            exposure.updated_at = datetime.now(UTC)
         return exposure
 
-    async def get_customer_exposures(self, customer_id: str) -> List[CreditExposure]:
+    async def get_customer_exposures(self, customer_id: str) -> list[CreditExposure]:
         return [e for e in self._exposures.values() if e.customer_id == customer_id]
 
     async def calculate_aggregate(
@@ -118,15 +125,15 @@ class ExposureService:
             status="breach" if utilization >= 100 else ("warning" if utilization >= 80 else "active"),
             effective_date=date.today(),
             approved_by=approved_by,
-            approved_date=datetime.utcnow()
+            approved_date=datetime.now(UTC)
         )
         self._limits[limit.limit_id] = limit
         return limit
 
-    async def get_limit(self, limit_id: UUID) -> Optional[ExposureLimit]:
+    async def get_limit(self, limit_id: UUID) -> ExposureLimit | None:
         return self._limits.get(limit_id)
 
-    async def check_limit(self, limit_id: UUID, proposed_exposure: float) -> Dict[str, Any]:
+    async def check_limit(self, limit_id: UUID, proposed_exposure: float) -> dict[str, Any]:
         limit = self._limits.get(limit_id)
         if not limit:
             return {"allowed": False, "reason": "Limit not found"}
@@ -145,9 +152,9 @@ class ExposureService:
             "available_after": limit.limit_amount - limit.current_exposure - proposed_exposure
         }
 
-    async def identify_large_exposures(self, capital_base: float) -> List[LargeExposure]:
+    async def identify_large_exposures(self, capital_base: float) -> list[LargeExposure]:
         large_exposures = []
-        customer_exposures: Dict[str, float] = {}
+        customer_exposures: dict[str, float] = {}
 
         for exposure in self._exposures.values():
             customer_exposures[exposure.customer_id] = customer_exposures.get(
@@ -174,7 +181,7 @@ class ExposureService:
     async def record_movement(
         self, exposure_id: UUID, movement_type: str,
         change_amount: float, change_reason: str
-    ) -> Optional[ExposureMovement]:
+    ) -> ExposureMovement | None:
         exposure = self._exposures.get(exposure_id)
         if not exposure:
             return None

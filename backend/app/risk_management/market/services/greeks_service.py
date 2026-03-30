@@ -1,33 +1,38 @@
 """Greeks Service - Options greeks calculation service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
 import math
+from datetime import date
+from uuid import UUID
+
 from ..models.greeks_models import (
-    OptionPosition, GreeksCalculation, PortfolioGreeks,
-    GreeksLimit, GreeksSensitivity, GreeksStatistics,
-    OptionType, OptionStyle
+    GreeksCalculation,
+    GreeksLimit,
+    GreeksSensitivity,
+    GreeksStatistics,
+    OptionPosition,
+    OptionStyle,
+    OptionType,
+    PortfolioGreeks,
 )
 
 
 class GreeksService:
     def __init__(self):
-        self._positions: Dict[UUID, OptionPosition] = {}
-        self._calculations: Dict[UUID, GreeksCalculation] = {}
-        self._portfolio_greeks: Dict[UUID, PortfolioGreeks] = {}
-        self._limits: Dict[UUID, GreeksLimit] = {}
-        self._sensitivities: Dict[UUID, GreeksSensitivity] = {}
+        self._positions: dict[UUID, OptionPosition] = {}
+        self._calculations: dict[UUID, GreeksCalculation] = {}
+        self._portfolio_greeks: dict[UUID, PortfolioGreeks] = {}
+        self._limits: dict[UUID, GreeksLimit] = {}
+        self._sensitivities: dict[UUID, GreeksSensitivity] = {}
 
     def _black_scholes_greeks(
-        self, S: float, K: float, T: float, r: float, sigma: float, option_type: OptionType
-    ) -> Dict[str, float]:
+        self, spot: float, strike: float, time_to_exp: float, r: float, sigma: float, option_type: OptionType
+    ) -> dict[str, float]:
         """Calculate Black-Scholes greeks"""
-        if T <= 0 or sigma <= 0:
+        if time_to_exp <= 0 or sigma <= 0:
             return {"delta": 0, "gamma": 0, "theta": 0, "vega": 0, "rho": 0}
 
-        d1 = (math.log(S / K) + (r + sigma ** 2 / 2) * T) / (sigma * math.sqrt(T))
-        d2 = d1 - sigma * math.sqrt(T)
+        d1 = (math.log(spot / strike) + (r + sigma ** 2 / 2) * time_to_exp) / (sigma * math.sqrt(time_to_exp))
+        d2 = d1 - sigma * math.sqrt(time_to_exp)
 
         # Normal CDF approximation
         def norm_cdf(x):
@@ -38,14 +43,14 @@ class GreeksService:
 
         if option_type == OptionType.CALL:
             delta = norm_cdf(d1)
-            rho = K * T * math.exp(-r * T) * norm_cdf(d2) / 100
+            rho = strike * time_to_exp * math.exp(-r * time_to_exp) * norm_cdf(d2) / 100
         else:
             delta = norm_cdf(d1) - 1
-            rho = -K * T * math.exp(-r * T) * norm_cdf(-d2) / 100
+            rho = -strike * time_to_exp * math.exp(-r * time_to_exp) * norm_cdf(-d2) / 100
 
-        gamma = norm_pdf(d1) / (S * sigma * math.sqrt(T))
-        vega = S * norm_pdf(d1) * math.sqrt(T) / 100
-        theta = -(S * norm_pdf(d1) * sigma) / (2 * math.sqrt(T)) - r * K * math.exp(-r * T) * (
+        gamma = norm_pdf(d1) / (spot * sigma * math.sqrt(time_to_exp))
+        vega = spot * norm_pdf(d1) * math.sqrt(time_to_exp) / 100
+        theta = -(spot * norm_pdf(d1) * sigma) / (2 * math.sqrt(time_to_exp)) - r * strike * math.exp(-r * time_to_exp) * (
             norm_cdf(d2) if option_type == OptionType.CALL else norm_cdf(-d2)
         )
         theta = theta / 365  # Daily theta
@@ -64,7 +69,6 @@ class GreeksService:
         quantity: float, direction: str, premium: float, underlying_price: float,
         implied_volatility: float, portfolio_id: UUID
     ) -> OptionPosition:
-        time_to_expiry = (expiry_date - date.today()).days / 365
         intrinsic = max(0, underlying_price - strike_price) if option_type == OptionType.CALL else max(0, strike_price - underlying_price)
         time_value = premium - intrinsic
 
@@ -90,7 +94,7 @@ class GreeksService:
 
     async def calculate_greeks(
         self, position_id: UUID, risk_free_rate: float = 0.05
-    ) -> Optional[GreeksCalculation]:
+    ) -> GreeksCalculation | None:
         position = self._positions.get(position_id)
         if not position:
             return None
@@ -98,9 +102,9 @@ class GreeksService:
         time_to_expiry = max(0.001, (position.expiry_date - date.today()).days / 365)
 
         greeks = self._black_scholes_greeks(
-            S=position.underlying_price,
-            K=position.strike_price,
-            T=time_to_expiry,
+            spot=position.underlying_price,
+            strike=position.strike_price,
+            time_to_exp=time_to_expiry,
             r=risk_free_rate,
             sigma=position.implied_volatility,
             option_type=position.option_type

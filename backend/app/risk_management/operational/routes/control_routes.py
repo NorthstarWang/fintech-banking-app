@@ -1,15 +1,23 @@
 """Control Routes - API endpoints for control management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from decimal import Decimal
+
 from ..models.control_models import (
-    Control, ControlTest, ControlException, ControlGap,
-    ControlFramework, ControlMapping, ControlMetrics,
-    ControlType, ControlNature, ControlCategory, ControlStatus
+    Control,
+    ControlCategory,
+    ControlException,
+    ControlFramework,
+    ControlGap,
+    ControlMapping,
+    ControlMetrics,
+    ControlNature,
+    ControlStatus,
+    ControlTest,
+    ControlType,
 )
 from ..services.control_service import control_service
 
@@ -45,8 +53,8 @@ class RecordTestRequest(BaseModel):
     population_size: int
     exceptions_found: int
     test_procedure: str
-    findings: Optional[List[str]] = None
-    recommendations: Optional[List[str]] = None
+    findings: list[str] | None = None
+    recommendations: list[str] | None = None
 
 
 class RecordExceptionRequest(BaseModel):
@@ -56,9 +64,9 @@ class RecordExceptionRequest(BaseModel):
     root_cause: str
     impact: str
     severity: str
-    remediation_action: Optional[str] = None
-    remediation_owner: Optional[str] = None
-    remediation_due_date: Optional[date] = None
+    remediation_action: str | None = None
+    remediation_owner: str | None = None
+    remediation_due_date: date | None = None
 
 
 class RecordGapRequest(BaseModel):
@@ -72,7 +80,7 @@ class RecordGapRequest(BaseModel):
     remediation_plan: str
     remediation_owner: str
     target_remediation_date: date
-    control_id: Optional[UUID] = None
+    control_id: UUID | None = None
 
 
 class CreateFrameworkRequest(BaseModel):
@@ -81,7 +89,7 @@ class CreateFrameworkRequest(BaseModel):
     description: str
     issuing_body: str
     effective_date: date
-    domains: List[str]
+    domains: list[str]
     total_controls: int
 
 
@@ -133,13 +141,13 @@ async def get_control_by_code(control_code: str):
     return control
 
 
-@router.get("/", response_model=List[Control])
+@router.get("/", response_model=list[Control])
 async def list_controls(
-    status: Optional[ControlStatus] = Query(None),
-    control_type: Optional[ControlType] = Query(None),
-    business_unit: Optional[str] = Query(None),
-    key_control: Optional[bool] = Query(None),
-    sox_control: Optional[bool] = Query(None)
+    status: ControlStatus | None = Query(None),
+    control_type: ControlType | None = Query(None),
+    business_unit: str | None = Query(None),
+    key_control: bool | None = Query(None),
+    sox_control: bool | None = Query(None)
 ):
     """List controls"""
     return await control_service.list_controls(
@@ -176,7 +184,7 @@ async def record_test(control_id: UUID, request: RecordTestRequest):
     )
 
 
-@router.get("/{control_id}/tests", response_model=List[ControlTest])
+@router.get("/{control_id}/tests", response_model=list[ControlTest])
 async def get_tests(control_id: UUID):
     """Get control tests"""
     return await control_service.get_control_tests(control_id)
@@ -235,8 +243,8 @@ async def close_gap(gap_id: UUID, validated_by: str):
     return gap
 
 
-@router.get("/gaps/open", response_model=List[ControlGap])
-async def get_open_gaps(business_unit: Optional[str] = Query(None)):
+@router.get("/gaps/open", response_model=list[ControlGap])
+async def get_open_gaps(business_unit: str | None = Query(None)):
     """Get open control gaps"""
     return await control_service.get_open_gaps(business_unit)
 
@@ -268,7 +276,7 @@ async def map_control(request: MapControlRequest):
 
 
 @router.get("/metrics", response_model=ControlMetrics)
-async def get_metrics(business_unit: Optional[str] = Query(None)):
+async def get_metrics(business_unit: str | None = Query(None)):
     """Get control metrics"""
     return await control_service.generate_metrics(business_unit)
 

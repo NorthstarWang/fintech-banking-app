@@ -1,9 +1,10 @@
 """Data Profiling Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -12,11 +13,11 @@ class DataProfile(BaseModel):
     table_name: str
     schema_name: str
     database_name: str
-    profile_date: datetime = Field(default_factory=datetime.utcnow)
+    profile_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     row_count: int = 0
     column_count: int = 0
     size_bytes: int = 0
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
     update_frequency: str = ""
     owner: str = ""
     classification: str = ""
@@ -39,15 +40,15 @@ class ColumnProfile(BaseModel):
     null_percentage: Decimal = Decimal("0")
     distinct_count: int = 0
     distinct_percentage: Decimal = Decimal("0")
-    min_value: Optional[str] = None
-    max_value: Optional[str] = None
-    avg_value: Optional[Decimal] = None
-    std_dev: Optional[Decimal] = None
-    min_length: Optional[int] = None
-    max_length: Optional[int] = None
-    avg_length: Optional[Decimal] = None
-    pattern_analysis: Dict[str, int] = Field(default_factory=dict)
-    top_values: List[Dict[str, Any]] = Field(default_factory=list)
+    min_value: str | None = None
+    max_value: str | None = None
+    avg_value: Decimal | None = None
+    std_dev: Decimal | None = None
+    min_length: int | None = None
+    max_length: int | None = None
+    avg_length: Decimal | None = None
+    pattern_analysis: dict[str, int] = Field(default_factory=dict)
+    top_values: list[dict[str, Any]] = Field(default_factory=list)
     data_quality_score: Decimal = Decimal("100")
 
 
@@ -56,11 +57,11 @@ class DataDistribution(BaseModel):
     profile_id: UUID
     column_name: str
     distribution_type: str  # histogram, frequency, percentile
-    distribution_date: datetime = Field(default_factory=datetime.utcnow)
-    buckets: List[Dict[str, Any]] = Field(default_factory=list)
-    percentiles: Dict[str, Decimal] = Field(default_factory=dict)
-    skewness: Optional[Decimal] = None
-    kurtosis: Optional[Decimal] = None
+    distribution_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    buckets: list[dict[str, Any]] = Field(default_factory=list)
+    percentiles: dict[str, Decimal] = Field(default_factory=dict)
+    skewness: Decimal | None = None
+    kurtosis: Decimal | None = None
 
 
 class DataRelationship(BaseModel):
@@ -73,24 +74,24 @@ class DataRelationship(BaseModel):
     cardinality: str = ""
     referential_integrity: bool = True
     orphan_records: int = 0
-    discovered_date: datetime = Field(default_factory=datetime.utcnow)
+    discovered_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     validated: bool = False
-    validated_by: Optional[str] = None
+    validated_by: str | None = None
 
 
 class ProfilingJob(BaseModel):
     job_id: UUID = Field(default_factory=uuid4)
     job_name: str
     job_type: str  # full, incremental, sample
-    target_tables: List[str] = Field(default_factory=list)
+    target_tables: list[str] = Field(default_factory=list)
     schedule: str = ""
     sample_percentage: Decimal = Decimal("100")
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     status: str = "pending"
     records_profiled: int = 0
     columns_profiled: int = 0
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
     created_by: str = ""
 
 
@@ -100,11 +101,11 @@ class DataAnomaly(BaseModel):
     column_name: str
     anomaly_type: str
     description: str
-    detected_date: datetime = Field(default_factory=datetime.utcnow)
+    detected_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     severity: str = "medium"
     affected_records: int = 0
-    sample_values: List[str] = Field(default_factory=list)
+    sample_values: list[str] = Field(default_factory=list)
     expected_pattern: str = ""
     actual_pattern: str = ""
     status: str = "detected"
-    acknowledged_by: Optional[str] = None
+    acknowledged_by: str | None = None

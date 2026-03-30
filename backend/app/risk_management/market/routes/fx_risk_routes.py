@@ -1,14 +1,22 @@
 """FX Risk Routes - API endpoints for foreign exchange risk management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.fx_risk_models import (
-    FXPosition, FXExposure, FXRate, FXVolatilitySurface, FXScenario,
-    FXForward, FXOption, Currency, PositionDirection
+    Currency,
+    FXExposure,
+    FXForward,
+    FXOption,
+    FXPosition,
+    FXRate,
+    FXScenario,
+    FXVolatilitySurface,
+    PositionDirection,
 )
 from ..services.fx_risk_service import fx_risk_service
 
@@ -29,7 +37,7 @@ class FXRateRequest(BaseModel):
     base_currency: Currency
     quote_currency: Currency
     spot_rate: Decimal
-    forward_points: Optional[List[Decimal]] = None
+    forward_points: list[Decimal] | None = None
 
 
 class FXExposureRequest(BaseModel):
@@ -66,7 +74,7 @@ class FXOptionRequest(BaseModel):
 @router.post("/positions", response_model=FXPosition)
 async def create_position(request: FXPositionRequest):
     """Create FX position"""
-    position = await fx_risk_service.create_position(
+    return await fx_risk_service.create_position(
         portfolio_id=request.portfolio_id,
         base_currency=request.base_currency,
         quote_currency=request.quote_currency,
@@ -75,7 +83,6 @@ async def create_position(request: FXPositionRequest):
         rate=request.rate,
         value_date=request.value_date
     )
-    return position
 
 
 @router.get("/positions/{position_id}", response_model=FXPosition)
@@ -87,26 +94,24 @@ async def get_position(position_id: UUID):
     return position
 
 
-@router.get("/positions", response_model=List[FXPosition])
+@router.get("/positions", response_model=list[FXPosition])
 async def list_positions(
-    portfolio_id: Optional[UUID] = Query(None),
-    currency: Optional[Currency] = Query(None)
+    portfolio_id: UUID | None = Query(None),
+    currency: Currency | None = Query(None)
 ):
     """List FX positions"""
-    positions = await fx_risk_service.list_positions(portfolio_id, currency)
-    return positions
+    return await fx_risk_service.list_positions(portfolio_id, currency)
 
 
 @router.post("/rates", response_model=FXRate)
 async def update_rate(request: FXRateRequest):
     """Update FX rate"""
-    rate = await fx_risk_service.update_rate(
+    return await fx_risk_service.update_rate(
         base_currency=request.base_currency,
         quote_currency=request.quote_currency,
         spot_rate=request.spot_rate,
         forward_points=request.forward_points
     )
-    return rate
 
 
 @router.get("/rates/{base}/{quote}", response_model=FXRate)
@@ -121,34 +126,31 @@ async def get_rate(base: Currency, quote: Currency):
 @router.post("/exposures", response_model=FXExposure)
 async def calculate_exposure(request: FXExposureRequest):
     """Calculate FX exposure"""
-    exposure = await fx_risk_service.calculate_exposure(
+    return await fx_risk_service.calculate_exposure(
         portfolio_id=request.portfolio_id,
         currency=request.currency,
         exposure_date=request.exposure_date
     )
-    return exposure
 
 
-@router.get("/exposures/{portfolio_id}", response_model=List[FXExposure])
+@router.get("/exposures/{portfolio_id}", response_model=list[FXExposure])
 async def get_exposures(portfolio_id: UUID):
     """Get FX exposures for portfolio"""
-    exposures = await fx_risk_service.get_exposures(portfolio_id)
-    return exposures
+    return await fx_risk_service.get_exposures(portfolio_id)
 
 
 @router.post("/volatility-surface", response_model=FXVolatilitySurface)
 async def create_vol_surface(
     base: Currency,
     quote: Currency,
-    tenors: List[str],
-    strikes: List[Decimal],
-    vols: List[List[Decimal]]
+    tenors: list[str],
+    strikes: list[Decimal],
+    vols: list[list[Decimal]]
 ):
     """Create FX volatility surface"""
-    surface = await fx_risk_service.create_volatility_surface(
+    return await fx_risk_service.create_volatility_surface(
         base, quote, tenors, strikes, vols
     )
-    return surface
 
 
 @router.get("/volatility-surface/{base}/{quote}", response_model=FXVolatilitySurface)
@@ -163,18 +165,17 @@ async def get_vol_surface(base: Currency, quote: Currency):
 @router.post("/scenarios", response_model=FXScenario)
 async def run_scenario(request: FXScenarioRequest):
     """Run FX scenario analysis"""
-    scenario = await fx_risk_service.run_scenario(
+    return await fx_risk_service.run_scenario(
         portfolio_id=request.portfolio_id,
         scenario_name=request.scenario_name,
         currency_shocks=request.currency_shocks
     )
-    return scenario
 
 
 @router.post("/forwards", response_model=FXForward)
 async def create_forward(request: FXForwardRequest):
     """Create FX forward"""
-    forward = await fx_risk_service.create_forward(
+    return await fx_risk_service.create_forward(
         portfolio_id=request.portfolio_id,
         base_currency=request.base_currency,
         quote_currency=request.quote_currency,
@@ -182,13 +183,12 @@ async def create_forward(request: FXForwardRequest):
         forward_rate=request.forward_rate,
         settlement_date=request.settlement_date
     )
-    return forward
 
 
 @router.post("/options", response_model=FXOption)
 async def create_option(request: FXOptionRequest):
     """Create FX option"""
-    option = await fx_risk_service.create_option(
+    return await fx_risk_service.create_option(
         portfolio_id=request.portfolio_id,
         base_currency=request.base_currency,
         quote_currency=request.quote_currency,
@@ -197,7 +197,6 @@ async def create_option(request: FXOptionRequest):
         expiry_date=request.expiry_date,
         is_call=request.is_call
     )
-    return option
 
 
 @router.get("/statistics")

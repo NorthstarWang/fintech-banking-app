@@ -1,13 +1,23 @@
 """RCSA Routes - API endpoints for Risk Control Self-Assessment"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.rcsa_models import (
-    RCSAAssessment, RCSARisk, RCSAControl, RCSAActionItem, RiskHeatmap, RCSAReport,
-    RiskCategory, RiskLikelihood, RiskImpact, ControlEffectiveness, AssessmentStatus
+    AssessmentStatus,
+    ControlEffectiveness,
+    RCSAActionItem,
+    RCSAAssessment,
+    RCSAControl,
+    RCSAReport,
+    RCSARisk,
+    RiskCategory,
+    RiskHeatmap,
+    RiskImpact,
+    RiskLikelihood,
 )
 from ..services.rcsa_service import rcsa_service
 
@@ -25,8 +35,8 @@ class CreateAssessmentRequest(BaseModel):
 
 class UpdateStatusRequest(BaseModel):
     new_status: AssessmentStatus
-    reviewer: Optional[str] = None
-    approver: Optional[str] = None
+    reviewer: str | None = None
+    approver: str | None = None
 
 
 class AddRiskRequest(BaseModel):
@@ -50,7 +60,7 @@ class AddControlRequest(BaseModel):
     frequency: str
     design_effectiveness: ControlEffectiveness
     operating_effectiveness: ControlEffectiveness
-    risks_mitigated: Optional[List[UUID]] = None
+    risks_mitigated: list[UUID] | None = None
 
 
 class AddActionRequest(BaseModel):
@@ -59,8 +69,8 @@ class AddActionRequest(BaseModel):
     assigned_to: str
     due_date: date
     priority: str
-    risk_id: Optional[UUID] = None
-    control_id: Optional[UUID] = None
+    risk_id: UUID | None = None
+    control_id: UUID | None = None
 
 
 @router.post("/assessments", response_model=RCSAAssessment)
@@ -85,10 +95,10 @@ async def get_assessment(assessment_id: UUID):
     return assessment
 
 
-@router.get("/assessments", response_model=List[RCSAAssessment])
+@router.get("/assessments", response_model=list[RCSAAssessment])
 async def list_assessments(
-    status: Optional[AssessmentStatus] = Query(None),
-    business_unit: Optional[str] = Query(None)
+    status: AssessmentStatus | None = Query(None),
+    business_unit: str | None = Query(None)
 ):
     """List RCSA assessments"""
     return await rcsa_service.list_assessments(status, business_unit)
@@ -122,7 +132,7 @@ async def add_risk(assessment_id: UUID, request: AddRiskRequest):
     )
 
 
-@router.get("/assessments/{assessment_id}/risks", response_model=List[RCSARisk])
+@router.get("/assessments/{assessment_id}/risks", response_model=list[RCSARisk])
 async def get_risks(assessment_id: UUID):
     """Get risks for assessment"""
     return await rcsa_service.get_assessment_risks(assessment_id)
@@ -145,7 +155,7 @@ async def add_control(assessment_id: UUID, request: AddControlRequest):
     )
 
 
-@router.get("/assessments/{assessment_id}/controls", response_model=List[RCSAControl])
+@router.get("/assessments/{assessment_id}/controls", response_model=list[RCSAControl])
 async def get_controls(assessment_id: UUID):
     """Get controls for assessment"""
     return await rcsa_service.get_assessment_controls(assessment_id)
@@ -175,7 +185,7 @@ async def complete_action(action_id: UUID, verified_by: str):
     return action
 
 
-@router.get("/assessments/{assessment_id}/actions", response_model=List[RCSAActionItem])
+@router.get("/assessments/{assessment_id}/actions", response_model=list[RCSAActionItem])
 async def get_actions(assessment_id: UUID):
     """Get action items for assessment"""
     return await rcsa_service.get_assessment_actions(assessment_id)
@@ -183,8 +193,8 @@ async def get_actions(assessment_id: UUID):
 
 @router.post("/heatmap", response_model=RiskHeatmap)
 async def generate_heatmap(
-    assessment_id: Optional[UUID] = None,
-    business_unit: Optional[str] = None,
+    assessment_id: UUID | None = None,
+    business_unit: str | None = None,
     heatmap_type: str = "residual"
 ):
     """Generate risk heatmap"""
@@ -195,7 +205,7 @@ async def generate_heatmap(
 async def generate_report(
     report_type: str,
     period: str,
-    business_unit: Optional[str] = None,
+    business_unit: str | None = None,
     generated_by: str = "system"
 ):
     """Generate RCSA report"""

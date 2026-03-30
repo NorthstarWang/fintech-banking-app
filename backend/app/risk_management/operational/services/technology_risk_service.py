@@ -1,13 +1,24 @@
 """Technology Risk Service - Business logic for IT risk management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.technology_risk_models import (
-    ITAsset, Vulnerability, PatchManagement, TechRiskAssessment,
-    SecurityIncident, AccessReview, ChangeRisk, TechRiskMetrics,
-    AssetType, AssetCriticality, VulnerabilitySeverity, PatchStatus, IncidentType
+    AccessReview,
+    AssetCriticality,
+    AssetType,
+    ChangeRisk,
+    IncidentType,
+    ITAsset,
+    PatchManagement,
+    PatchStatus,
+    SecurityIncident,
+    TechRiskAssessment,
+    TechRiskMetrics,
+    Vulnerability,
+    VulnerabilitySeverity,
 )
 from ..repositories.technology_risk_repository import technology_risk_repository
 
@@ -39,12 +50,12 @@ class TechnologyRiskService:
         location: str,
         environment: str,
         data_classification: str,
-        ip_address: Optional[str] = None,
-        hostname: Optional[str] = None,
-        operating_system: Optional[str] = None,
-        version: Optional[str] = None,
-        vendor: Optional[str] = None,
-        support_end_date: Optional[date] = None,
+        ip_address: str | None = None,
+        hostname: str | None = None,
+        operating_system: str | None = None,
+        version: str | None = None,
+        vendor: str | None = None,
+        support_end_date: date | None = None,
         pii_stored: bool = False,
         pci_scope: bool = False,
         sox_scope: bool = False
@@ -75,19 +86,19 @@ class TechnologyRiskService:
         await self.repository.save_asset(asset)
         return asset
 
-    async def get_asset(self, asset_id: UUID) -> Optional[ITAsset]:
+    async def get_asset(self, asset_id: UUID) -> ITAsset | None:
         return await self.repository.find_asset_by_id(asset_id)
 
-    async def get_asset_by_code(self, asset_code: str) -> Optional[ITAsset]:
+    async def get_asset_by_code(self, asset_code: str) -> ITAsset | None:
         return await self.repository.find_asset_by_code(asset_code)
 
     async def list_assets(
         self,
-        asset_type: Optional[AssetType] = None,
-        criticality: Optional[AssetCriticality] = None,
-        business_unit: Optional[str] = None,
-        environment: Optional[str] = None
-    ) -> List[ITAsset]:
+        asset_type: AssetType | None = None,
+        criticality: AssetCriticality | None = None,
+        business_unit: str | None = None,
+        environment: str | None = None
+    ) -> list[ITAsset]:
         assets = await self.repository.find_all_assets()
 
         if asset_type:
@@ -106,18 +117,18 @@ class TechnologyRiskService:
         title: str,
         description: str,
         severity: VulnerabilitySeverity,
-        affected_assets: List[UUID],
-        affected_systems: List[str],
+        affected_assets: list[UUID],
+        affected_systems: list[str],
         discovery_source: str,
-        remediation_steps: List[str],
-        cve_id: Optional[str] = None,
-        cvss_score: Optional[Decimal] = None,
-        cvss_vector: Optional[str] = None,
+        remediation_steps: list[str],
+        cve_id: str | None = None,
+        cvss_score: Decimal | None = None,
+        cvss_vector: str | None = None,
         exploit_available: bool = False,
         actively_exploited: bool = False,
         patch_available: bool = False,
-        patch_id: Optional[str] = None,
-        workaround: Optional[str] = None
+        patch_id: str | None = None,
+        workaround: str | None = None
     ) -> Vulnerability:
         vuln = Vulnerability(
             cve_id=cve_id,
@@ -148,15 +159,15 @@ class TechnologyRiskService:
 
         return vuln
 
-    async def get_vulnerability(self, vuln_id: UUID) -> Optional[Vulnerability]:
+    async def get_vulnerability(self, vuln_id: UUID) -> Vulnerability | None:
         return await self.repository.find_vulnerability_by_id(vuln_id)
 
     async def list_vulnerabilities(
         self,
-        severity: Optional[VulnerabilitySeverity] = None,
+        severity: VulnerabilitySeverity | None = None,
         status: str = "open",
-        asset_id: Optional[UUID] = None
-    ) -> List[Vulnerability]:
+        asset_id: UUID | None = None
+    ) -> list[Vulnerability]:
         vulns = await self.repository.find_all_vulnerabilities()
 
         if severity:
@@ -173,7 +184,7 @@ class TechnologyRiskService:
         vuln_id: UUID,
         assigned_to: str,
         due_date: date
-    ) -> Optional[Vulnerability]:
+    ) -> Vulnerability | None:
         vuln = await self.repository.find_vulnerability_by_id(vuln_id)
         if not vuln:
             return None
@@ -187,7 +198,7 @@ class TechnologyRiskService:
     async def close_vulnerability(
         self,
         vuln_id: UUID
-    ) -> Optional[Vulnerability]:
+    ) -> Vulnerability | None:
         vuln = await self.repository.find_vulnerability_by_id(vuln_id)
         if not vuln:
             return None
@@ -208,7 +219,7 @@ class TechnologyRiskService:
         vuln_id: UUID,
         reason: str,
         expiry: date
-    ) -> Optional[Vulnerability]:
+    ) -> Vulnerability | None:
         vuln = await self.repository.find_vulnerability_by_id(vuln_id)
         if not vuln:
             return None
@@ -227,9 +238,9 @@ class TechnologyRiskService:
         vendor: str,
         release_date: date,
         severity: str,
-        affected_products: List[str],
-        affected_assets: List[UUID],
-        cve_addressed: List[str]
+        affected_products: list[str],
+        affected_assets: list[UUID],
+        cve_addressed: list[str]
     ) -> PatchManagement:
         patch = PatchManagement(
             patch_code=patch_code,
@@ -250,7 +261,7 @@ class TechnologyRiskService:
         patch_id: UUID,
         scheduled_date: date,
         change_ticket: str
-    ) -> Optional[PatchManagement]:
+    ) -> PatchManagement | None:
         patch = await self.repository.find_patch_by_id(patch_id)
         if not patch:
             return None
@@ -265,7 +276,7 @@ class TechnologyRiskService:
         self,
         patch_id: UUID,
         applied_by: str
-    ) -> Optional[PatchManagement]:
+    ) -> PatchManagement | None:
         patch = await self.repository.find_patch_by_id(patch_id)
         if not patch:
             return None
@@ -276,7 +287,7 @@ class TechnologyRiskService:
 
         return patch
 
-    async def get_pending_patches(self) -> List[PatchManagement]:
+    async def get_pending_patches(self) -> list[PatchManagement]:
         patches = await self.repository.find_all_patches()
         return [p for p in patches if p.status in [PatchStatus.PENDING, PatchStatus.SCHEDULED]]
 
@@ -288,11 +299,11 @@ class TechnologyRiskService:
         confidentiality_risk: str,
         integrity_risk: str,
         availability_risk: str,
-        threats_identified: List[str],
-        vulnerabilities_found: List[str],
-        controls_in_place: List[str],
-        control_gaps: List[str],
-        recommendations: List[str]
+        threats_identified: list[str],
+        vulnerabilities_found: list[str],
+        controls_in_place: list[str],
+        control_gaps: list[str],
+        recommendations: list[str]
     ) -> TechRiskAssessment:
         risk_levels = {"low": 1, "medium": 2, "high": 3, "critical": 4}
         avg_risk = (
@@ -330,7 +341,7 @@ class TechnologyRiskService:
         await self.repository.save_assessment(assessment)
         return assessment
 
-    async def get_asset_assessments(self, asset_id: UUID) -> List[TechRiskAssessment]:
+    async def get_asset_assessments(self, asset_id: UUID) -> list[TechRiskAssessment]:
         return await self.repository.find_assessments_by_asset(asset_id)
 
     async def report_security_incident(
@@ -339,13 +350,13 @@ class TechnologyRiskService:
         severity: str,
         title: str,
         description: str,
-        affected_assets: List[UUID],
-        attack_vector: Optional[str] = None,
+        affected_assets: list[UUID],
+        attack_vector: str | None = None,
         data_compromised: bool = False,
-        data_type_compromised: Optional[List[str]] = None,
-        records_affected: Optional[int] = None
+        data_type_compromised: list[str] | None = None,
+        records_affected: int | None = None
     ) -> SecurityIncident:
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         incident = SecurityIncident(
             incident_number=self._generate_incident_number(),
@@ -365,32 +376,32 @@ class TechnologyRiskService:
         await self.repository.save_security_incident(incident)
         return incident
 
-    async def contain_incident(self, incident_id: UUID) -> Optional[SecurityIncident]:
+    async def contain_incident(self, incident_id: UUID) -> SecurityIncident | None:
         incident = await self.repository.find_security_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.containment_time = datetime.utcnow()
+        incident.containment_time = datetime.now(UTC)
         incident.status = "contained"
 
         return incident
 
-    async def eradicate_incident(self, incident_id: UUID) -> Optional[SecurityIncident]:
+    async def eradicate_incident(self, incident_id: UUID) -> SecurityIncident | None:
         incident = await self.repository.find_security_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.eradication_time = datetime.utcnow()
+        incident.eradication_time = datetime.now(UTC)
         incident.status = "eradicated"
 
         return incident
 
-    async def recover_incident(self, incident_id: UUID) -> Optional[SecurityIncident]:
+    async def recover_incident(self, incident_id: UUID) -> SecurityIncident | None:
         incident = await self.repository.find_security_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.recovery_time = datetime.utcnow()
+        incident.recovery_time = datetime.now(UTC)
         incident.status = "recovered"
 
         return incident
@@ -399,14 +410,14 @@ class TechnologyRiskService:
         self,
         incident_id: UUID,
         root_cause: str,
-        lessons_learned: List[str],
-        financial_impact: Optional[Decimal] = None
-    ) -> Optional[SecurityIncident]:
+        lessons_learned: list[str],
+        financial_impact: Decimal | None = None
+    ) -> SecurityIncident | None:
         incident = await self.repository.find_security_incident_by_id(incident_id)
         if not incident:
             return None
 
-        incident.closure_time = datetime.utcnow()
+        incident.closure_time = datetime.now(UTC)
         incident.status = "closed"
         incident.root_cause = root_cause
         incident.lessons_learned = lessons_learned
@@ -414,7 +425,7 @@ class TechnologyRiskService:
 
         return incident
 
-    async def get_open_incidents(self) -> List[SecurityIncident]:
+    async def get_open_incidents(self) -> list[SecurityIncident]:
         incidents = await self.repository.find_all_security_incidents()
         return [i for i in incidents if i.status != "closed"]
 
@@ -459,8 +470,8 @@ class TechnologyRiskService:
         orphan_accounts: int,
         dormant_accounts: int,
         segregation_conflicts: int,
-        findings: List[str]
-    ) -> Optional[AccessReview]:
+        findings: list[str]
+    ) -> AccessReview | None:
         review = await self.repository.find_access_review_by_id(review_id)
         if not review:
             return None
@@ -487,7 +498,7 @@ class TechnologyRiskService:
         change_title: str,
         change_type: str,
         change_date: date,
-        affected_systems: List[UUID],
+        affected_systems: list[UUID],
         impact_assessment: str,
         rollback_plan: bool,
         test_plan: bool,
@@ -619,7 +630,7 @@ class TechnologyRiskService:
         await self.repository.save_metrics(metrics)
         return metrics
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

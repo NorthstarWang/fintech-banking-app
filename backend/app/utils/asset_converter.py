@@ -3,7 +3,7 @@ Asset conversion utility for the unified financial connection layer.
 Handles conversions between different asset types including fiat, crypto, credit, etc.
 """
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..models import AssetClass, ConversionType
@@ -83,7 +83,7 @@ class AssetConverter:
 
         # Check cache
         if cache_key in self._rate_cache:
-            if datetime.utcnow() < self._cache_expiry.get(cache_key, datetime.min):
+            if datetime.now(UTC) < self._cache_expiry.get(cache_key, datetime.min):
                 return self._rate_cache[cache_key], self._cache_expiry[cache_key]
 
         # Calculate rate based on asset classes
@@ -106,7 +106,7 @@ class AssetConverter:
         rate = rate * (1 + random.uniform(-0.001, 0.001))
 
         # Cache the rate
-        expiry = datetime.utcnow() + timedelta(minutes=5)
+        expiry = datetime.now(UTC) + timedelta(minutes=5)
         self._rate_cache[cache_key] = rate
         self._cache_expiry[cache_key] = expiry
 
@@ -292,7 +292,7 @@ class AssetConverter:
         rates = {
             "fiat": self.FIAT_RATES.copy(),
             "crypto_usd": self.CRYPTO_PRICES_USD.copy(),
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": datetime.now(UTC).isoformat()
         }
 
         # Add some cross rates

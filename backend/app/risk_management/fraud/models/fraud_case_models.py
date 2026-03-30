@@ -4,11 +4,12 @@ Fraud Case Models
 Defines data structures for fraud investigation cases.
 """
 
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class FraudCaseStatus(str, Enum):
@@ -41,19 +42,19 @@ class CaseAction(BaseModel):
     action_type: str
     description: str
     performed_by: str
-    performed_at: datetime = Field(default_factory=datetime.utcnow)
-    result: Optional[str] = None
-    notes: Optional[str] = None
+    performed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    result: str | None = None
+    notes: str | None = None
 
 
 class CaseFinding(BaseModel):
     finding_id: UUID = Field(default_factory=uuid4)
     finding_type: str
     description: str
-    evidence: List[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
     severity: str
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class FraudCase(BaseModel):
@@ -67,10 +68,10 @@ class FraudCase(BaseModel):
 
     customer_id: str
     customer_name: str
-    account_ids: List[str] = Field(default_factory=list)
+    account_ids: list[str] = Field(default_factory=list)
 
-    alert_ids: List[UUID] = Field(default_factory=list)
-    transaction_ids: List[str] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
+    transaction_ids: list[str] = Field(default_factory=list)
 
     total_fraud_amount: float = 0.0
     recovered_amount: float = 0.0
@@ -78,24 +79,24 @@ class FraudCase(BaseModel):
 
     fraud_type: str
     fraud_confirmed: bool = False
-    fraud_vector: Optional[str] = None
+    fraud_vector: str | None = None
 
-    assigned_to: Optional[str] = None
-    investigator_notes: Optional[str] = None
+    assigned_to: str | None = None
+    investigator_notes: str | None = None
 
-    actions: List[CaseAction] = Field(default_factory=list)
-    findings: List[CaseFinding] = Field(default_factory=list)
+    actions: list[CaseAction] = Field(default_factory=list)
+    findings: list[CaseFinding] = Field(default_factory=list)
 
     law_enforcement_reported: bool = False
-    law_enforcement_reference: Optional[str] = None
+    law_enforcement_reference: str | None = None
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    closed_at: Optional[datetime] = None
-    due_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    closed_at: datetime | None = None
+    due_date: datetime | None = None
 
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class FraudCaseSummary(BaseModel):
@@ -107,14 +108,14 @@ class FraudCaseSummary(BaseModel):
     customer_name: str
     fraud_type: str
     total_fraud_amount: float
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
     created_at: datetime
 
 
 class FraudCaseStatistics(BaseModel):
     total_cases: int = 0
-    by_status: Dict[str, int] = Field(default_factory=dict)
-    by_priority: Dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_priority: dict[str, int] = Field(default_factory=dict)
     confirmed_fraud_cases: int = 0
     total_fraud_amount: float = 0.0
     total_recovered: float = 0.0

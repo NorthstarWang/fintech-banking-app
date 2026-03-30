@@ -4,17 +4,24 @@ Entity Resolution Service
 Handles entity resolution, deduplication, and golden record management.
 """
 
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, date
-from uuid import UUID, uuid4
-from collections import defaultdict
 import re
+from collections import defaultdict
+from datetime import UTC, datetime
+from uuid import UUID
 
 from ..models.entity_resolution_models import (
-    EntityType, MatchConfidence, ResolutionStatus, IdentityAttribute,
-    NameVariant, AddressRecord, IdentifierRecord, RelationshipRecord,
-    MasterEntity, SourceRecord, MatchCandidate, MergeOperation, SplitOperation,
-    ResolutionRule, ResolutionJob, EntityResolutionStatistics
+    AddressRecord,
+    EntityResolutionStatistics,
+    EntityType,
+    MasterEntity,
+    MatchCandidate,
+    MatchConfidence,
+    MergeOperation,
+    ResolutionJob,
+    ResolutionRule,
+    ResolutionStatus,
+    SourceRecord,
+    SplitOperation,
 )
 
 
@@ -22,12 +29,12 @@ class EntityResolutionService:
     """Service for entity resolution and identity management"""
 
     def __init__(self):
-        self._master_entities: Dict[UUID, MasterEntity] = {}
-        self._source_records: Dict[str, SourceRecord] = {}
-        self._match_candidates: Dict[UUID, MatchCandidate] = {}
-        self._merge_operations: Dict[UUID, MergeOperation] = {}
-        self._resolution_rules: Dict[UUID, ResolutionRule] = {}
-        self._jobs: Dict[UUID, ResolutionJob] = {}
+        self._master_entities: dict[UUID, MasterEntity] = {}
+        self._source_records: dict[str, SourceRecord] = {}
+        self._match_candidates: dict[UUID, MatchCandidate] = {}
+        self._merge_operations: dict[UUID, MergeOperation] = {}
+        self._resolution_rules: dict[UUID, ResolutionRule] = {}
+        self._jobs: dict[UUID, ResolutionJob] = {}
         self._initialize_default_rules()
 
     def _initialize_default_rules(self):
@@ -114,11 +121,11 @@ class EntityResolutionService:
         # Link source record
         source_record.master_entity_id = entity.entity_id
         source_record.resolution_status = ResolutionStatus.AUTO_RESOLVED
-        source_record.resolved_at = datetime.utcnow()
+        source_record.resolved_at = datetime.now(UTC)
 
         return entity
 
-    async def get_master_entity(self, entity_id: UUID) -> Optional[MasterEntity]:
+    async def get_master_entity(self, entity_id: UUID) -> MasterEntity | None:
         """Get master entity by ID"""
         return self._master_entities.get(entity_id)
 
@@ -127,7 +134,7 @@ class EntityResolutionService:
         self._source_records[record.record_id] = record
         return record
 
-    async def resolve_record(self, record_id: str) -> Tuple[Optional[MasterEntity], List[MatchCandidate]]:
+    async def resolve_record(self, record_id: str) -> tuple[MasterEntity | None, list[MatchCandidate]]:
         """Resolve a source record to master entity"""
         record = self._source_records.get(record_id)
         if not record:
@@ -164,7 +171,7 @@ class EntityResolutionService:
 
         return None, candidates
 
-    async def _find_candidates(self, record: SourceRecord) -> List[MatchCandidate]:
+    async def _find_candidates(self, record: SourceRecord) -> list[MatchCandidate]:
         """Find potential matching entities"""
         candidates = []
 
@@ -180,7 +187,7 @@ class EntityResolutionService:
 
     async def _compare_to_entity(
         self, record: SourceRecord, entity: MasterEntity
-    ) -> Optional[MatchCandidate]:
+    ) -> MatchCandidate | None:
         """Compare source record to master entity"""
         scores = {}
         matching_fields = []
@@ -342,16 +349,16 @@ class EntityResolutionService:
         record.master_entity_id = entity.entity_id
         record.resolution_status = ResolutionStatus.AUTO_RESOLVED
         record.resolution_confidence = 1.0
-        record.resolved_at = datetime.utcnow()
+        record.resolved_at = datetime.now(UTC)
 
         # Update entity
-        entity.updated_at = datetime.utcnow()
-        entity.last_resolved_at = datetime.utcnow()
+        entity.updated_at = datetime.now(UTC)
+        entity.last_resolved_at = datetime.now(UTC)
         entity.completeness_score = self._calculate_completeness(entity)
         entity.overall_quality_score = entity.completeness_score
 
     async def merge_entities(
-        self, entity_ids: List[UUID], surviving_entity_id: UUID, merged_by: str
+        self, entity_ids: list[UUID], surviving_entity_id: UUID, merged_by: str
     ) -> MergeOperation:
         """Merge multiple entities into one"""
         surviving = self._master_entities.get(surviving_entity_id)
@@ -393,21 +400,21 @@ class EntityResolutionService:
             # Add to merge history
             surviving.merge_history.append({
                 "merged_entity_id": str(entity_id),
-                "merged_at": datetime.utcnow().isoformat(),
+                "merged_at": datetime.now(UTC).isoformat(),
                 "merged_by": merged_by
             })
 
             # Remove merged entity
             del self._master_entities[entity_id]
 
-        surviving.updated_at = datetime.utcnow()
-        surviving.last_resolved_at = datetime.utcnow()
+        surviving.updated_at = datetime.now(UTC)
+        surviving.last_resolved_at = datetime.now(UTC)
 
         self._merge_operations[merge_op.merge_id] = merge_op
         return merge_op
 
     async def split_entity(
-        self, entity_id: UUID, record_assignments: Dict[str, str], split_by: str, reason: str
+        self, entity_id: UUID, record_assignments: dict[str, str], split_by: str, reason: str
     ) -> SplitOperation:
         """Split a master entity into multiple entities"""
         entity = self._master_entities.get(entity_id)
@@ -422,7 +429,7 @@ class EntityResolutionService:
         )
 
         # Group records by new entity
-        new_entity_groups: Dict[str, List[str]] = defaultdict(list)
+        new_entity_groups: dict[str, list[str]] = defaultdict(list)
         for record_id, new_entity_name in record_assignments.items():
             new_entity_groups[new_entity_name].append(record_id)
 
@@ -456,8 +463,8 @@ class EntityResolutionService:
         return split_op
 
     async def review_candidate(
-        self, candidate_id: UUID, decision: str, reviewed_by: str, notes: Optional[str] = None
-    ) -> Optional[MatchCandidate]:
+        self, candidate_id: UUID, decision: str, reviewed_by: str, notes: str | None = None
+    ) -> MatchCandidate | None:
         """Review a match candidate"""
         candidate = self._match_candidates.get(candidate_id)
         if not candidate:
@@ -465,7 +472,7 @@ class EntityResolutionService:
 
         candidate.status = decision
         candidate.resolved_by = reviewed_by
-        candidate.resolved_at = datetime.utcnow()
+        candidate.resolved_at = datetime.now(UTC)
         candidate.resolution_notes = notes
 
         if decision == "confirmed":

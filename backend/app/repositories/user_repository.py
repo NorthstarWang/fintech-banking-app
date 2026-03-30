@@ -3,7 +3,7 @@ User repository for managing user and session data.
 """
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.repositories.base_repository import BaseRepository
@@ -41,7 +41,7 @@ class UserRepository(BaseRepository):
         # Set default values
         user_data.setdefault('is_active', True)
         user_data.setdefault('is_admin', False)
-        user_data.setdefault('created_at', datetime.utcnow().isoformat())
+        user_data.setdefault('created_at', datetime.now(UTC).isoformat())
 
         # Create user
         user = self.create(user_data)
@@ -100,9 +100,9 @@ class UserRepository(BaseRepository):
         session_data = {
             'id': token,
             'user_id': user_id,
-            'created_at': datetime.utcnow().isoformat(),
-            'last_accessed': datetime.utcnow().isoformat(),
-            'expires_at': (datetime.utcnow() + timedelta(days=30)).isoformat(),
+            'created_at': datetime.now(UTC).isoformat(),
+            'last_accessed': datetime.now(UTC).isoformat(),
+            'expires_at': (datetime.now(UTC) + timedelta(days=30)).isoformat(),
             'is_active': True
         }
 
@@ -128,10 +128,10 @@ class UserRepository(BaseRepository):
             if s.get('id') == token and s.get('is_active'):
                 # Check if expired
                 expires_at = datetime.fromisoformat(s['expires_at'])
-                if expires_at > datetime.utcnow():
+                if expires_at > datetime.now(UTC):
                     session = s
                     # Update last accessed
-                    s['last_accessed'] = datetime.utcnow().isoformat()
+                    s['last_accessed'] = datetime.now(UTC).isoformat()
                     break
 
         if not session:
@@ -190,7 +190,7 @@ class UserRepository(BaseRepository):
         for session in self.sessions:
             if (session.get('user_id') == user_id and
                 session.get('is_active') and
-                datetime.fromisoformat(session['expires_at']) > datetime.utcnow()):
+                datetime.fromisoformat(session['expires_at']) > datetime.now(UTC)):
                 # Don't include the token in the response
                 session_copy = session.copy()
                 session_copy['id'] = session_copy['id'][:8] + '...'  # Partial token
@@ -211,7 +211,7 @@ class UserRepository(BaseRepository):
         for user in self.data_store:
             if user.get('id') == user_id:
                 user['password_hash'] = self._hash_password(new_password)
-                user['password_changed_at'] = datetime.utcnow().isoformat()
+                user['password_changed_at'] = datetime.now(UTC).isoformat()
                 return True
         return False
 

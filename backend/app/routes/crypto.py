@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -52,7 +52,7 @@ async def get_wallets(
         CryptoWallet.user_id == current_user['user_id']
     ).all()
 
-    return [CryptoWalletResponse.from_orm(w) for w in wallets]
+    return [CryptoWalletResponse.model_validate(w) for w in wallets]
 
 @router.post("/wallets", response_model=CryptoWalletResponse, status_code=status.HTTP_201_CREATED)
 async def create_wallet(
@@ -79,7 +79,7 @@ async def create_wallet(
         name=wallet_data.name,
         network=wallet_data.network.value,
         is_primary=wallet_data.is_primary,
-        last_synced=datetime.utcnow()
+        last_synced=datetime.now(UTC)
     )
 
     db_session.add(new_wallet)
@@ -88,7 +88,7 @@ async def create_wallet(
 
     # Log wallet creation
 
-    return CryptoWalletResponse.from_orm(new_wallet)
+    return CryptoWalletResponse.model_validate(new_wallet)
 
 @router.get("/wallets/{wallet_id}/assets", response_model=list[CryptoAssetResponse])
 async def get_wallet_assets(
@@ -113,7 +113,7 @@ async def get_wallet_assets(
         CryptoAsset.wallet_id == wallet_id
     ).all()
 
-    return [CryptoAssetResponse.from_orm(a) for a in assets]
+    return [CryptoAssetResponse.model_validate(a) for a in assets]
 
 @router.get("/wallets/{wallet_id}/nfts", response_model=list[NFTAssetResponse])
 async def get_wallet_nfts(
@@ -138,7 +138,7 @@ async def get_wallet_nfts(
         NFTAsset.wallet_id == wallet_id
     ).all()
 
-    return [NFTAssetResponse.from_orm(n) for n in nfts]
+    return [NFTAssetResponse.model_validate(n) for n in nfts]
 
 @router.get("/transactions", response_model=list[CryptoTransactionResponse])
 async def get_crypto_transactions(
@@ -161,7 +161,7 @@ async def get_crypto_transactions(
 
     transactions = query.order_by(desc(CryptoTransaction.created_at)).limit(limit).all()
 
-    return [CryptoTransactionResponse.from_orm(t) for t in transactions]
+    return [CryptoTransactionResponse.model_validate(t) for t in transactions]
 
 @router.post("/transactions", response_model=CryptoTransactionResponse, status_code=status.HTTP_201_CREATED)
 async def create_crypto_transaction(
@@ -244,10 +244,10 @@ async def create_crypto_transaction(
     # Simulate confirmation after a few seconds
     new_transaction.status = CryptoTransactionStatus.CONFIRMED
     new_transaction.confirmations = 6
-    new_transaction.confirmed_at = datetime.utcnow()
+    new_transaction.confirmed_at = datetime.now(UTC)
     db_session.commit()
 
-    return CryptoTransactionResponse.from_orm(new_transaction)
+    return CryptoTransactionResponse.model_validate(new_transaction)
 
 @router.get("/defi/positions", response_model=list[DeFiPositionResponse])
 async def get_defi_positions(
@@ -281,7 +281,7 @@ async def get_defi_positions(
 
     positions = query.all()
 
-    return [DeFiPositionResponse.from_orm(p) for p in positions]
+    return [DeFiPositionResponse.model_validate(p) for p in positions]
 
 @router.get("/portfolio/summary", response_model=CryptoPortfolioSummary)
 async def get_portfolio_summary(
@@ -412,7 +412,7 @@ async def get_swap_quote(
         price_impact=round(price_impact, 2),
         gas_estimate_usd=round(gas_estimate_usd, 2),
         route=route,
-        expires_at=datetime.utcnow() + timedelta(minutes=1)
+        expires_at=datetime.now(UTC) + timedelta(minutes=1)
     )
 
 @router.post("/wallets/{wallet_id}/sync")
@@ -437,7 +437,7 @@ async def sync_wallet(
         )
 
     # Update last synced time
-    wallet.last_synced = datetime.utcnow()
+    wallet.last_synced = datetime.now(UTC)
     db_session.commit()
 
     # Log sync

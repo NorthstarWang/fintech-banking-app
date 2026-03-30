@@ -1,9 +1,9 @@
 """Data Quality Metrics Calculator"""
 
-from typing import List, Dict, Any, Optional
-from decimal import Decimal
-from datetime import datetime, date
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from decimal import Decimal
+from typing import Any
 
 
 @dataclass
@@ -30,9 +30,9 @@ class DataQualityMetricsCalculator:
         }
 
     def calculate_completeness(
-        self, data: List[Dict[str, Any]], required_fields: List[str]
+        self, data: list[dict[str, Any]], required_fields: list[str]
     ) -> QualityMetricResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         total_records = len(data)
         passed_records = 0
 
@@ -41,7 +41,7 @@ class DataQualityMetricsCalculator:
                 passed_records += 1
 
         score = Decimal(str(passed_records / total_records * 100)) if total_records > 0 else Decimal("100")
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         calc_time = int((end_time - start_time).total_seconds() * 1000)
 
         return QualityMetricResult(
@@ -56,9 +56,9 @@ class DataQualityMetricsCalculator:
         )
 
     def calculate_uniqueness(
-        self, data: List[Dict[str, Any]], unique_fields: List[str]
+        self, data: list[dict[str, Any]], unique_fields: list[str]
     ) -> QualityMetricResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         total_records = len(data)
         seen_values = set()
         duplicate_count = 0
@@ -72,7 +72,7 @@ class DataQualityMetricsCalculator:
 
         passed_records = total_records - duplicate_count
         score = Decimal(str(passed_records / total_records * 100)) if total_records > 0 else Decimal("100")
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         calc_time = int((end_time - start_time).total_seconds() * 1000)
 
         return QualityMetricResult(
@@ -87,9 +87,9 @@ class DataQualityMetricsCalculator:
         )
 
     def calculate_validity(
-        self, data: List[Dict[str, Any]], validation_rules: Dict[str, callable]
+        self, data: list[dict[str, Any]], validation_rules: dict[str, callable]
     ) -> QualityMetricResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         total_records = len(data)
         passed_records = 0
 
@@ -108,7 +108,7 @@ class DataQualityMetricsCalculator:
                 passed_records += 1
 
         score = Decimal(str(passed_records / total_records * 100)) if total_records > 0 else Decimal("100")
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         calc_time = int((end_time - start_time).total_seconds() * 1000)
 
         return QualityMetricResult(
@@ -123,9 +123,9 @@ class DataQualityMetricsCalculator:
         )
 
     def calculate_timeliness(
-        self, data: List[Dict[str, Any]], date_field: str, max_age_days: int
+        self, data: list[dict[str, Any]], date_field: str, max_age_days: int
     ) -> QualityMetricResult:
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         total_records = len(data)
         passed_records = 0
         today = date.today()
@@ -147,7 +147,7 @@ class DataQualityMetricsCalculator:
                         passed_records += 1
 
         score = Decimal(str(passed_records / total_records * 100)) if total_records > 0 else Decimal("100")
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         calc_time = int((end_time - start_time).total_seconds() * 1000)
 
         return QualityMetricResult(
@@ -161,7 +161,7 @@ class DataQualityMetricsCalculator:
             calculated_at=end_time,
         )
 
-    def calculate_overall_score(self, dimension_scores: Dict[str, Decimal]) -> Decimal:
+    def calculate_overall_score(self, dimension_scores: dict[str, Decimal]) -> Decimal:
         weighted_sum = Decimal("0")
         total_weight = Decimal("0")
 
@@ -175,7 +175,7 @@ class DataQualityMetricsCalculator:
     def set_dimension_weight(self, dimension: str, weight: Decimal) -> None:
         self._dimension_weights[dimension] = weight
 
-    def get_dimension_weights(self) -> Dict[str, Decimal]:
+    def get_dimension_weights(self) -> dict[str, Decimal]:
         return self._dimension_weights.copy()
 
 

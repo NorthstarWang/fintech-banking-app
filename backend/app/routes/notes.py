@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -146,11 +146,11 @@ async def update_note(
         )
 
     # Update fields if provided
-    update_data = note_data.dict(exclude_unset=True)
+    update_data = note_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(note, field, value)
 
-    note.updated_at = datetime.utcnow()
+    note.updated_at = datetime.now(UTC)
 
     db_session.commit()
     db_session.refresh(note)

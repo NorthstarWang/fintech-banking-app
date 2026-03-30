@@ -1,11 +1,12 @@
 """Reporting Models - Data models for regulatory reporting"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class ReportFrequency(str, Enum):
@@ -55,17 +56,17 @@ class RegulatoryReport(BaseModel):
     status: ReportStatus = ReportStatus.DRAFT
     version: int = 1
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    reviewed_by: Optional[str] = None
-    review_date: Optional[datetime] = None
-    approved_by: Optional[str] = None
-    approval_date: Optional[datetime] = None
-    submitted_by: Optional[str] = None
-    submission_date: Optional[datetime] = None
-    submission_reference: Optional[str] = None
-    regulator_response: Optional[str] = None
-    response_date: Optional[datetime] = None
-    amendment_reason: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    reviewed_by: str | None = None
+    review_date: datetime | None = None
+    approved_by: str | None = None
+    approval_date: datetime | None = None
+    submitted_by: str | None = None
+    submission_date: datetime | None = None
+    submission_reference: str | None = None
+    regulator_response: str | None = None
+    response_date: datetime | None = None
+    amendment_reason: str | None = None
 
 
 class ReportSchedule(BaseModel):
@@ -74,18 +75,18 @@ class ReportSchedule(BaseModel):
     report_name: str
     regulator: Regulator
     frequency: ReportFrequency
-    reporting_day: Optional[int] = None  # Day of month for monthly
+    reporting_day: int | None = None  # Day of month for monthly
     reporting_offset_days: int  # Days after period end
     entity_id: str
     owner: str
-    backup_owner: Optional[str] = None
-    data_sources: List[str]
-    dependencies: List[str]
+    backup_owner: str | None = None
+    data_sources: list[str]
+    dependencies: list[str]
     automated: bool = False
-    automation_status: Optional[str] = None
+    automation_status: str | None = None
     is_active: bool = True
     next_due_date: date
-    last_submission_date: Optional[date] = None
+    last_submission_date: date | None = None
 
 
 class ReportValidation(BaseModel):
@@ -94,15 +95,15 @@ class ReportValidation(BaseModel):
     validation_rule_id: str
     rule_description: str
     rule_type: str  # arithmetic, logical, cross_report
-    expected_value: Optional[str] = None
+    expected_value: str | None = None
     actual_value: str
     passed: bool
     severity: str  # error, warning, info
-    validation_date: datetime = Field(default_factory=datetime.utcnow)
+    validation_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     resolution_required: bool = False
     resolved: bool = False
-    resolution_notes: Optional[str] = None
-    resolved_by: Optional[str] = None
+    resolution_notes: str | None = None
+    resolved_by: str | None = None
 
 
 class ReportDataElement(BaseModel):
@@ -116,12 +117,12 @@ class ReportDataElement(BaseModel):
     value: str
     data_type: str
     source_system: str
-    source_table: Optional[str] = None
+    source_table: str | None = None
     extraction_date: datetime
-    transformation_applied: Optional[str] = None
+    transformation_applied: str | None = None
     manual_override: bool = False
-    override_reason: Optional[str] = None
-    overridden_by: Optional[str] = None
+    override_reason: str | None = None
+    overridden_by: str | None = None
 
 
 class ReportingException(BaseModel):
@@ -132,13 +133,13 @@ class ReportingException(BaseModel):
     identified_date: date
     identified_by: str
     impact: str
-    root_cause: Optional[str] = None
+    root_cause: str | None = None
     remediation_action: str
     remediation_owner: str
     remediation_due_date: date
     status: str = "open"
-    resolution_date: Optional[date] = None
-    resolution_notes: Optional[str] = None
+    resolution_date: date | None = None
+    resolution_notes: str | None = None
 
 
 class ReportAmendment(BaseModel):
@@ -148,10 +149,10 @@ class ReportAmendment(BaseModel):
     amendment_date: date
     amendment_reason: str
     changes_summary: str
-    elements_changed: List[Dict[str, Any]]
+    elements_changed: list[dict[str, Any]]
     materiality_assessment: str
     regulator_notified: bool = False
-    notification_date: Optional[date] = None
+    notification_date: date | None = None
     approved_by: str
     approval_date: date
 
@@ -168,7 +169,7 @@ class ReportingCalendar(BaseModel):
     submission_deadline: date
     status: str = "pending"
     assigned_to: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ReportMetrics(BaseModel):
@@ -186,4 +187,4 @@ class ReportMetrics(BaseModel):
     automation_rate: Decimal
     average_preparation_days: float
     compliance_rate: Decimal
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

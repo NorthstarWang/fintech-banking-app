@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -69,7 +69,7 @@ async def create_contact_request(
     # Log contact request
 
     # Prepare response with contact info
-    response = ContactResponse.from_orm(new_contact)
+    response = ContactResponse.model_validate(new_contact)
     response.contact_username = contact_user.username
     response.contact_email = contact_user.email
 
@@ -101,7 +101,7 @@ async def get_contacts(
         # Determine which user is the contact
         if contact.user_id == current_user['user_id']:
             contact_user = db_session.query(User).filter(User.id == contact.contact_id).first()
-            response = ContactResponse.from_orm(contact)
+            response = ContactResponse.model_validate(contact)
         else:
             # Swap perspective for received requests
             contact_user = db_session.query(User).filter(User.id == contact.user_id).first()
@@ -196,7 +196,7 @@ async def update_contact_status(
 
     # Update status
     contact.status = status_update.status
-    contact.updated_at = datetime.utcnow()
+    contact.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(contact)
 
@@ -252,7 +252,7 @@ async def update_contact(
     if update_data.is_favorite is not None:
         contact.is_favorite = update_data.is_favorite
 
-    contact.updated_at = datetime.utcnow()
+    contact.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(contact)
 
@@ -260,7 +260,7 @@ async def update_contact(
     contact_user = db_session.query(User).filter(User.id == contact.contact_id).first()
 
     # Prepare response
-    response = ContactResponse.from_orm(contact)
+    response = ContactResponse.model_validate(contact)
     if contact_user:
         response.contact_username = contact_user.username
         response.contact_email = contact_user.email

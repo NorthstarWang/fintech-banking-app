@@ -3,7 +3,7 @@ Mock implementation for budgets routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -62,8 +62,8 @@ async def create_budget(
         "is_active": True,
         "rollover_enabled": data.get("rollover_enabled", False),
         "rollover_amount": 0.0,  # Amount rolled over from previous period
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.budgets.append(budget)
@@ -123,7 +123,7 @@ async def update_budget(
     if "is_active" in data:
         budget["is_active"] = data["is_active"]
     
-    budget["updated_at"] = datetime.utcnow().isoformat()
+    budget["updated_at"] = datetime.now(timezone.utc).isoformat()
     return budget
 
 @router.delete("/{budget_id}")
@@ -166,7 +166,7 @@ async def get_budget_alerts(
         "type": "threshold",
         "threshold_percentage": 80,
         "is_active": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }]
 
 @router.post("/{budget_id}/rollover", status_code=200)
@@ -197,8 +197,8 @@ async def rollover_budget(
     else:
         new_budget["rollover_amount"] = 0.0
     
-    new_budget["created_at"] = datetime.utcnow().isoformat()
-    new_budget["updated_at"] = datetime.utcnow().isoformat()
+    new_budget["created_at"] = datetime.now(timezone.utc).isoformat()
+    new_budget["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Update dates based on period
     if budget["period"] == "monthly":

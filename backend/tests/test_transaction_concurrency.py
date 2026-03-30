@@ -15,7 +15,7 @@ import threading
 import time
 import uuid
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.services.event_store import (
     EventStore,
@@ -55,7 +55,7 @@ class TestEventStore:
             transaction_id=str(uuid.uuid4()),
             user_id=1,
             event_type=TransactionEventType.TRANSFER_INITIATED,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             amount=Decimal('100.00'),
             from_account_id=1,
             to_account_id=2
@@ -73,7 +73,7 @@ class TestEventStore:
             transaction_id=str(uuid.uuid4()),
             user_id=1,
             event_type=TransactionEventType.TRANSFER_INITIATED,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             amount=Decimal('100.00')
         )
 
@@ -98,7 +98,7 @@ class TestEventStore:
                 transaction_id=txn_id,
                 user_id=1,
                 event_type=TransactionEventType.TRANSFER_INITIATED,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
                 amount=Decimal('100.00')
             )
             self.store.append_event(event)
@@ -124,7 +124,7 @@ class TestEventStore:
                     transaction_id=str(uuid.uuid4()),
                     user_id=1,
                     event_type=TransactionEventType.TRANSFER_INITIATED,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc),
                     amount=Decimal('100.00'),
                     from_account_id=account
                 )
@@ -145,7 +145,7 @@ class TestEventStore:
             transaction_id=str(uuid.uuid4()),
             user_id=1,
             event_type=TransactionEventType.TRANSFER_INITIATED,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             amount=Decimal('100.50')
         )
 

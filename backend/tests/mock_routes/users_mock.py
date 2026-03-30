@@ -4,7 +4,7 @@ Complete mock implementation for users routes.
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -84,7 +84,7 @@ async def update_current_user(
     if request.phone is not None:
         user["phone"] = request.phone
     
-    user["updated_at"] = datetime.utcnow().isoformat()
+    user["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     # Update the user in the list
     data_manager.users[user_index] = user
@@ -153,7 +153,7 @@ async def get_security_settings(current_user: Dict[str, Any] = Depends(get_curre
     """Get security settings."""
     return {
         "two_factor_enabled": False,
-        "last_login": datetime.utcnow().isoformat(),
+        "last_login": datetime.now(timezone.utc).isoformat(),
         "active_sessions": 1
     }
 
@@ -196,7 +196,7 @@ async def get_user_stats(current_user: Dict[str, Any] = Depends(get_current_user
         "budgets": 0,
         "goals": 0,
         "contacts": 0,
-        "member_since": current_user.get("created_at", datetime.utcnow().isoformat()),
+        "member_since": current_user.get("created_at", datetime.now(timezone.utc).isoformat()),
         "days_active": 1
     }
 
@@ -248,7 +248,7 @@ async def get_security_alt(current_user: Dict[str, Any] = Depends(get_current_us
     """Get security settings (alternative path)."""
     return {
         "two_factor_enabled": False,
-        "last_login": datetime.utcnow().isoformat(),
+        "last_login": datetime.now(timezone.utc).isoformat(),
         "active_sessions": 1
     }
 

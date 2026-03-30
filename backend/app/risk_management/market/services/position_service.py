@@ -1,26 +1,32 @@
 """Position Service - Trading position and P&L management service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
 from uuid import UUID
+
 from ..models.position_models import (
-    TradingPosition, DailyPnL, PnLAttribution, PortfolioValuation,
-    TradingBook, PositionStatistics, AssetClass, PositionStatus
+    AssetClass,
+    DailyPnL,
+    PnLAttribution,
+    PortfolioValuation,
+    PositionStatistics,
+    PositionStatus,
+    TradingBook,
+    TradingPosition,
 )
 
 
 class PositionService:
     def __init__(self):
-        self._positions: Dict[UUID, TradingPosition] = {}
-        self._daily_pnl: Dict[UUID, DailyPnL] = {}
-        self._attributions: Dict[UUID, PnLAttribution] = {}
-        self._valuations: Dict[UUID, PortfolioValuation] = {}
-        self._books: Dict[UUID, TradingBook] = {}
+        self._positions: dict[UUID, TradingPosition] = {}
+        self._daily_pnl: dict[UUID, DailyPnL] = {}
+        self._attributions: dict[UUID, PnLAttribution] = {}
+        self._valuations: dict[UUID, PortfolioValuation] = {}
+        self._books: dict[UUID, TradingBook] = {}
         self._counter = 0
 
     def _generate_reference(self) -> str:
         self._counter += 1
-        return f"POS-{datetime.utcnow().strftime('%Y%m%d')}-{self._counter:06d}"
+        return f"POS-{datetime.now(UTC).strftime('%Y%m%d')}-{self._counter:06d}"
 
     async def create_position(
         self, asset_class: AssetClass, instrument_id: str, instrument_name: str,
@@ -55,23 +61,22 @@ class PositionService:
         self._positions[position.position_id] = position
         return position
 
-    async def get_position(self, position_id: UUID) -> Optional[TradingPosition]:
+    async def get_position(self, position_id: UUID) -> TradingPosition | None:
         return self._positions.get(position_id)
 
-    async def update_price(self, position_id: UUID, new_price: float) -> Optional[TradingPosition]:
+    async def update_price(self, position_id: UUID, new_price: float) -> TradingPosition | None:
         position = self._positions.get(position_id)
         if position:
-            old_pnl = position.unrealized_pnl
             position.current_price = new_price
             position.market_value = abs(position.quantity) * new_price
             position.unrealized_pnl = (new_price - position.entry_price) * position.quantity
             if position.direction == "short":
                 position.unrealized_pnl = -position.unrealized_pnl
             position.total_pnl = position.unrealized_pnl + position.realized_pnl
-            position.updated_at = datetime.utcnow()
+            position.updated_at = datetime.now(UTC)
         return position
 
-    async def close_position(self, position_id: UUID, close_price: float) -> Optional[TradingPosition]:
+    async def close_position(self, position_id: UUID, close_price: float) -> TradingPosition | None:
         position = self._positions.get(position_id)
         if position:
             realized = (close_price - position.entry_price) * position.quantity
@@ -82,7 +87,7 @@ class PositionService:
             position.total_pnl = realized
             position.status = PositionStatus.CLOSED
             position.current_price = close_price
-            position.updated_at = datetime.utcnow()
+            position.updated_at = datetime.now(UTC)
         return position
 
     async def calculate_daily_pnl(
@@ -183,7 +188,7 @@ class PositionService:
         self._books[book.book_id] = book
         return book
 
-    async def get_portfolio_positions(self, portfolio_id: UUID) -> List[TradingPosition]:
+    async def get_portfolio_positions(self, portfolio_id: UUID) -> list[TradingPosition]:
         return [p for p in self._positions.values() if p.portfolio_id == portfolio_id]
 
     async def get_statistics(self) -> PositionStatistics:

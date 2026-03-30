@@ -1,10 +1,12 @@
 """Data Governance Routes"""
 
-from typing import List, Dict, Any
-from uuid import UUID
 from datetime import date
+from typing import Any
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
 from ..services.data_governance_service import data_governance_service
 
 router = APIRouter(prefix="/data-governance", tags=["Data Governance"])
@@ -25,7 +27,7 @@ class AssignOwnershipRequest(BaseModel):
     business_owner: str
     data_steward: str
     technical_owner: str
-    responsibilities: Dict[str, List[str]]
+    responsibilities: dict[str, list[str]]
 
 
 class CreatePolicyRequest(BaseModel):
@@ -34,7 +36,7 @@ class CreatePolicyRequest(BaseModel):
     policy_type: str
     description: str
     scope: str
-    requirements: List[str]
+    requirements: list[str]
     owner: str
     approver: str
 
@@ -44,9 +46,9 @@ class CreateStandardRequest(BaseModel):
     standard_name: str
     standard_type: str
     description: str
-    rules: List[Dict[str, Any]]
+    rules: list[dict[str, Any]]
     owner: str
-    domain_applicability: List[str]
+    domain_applicability: list[str]
 
 
 class AddGlossaryTermRequest(BaseModel):
@@ -55,7 +57,7 @@ class AddGlossaryTermRequest(BaseModel):
     domain_id: UUID
     owner: str
     steward: str
-    synonyms: List[str] = []
+    synonyms: list[str] = []
 
 
 class SubmitAccessRequestRequest(BaseModel):
@@ -74,10 +76,10 @@ class ConductPrivacyAssessmentRequest(BaseModel):
     asset_name: str
     assessor: str
     contains_pii: bool
-    pii_categories: List[str]
-    data_subjects: List[str]
-    processing_purposes: List[str]
-    security_controls: List[str]
+    pii_categories: list[str]
+    data_subjects: list[str]
+    processing_purposes: list[str]
+    security_controls: list[str]
 
 
 class RecordMetricRequest(BaseModel):

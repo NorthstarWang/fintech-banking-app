@@ -1,11 +1,19 @@
 """Data Catalog Service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.data_catalog_models import (
-    CatalogEntry, SchemaDefinition, DatasetUsage, DatasetRating,
-    DatasetComment, DatasetBookmark, SearchHistory, CatalogCollection, DataDictionary
+    CatalogCollection,
+    CatalogEntry,
+    DataDictionary,
+    DatasetBookmark,
+    DatasetComment,
+    DatasetRating,
+    DatasetUsage,
+    SchemaDefinition,
+    SearchHistory,
 )
 from ..repositories.data_catalog_repository import data_catalog_repository
 
@@ -18,7 +26,7 @@ class DataCatalogService:
         self, asset_name: str, asset_type: str, database: str = "",
         schema_name: str = "", description: str = "", business_description: str = "",
         owner: str = "", steward: str = "", domain: str = "",
-        classification: str = "internal", tags: List[str] = None
+        classification: str = "internal", tags: list[str] | None = None
     ) -> CatalogEntry:
         entry = CatalogEntry(
             asset_name=asset_name, asset_type=asset_type, database=database,
@@ -30,8 +38,8 @@ class DataCatalogService:
         return entry
 
     async def define_schema(
-        self, entry_id: UUID, columns: List[Dict[str, Any]],
-        primary_keys: List[str], foreign_keys: List[Dict[str, str]] = None
+        self, entry_id: UUID, columns: list[dict[str, Any]],
+        primary_keys: list[str], foreign_keys: list[dict[str, str]] | None = None
     ) -> SchemaDefinition:
         schema = SchemaDefinition(
             entry_id=entry_id, columns=columns, primary_keys=primary_keys,
@@ -82,8 +90,8 @@ class DataCatalogService:
         return bookmark
 
     async def record_search(
-        self, user_id: str, search_query: str, filters_applied: Dict[str, Any],
-        results_count: int, clicked_results: List[UUID] = None
+        self, user_id: str, search_query: str, filters_applied: dict[str, Any],
+        results_count: int, clicked_results: list[UUID] | None = None
     ) -> SearchHistory:
         search = SearchHistory(
             user_id=user_id, search_query=search_query, filters_applied=filters_applied,
@@ -94,7 +102,7 @@ class DataCatalogService:
 
     async def create_collection(
         self, collection_name: str, description: str, owner: str,
-        visibility: str = "private", entries: List[UUID] = None
+        visibility: str = "private", entries: list[UUID] | None = None
     ) -> CatalogCollection:
         collection = CatalogCollection(
             collection_name=collection_name, description=description, owner=owner,
@@ -105,11 +113,11 @@ class DataCatalogService:
 
     async def add_to_collection(
         self, collection_id: UUID, entry_id: UUID
-    ) -> Optional[CatalogCollection]:
+    ) -> CatalogCollection | None:
         collection = await self.repository.find_collection_by_id(collection_id)
         if collection and entry_id not in collection.entries:
             collection.entries.append(entry_id)
-            collection.last_updated = datetime.utcnow()
+            collection.last_updated = datetime.now(UTC)
         return collection
 
     async def add_data_dictionary_entry(
@@ -125,18 +133,17 @@ class DataCatalogService:
         await self.repository.save_dictionary_entry(dictionary)
         return dictionary
 
-    async def search_catalog(self, query: str, filters: Dict[str, Any] = None) -> List[CatalogEntry]:
+    async def search_catalog(self, query: str, filters: dict[str, Any] | None = None) -> list[CatalogEntry]:
         entries = await self.repository.find_all_entries()
         query_lower = query.lower()
-        results = [
+        return [
             e for e in entries
             if query_lower in e.asset_name.lower()
             or query_lower in e.description.lower()
             or any(query_lower in tag.lower() for tag in e.tags)
         ]
-        return results
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

@@ -1,15 +1,25 @@
 """Technology Risk Routes - API endpoints for IT risk management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.technology_risk_models import (
-    ITAsset, Vulnerability, PatchManagement, TechRiskAssessment,
-    SecurityIncident, AccessReview, ChangeRisk, TechRiskMetrics,
-    AssetType, AssetCriticality, VulnerabilitySeverity, IncidentType
+    AccessReview,
+    AssetCriticality,
+    AssetType,
+    ChangeRisk,
+    IncidentType,
+    ITAsset,
+    PatchManagement,
+    SecurityIncident,
+    TechRiskAssessment,
+    TechRiskMetrics,
+    Vulnerability,
+    VulnerabilitySeverity,
 )
 from ..services.technology_risk_service import technology_risk_service
 
@@ -27,12 +37,12 @@ class RegisterAssetRequest(BaseModel):
     location: str
     environment: str
     data_classification: str
-    ip_address: Optional[str] = None
-    hostname: Optional[str] = None
-    operating_system: Optional[str] = None
-    version: Optional[str] = None
-    vendor: Optional[str] = None
-    support_end_date: Optional[date] = None
+    ip_address: str | None = None
+    hostname: str | None = None
+    operating_system: str | None = None
+    version: str | None = None
+    vendor: str | None = None
+    support_end_date: date | None = None
     pii_stored: bool = False
     pci_scope: bool = False
     sox_scope: bool = False
@@ -42,18 +52,18 @@ class RecordVulnerabilityRequest(BaseModel):
     title: str
     description: str
     severity: VulnerabilitySeverity
-    affected_assets: List[UUID]
-    affected_systems: List[str]
+    affected_assets: list[UUID]
+    affected_systems: list[str]
     discovery_source: str
-    remediation_steps: List[str]
-    cve_id: Optional[str] = None
-    cvss_score: Optional[Decimal] = None
-    cvss_vector: Optional[str] = None
+    remediation_steps: list[str]
+    cve_id: str | None = None
+    cvss_score: Decimal | None = None
+    cvss_vector: str | None = None
     exploit_available: bool = False
     actively_exploited: bool = False
     patch_available: bool = False
-    patch_id: Optional[str] = None
-    workaround: Optional[str] = None
+    patch_id: str | None = None
+    workaround: str | None = None
 
 
 class CreatePatchRequest(BaseModel):
@@ -62,9 +72,9 @@ class CreatePatchRequest(BaseModel):
     vendor: str
     release_date: date
     severity: str
-    affected_products: List[str]
-    affected_assets: List[UUID]
-    cve_addressed: List[str]
+    affected_products: list[str]
+    affected_assets: list[UUID]
+    cve_addressed: list[str]
 
 
 class PerformAssessmentRequest(BaseModel):
@@ -73,11 +83,11 @@ class PerformAssessmentRequest(BaseModel):
     confidentiality_risk: str
     integrity_risk: str
     availability_risk: str
-    threats_identified: List[str]
-    vulnerabilities_found: List[str]
-    controls_in_place: List[str]
-    control_gaps: List[str]
-    recommendations: List[str]
+    threats_identified: list[str]
+    vulnerabilities_found: list[str]
+    controls_in_place: list[str]
+    control_gaps: list[str]
+    recommendations: list[str]
 
 
 class ReportIncidentRequest(BaseModel):
@@ -85,11 +95,11 @@ class ReportIncidentRequest(BaseModel):
     severity: str
     title: str
     description: str
-    affected_assets: List[UUID]
-    attack_vector: Optional[str] = None
+    affected_assets: list[UUID]
+    attack_vector: str | None = None
     data_compromised: bool = False
-    data_type_compromised: Optional[List[str]] = None
-    records_affected: Optional[int] = None
+    data_type_compromised: list[str] | None = None
+    records_affected: int | None = None
 
 
 class InitiateAccessReviewRequest(BaseModel):
@@ -110,7 +120,7 @@ class CompleteAccessReviewRequest(BaseModel):
     orphan_accounts: int
     dormant_accounts: int
     segregation_conflicts: int
-    findings: List[str]
+    findings: list[str]
 
 
 class AssessChangeRiskRequest(BaseModel):
@@ -118,7 +128,7 @@ class AssessChangeRiskRequest(BaseModel):
     change_title: str
     change_type: str
     change_date: date
-    affected_systems: List[UUID]
+    affected_systems: list[UUID]
     impact_assessment: str
     rollback_plan: bool
     test_plan: bool
@@ -160,12 +170,12 @@ async def get_asset(asset_id: UUID):
     return asset
 
 
-@router.get("/assets", response_model=List[ITAsset])
+@router.get("/assets", response_model=list[ITAsset])
 async def list_assets(
-    asset_type: Optional[AssetType] = Query(None),
-    criticality: Optional[AssetCriticality] = Query(None),
-    business_unit: Optional[str] = Query(None),
-    environment: Optional[str] = Query(None)
+    asset_type: AssetType | None = Query(None),
+    criticality: AssetCriticality | None = Query(None),
+    business_unit: str | None = Query(None),
+    environment: str | None = Query(None)
 ):
     """List IT assets"""
     return await technology_risk_service.list_assets(
@@ -204,11 +214,11 @@ async def get_vulnerability(vuln_id: UUID):
     return vuln
 
 
-@router.get("/vulnerabilities", response_model=List[Vulnerability])
+@router.get("/vulnerabilities", response_model=list[Vulnerability])
 async def list_vulnerabilities(
-    severity: Optional[VulnerabilitySeverity] = Query(None),
+    severity: VulnerabilitySeverity | None = Query(None),
     status: str = Query("open"),
-    asset_id: Optional[UUID] = Query(None)
+    asset_id: UUID | None = Query(None)
 ):
     """List vulnerabilities"""
     return await technology_risk_service.list_vulnerabilities(severity, status, asset_id)
@@ -256,7 +266,7 @@ async def create_patch(request: CreatePatchRequest):
     )
 
 
-@router.get("/patches/pending", response_model=List[PatchManagement])
+@router.get("/patches/pending", response_model=list[PatchManagement])
 async def get_pending_patches():
     """Get pending patches"""
     return await technology_risk_service.get_pending_patches()
@@ -280,7 +290,7 @@ async def perform_assessment(asset_id: UUID, request: PerformAssessmentRequest):
     )
 
 
-@router.get("/assets/{asset_id}/assessments", response_model=List[TechRiskAssessment])
+@router.get("/assets/{asset_id}/assessments", response_model=list[TechRiskAssessment])
 async def get_assessments(asset_id: UUID):
     """Get asset assessments"""
     return await technology_risk_service.get_asset_assessments(asset_id)
@@ -333,8 +343,8 @@ async def recover_incident(incident_id: UUID):
 async def close_incident(
     incident_id: UUID,
     root_cause: str,
-    lessons_learned: List[str],
-    financial_impact: Optional[Decimal] = None
+    lessons_learned: list[str],
+    financial_impact: Decimal | None = None
 ):
     """Close security incident"""
     incident = await technology_risk_service.close_security_incident(
@@ -345,7 +355,7 @@ async def close_incident(
     return incident
 
 
-@router.get("/security-incidents/open", response_model=List[SecurityIncident])
+@router.get("/security-incidents/open", response_model=list[SecurityIncident])
 async def get_open_incidents():
     """Get open security incidents"""
     return await technology_risk_service.get_open_incidents()

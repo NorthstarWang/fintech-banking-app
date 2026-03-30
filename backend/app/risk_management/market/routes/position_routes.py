@@ -1,14 +1,21 @@
 """Position Routes - API endpoints for trading position management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.position_models import (
-    TradingPosition, DailyPnL, PnLAttribution, PortfolioValuation,
-    TradingBook, AssetClass, PositionStatus, PositionDirection
+    AssetClass,
+    DailyPnL,
+    PnLAttribution,
+    PortfolioValuation,
+    PositionDirection,
+    PositionStatus,
+    TradingBook,
+    TradingPosition,
 )
 from ..services.position_service import position_service
 
@@ -28,9 +35,9 @@ class PositionRequest(BaseModel):
 
 
 class PositionUpdateRequest(BaseModel):
-    quantity: Optional[Decimal] = None
-    current_price: Optional[Decimal] = None
-    status: Optional[PositionStatus] = None
+    quantity: Decimal | None = None
+    current_price: Decimal | None = None
+    status: PositionStatus | None = None
 
 
 class DailyPnLRequest(BaseModel):
@@ -63,7 +70,7 @@ class TradingBookRequest(BaseModel):
 @router.post("/", response_model=TradingPosition)
 async def create_position(request: PositionRequest):
     """Create trading position"""
-    position = await position_service.create_position(
+    return await position_service.create_position(
         portfolio_id=request.portfolio_id,
         book_id=request.book_id,
         instrument_id=request.instrument_id,
@@ -74,7 +81,6 @@ async def create_position(request: PositionRequest):
         entry_price=request.entry_price,
         currency=request.currency
     )
-    return position
 
 
 @router.get("/{position_id}", response_model=TradingPosition)
@@ -86,18 +92,17 @@ async def get_position(position_id: UUID):
     return position
 
 
-@router.get("/", response_model=List[TradingPosition])
+@router.get("/", response_model=list[TradingPosition])
 async def list_positions(
-    portfolio_id: Optional[UUID] = Query(None),
-    book_id: Optional[str] = Query(None),
-    asset_class: Optional[AssetClass] = Query(None),
-    status: Optional[PositionStatus] = Query(None)
+    portfolio_id: UUID | None = Query(None),
+    book_id: str | None = Query(None),
+    asset_class: AssetClass | None = Query(None),
+    status: PositionStatus | None = Query(None)
 ):
     """List trading positions"""
-    positions = await position_service.list_positions(
+    return await position_service.list_positions(
         portfolio_id, book_id, asset_class, status
     )
-    return positions
 
 
 @router.put("/{position_id}", response_model=TradingPosition)
@@ -126,24 +131,22 @@ async def close_position(position_id: UUID, close_price: Decimal):
 @router.post("/pnl/daily", response_model=DailyPnL)
 async def record_daily_pnl(request: DailyPnLRequest):
     """Record daily P&L"""
-    pnl = await position_service.record_daily_pnl(
+    return await position_service.record_daily_pnl(
         portfolio_id=request.portfolio_id,
         pnl_date=request.pnl_date,
         realized_pnl=request.realized_pnl,
         unrealized_pnl=request.unrealized_pnl
     )
-    return pnl
 
 
-@router.get("/pnl/daily/{portfolio_id}", response_model=List[DailyPnL])
+@router.get("/pnl/daily/{portfolio_id}", response_model=list[DailyPnL])
 async def get_daily_pnl(
     portfolio_id: UUID,
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None)
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None)
 ):
     """Get daily P&L history"""
-    pnl = await position_service.get_daily_pnl(portfolio_id, start_date, end_date)
-    return pnl
+    return await position_service.get_daily_pnl(portfolio_id, start_date, end_date)
 
 
 @router.get("/pnl/daily/{portfolio_id}/date/{pnl_date}", response_model=DailyPnL)
@@ -158,30 +161,27 @@ async def get_pnl_by_date(portfolio_id: UUID, pnl_date: date):
 @router.post("/pnl/attribution", response_model=PnLAttribution)
 async def create_attribution(request: PnLAttributionRequest):
     """Create P&L attribution"""
-    attribution = await position_service.create_attribution(
+    return await position_service.create_attribution(
         portfolio_id=request.portfolio_id,
         attribution_date=request.attribution_date,
         attribution_type=request.attribution_type,
         components=request.components
     )
-    return attribution
 
 
-@router.get("/pnl/attribution/{portfolio_id}", response_model=List[PnLAttribution])
+@router.get("/pnl/attribution/{portfolio_id}", response_model=list[PnLAttribution])
 async def get_attributions(portfolio_id: UUID):
     """Get P&L attributions for portfolio"""
-    attributions = await position_service.get_attributions(portfolio_id)
-    return attributions
+    return await position_service.get_attributions(portfolio_id)
 
 
 @router.post("/valuation", response_model=PortfolioValuation)
 async def create_valuation(request: ValuationRequest):
     """Create portfolio valuation"""
-    valuation = await position_service.create_valuation(
+    return await position_service.create_valuation(
         portfolio_id=request.portfolio_id,
         valuation_date=request.valuation_date
     )
-    return valuation
 
 
 @router.get("/valuation/{portfolio_id}", response_model=PortfolioValuation)
@@ -193,24 +193,22 @@ async def get_valuation(portfolio_id: UUID):
     return valuation
 
 
-@router.get("/valuation/{portfolio_id}/history", response_model=List[PortfolioValuation])
+@router.get("/valuation/{portfolio_id}/history", response_model=list[PortfolioValuation])
 async def get_valuation_history(portfolio_id: UUID):
     """Get portfolio valuation history"""
-    valuations = await position_service.get_valuation_history(portfolio_id)
-    return valuations
+    return await position_service.get_valuation_history(portfolio_id)
 
 
 @router.post("/books", response_model=TradingBook)
 async def create_book(request: TradingBookRequest):
     """Create trading book"""
-    book = await position_service.create_book(
+    return await position_service.create_book(
         book_code=request.book_code,
         book_name=request.book_name,
         book_type=request.book_type,
         trader_id=request.trader_id,
         desk_id=request.desk_id
     )
-    return book
 
 
 @router.get("/books/{book_code}", response_model=TradingBook)
@@ -222,25 +220,22 @@ async def get_book(book_code: str):
     return book
 
 
-@router.get("/books", response_model=List[TradingBook])
+@router.get("/books", response_model=list[TradingBook])
 async def list_books():
     """List all trading books"""
-    books = await position_service.list_books()
-    return books
+    return await position_service.list_books()
 
 
 @router.get("/asset-class-summary/{portfolio_id}")
 async def get_asset_class_summary(portfolio_id: UUID):
     """Get position summary by asset class"""
-    summary = await position_service.get_asset_class_summary(portfolio_id)
-    return summary
+    return await position_service.get_asset_class_summary(portfolio_id)
 
 
 @router.get("/book-summary/{book_id}")
 async def get_book_summary(book_id: str):
     """Get position summary for trading book"""
-    summary = await position_service.get_book_summary(book_id)
-    return summary
+    return await position_service.get_book_summary(book_id)
 
 
 @router.get("/statistics")

@@ -1,21 +1,26 @@
 """FX Risk Service - Foreign exchange risk management service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
 from uuid import UUID
+
 from ..models.fx_risk_models import (
-    FXPosition, FXExposure, FXRate, FXVolatilitySurface,
-    FXScenario, FXRiskStatistics, FXPositionType
+    FXExposure,
+    FXPosition,
+    FXPositionType,
+    FXRate,
+    FXRiskStatistics,
+    FXScenario,
+    FXVolatilitySurface,
 )
 
 
 class FXRiskService:
     def __init__(self):
-        self._positions: Dict[UUID, FXPosition] = {}
-        self._exposures: Dict[UUID, FXExposure] = {}
-        self._rates: Dict[UUID, FXRate] = {}
-        self._vol_surfaces: Dict[UUID, FXVolatilitySurface] = {}
-        self._scenarios: Dict[UUID, FXScenario] = {}
+        self._positions: dict[UUID, FXPosition] = {}
+        self._exposures: dict[UUID, FXExposure] = {}
+        self._rates: dict[UUID, FXRate] = {}
+        self._vol_surfaces: dict[UUID, FXVolatilitySurface] = {}
+        self._scenarios: dict[UUID, FXScenario] = {}
 
     async def create_position(
         self, position_type: FXPositionType, currency_pair: str,
@@ -38,7 +43,7 @@ class FXRiskService:
         self._positions[position.position_id] = position
         return position
 
-    async def get_position(self, position_id: UUID) -> Optional[FXPosition]:
+    async def get_position(self, position_id: UUID) -> FXPosition | None:
         return self._positions.get(position_id)
 
     async def calculate_exposure(self, currency: str) -> FXExposure:
@@ -80,7 +85,7 @@ class FXRiskService:
             mid_rate=(bid_rate + ask_rate) / 2,
             volatility=0.1,
             rate_date=date.today(),
-            rate_time=datetime.utcnow(),
+            rate_time=datetime.now(UTC),
             source=source
         )
         self._rates[rate.rate_id] = rate
@@ -96,10 +101,10 @@ class FXRiskService:
         return rate
 
     async def create_vol_surface(
-        self, currency_pair: str, tenors: List[str],
-        deltas: List[float], volatilities: List[List[float]]
+        self, currency_pair: str, tenors: list[str],
+        deltas: list[float], volatilities: list[list[float]]
     ) -> FXVolatilitySurface:
-        atm_vols = {t: vols[len(vols) // 2] for t, vols in zip(tenors, volatilities)}
+        atm_vols = {t: vols[len(vols) // 2] for t, vols in zip(tenors, volatilities, strict=False)}
 
         surface = FXVolatilitySurface(
             currency_pair=currency_pair,
@@ -114,7 +119,7 @@ class FXRiskService:
 
     async def run_scenario(
         self, scenario_name: str, scenario_type: str,
-        rate_shocks: Dict[str, float], vol_shocks: Dict[str, float]
+        rate_shocks: dict[str, float], vol_shocks: dict[str, float]
     ) -> FXScenario:
         pnl_impact = 0
         for position in self._positions.values():
@@ -135,7 +140,7 @@ class FXRiskService:
         self._scenarios[scenario.scenario_id] = scenario
         return scenario
 
-    async def get_portfolio_positions(self, portfolio_id: UUID) -> List[FXPosition]:
+    async def get_portfolio_positions(self, portfolio_id: UUID) -> list[FXPosition]:
         return [p for p in self._positions.values() if p.portfolio_id == portfolio_id]
 
     async def get_statistics(self) -> FXRiskStatistics:

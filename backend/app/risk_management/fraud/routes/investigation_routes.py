@@ -1,18 +1,19 @@
 """Investigation Routes - API endpoints for fraud investigation management"""
 
-from typing import Optional, List
-from datetime import datetime
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..models.fraud_investigation_models import (
-    FraudInvestigation, DisputeRecord, InvestigationTemplate,
-    InvestigationStatus, InvestigationType, InvestigationOutcome,
-    CustomerContact
+    CustomerContact,
+    DisputeRecord,
+    FraudInvestigation,
+    InvestigationOutcome,
+    InvestigationStatus,
+    InvestigationType,
 )
 from ..services.investigation_service import investigation_service
-
 
 router = APIRouter(prefix="/fraud/investigations", tags=["Fraud Investigations"])
 
@@ -69,14 +70,13 @@ class CreateDisputeRequest(BaseModel):
 @router.post("/", response_model=FraudInvestigation)
 async def create_investigation(request: CreateInvestigationRequest):
     """Create a new fraud investigation"""
-    investigation = await investigation_service.create_investigation(
+    return await investigation_service.create_investigation(
         case_id=request.case_id,
         customer_id=request.customer_id,
         customer_name=request.customer_name,
         disputed_amount=request.disputed_amount,
         investigation_type=request.investigation_type
     )
-    return investigation
 
 
 @router.get("/{investigation_id}", response_model=FraudInvestigation)
@@ -164,11 +164,11 @@ async def process_refund(investigation_id: UUID, request: ProcessRefundRequest):
     return investigation
 
 
-@router.get("/", response_model=List[FraudInvestigation])
+@router.get("/", response_model=list[FraudInvestigation])
 async def list_investigations(
-    status: Optional[InvestigationStatus] = None,
-    investigation_type: Optional[InvestigationType] = None,
-    customer_id: Optional[str] = None,
+    status: InvestigationStatus | None = None,
+    investigation_type: InvestigationType | None = None,
+    customer_id: str | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):
@@ -201,7 +201,7 @@ async def get_customer_investigations(
 @router.post("/disputes", response_model=DisputeRecord)
 async def create_dispute(request: CreateDisputeRequest):
     """Create a dispute record"""
-    dispute = await investigation_service.create_dispute(
+    return await investigation_service.create_dispute(
         investigation_id=request.investigation_id,
         customer_id=request.customer_id,
         account_id=request.account_id,
@@ -210,7 +210,6 @@ async def create_dispute(request: CreateDisputeRequest):
         reason=request.reason,
         statement=request.statement
     )
-    return dispute
 
 
 @router.get("/disputes/{dispute_id}", response_model=DisputeRecord)
@@ -222,8 +221,8 @@ async def get_dispute(dispute_id: UUID):
 
 @router.get("/disputes")
 async def list_disputes(
-    customer_id: Optional[str] = None,
-    status: Optional[str] = None,
+    customer_id: str | None = None,
+    status: str | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List disputes"""

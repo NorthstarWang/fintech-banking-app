@@ -6,7 +6,7 @@ and incident tracking capabilities.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 from app.security.security_responses import SecurityResponses, SecurityIncident, AccountLockout
@@ -218,7 +218,7 @@ class TestAccountLockout:
 
         assert lockout.unlock_at is not None
         # Unlock time should be in the future
-        assert lockout.unlock_at > datetime.utcnow()
+        assert lockout.unlock_at > datetime.now(timezone.utc)
 
     def test_is_account_locked(self, db_session):
         """Test checking if account is locked."""
@@ -248,7 +248,7 @@ class TestAccountLockout:
         ).first()
 
         # Set unlock time to past
-        lockout.unlock_at = datetime.utcnow() - timedelta(minutes=1)
+        lockout.unlock_at = datetime.now(timezone.utc) - timedelta(minutes=1)
         db_session.commit()
 
         # Should be automatically unlocked
@@ -413,7 +413,7 @@ class TestIncidentModels:
         """Test AccountLockout SQLAlchemy model."""
         lockout = AccountLockout(
             user_id=25,
-            unlock_at=datetime.utcnow() + timedelta(minutes=15),
+            unlock_at=datetime.now(timezone.utc) + timedelta(minutes=15),
             reason="test_lockout",
             auto_lockout=True,
         )

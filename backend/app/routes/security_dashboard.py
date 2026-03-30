@@ -3,7 +3,7 @@ Security operations dashboard endpoints.
 
 Provides real-time monitoring of authentication, transactions, and API security.
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -32,13 +32,13 @@ async def get_auth_monitoring(
     """Get authentication monitoring data."""
     # Get recent login attempts
     recent_logins = db.query(LoginAttempt).filter(
-        LoginAttempt.timestamp > datetime.utcnow() - timedelta(hours=1)
+        LoginAttempt.timestamp > datetime.now(UTC) - timedelta(hours=1)
     ).order_by(LoginAttempt.timestamp.desc()).limit(50).all()
 
     # Get failed login attempts grouped by user
     failed_attempts = db.query(LoginAttempt).filter(
         LoginAttempt.success == 0,
-        LoginAttempt.timestamp > datetime.utcnow() - timedelta(hours=4),
+        LoginAttempt.timestamp > datetime.now(UTC) - timedelta(hours=4),
     ).all()
 
     # Group failed attempts by user
@@ -81,18 +81,18 @@ async def get_transaction_security(
     # Get high-risk transactions
     high_risk = db.query(TransactionAnomaly).filter(
         TransactionAnomaly.risk_score > 0.6,
-        TransactionAnomaly.timestamp > datetime.utcnow() - timedelta(hours=24),
+        TransactionAnomaly.timestamp > datetime.now(UTC) - timedelta(hours=24),
     ).order_by(TransactionAnomaly.risk_score.desc()).limit(20).all()
 
     # Get flagged transactions
     flagged = db.query(TransactionAnomaly).filter(
         TransactionAnomaly.flagged == 1,
-        TransactionAnomaly.timestamp > datetime.utcnow() - timedelta(hours=24),
+        TransactionAnomaly.timestamp > datetime.now(UTC) - timedelta(hours=24),
     ).all()
 
     # Calculate statistics
     total_analyzed = db.query(TransactionAnomaly).filter(
-        TransactionAnomaly.timestamp > datetime.utcnow() - timedelta(hours=24),
+        TransactionAnomaly.timestamp > datetime.now(UTC) - timedelta(hours=24),
     ).count()
 
     return {

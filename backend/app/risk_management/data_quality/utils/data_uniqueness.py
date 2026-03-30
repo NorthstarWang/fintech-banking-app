@@ -1,10 +1,10 @@
 """Data Uniqueness Analysis Utilities"""
 
-from typing import List, Dict, Any, Optional, Set, Tuple
-from decimal import Decimal
-from datetime import datetime
-from dataclasses import dataclass
 from collections import Counter
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 
@@ -13,7 +13,7 @@ class DuplicateGroup:
     group_id: str
     key_value: str
     duplicate_count: int
-    record_ids: List[str]
+    record_ids: list[str]
     first_occurrence_id: str
 
 
@@ -26,33 +26,33 @@ class UniquenessCheckResult:
     duplicate_records: int
     uniqueness_rate: Decimal
     distinct_values: int
-    duplicate_groups: List[DuplicateGroup]
+    duplicate_groups: list[DuplicateGroup]
     checked_at: datetime
 
 
 @dataclass
 class CompositeUniquenessResult:
     check_id: str
-    key_fields: List[str]
+    key_fields: list[str]
     total_records: int
     unique_combinations: int
     duplicate_combinations: int
     uniqueness_rate: Decimal
-    duplicate_groups: List[DuplicateGroup]
+    duplicate_groups: list[DuplicateGroup]
     checked_at: datetime
 
 
 class DataUniquenessUtilities:
     def __init__(self):
-        self._unique_constraints: Dict[str, List[str]] = {}
+        self._unique_constraints: dict[str, list[str]] = {}
 
     def check_field_uniqueness(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
         id_field: str = "id",
     ) -> UniquenessCheckResult:
-        value_records: Dict[str, List[str]] = {}
+        value_records: dict[str, list[str]] = {}
 
         for i, record in enumerate(data):
             record_id = str(record.get(id_field, i))
@@ -96,16 +96,16 @@ class DataUniquenessUtilities:
             uniqueness_rate=uniqueness_rate,
             distinct_values=len(value_records),
             duplicate_groups=duplicate_groups,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(UTC),
         )
 
     def check_composite_uniqueness(
         self,
-        data: List[Dict[str, Any]],
-        key_fields: List[str],
+        data: list[dict[str, Any]],
+        key_fields: list[str],
         id_field: str = "id",
     ) -> CompositeUniquenessResult:
-        key_records: Dict[tuple, List[str]] = {}
+        key_records: dict[tuple, list[str]] = {}
 
         for i, record in enumerate(data):
             record_id = str(record.get(id_field, i))
@@ -147,16 +147,16 @@ class DataUniquenessUtilities:
             duplicate_combinations=duplicate_combinations,
             uniqueness_rate=uniqueness_rate,
             duplicate_groups=duplicate_groups,
-            checked_at=datetime.utcnow(),
+            checked_at=datetime.now(UTC),
         )
 
     def find_near_duplicates(
         self,
-        data: List[Dict[str, Any]],
-        compare_fields: List[str],
+        data: list[dict[str, Any]],
+        compare_fields: list[str],
         similarity_threshold: Decimal = Decimal("0.9"),
         id_field: str = "id",
-    ) -> List[Tuple[str, str, Decimal]]:
+    ) -> list[tuple[str, str, Decimal]]:
         near_duplicates = []
 
         for i in range(len(data)):
@@ -177,9 +177,9 @@ class DataUniquenessUtilities:
 
     def _calculate_record_similarity(
         self,
-        record1: Dict[str, Any],
-        record2: Dict[str, Any],
-        fields: List[str],
+        record1: dict[str, Any],
+        record2: dict[str, Any],
+        fields: list[str],
     ) -> Decimal:
         if not fields:
             return Decimal("0")
@@ -220,10 +220,10 @@ class DataUniquenessUtilities:
 
     def get_value_frequency(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         field_name: str,
         top_n: int = 10,
-    ) -> List[Tuple[Any, int, Decimal]]:
+    ) -> list[tuple[Any, int, Decimal]]:
         values = [record.get(field_name) for record in data]
         counter = Counter(values)
         total = len(values)
@@ -238,22 +238,22 @@ class DataUniquenessUtilities:
     def register_unique_constraint(
         self,
         constraint_name: str,
-        fields: List[str],
+        fields: list[str],
     ) -> None:
         self._unique_constraints[constraint_name] = fields
 
     def validate_unique_constraints(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         id_field: str = "id",
-    ) -> Dict[str, CompositeUniquenessResult]:
+    ) -> dict[str, CompositeUniquenessResult]:
         results = {}
         for constraint_name, fields in self._unique_constraints.items():
             result = self.check_composite_uniqueness(data, fields, id_field)
             results[constraint_name] = result
         return results
 
-    def get_constraints(self) -> Dict[str, List[str]]:
+    def get_constraints(self) -> dict[str, list[str]]:
         return self._unique_constraints.copy()
 
 

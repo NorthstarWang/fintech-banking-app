@@ -1,13 +1,21 @@
 """Consumer Protection Service - Business logic for consumer protection compliance"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
-from uuid import UUID
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.consumer_protection_models import (
-    ConsumerComplaint, FairLendingAnalysis, TILADisclosure, RESPADisclosure,
-    UDAPReview, ServicememberProtection, ConsumerProtectionReport,
-    ComplaintCategory, ComplaintStatus, FairLendingProtectedClass
+    ComplaintCategory,
+    ComplaintStatus,
+    ConsumerComplaint,
+    ConsumerProtectionReport,
+    FairLendingAnalysis,
+    FairLendingProtectedClass,
+    RESPADisclosure,
+    ServicememberProtection,
+    TILADisclosure,
+    UDAPReview,
 )
 from ..repositories.consumer_protection_repository import consumer_protection_repository
 
@@ -20,8 +28,8 @@ class ConsumerProtectionService:
     async def create_complaint(
         self, customer_id: str, customer_name: str, contact_method: str,
         category: ComplaintCategory, product_type: str, description: str,
-        amount_disputed: Optional[Decimal] = None, regulatory_complaint: bool = False,
-        regulator_reference: Optional[str] = None
+        amount_disputed: Decimal | None = None, regulatory_complaint: bool = False,
+        regulator_reference: str | None = None
     ) -> ConsumerComplaint:
         self._complaint_counter += 1
         sla_days = 30 if regulatory_complaint else 15
@@ -29,7 +37,7 @@ class ConsumerProtectionService:
         complaint = ConsumerComplaint(
             complaint_reference=f"CMP-{date.today().strftime('%Y%m')}-{self._complaint_counter:05d}",
             customer_id=customer_id, customer_name=customer_name, contact_method=contact_method,
-            received_date=datetime.utcnow(), category=category, product_type=product_type,
+            received_date=datetime.now(UTC), category=category, product_type=product_type,
             description=description, amount_disputed=amount_disputed,
             sla_due_date=date.today() + timedelta(days=sla_days),
             regulatory_complaint=regulatory_complaint, regulator_reference=regulator_reference,
@@ -39,14 +47,14 @@ class ConsumerProtectionService:
         return complaint
 
     async def resolve_complaint(
-        self, complaint_id: UUID, resolution: str, resolution_amount: Optional[Decimal],
+        self, complaint_id: UUID, resolution: str, resolution_amount: Decimal | None,
         root_cause: str, systemic_issue: bool = False
-    ) -> Optional[ConsumerComplaint]:
+    ) -> ConsumerComplaint | None:
         complaint = await self.repository.find_complaint_by_id(complaint_id)
         if complaint:
             complaint.resolution = resolution
             complaint.resolution_amount = resolution_amount
-            complaint.resolution_date = datetime.utcnow()
+            complaint.resolution_date = datetime.now(UTC)
             complaint.root_cause = root_cause
             complaint.systemic_issue = systemic_issue
             complaint.status = ComplaintStatus.RESOLVED
@@ -111,7 +119,7 @@ class ConsumerProtectionService:
     async def perform_udap_review(
         self, product_service: str, review_type: str, reviewer: str,
         unfair_assessment: str, deceptive_assessment: str, abusive_assessment: str,
-        issues_identified: List[Dict[str, Any]], recommendations: List[str]
+        issues_identified: list[dict[str, Any]], recommendations: list[str]
     ) -> UDAPReview:
         risk_rating = "high" if issues_identified else "low"
 
@@ -127,8 +135,8 @@ class ConsumerProtectionService:
 
     async def register_servicemember(
         self, customer_id: str, account_id: str, military_status: str,
-        verification_method: str, protections_applied: List[str],
-        interest_rate_reduction: Optional[Decimal] = None
+        verification_method: str, protections_applied: list[str],
+        interest_rate_reduction: Decimal | None = None
     ) -> ServicememberProtection:
         protection = ServicememberProtection(
             customer_id=customer_id, account_id=account_id, military_status=military_status,
@@ -173,7 +181,7 @@ class ConsumerProtectionService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

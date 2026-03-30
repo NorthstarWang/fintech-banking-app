@@ -1,11 +1,12 @@
 """Loss Event Models - Data models for operational loss tracking"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class LossEventType(str, Enum):
@@ -52,16 +53,16 @@ class LossEvent(BaseModel):
     recoveries: Decimal = Decimal("0")
     net_loss: Decimal = Decimal("0")
     near_miss: bool = False
-    near_miss_amount: Optional[Decimal] = None
-    related_incident_id: Optional[UUID] = None
-    root_cause: Optional[str] = None
+    near_miss_amount: Decimal | None = None
+    related_incident_id: UUID | None = None
+    root_cause: str | None = None
     reported_by: str
-    reported_date: datetime = Field(default_factory=datetime.utcnow)
-    validated_by: Optional[str] = None
-    validation_date: Optional[datetime] = None
-    approved_by: Optional[str] = None
-    approval_date: Optional[datetime] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    reported_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    validated_by: str | None = None
+    validation_date: datetime | None = None
+    approved_by: str | None = None
+    approval_date: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class LossRecovery(BaseModel):
@@ -70,12 +71,12 @@ class LossRecovery(BaseModel):
     recovery_type: RecoveryType
     recovery_amount: Decimal
     recovery_date: date
-    expected_date: Optional[date] = None
+    expected_date: date | None = None
     source: str
-    reference_number: Optional[str] = None
+    reference_number: str | None = None
     status: str = "pending"
-    received_date: Optional[date] = None
-    notes: Optional[str] = None
+    received_date: date | None = None
+    notes: str | None = None
 
 
 class LossProvision(BaseModel):
@@ -84,11 +85,11 @@ class LossProvision(BaseModel):
     provision_type: str
     provision_amount: Decimal
     provision_date: date
-    release_date: Optional[date] = None
-    release_amount: Optional[Decimal] = None
+    release_date: date | None = None
+    release_amount: Decimal | None = None
     status: str = "active"
     approved_by: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class LossEventCausality(BaseModel):
@@ -99,7 +100,7 @@ class LossEventCausality(BaseModel):
     cause_description: str
     contributing_factor: bool = False
     control_failure: bool = False
-    failed_control_id: Optional[UUID] = None
+    failed_control_id: UUID | None = None
 
 
 class LossDistribution(BaseModel):
@@ -129,7 +130,7 @@ class OperationalLossCapital(BaseModel):
     economic_capital: Decimal
     confidence_level: Decimal
     time_horizon: int
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class LossEventReport(BaseModel):
@@ -139,14 +140,14 @@ class LossEventReport(BaseModel):
     period_start: date
     period_end: date
     total_events: int
-    events_by_type: Dict[str, int]
-    events_by_status: Dict[str, int]
+    events_by_type: dict[str, int]
+    events_by_status: dict[str, int]
     total_gross_loss: Decimal
     total_recoveries: Decimal
     total_net_loss: Decimal
     total_near_misses: int
     near_miss_amount: Decimal
     average_loss: Decimal
-    largest_loss_event: Dict[str, Any]
-    business_line_breakdown: Dict[str, Decimal]
+    largest_loss_event: dict[str, Any]
+    business_line_breakdown: dict[str, Decimal]
     generated_by: str

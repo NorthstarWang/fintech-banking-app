@@ -1,7 +1,7 @@
 """
 Service for automatic goal updates based on account transactions.
 """
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from ..models import Account, Goal, GoalContribution
@@ -102,7 +102,7 @@ class GoalUpdateService:
                 contribution = GoalContribution(
                     goal_id=goal_data.get('id'),
                     amount=contribution_amount,
-                    contribution_date=trans_data.get('transaction_date') or datetime.utcnow(),
+                    contribution_date=trans_data.get('transaction_date') or datetime.now(UTC),
                     notes=f"Automatic contribution from {trans_data.get('description') or 'deposit'}",
                     is_automatic=True,
                     source_transaction_id=trans_data.get('id')
@@ -114,11 +114,11 @@ class GoalUpdateService:
                 # Check if goal is completed
                 if goal_data['current_amount'] >= target:
                     goal_data['status'] = 'completed'
-                    goal_data['completed_at'] = datetime.utcnow()
+                    goal_data['completed_at'] = datetime.now(UTC)
 
                     # Log goal completion
 
-                goal_data['updated_at'] = datetime.utcnow()
+                goal_data['updated_at'] = datetime.now(UTC)
 
                 db_session.add(contribution)
                 contributions_created.append(contribution)

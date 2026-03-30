@@ -1,11 +1,12 @@
 """Issue Management API Routes"""
 
-from typing import List, Optional
 from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.issue_management_models import IssueSource, IssuePriority, IssueStatus
+
+from ..models.issue_management_models import IssuePriority, IssueSource, IssueStatus
 from ..services.issue_management_service import issue_management_service
 
 router = APIRouter(prefix="/issues", tags=["Issue Management"])
@@ -30,7 +31,7 @@ class ActionPlanRequest(BaseModel):
     action_type: str
     owner: str
     due_date: date
-    evidence_required: List[str]
+    evidence_required: list[str]
 
 
 class IssueUpdateRequest(BaseModel):
@@ -39,15 +40,15 @@ class IssueUpdateRequest(BaseModel):
     update_type: str
     progress_update: str
     next_steps: str
-    blockers: List[str] = []
+    blockers: list[str] = []
 
 
 class ValidationRequest(BaseModel):
     issue_id: UUID
     validator: str
     validation_type: str
-    evidence_reviewed: List[str]
-    tests_performed: List[str]
+    evidence_reviewed: list[str]
+    tests_performed: list[str]
     validation_result: str
     findings: str
     recommendation: str
@@ -73,11 +74,11 @@ async def create_issue(request: IssueCreateRequest):
     return {"issue_id": str(issue.issue_id), "issue_reference": issue.issue_reference}
 
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=list[dict])
 async def list_issues(
-    status: Optional[IssueStatus] = None,
+    status: IssueStatus | None = None,
     open_only: bool = False,
-    owner: Optional[str] = None
+    owner: str | None = None
 ):
     if status:
         issues = await issue_management_service.repository.find_issues_by_status(status)
@@ -117,7 +118,7 @@ async def create_action_plan(request: ActionPlanRequest):
     return {"action_id": str(action.action_id), "action_reference": action.action_reference}
 
 
-@router.get("/{issue_id}/action-plans", response_model=List[dict])
+@router.get("/{issue_id}/action-plans", response_model=list[dict])
 async def get_issue_action_plans(issue_id: UUID):
     actions = await issue_management_service.repository.find_action_plans_by_issue(issue_id)
     return [{"action_id": str(a.action_id), "action_reference": a.action_reference, "status": a.status, "progress_percentage": a.progress_percentage} for a in actions]
@@ -127,7 +128,7 @@ async def get_issue_action_plans(issue_id: UUID):
 async def update_action_progress(
     action_id: UUID,
     progress_percentage: int = Query(...),
-    evidence_provided: List[str] = Query(default=[]),
+    evidence_provided: list[str] = Query(default=[]),
     comments: str = Query(default="")
 ):
     action = await issue_management_service.update_action_progress(

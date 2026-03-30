@@ -1,86 +1,92 @@
 """Issue Management Repository - Data access for issue tracking"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from ..models.issue_management_models import (
-    Issue, ActionPlan, IssueUpdate, IssueValidation, IssueEscalation, IssueReport,
-    IssueStatus
+    ActionPlan,
+    Issue,
+    IssueEscalation,
+    IssueReport,
+    IssueStatus,
+    IssueUpdate,
+    IssueValidation,
 )
 
 
 class IssueManagementRepository:
     def __init__(self):
-        self._issues: Dict[UUID, Issue] = {}
-        self._action_plans: Dict[UUID, ActionPlan] = {}
-        self._updates: Dict[UUID, IssueUpdate] = {}
-        self._validations: Dict[UUID, IssueValidation] = {}
-        self._escalations: Dict[UUID, IssueEscalation] = {}
-        self._reports: Dict[UUID, IssueReport] = {}
+        self._issues: dict[UUID, Issue] = {}
+        self._action_plans: dict[UUID, ActionPlan] = {}
+        self._updates: dict[UUID, IssueUpdate] = {}
+        self._validations: dict[UUID, IssueValidation] = {}
+        self._escalations: dict[UUID, IssueEscalation] = {}
+        self._reports: dict[UUID, IssueReport] = {}
 
     async def save_issue(self, issue: Issue) -> None:
         self._issues[issue.issue_id] = issue
 
-    async def find_issue_by_id(self, issue_id: UUID) -> Optional[Issue]:
+    async def find_issue_by_id(self, issue_id: UUID) -> Issue | None:
         return self._issues.get(issue_id)
 
-    async def find_all_issues(self) -> List[Issue]:
+    async def find_all_issues(self) -> list[Issue]:
         return list(self._issues.values())
 
-    async def find_open_issues(self) -> List[Issue]:
+    async def find_open_issues(self) -> list[Issue]:
         return [i for i in self._issues.values() if i.status in [IssueStatus.OPEN, IssueStatus.IN_PROGRESS]]
 
-    async def find_issues_by_status(self, status: IssueStatus) -> List[Issue]:
+    async def find_issues_by_status(self, status: IssueStatus) -> list[Issue]:
         return [i for i in self._issues.values() if i.status == status]
 
-    async def find_issues_by_owner(self, owner: str) -> List[Issue]:
+    async def find_issues_by_owner(self, owner: str) -> list[Issue]:
         return [i for i in self._issues.values() if i.owner == owner]
 
-    async def find_overdue_issues(self) -> List[Issue]:
+    async def find_overdue_issues(self) -> list[Issue]:
         return [i for i in self._issues.values() if i.status == IssueStatus.OVERDUE]
 
     async def save_action_plan(self, action: ActionPlan) -> None:
         self._action_plans[action.action_id] = action
 
-    async def find_action_plan_by_id(self, action_id: UUID) -> Optional[ActionPlan]:
+    async def find_action_plan_by_id(self, action_id: UUID) -> ActionPlan | None:
         return self._action_plans.get(action_id)
 
-    async def find_action_plans_by_issue(self, issue_id: UUID) -> List[ActionPlan]:
+    async def find_action_plans_by_issue(self, issue_id: UUID) -> list[ActionPlan]:
         return [a for a in self._action_plans.values() if a.issue_id == issue_id]
 
     async def save_update(self, update: IssueUpdate) -> None:
         self._updates[update.update_id] = update
 
-    async def find_updates_by_issue(self, issue_id: UUID) -> List[IssueUpdate]:
+    async def find_updates_by_issue(self, issue_id: UUID) -> list[IssueUpdate]:
         return [u for u in self._updates.values() if u.issue_id == issue_id]
 
     async def save_validation(self, validation: IssueValidation) -> None:
         self._validations[validation.validation_id] = validation
 
-    async def find_validation_by_id(self, validation_id: UUID) -> Optional[IssueValidation]:
+    async def find_validation_by_id(self, validation_id: UUID) -> IssueValidation | None:
         return self._validations.get(validation_id)
 
-    async def find_validations_by_issue(self, issue_id: UUID) -> List[IssueValidation]:
+    async def find_validations_by_issue(self, issue_id: UUID) -> list[IssueValidation]:
         return [v for v in self._validations.values() if v.issue_id == issue_id]
 
     async def save_escalation(self, escalation: IssueEscalation) -> None:
         self._escalations[escalation.escalation_id] = escalation
 
-    async def find_escalation_by_id(self, escalation_id: UUID) -> Optional[IssueEscalation]:
+    async def find_escalation_by_id(self, escalation_id: UUID) -> IssueEscalation | None:
         return self._escalations.get(escalation_id)
 
-    async def find_escalations_by_issue(self, issue_id: UUID) -> List[IssueEscalation]:
+    async def find_escalations_by_issue(self, issue_id: UUID) -> list[IssueEscalation]:
         return [e for e in self._escalations.values() if e.issue_id == issue_id]
 
     async def save_report(self, report: IssueReport) -> None:
         self._reports[report.report_id] = report
 
-    async def find_report_by_id(self, report_id: UUID) -> Optional[IssueReport]:
+    async def find_report_by_id(self, report_id: UUID) -> IssueReport | None:
         return self._reports.get(report_id)
 
-    async def find_all_reports(self) -> List[IssueReport]:
+    async def find_all_reports(self) -> list[IssueReport]:
         return list(self._reports.values())
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return {
             "total_issues": len(self._issues),
             "open_issues": len([i for i in self._issues.values() if i.status in [IssueStatus.OPEN, IssueStatus.IN_PROGRESS]]),

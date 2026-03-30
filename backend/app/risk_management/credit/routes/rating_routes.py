@@ -1,13 +1,16 @@
 """Rating Routes - API endpoints for credit rating management"""
 
-from typing import Optional, List
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..models.rating_models import (
-    CreditRating, RatingMigration, RatingReview, RatingOverride,
-    RatingType, RatingOutlook
+    CreditRating,
+    RatingOutlook,
+    RatingOverride,
+    RatingReview,
+    RatingType,
 )
 from ..services.rating_service import rating_service
 
@@ -45,11 +48,10 @@ class ApplyOverrideRequest(BaseModel):
 @router.post("/", response_model=CreditRating)
 async def assign_rating(request: AssignRatingRequest):
     """Assign a credit rating"""
-    rating = await rating_service.assign_rating(
+    return await rating_service.assign_rating(
         request.entity_id, request.entity_name, request.entity_type,
         request.rating_grade, request.rating_rationale, request.rated_by
     )
-    return rating
 
 
 @router.get("/{rating_id}", response_model=CreditRating)
@@ -103,23 +105,23 @@ async def apply_override(rating_id: UUID, request: ApplyOverrideRequest):
     return override
 
 
-@router.get("/grade/{grade}", response_model=List[CreditRating])
+@router.get("/grade/{grade}", response_model=list[CreditRating])
 async def get_ratings_by_grade(grade: str):
     """Get all ratings with a specific grade"""
     return await rating_service.get_ratings_by_grade(grade)
 
 
 @router.get("/migrations")
-async def get_migrations(entity_id: Optional[str] = None):
+async def get_migrations(entity_id: str | None = None):
     """Get rating migrations"""
     return await rating_service.get_migrations(entity_id)
 
 
 @router.get("/")
 async def list_ratings(
-    rating_type: Optional[RatingType] = None,
-    outlook: Optional[RatingOutlook] = None,
-    grade: Optional[str] = None,
+    rating_type: RatingType | None = None,
+    outlook: RatingOutlook | None = None,
+    grade: str | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List ratings with optional filters"""

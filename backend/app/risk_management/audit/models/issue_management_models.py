@@ -1,10 +1,10 @@
 """Issue Management Models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
-from decimal import Decimal
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -53,10 +53,10 @@ class Issue(BaseModel):
     identified_by: str
     owner: str
     due_date: date
-    extended_due_date: Optional[date] = None
+    extended_due_date: date | None = None
     extension_count: int = 0
     status: IssueStatus = IssueStatus.OPEN
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    created_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ActionPlan(BaseModel):
@@ -67,13 +67,13 @@ class ActionPlan(BaseModel):
     action_type: str
     owner: str
     due_date: date
-    completion_date: Optional[date] = None
+    completion_date: date | None = None
     status: str = "open"
     progress_percentage: int = 0
-    evidence_required: List[str] = Field(default_factory=list)
-    evidence_provided: List[str] = Field(default_factory=list)
+    evidence_required: list[str] = Field(default_factory=list)
+    evidence_provided: list[str] = Field(default_factory=list)
     comments: str = ""
-    dependencies: List[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
 
 
 class IssueUpdate(BaseModel):
@@ -85,9 +85,9 @@ class IssueUpdate(BaseModel):
     previous_status: str = ""
     new_status: str = ""
     progress_update: str
-    blockers: List[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
     next_steps: str = ""
-    documents_attached: List[str] = Field(default_factory=list)
+    documents_attached: list[str] = Field(default_factory=list)
 
 
 class IssueValidation(BaseModel):
@@ -96,8 +96,8 @@ class IssueValidation(BaseModel):
     validation_date: date
     validator: str
     validation_type: str  # initial, follow_up, final
-    evidence_reviewed: List[str] = Field(default_factory=list)
-    tests_performed: List[str] = Field(default_factory=list)
+    evidence_reviewed: list[str] = Field(default_factory=list)
+    tests_performed: list[str] = Field(default_factory=list)
     validation_result: str  # validated, not_validated, partial
     findings: str = ""
     remaining_risk: str = ""
@@ -114,8 +114,8 @@ class IssueEscalation(BaseModel):
     escalated_to: str
     escalation_level: int
     response_required_by: date
-    response_received: Optional[str] = None
-    response_date: Optional[date] = None
+    response_received: str | None = None
+    response_date: date | None = None
     resolution: str = ""
     status: str = "pending"
 
@@ -126,13 +126,13 @@ class IssueReport(BaseModel):
     report_date: date
     prepared_by: str
     total_issues: int = 0
-    issues_by_source: Dict[str, int] = Field(default_factory=dict)
-    issues_by_priority: Dict[str, int] = Field(default_factory=dict)
-    issues_by_status: Dict[str, int] = Field(default_factory=dict)
+    issues_by_source: dict[str, int] = Field(default_factory=dict)
+    issues_by_priority: dict[str, int] = Field(default_factory=dict)
+    issues_by_status: dict[str, int] = Field(default_factory=dict)
     opened_this_period: int = 0
     closed_this_period: int = 0
     overdue_issues: int = 0
-    aging_analysis: Dict[str, int] = Field(default_factory=dict)
-    key_issues: List[Dict[str, Any]] = Field(default_factory=list)
-    trends: Dict[str, Any] = Field(default_factory=dict)
+    aging_analysis: dict[str, int] = Field(default_factory=dict)
+    key_issues: list[dict[str, Any]] = Field(default_factory=list)
+    trends: dict[str, Any] = Field(default_factory=dict)
     status: str = "draft"

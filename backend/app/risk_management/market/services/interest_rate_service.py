@@ -1,26 +1,30 @@
 """Interest Rate Service - Interest rate risk management service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
 from uuid import UUID
+
 from ..models.interest_rate_models import (
-    InterestRateCurve, DurationAnalysis, GapAnalysis,
-    RateShockScenario, InterestRateRisk, InterestRateStatistics,
-    CurveType
+    CurveType,
+    DurationAnalysis,
+    GapAnalysis,
+    InterestRateCurve,
+    InterestRateRisk,
+    InterestRateStatistics,
+    RateShockScenario,
 )
 
 
 class InterestRateService:
     def __init__(self):
-        self._curves: Dict[UUID, InterestRateCurve] = {}
-        self._duration_analyses: Dict[UUID, DurationAnalysis] = {}
-        self._gap_analyses: Dict[UUID, GapAnalysis] = {}
-        self._scenarios: Dict[UUID, RateShockScenario] = {}
-        self._risks: Dict[UUID, InterestRateRisk] = {}
+        self._curves: dict[UUID, InterestRateCurve] = {}
+        self._duration_analyses: dict[UUID, DurationAnalysis] = {}
+        self._gap_analyses: dict[UUID, GapAnalysis] = {}
+        self._scenarios: dict[UUID, RateShockScenario] = {}
+        self._risks: dict[UUID, InterestRateRisk] = {}
 
     async def create_curve(
         self, curve_name: str, curve_type: CurveType, currency: str,
-        tenors: List[str], rates: List[float], source: str
+        tenors: list[str], rates: list[float], source: str
     ) -> InterestRateCurve:
         curve = InterestRateCurve(
             curve_name=curve_name,
@@ -34,12 +38,12 @@ class InterestRateService:
         self._curves[curve.curve_id] = curve
         return curve
 
-    async def get_curve(self, curve_id: UUID) -> Optional[InterestRateCurve]:
+    async def get_curve(self, curve_id: UUID) -> InterestRateCurve | None:
         return self._curves.get(curve_id)
 
     async def calculate_duration(
         self, portfolio_id: UUID, portfolio_value: float,
-        cash_flows: List[Dict[str, float]], yield_rate: float
+        cash_flows: list[dict[str, float]], yield_rate: float
     ) -> DurationAnalysis:
         # Simplified duration calculation
         weighted_time = sum(
@@ -68,16 +72,16 @@ class InterestRateService:
         return analysis
 
     async def perform_gap_analysis(
-        self, time_buckets: List[str],
-        assets: List[float], liabilities: List[float]
+        self, time_buckets: list[str],
+        assets: list[float], liabilities: list[float]
     ) -> GapAnalysis:
-        gaps = [a - l for a, l in zip(assets, liabilities)]
+        gaps = [a - l for a, l in zip(assets, liabilities, strict=False)]
         cumulative = []
         running_total = 0
         for gap in gaps:
             running_total += gap
             cumulative.append(running_total)
-        ratios = [a / l if l > 0 else 0 for a, l in zip(assets, liabilities)]
+        ratios = [a / l if l > 0 else 0 for a, l in zip(assets, liabilities, strict=False)]
 
         analysis = GapAnalysis(
             analysis_date=date.today(),
@@ -94,12 +98,12 @@ class InterestRateService:
 
     async def create_shock_scenario(
         self, scenario_name: str, scenario_type: str,
-        base_curve_id: UUID, shock_amounts: Dict[str, float]
+        base_curve_id: UUID, shock_amounts: dict[str, float]
     ) -> RateShockScenario:
         base_curve = self._curves.get(base_curve_id)
         stressed_rates = {}
         if base_curve:
-            for tenor, rate in zip(base_curve.tenors, base_curve.rates):
+            for tenor, rate in zip(base_curve.tenors, base_curve.rates, strict=False):
                 shock = shock_amounts.get(tenor, shock_amounts.get("all", 0))
                 stressed_rates[tenor] = rate + shock
 

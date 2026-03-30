@@ -1,10 +1,11 @@
 """Policy Management API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
 from ..models.policy_models import PolicyCategory
 from ..services.policy_service import policy_service
 
@@ -32,7 +33,7 @@ class ExceptionRequest(BaseModel):
     description: str
     justification: str
     risk_assessment: str
-    compensating_controls: List[str]
+    compensating_controls: list[str]
     duration: str
     expiry_date: date
 
@@ -55,8 +56,8 @@ class ReviewRequest(BaseModel):
     current_relevance: str
     regulatory_alignment: str
     operational_effectiveness: str
-    gaps_identified: List[str]
-    recommendations: List[str]
+    gaps_identified: list[str]
+    recommendations: list[str]
     changes_required: bool
 
 
@@ -71,8 +72,8 @@ async def create_policy(request: PolicyCreateRequest):
     return {"policy_id": str(policy.policy_id), "policy_code": policy.policy_code}
 
 
-@router.get("/", response_model=List[dict])
-async def list_policies(active_only: bool = False, category: Optional[str] = None):
+@router.get("/", response_model=list[dict])
+async def list_policies(active_only: bool = False, category: str | None = None):
     if category:
         policies = await policy_service.repository.find_policies_by_category(category)
     elif active_only:
@@ -110,7 +111,7 @@ async def request_exception(request: ExceptionRequest):
     return {"exception_id": str(exception.exception_id), "exception_reference": exception.exception_reference}
 
 
-@router.get("/exceptions", response_model=List[dict])
+@router.get("/exceptions", response_model=list[dict])
 async def list_exceptions(active_only: bool = False):
     if active_only:
         exceptions = await policy_service.repository.find_active_exceptions()
@@ -138,7 +139,7 @@ async def record_attestation(request: AttestationRequest):
     return {"attestation_id": str(attestation.attestation_id)}
 
 
-@router.get("/{policy_id}/attestations", response_model=List[dict])
+@router.get("/{policy_id}/attestations", response_model=list[dict])
 async def get_policy_attestations(policy_id: UUID):
     attestations = await policy_service.repository.find_attestations_by_policy(policy_id)
     return [{"attestation_id": str(a.attestation_id), "employee_name": a.employee_name, "compliant": a.compliant} for a in attestations]

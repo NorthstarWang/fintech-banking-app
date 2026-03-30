@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -85,7 +85,7 @@ async def send_message(
         priority=message_data.priority,
         is_draft=message_data.is_draft,
         is_read=False,
-        sent_at=datetime.utcnow()
+        sent_at=datetime.now(UTC)
     )
 
     db_session.add(message)
@@ -116,7 +116,7 @@ async def send_message(
         db_session.commit()
 
     # Prepare response
-    response = DirectMessageResponse.from_orm(message)
+    response = DirectMessageResponse.from_orm_custom(message)
     response.sender_username = current_user['username']
     response.recipient_username = recipient.username
 
@@ -143,8 +143,8 @@ async def get_inbox(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.deleted_by_recipient == False,
-        DirectMessage.is_draft == False
+        DirectMessage.deleted_by_recipient == False,  # noqa: E712
+        DirectMessage.is_draft == False  # noqa: E712
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
 
     results = []
@@ -152,7 +152,7 @@ async def get_inbox(
         # Load sender manually
         sender = db_session.query(User).filter(User.id == msg.sender_id).first()
 
-        response = DirectMessageResponse.from_orm(msg)
+        response = DirectMessageResponse.from_orm_custom(msg)
         response.sender_username = sender.username if sender else None
         response.recipient_username = current_user['username']
 
@@ -179,8 +179,8 @@ async def get_sent_messages(
         joinedload(DirectMessage.attachments)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        DirectMessage.deleted_by_sender == False,
-        DirectMessage.is_draft == False
+        DirectMessage.deleted_by_sender == False,  # noqa: E712
+        DirectMessage.is_draft == False  # noqa: E712
     ).order_by(desc(DirectMessage.sent_at)).offset(offset).limit(limit).all()
 
     results = []
@@ -188,7 +188,7 @@ async def get_sent_messages(
         # Load recipient manually
         recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
 
-        response = DirectMessageResponse.from_orm(msg)
+        response = DirectMessageResponse.from_orm_custom(msg)
         response.sender_username = current_user['username']
         response.recipient_username = recipient.username if recipient else None
 
@@ -218,18 +218,18 @@ async def search_messages(
         or_(
             and_(
                 DirectMessage.sender_id == current_user['user_id'],
-                DirectMessage.deleted_by_sender == False
+                DirectMessage.deleted_by_sender == False  # noqa: E712
             ),
             and_(
                 DirectMessage.recipient_id == current_user['user_id'],
-                DirectMessage.deleted_by_recipient == False
+                DirectMessage.deleted_by_recipient == False  # noqa: E712
             )
         ),
         or_(
             DirectMessage.subject.ilike(search_pattern),
             DirectMessage.message.ilike(search_pattern)
         ),
-        DirectMessage.is_draft == False
+        DirectMessage.is_draft == False  # noqa: E712
     ).order_by(desc(DirectMessage.sent_at)).all()
 
     results = []
@@ -238,7 +238,7 @@ async def search_messages(
         sender = db_session.query(User).filter(User.id == msg.sender_id).first()
         recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
 
-        response = DirectMessageResponse.from_orm(msg)
+        response = DirectMessageResponse.from_orm_custom(msg)
         response.sender_username = sender.username if sender else None
         response.recipient_username = recipient.username if recipient else None
         results.append(response)
@@ -266,8 +266,8 @@ async def get_drafts(
         joinedload(DirectMessage.recipient)
     ).filter(
         DirectMessage.sender_id == current_user['user_id'],
-        DirectMessage.is_draft == True,
-        DirectMessage.deleted_by_sender == False
+        DirectMessage.is_draft == True,  # noqa: E712
+        DirectMessage.deleted_by_sender == False  # noqa: E712
     ).order_by(desc(DirectMessage.created_at)).all()
 
     results = []
@@ -275,7 +275,7 @@ async def get_drafts(
         # Load recipient manually
         recipient = db_session.query(User).filter(User.id == draft.recipient_id).first() if draft.recipient_id else None
 
-        response = DirectMessageResponse.from_orm(draft)
+        response = DirectMessageResponse.from_orm_custom(draft)
         response.sender_username = current_user['username']
         response.recipient_username = recipient.username if recipient else None
         results.append(response)
@@ -292,7 +292,7 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.is_read == False
+        DirectMessage.is_read == False  # noqa: E712
     ).first()
 
     if not message:
@@ -300,7 +300,7 @@ async def mark_message_read(
         return {"message": "No action needed"}
 
     message.is_read = True
-    message.read_at = datetime.utcnow()
+    message.read_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Message marked as read"}
@@ -315,10 +315,10 @@ async def bulk_mark_read(
     updated = db_session.query(DirectMessage).filter(
         DirectMessage.id.in_(bulk_data.message_ids),
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.is_read == False
+        DirectMessage.is_read == False  # noqa: E712
     ).update({
         'is_read': True,
-        'read_at': datetime.utcnow()
+        'read_at': datetime.now(UTC)
     }, synchronize_session=False)
 
     db_session.commit()
@@ -354,7 +354,7 @@ async def create_folder(
     db_session.commit()
     db_session.refresh(folder)
 
-    return MessageFolderResponse.from_orm(folder)
+    return MessageFolderResponse.model_validate(folder)
 
 @router.get("/settings", response_model=MessageSettingsResponse)
 async def get_message_settings(
@@ -379,7 +379,7 @@ async def get_message_settings(
         db_session.commit()
         db_session.refresh(settings)
 
-    return MessageSettingsResponse.from_orm(settings)
+    return MessageSettingsResponse.model_validate(settings)
 
 @router.put("/settings", response_model=MessageSettingsResponse)
 async def update_message_settings(
@@ -397,14 +397,14 @@ async def update_message_settings(
         db_session.add(settings)
 
     # Update only provided fields
-    update_data = settings_data.dict(exclude_unset=True)
+    update_data = settings_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(settings, field, value)
 
     db_session.commit()
     db_session.refresh(settings)
 
-    return MessageSettingsResponse.from_orm(settings)
+    return MessageSettingsResponse.model_validate(settings)
 
 @router.post("/block")
 async def block_user(
@@ -514,7 +514,7 @@ async def get_message_thread(
         sender = db_session.query(User).filter(User.id == msg.sender_id).first()
         recipient = db_session.query(User).filter(User.id == msg.recipient_id).first()
 
-        response = DirectMessageResponse.from_orm(msg)
+        response = DirectMessageResponse.from_orm_custom(msg)
         response.sender_username = sender.username if sender else None
         response.recipient_username = recipient.username if recipient else None
         results.append(response)
@@ -538,9 +538,9 @@ async def get_message(
         DirectMessage.id == message_id,
         or_(
             and_(DirectMessage.sender_id == current_user['user_id'],
-                 DirectMessage.deleted_by_sender == False),
+                 DirectMessage.deleted_by_sender == False),  # noqa: E712
             and_(DirectMessage.recipient_id == current_user['user_id'],
-                 DirectMessage.deleted_by_recipient == False)
+                 DirectMessage.deleted_by_recipient == False)  # noqa: E712
         )
     ).first()
 
@@ -554,7 +554,7 @@ async def get_message(
     sender = db_session.query(User).filter(User.id == message.sender_id).first()
     recipient = db_session.query(User).filter(User.id == message.recipient_id).first()
 
-    response = DirectMessageResponse.from_orm(message)
+    response = DirectMessageResponse.from_orm_custom(message)
     response.sender_username = sender.username if sender else None
     response.recipient_username = recipient.username if recipient else None
 
@@ -578,7 +578,7 @@ async def mark_message_read(
     message = db_session.query(DirectMessage).filter(
         DirectMessage.id == message_id,
         DirectMessage.recipient_id == current_user['user_id'],
-        DirectMessage.deleted_by_recipient == False
+        DirectMessage.deleted_by_recipient == False  # noqa: E712
     ).first()
 
     if not message:
@@ -588,7 +588,7 @@ async def mark_message_read(
         )
 
     message.is_read = True
-    message.read_at = datetime.utcnow()
+    message.read_at = datetime.now(UTC)
 
     db_session.commit()
     db_session.refresh(message)
@@ -597,7 +597,7 @@ async def mark_message_read(
     sender = db_session.query(User).filter(User.id == message.sender_id).first()
     recipient = db_session.query(User).filter(User.id == message.recipient_id).first()
 
-    response = DirectMessageResponse.from_orm(message)
+    response = DirectMessageResponse.from_orm_custom(message)
     response.sender_username = sender.username if sender else None
     response.recipient_username = recipient.username if recipient else None
 
@@ -652,7 +652,7 @@ async def reply_to_message(
         parent_message_id=message_id,
         is_draft=False,
         is_read=False,
-        sent_at=datetime.utcnow()
+        sent_at=datetime.now(UTC)
     )
 
     db_session.add(reply)
@@ -668,7 +668,7 @@ async def reply_to_message(
     )
     db_session.commit()
 
-    response = DirectMessageResponse.from_orm(reply)
+    response = DirectMessageResponse.from_orm_custom(reply)
     response.sender_username = current_user['username']
     response.recipient_username = recipient.username if recipient else None
 

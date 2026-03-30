@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -28,8 +28,8 @@ class AuthHandler:
     def encode_token(self, user_id: int, username: str) -> str:
         """Generate JWT token"""
         payload = {
-            'exp': datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+            'iat': datetime.now(UTC),
             'sub': str(user_id),
             'username': username
         }
@@ -82,8 +82,8 @@ class SessionAuth:
         self.sessions[session_id] = {
             'user_id': user_id,
             'username': username,
-            'created_at': datetime.utcnow(),
-            'last_accessed': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'last_accessed': datetime.now(UTC)
         }
         return session_id
 
@@ -91,7 +91,7 @@ class SessionAuth:
         """Get session data"""
         if session_id in self.sessions:
             # Update last accessed time
-            self.sessions[session_id]['last_accessed'] = datetime.utcnow()
+            self.sessions[session_id]['last_accessed'] = datetime.now(UTC)
             return self.sessions[session_id]
         return None
 
@@ -109,7 +109,7 @@ class SessionAuth:
 
     def cleanup_old_sessions(self, max_age_hours: int = 24):
         """Remove sessions older than max_age_hours"""
-        cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=max_age_hours)
         to_delete = []
         for session_id, data in self.sessions.items():
             if data['last_accessed'] < cutoff:

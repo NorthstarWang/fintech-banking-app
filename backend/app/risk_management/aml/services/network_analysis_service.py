@@ -4,17 +4,25 @@ Network Analysis Service
 Handles network/link analysis for AML investigations.
 """
 
-from typing import Optional, List, Dict, Any, Set, Tuple
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
-from collections import defaultdict
 import math
+from collections import defaultdict
+from datetime import UTC, datetime
+from uuid import UUID
 
 from ..models.network_analysis_models import (
-    NodeType, EdgeType, NetworkRiskLevel, NetworkNode, NetworkEdge,
-    NetworkCluster, NetworkPath, NetworkAnalysis, NetworkQuery,
-    LinkAnalysisResult, CommunityDetectionResult, CircularFlowDetection,
-    NetworkVisualization, NetworkStatistics
+    CommunityDetectionResult,
+    EdgeType,
+    LinkAnalysisResult,
+    NetworkAnalysis,
+    NetworkCluster,
+    NetworkEdge,
+    NetworkNode,
+    NetworkPath,
+    NetworkQuery,
+    NetworkRiskLevel,
+    NetworkStatistics,
+    NetworkVisualization,
+    NodeType,
 )
 
 
@@ -22,9 +30,9 @@ class NetworkAnalysisService:
     """Service for network and link analysis"""
 
     def __init__(self):
-        self._analyses: Dict[UUID, NetworkAnalysis] = {}
-        self._nodes_cache: Dict[str, NetworkNode] = {}
-        self._edges_cache: Dict[UUID, NetworkEdge] = {}
+        self._analyses: dict[UUID, NetworkAnalysis] = {}
+        self._nodes_cache: dict[str, NetworkNode] = {}
+        self._edges_cache: dict[UUID, NetworkEdge] = {}
 
     async def build_network(self, query: NetworkQuery) -> NetworkAnalysis:
         """Build a network from the given query parameters"""
@@ -36,7 +44,7 @@ class NetworkAnalysisService:
             depth=query.max_depth
         )
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Build network (in real implementation, would query actual data)
         nodes, edges = await self._expand_network(
@@ -79,7 +87,7 @@ class NetworkAnalysisService:
         # Identify key nodes
         analysis.key_nodes = self._identify_key_nodes(analysis)
 
-        analysis.completed_at = datetime.utcnow()
+        analysis.completed_at = datetime.now(UTC)
         analysis.processing_time_seconds = (analysis.completed_at - start_time).total_seconds()
 
         self._analyses[analysis.analysis_id] = analysis
@@ -87,12 +95,12 @@ class NetworkAnalysisService:
 
     async def _expand_network(
         self, root_id: str, root_type: str, max_depth: int, max_nodes: int,
-        node_types: Optional[List[NodeType]], edge_types: Optional[List[EdgeType]]
-    ) -> Tuple[List[NetworkNode], List[NetworkEdge]]:
+        node_types: list[NodeType] | None, edge_types: list[EdgeType] | None
+    ) -> tuple[list[NetworkNode], list[NetworkEdge]]:
         """Expand network from root node"""
         nodes = []
         edges = []
-        visited: Set[str] = set()
+        visited: set[str] = set()
 
         # Create root node
         root_node = NetworkNode(
@@ -161,7 +169,7 @@ class NetworkAnalysisService:
     async def _calculate_centrality_metrics(self, analysis: NetworkAnalysis):
         """Calculate centrality metrics for all nodes"""
         # Build adjacency list
-        adjacency: Dict[str, Set[str]] = defaultdict(set)
+        adjacency: dict[str, set[str]] = defaultdict(set)
         for edge in analysis.edges:
             adjacency[edge.source_node_id].add(edge.target_node_id)
             if not edge.is_directed:
@@ -183,7 +191,7 @@ class NetworkAnalysisService:
             # PageRank approximation
             node.pagerank = 1.0 / num_nodes
 
-    async def _detect_clusters(self, analysis: NetworkAnalysis) -> List[NetworkCluster]:
+    async def _detect_clusters(self, analysis: NetworkAnalysis) -> list[NetworkCluster]:
         """Detect clusters/communities in the network"""
         clusters = []
 
@@ -191,12 +199,12 @@ class NetworkAnalysisService:
         # In real implementation, would use proper community detection (Louvain, etc.)
 
         # Build adjacency
-        adjacency: Dict[str, Set[str]] = defaultdict(set)
+        adjacency: dict[str, set[str]] = defaultdict(set)
         for edge in analysis.edges:
             adjacency[edge.source_node_id].add(edge.target_node_id)
             adjacency[edge.target_node_id].add(edge.source_node_id)
 
-        visited: Set[str] = set()
+        visited: set[str] = set()
         cluster_num = 0
 
         for node in analysis.nodes:
@@ -241,17 +249,17 @@ class NetworkAnalysisService:
 
         return clusters
 
-    async def _find_circular_flows(self, analysis: NetworkAnalysis) -> List[NetworkPath]:
+    async def _find_circular_flows(self, analysis: NetworkAnalysis) -> list[NetworkPath]:
         """Find circular money flows in the network"""
         circular_paths = []
 
         # Build directed graph
-        graph: Dict[str, List[Tuple[str, UUID]]] = defaultdict(list)
+        graph: dict[str, list[tuple[str, UUID]]] = defaultdict(list)
         for edge in analysis.edges:
             graph[edge.source_node_id].append((edge.target_node_id, edge.edge_id))
 
         # Find cycles using DFS
-        def find_cycles(start: str, current: str, path: List[str], edges: List[UUID], visited: Set[str]):
+        def find_cycles(start: str, current: str, path: list[str], edges: list[UUID], visited: set[str]):
             if len(path) > 10:  # Limit cycle length
                 return
 
@@ -261,8 +269,8 @@ class NetworkAnalysisService:
                     cycle_path = NetworkPath(
                         start_node_id=start,
                         end_node_id=start,
-                        node_sequence=path + [start],
-                        edge_sequence=edges + [edge_id],
+                        node_sequence=[*path, start],
+                        edge_sequence=[*edges, edge_id],
                         path_length=len(path),
                         is_circular=True,
                         risk_score=0.8
@@ -270,7 +278,7 @@ class NetworkAnalysisService:
                     circular_paths.append(cycle_path)
                 elif neighbor not in visited:
                     visited.add(neighbor)
-                    find_cycles(start, neighbor, path + [neighbor], edges + [edge_id], visited)
+                    find_cycles(start, neighbor, [*path, neighbor], [*edges, edge_id], visited)
                     visited.remove(neighbor)
 
         for node in analysis.nodes[:20]:  # Limit starting nodes for performance
@@ -281,7 +289,6 @@ class NetworkAnalysisService:
     async def _calculate_network_risk(self, analysis: NetworkAnalysis):
         """Calculate overall network risk"""
         risk_score = 0.0
-        risk_factors = 0
 
         # High-risk nodes
         high_risk_nodes = [n for n in analysis.nodes if n.risk_score > 70]
@@ -315,7 +322,7 @@ class NetworkAnalysisService:
             NetworkRiskLevel.LOW
         )
 
-    def _identify_key_nodes(self, analysis: NetworkAnalysis) -> List[str]:
+    def _identify_key_nodes(self, analysis: NetworkAnalysis) -> list[str]:
         """Identify key nodes in the network"""
         # Sort by degree centrality
         sorted_nodes = sorted(
@@ -362,10 +369,10 @@ class NetworkAnalysisService:
 
     async def _find_shortest_path(
         self, network: NetworkAnalysis, start: str, end: str
-    ) -> Optional[NetworkPath]:
+    ) -> NetworkPath | None:
         """Find shortest path between two nodes using BFS"""
         # Build adjacency list
-        adjacency: Dict[str, List[Tuple[str, UUID]]] = defaultdict(list)
+        adjacency: dict[str, list[tuple[str, UUID]]] = defaultdict(list)
         for edge in network.edges:
             adjacency[edge.source_node_id].append((edge.target_node_id, edge.edge_id))
             adjacency[edge.target_node_id].append((edge.source_node_id, edge.edge_id))
@@ -389,7 +396,7 @@ class NetworkAnalysisService:
             for neighbor, edge_id in adjacency[current]:
                 if neighbor not in visited:
                     visited.add(neighbor)
-                    queue.append((neighbor, path + [neighbor], edges + [edge_id]))
+                    queue.append((neighbor, [*path, neighbor], [*edges, edge_id]))
 
         return None
 
@@ -472,7 +479,7 @@ class NetworkAnalysisService:
         }
         return colors.get(node_type, "#CCCCCC")
 
-    async def get_analysis(self, analysis_id: UUID) -> Optional[NetworkAnalysis]:
+    async def get_analysis(self, analysis_id: UUID) -> NetworkAnalysis | None:
         """Get a network analysis by ID"""
         return self._analyses.get(analysis_id)
 

@@ -4,7 +4,7 @@ Tracks all financial activities, security events, and user actions for complianc
 """
 import json
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -173,7 +173,7 @@ class AuditLogger:
         # Prepare audit entry
         audit_entry = {
             "audit_id": audit_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "event_type": event_type.value,
             "severity": severity.value,
             "success": success,
@@ -366,7 +366,7 @@ class AuditLogger:
             "rate_limit_hits": rate_limit_hits,
             "high_value_transactions": high_value_transactions,
             "unique_ips": len(unique_ips),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.now(UTC).isoformat()
         }
 
     def export_audit_logs(

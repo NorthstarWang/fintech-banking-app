@@ -1,11 +1,12 @@
 """Capital Models - Data models for regulatory capital management"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class CapitalInstrumentType(str, Enum):
@@ -35,20 +36,20 @@ class CapitalInstrument(BaseModel):
     tier: str  # CET1, AT1, Tier2
     issuer: str
     issue_date: date
-    maturity_date: Optional[date] = None
+    maturity_date: date | None = None
     perpetual: bool = False
     nominal_amount: Decimal
     carrying_amount: Decimal
     eligible_amount: Decimal
-    coupon_rate: Optional[Decimal] = None
-    coupon_frequency: Optional[str] = None
-    call_date: Optional[date] = None
+    coupon_rate: Decimal | None = None
+    coupon_frequency: str | None = None
+    call_date: date | None = None
     step_up: bool = False
-    conversion_trigger: Optional[str] = None
-    write_down_trigger: Optional[str] = None
+    conversion_trigger: str | None = None
+    write_down_trigger: str | None = None
     governing_law: str
     grandfathered: bool = False
-    grandfathering_end_date: Optional[date] = None
+    grandfathering_end_date: date | None = None
     is_active: bool = True
 
 
@@ -58,9 +59,9 @@ class CapitalDeduction(BaseModel):
     deduction_type: DeductionType
     tier: str
     gross_amount: Decimal
-    threshold_amount: Optional[Decimal] = None
+    threshold_amount: Decimal | None = None
     deduction_amount: Decimal
-    rwa_treatment_amount: Optional[Decimal] = None
+    rwa_treatment_amount: Decimal | None = None
     description: str
     reference: str
     methodology: str
@@ -99,15 +100,15 @@ class CapitalPlan(BaseModel):
     target_cet1_ratio: Decimal
     target_tier1_ratio: Decimal
     target_total_ratio: Decimal
-    planned_issuances: List[Dict[str, Any]]
-    planned_redemptions: List[Dict[str, Any]]
-    dividend_assumptions: Dict[str, Decimal]
-    rwa_projections: Dict[str, Decimal]
-    stress_scenario_results: Dict[str, Any]
-    contingency_actions: List[str]
+    planned_issuances: list[dict[str, Any]]
+    planned_redemptions: list[dict[str, Any]]
+    dividend_assumptions: dict[str, Decimal]
+    rwa_projections: dict[str, Decimal]
+    stress_scenario_results: dict[str, Any]
+    contingency_actions: list[str]
     approval_status: str = "draft"
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    approved_by: str | None = None
+    approval_date: date | None = None
 
 
 class StressTestCapital(BaseModel):
@@ -129,8 +130,8 @@ class StressTestCapital(BaseModel):
     minimum_tier1_ratio: Decimal
     minimum_total_ratio: Decimal
     capital_shortfall: Decimal
-    management_actions: List[str]
-    remediation_timeline: Optional[str] = None
+    management_actions: list[str]
+    remediation_timeline: str | None = None
 
 
 class CapitalLimit(BaseModel):
@@ -175,9 +176,9 @@ class CapitalReport(BaseModel):
     rwa_total: Decimal
     rwa_density: Decimal
     capital_instruments_count: int
-    upcoming_maturities: List[Dict[str, Any]]
-    stress_test_results: Dict[str, Any]
-    regulatory_requirements: Dict[str, Decimal]
-    buffer_utilization: Dict[str, Decimal]
+    upcoming_maturities: list[dict[str, Any]]
+    stress_test_results: dict[str, Any]
+    regulatory_requirements: dict[str, Decimal]
+    buffer_utilization: dict[str, Decimal]
     generated_by: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

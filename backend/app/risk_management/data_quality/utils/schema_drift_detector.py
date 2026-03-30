@@ -1,8 +1,7 @@
 """Schema Drift Detection Utilities"""
 
-from typing import List, Dict, Any, Optional, Set
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -32,20 +31,20 @@ class ColumnDefinition:
     column_name: str
     data_type: str
     is_nullable: bool = True
-    max_length: Optional[int] = None
-    precision: Optional[int] = None
-    scale: Optional[int] = None
-    default_value: Optional[str] = None
+    max_length: int | None = None
+    precision: int | None = None
+    scale: int | None = None
+    default_value: str | None = None
     is_primary_key: bool = False
     is_foreign_key: bool = False
-    constraints: List[str] = field(default_factory=list)
+    constraints: list[str] = field(default_factory=list)
 
 
 @dataclass
 class SchemaDefinition:
     schema_id: str
     table_name: str
-    columns: Dict[str, ColumnDefinition]
+    columns: dict[str, ColumnDefinition]
     captured_at: datetime
     version: int = 1
 
@@ -57,8 +56,8 @@ class DriftItem:
     severity: DriftSeverity
     column_name: str
     description: str
-    previous_value: Optional[str]
-    current_value: Optional[str]
+    previous_value: str | None
+    current_value: str | None
     detected_at: datetime
 
 
@@ -68,7 +67,7 @@ class DriftReport:
     table_name: str
     previous_schema_version: int
     current_schema_version: int
-    drift_items: List[DriftItem]
+    drift_items: list[DriftItem]
     has_breaking_changes: bool
     total_drifts: int
     critical_count: int
@@ -80,8 +79,8 @@ class DriftReport:
 
 class SchemaDriftDetector:
     def __init__(self):
-        self._schema_history: Dict[str, List[SchemaDefinition]] = {}
-        self._severity_rules: Dict[DriftType, DriftSeverity] = {
+        self._schema_history: dict[str, list[SchemaDefinition]] = {}
+        self._severity_rules: dict[DriftType, DriftSeverity] = {
             DriftType.COLUMN_REMOVED: DriftSeverity.CRITICAL,
             DriftType.TYPE_CHANGED: DriftSeverity.HIGH,
             DriftType.NULLABLE_CHANGED: DriftSeverity.MEDIUM,
@@ -96,7 +95,7 @@ class SchemaDriftDetector:
     def register_schema(
         self,
         table_name: str,
-        columns: List[ColumnDefinition],
+        columns: list[ColumnDefinition],
     ) -> SchemaDefinition:
         if table_name not in self._schema_history:
             self._schema_history[table_name] = []
@@ -106,7 +105,7 @@ class SchemaDriftDetector:
             schema_id=str(uuid4()),
             table_name=table_name,
             columns={col.column_name: col for col in columns},
-            captured_at=datetime.utcnow(),
+            captured_at=datetime.now(UTC),
             version=version,
         )
         self._schema_history[table_name].append(schema)
@@ -115,8 +114,8 @@ class SchemaDriftDetector:
     def detect_drift(
         self,
         table_name: str,
-        current_columns: List[ColumnDefinition],
-    ) -> Optional[DriftReport]:
+        current_columns: list[ColumnDefinition],
+    ) -> DriftReport | None:
         if table_name not in self._schema_history or not self._schema_history[table_name]:
             return None
 
@@ -137,7 +136,7 @@ class SchemaDriftDetector:
                     description=f"Column '{col_name}' was removed",
                     previous_value=previous_schema.columns[col_name].data_type,
                     current_value=None,
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -151,7 +150,7 @@ class SchemaDriftDetector:
                     description=f"Column '{col_name}' was added",
                     previous_value=None,
                     current_value=current_column_map[col_name].data_type,
-                    detected_at=datetime.utcnow(),
+                    detected_at=datetime.now(UTC),
                 )
             )
 
@@ -169,7 +168,7 @@ class SchemaDriftDetector:
                         description=f"Column '{col_name}' type changed from {prev_col.data_type} to {curr_col.data_type}",
                         previous_value=prev_col.data_type,
                         current_value=curr_col.data_type,
-                        detected_at=datetime.utcnow(),
+                        detected_at=datetime.now(UTC),
                     )
                 )
 
@@ -183,7 +182,7 @@ class SchemaDriftDetector:
                         description=f"Column '{col_name}' nullable changed from {prev_col.is_nullable} to {curr_col.is_nullable}",
                         previous_value=str(prev_col.is_nullable),
                         current_value=str(curr_col.is_nullable),
-                        detected_at=datetime.utcnow(),
+                        detected_at=datetime.now(UTC),
                     )
                 )
 
@@ -197,7 +196,7 @@ class SchemaDriftDetector:
                         description=f"Column '{col_name}' length changed from {prev_col.max_length} to {curr_col.max_length}",
                         previous_value=str(prev_col.max_length),
                         current_value=str(curr_col.max_length),
-                        detected_at=datetime.utcnow(),
+                        detected_at=datetime.now(UTC),
                     )
                 )
 
@@ -221,20 +220,20 @@ class SchemaDriftDetector:
             high_count=high_count,
             medium_count=medium_count,
             low_count=low_count,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(UTC),
         )
 
-    def get_schema_history(self, table_name: str) -> List[SchemaDefinition]:
+    def get_schema_history(self, table_name: str) -> list[SchemaDefinition]:
         return self._schema_history.get(table_name, [])
 
-    def get_latest_schema(self, table_name: str) -> Optional[SchemaDefinition]:
+    def get_latest_schema(self, table_name: str) -> SchemaDefinition | None:
         history = self._schema_history.get(table_name, [])
         return history[-1] if history else None
 
     def set_severity_rule(self, drift_type: DriftType, severity: DriftSeverity) -> None:
         self._severity_rules[drift_type] = severity
 
-    def clear_history(self, table_name: str = None) -> None:
+    def clear_history(self, table_name: str | None = None) -> None:
         if table_name:
             self._schema_history.pop(table_name, None)
         else:

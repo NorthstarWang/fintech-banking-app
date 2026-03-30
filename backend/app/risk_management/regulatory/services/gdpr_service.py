@@ -1,12 +1,20 @@
 """GDPR Service - Business logic for GDPR compliance"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from uuid import UUID
+
 from ..models.gdpr_models import (
-    ProcessingActivity, ConsentRecord, DataSubjectRequest, DataBreach,
-    DataProtectionImpactAssessment, ThirdPartyDataTransfer, GDPRComplianceReport,
-    LawfulBasis, DataSubjectRight, IncidentSeverity
+    ConsentRecord,
+    DataBreach,
+    DataProtectionImpactAssessment,
+    DataSubjectRequest,
+    DataSubjectRight,
+    GDPRComplianceReport,
+    IncidentSeverity,
+    LawfulBasis,
+    ProcessingActivity,
+    ThirdPartyDataTransfer,
 )
 from ..repositories.gdpr_repository import gdpr_repository
 
@@ -18,8 +26,8 @@ class GDPRService:
 
     async def register_processing_activity(
         self, activity_name: str, description: str, purpose: str, lawful_basis: LawfulBasis,
-        data_categories: List[str], data_subjects: List[str], recipients: List[str],
-        retention_period: str, technical_measures: List[str], organizational_measures: List[str],
+        data_categories: list[str], data_subjects: list[str], recipients: list[str],
+        retention_period: str, technical_measures: list[str], organizational_measures: list[str],
         controller: str, **kwargs
     ) -> ProcessingActivity:
         activity = ProcessingActivity(
@@ -37,17 +45,17 @@ class GDPRService:
     ) -> ConsentRecord:
         consent = ConsentRecord(
             data_subject_id=data_subject_id, purpose=purpose, processing_activity_id=processing_activity_id,
-            consent_given=True, consent_date=datetime.utcnow(), consent_method=consent_method,
+            consent_given=True, consent_date=datetime.now(UTC), consent_method=consent_method,
             consent_text=consent_text, proof_location=proof_location
         )
         await self.repository.save_consent(consent)
         return consent
 
-    async def withdraw_consent(self, consent_id: UUID, withdrawal_method: str) -> Optional[ConsentRecord]:
+    async def withdraw_consent(self, consent_id: UUID, withdrawal_method: str) -> ConsentRecord | None:
         consent = await self.repository.find_consent_by_id(consent_id)
         if consent:
             consent.consent_given = False
-            consent.withdrawal_date = datetime.utcnow()
+            consent.withdrawal_date = datetime.now(UTC)
             consent.withdrawal_method = withdrawal_method
             consent.is_active = False
         return consent
@@ -60,7 +68,7 @@ class GDPRService:
         dsar = DataSubjectRequest(
             request_reference=f"DSAR-{date.today().strftime('%Y%m')}-{self._request_counter:05d}",
             data_subject_id=data_subject_id, data_subject_email=data_subject_email,
-            right_type=right_type, request_details=request_details, received_date=datetime.utcnow(),
+            right_type=right_type, request_details=request_details, received_date=datetime.now(UTC),
             due_date=date.today() + timedelta(days=30)
         )
         await self.repository.save_dsar(dsar)
@@ -68,23 +76,23 @@ class GDPRService:
 
     async def complete_dsar(
         self, request_id: UUID, response_details: str, closed_by: str
-    ) -> Optional[DataSubjectRequest]:
+    ) -> DataSubjectRequest | None:
         dsar = await self.repository.find_dsar_by_id(request_id)
         if dsar:
             dsar.response_details = response_details
-            dsar.response_date = datetime.utcnow()
-            dsar.completed_date = datetime.utcnow()
+            dsar.response_date = datetime.now(UTC)
+            dsar.completed_date = datetime.now(UTC)
             dsar.closed_by = closed_by
             dsar.status = "completed"
         return dsar
 
     async def report_breach(
         self, breach_type: str, severity: IncidentSeverity, description: str,
-        data_categories_affected: List[str], number_of_records: int, number_of_subjects: int,
-        systems_affected: List[str], containment_measures: List[str]
+        data_categories_affected: list[str], number_of_records: int, number_of_subjects: int,
+        systems_affected: list[str], containment_measures: list[str]
     ) -> DataBreach:
         self._request_counter += 1
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         breach = DataBreach(
             breach_reference=f"BREACH-{date.today().strftime('%Y%m')}-{self._request_counter:05d}",
             discovery_date=now, occurrence_date=now, breach_type=breach_type, severity=severity,
@@ -100,8 +108,8 @@ class GDPRService:
 
     async def create_dpia(
         self, project_name: str, description: str, necessity_assessment: str,
-        proportionality_assessment: str, risks_identified: List[Dict[str, Any]],
-        mitigation_measures: List[Dict[str, Any]]
+        proportionality_assessment: str, risks_identified: list[dict[str, Any]],
+        mitigation_measures: list[dict[str, Any]]
     ) -> DataProtectionImpactAssessment:
         self._request_counter += 1
         dpia = DataProtectionImpactAssessment(
@@ -115,8 +123,8 @@ class GDPRService:
 
     async def register_transfer(
         self, data_exporter: str, data_importer: str, recipient_country: str,
-        transfer_mechanism: str, data_categories: List[str], purposes: List[str],
-        safeguards: List[str], valid_from: date
+        transfer_mechanism: str, data_categories: list[str], purposes: list[str],
+        safeguards: list[str], valid_from: date
     ) -> ThirdPartyDataTransfer:
         transfer = ThirdPartyDataTransfer(
             data_exporter=data_exporter, data_importer=data_importer, recipient_country=recipient_country,
@@ -149,7 +157,7 @@ class GDPRService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

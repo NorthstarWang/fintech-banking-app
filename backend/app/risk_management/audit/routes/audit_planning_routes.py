@@ -1,11 +1,13 @@
 """Audit Planning API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
-from fastapi import APIRouter, HTTPException, Query
+from typing import Any
+from uuid import UUID
+
+from fastapi import APIRouter
 from pydantic import BaseModel
+
 from ..services.audit_planning_service import audit_planning_service
 
 router = APIRouter(prefix="/audit-planning", tags=["Audit Planning"])
@@ -19,19 +21,19 @@ class UniverseEntityRequest(BaseModel):
     owner: str
     risk_rating: str
     audit_frequency: str
-    regulatory_coverage: List[str]
-    key_risks: List[str]
-    key_controls: List[str]
+    regulatory_coverage: list[str]
+    key_risks: list[str]
+    key_controls: list[str]
 
 
 class RiskAssessmentRequest(BaseModel):
     universe_entity_id: UUID
     assessor: str
     assessment_type: str
-    risk_factors: List[Dict[str, Any]]
-    factor_weights: Dict[str, Decimal]
-    factor_scores: Dict[str, Decimal]
-    control_factors: List[Dict[str, Any]]
+    risk_factors: list[dict[str, Any]]
+    factor_weights: dict[str, Decimal]
+    factor_scores: dict[str, Decimal]
+    control_factors: list[dict[str, Any]]
     control_score: Decimal
 
 
@@ -41,8 +43,8 @@ class AnnualPlanRequest(BaseModel):
     prepared_by: str
     total_hours: int
     total_budget: Decimal
-    assumptions: List[str]
-    constraints: List[str]
+    assumptions: list[str]
+    constraints: list[str]
 
 
 class PlannedAuditRequest(BaseModel):
@@ -57,7 +59,7 @@ class PlannedAuditRequest(BaseModel):
     planned_end_date: date
     estimated_hours: int
     scope_summary: str
-    objectives: List[str]
+    objectives: list[str]
 
 
 class ResourceRequest(BaseModel):
@@ -65,8 +67,8 @@ class ResourceRequest(BaseModel):
     employee_name: str
     role: str
     department: str
-    certifications: List[str]
-    expertise_areas: List[str]
+    certifications: list[str]
+    expertise_areas: list[str]
     availability_percentage: Decimal
     cost_rate: Decimal
     total_hours_available: int
@@ -105,7 +107,7 @@ async def add_to_universe(request: UniverseEntityRequest):
     return {"universe_id": str(entity.universe_id), "entity_code": entity.entity_code}
 
 
-@router.get("/universe", response_model=List[dict])
+@router.get("/universe", response_model=list[dict])
 async def list_universe_entities(high_risk_only: bool = False):
     if high_risk_only:
         entities = await audit_planning_service.repository.find_high_risk_entities()
@@ -125,7 +127,7 @@ async def assess_risk(request: RiskAssessmentRequest):
     return {"assessment_id": str(assessment.assessment_id), "risk_rating": assessment.risk_rating, "residual_risk_score": float(assessment.residual_risk_score)}
 
 
-@router.get("/risk-assessments/{entity_id}", response_model=List[dict])
+@router.get("/risk-assessments/{entity_id}", response_model=list[dict])
 async def get_entity_assessments(entity_id: UUID):
     assessments = await audit_planning_service.repository.find_assessments_by_entity(entity_id)
     return [{"assessment_id": str(a.assessment_id), "risk_rating": a.risk_rating, "assessment_date": str(a.assessment_date)} for a in assessments]
@@ -141,7 +143,7 @@ async def create_annual_plan(request: AnnualPlanRequest):
     return {"plan_id": str(plan.plan_id), "plan_year": plan.plan_year}
 
 
-@router.get("/annual-plans", response_model=List[dict])
+@router.get("/annual-plans", response_model=list[dict])
 async def list_annual_plans():
     plans = await audit_planning_service.repository.find_all_annual_plans()
     return [{"plan_id": str(p.plan_id), "plan_name": p.plan_name, "plan_year": p.plan_year, "status": p.status} for p in plans]
@@ -160,7 +162,7 @@ async def add_planned_audit(request: PlannedAuditRequest):
     return {"planned_audit_id": str(audit.planned_audit_id), "audit_name": audit.audit_name}
 
 
-@router.get("/annual-plans/{plan_id}/audits", response_model=List[dict])
+@router.get("/annual-plans/{plan_id}/audits", response_model=list[dict])
 async def get_plan_audits(plan_id: UUID):
     audits = await audit_planning_service.repository.find_planned_audits_by_plan(plan_id)
     return [{"planned_audit_id": str(a.planned_audit_id), "audit_name": a.audit_name, "planned_quarter": a.planned_quarter, "status": a.status} for a in audits]
@@ -177,7 +179,7 @@ async def register_resource(request: ResourceRequest):
     return {"resource_id": str(resource.resource_id), "employee_name": resource.employee_name}
 
 
-@router.get("/resources", response_model=List[dict])
+@router.get("/resources", response_model=list[dict])
 async def list_resources(available_only: bool = False):
     if available_only:
         resources = await audit_planning_service.repository.find_available_resources()

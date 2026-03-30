@@ -1,46 +1,53 @@
 """Audit Planning Repository - Data access for audit planning"""
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from ..models.audit_planning_models import (
-    AuditUniverse, AnnualAuditPlan, PlannedAudit, RiskAssessment,
-    AuditResource, ResourceAllocation, AuditBudget, QualityAssurance
+    AnnualAuditPlan,
+    AuditBudget,
+    AuditResource,
+    AuditUniverse,
+    PlannedAudit,
+    QualityAssurance,
+    ResourceAllocation,
+    RiskAssessment,
 )
 
 
 class AuditPlanningRepository:
     def __init__(self):
-        self._universe: Dict[UUID, AuditUniverse] = {}
-        self._annual_plans: Dict[UUID, AnnualAuditPlan] = {}
-        self._planned_audits: Dict[UUID, PlannedAudit] = {}
-        self._risk_assessments: Dict[UUID, RiskAssessment] = {}
-        self._resources: Dict[UUID, AuditResource] = {}
-        self._allocations: Dict[UUID, ResourceAllocation] = {}
-        self._budgets: Dict[UUID, AuditBudget] = {}
-        self._qa_reviews: Dict[UUID, QualityAssurance] = {}
+        self._universe: dict[UUID, AuditUniverse] = {}
+        self._annual_plans: dict[UUID, AnnualAuditPlan] = {}
+        self._planned_audits: dict[UUID, PlannedAudit] = {}
+        self._risk_assessments: dict[UUID, RiskAssessment] = {}
+        self._resources: dict[UUID, AuditResource] = {}
+        self._allocations: dict[UUID, ResourceAllocation] = {}
+        self._budgets: dict[UUID, AuditBudget] = {}
+        self._qa_reviews: dict[UUID, QualityAssurance] = {}
 
     async def save_universe_entity(self, entity: AuditUniverse) -> None:
         self._universe[entity.universe_id] = entity
 
-    async def find_universe_entity_by_id(self, entity_id: UUID) -> Optional[AuditUniverse]:
+    async def find_universe_entity_by_id(self, entity_id: UUID) -> AuditUniverse | None:
         return self._universe.get(entity_id)
 
-    async def find_all_universe_entities(self) -> List[AuditUniverse]:
+    async def find_all_universe_entities(self) -> list[AuditUniverse]:
         return list(self._universe.values())
 
-    async def find_high_risk_entities(self) -> List[AuditUniverse]:
+    async def find_high_risk_entities(self) -> list[AuditUniverse]:
         return [e for e in self._universe.values() if e.risk_rating == "high"]
 
     async def save_annual_plan(self, plan: AnnualAuditPlan) -> None:
         self._annual_plans[plan.plan_id] = plan
 
-    async def find_annual_plan_by_id(self, plan_id: UUID) -> Optional[AnnualAuditPlan]:
+    async def find_annual_plan_by_id(self, plan_id: UUID) -> AnnualAuditPlan | None:
         return self._annual_plans.get(plan_id)
 
-    async def find_all_annual_plans(self) -> List[AnnualAuditPlan]:
+    async def find_all_annual_plans(self) -> list[AnnualAuditPlan]:
         return list(self._annual_plans.values())
 
-    async def find_plan_by_year(self, year: int) -> Optional[AnnualAuditPlan]:
+    async def find_plan_by_year(self, year: int) -> AnnualAuditPlan | None:
         for p in self._annual_plans.values():
             if p.plan_year == year:
                 return p
@@ -49,49 +56,49 @@ class AuditPlanningRepository:
     async def save_planned_audit(self, audit: PlannedAudit) -> None:
         self._planned_audits[audit.planned_audit_id] = audit
 
-    async def find_planned_audit_by_id(self, audit_id: UUID) -> Optional[PlannedAudit]:
+    async def find_planned_audit_by_id(self, audit_id: UUID) -> PlannedAudit | None:
         return self._planned_audits.get(audit_id)
 
-    async def find_planned_audits_by_plan(self, plan_id: UUID) -> List[PlannedAudit]:
+    async def find_planned_audits_by_plan(self, plan_id: UUID) -> list[PlannedAudit]:
         return [a for a in self._planned_audits.values() if a.plan_id == plan_id]
 
     async def save_risk_assessment(self, assessment: RiskAssessment) -> None:
         self._risk_assessments[assessment.assessment_id] = assessment
 
-    async def find_risk_assessment_by_id(self, assessment_id: UUID) -> Optional[RiskAssessment]:
+    async def find_risk_assessment_by_id(self, assessment_id: UUID) -> RiskAssessment | None:
         return self._risk_assessments.get(assessment_id)
 
-    async def find_assessments_by_entity(self, entity_id: UUID) -> List[RiskAssessment]:
+    async def find_assessments_by_entity(self, entity_id: UUID) -> list[RiskAssessment]:
         return [a for a in self._risk_assessments.values() if a.universe_entity_id == entity_id]
 
     async def save_resource(self, resource: AuditResource) -> None:
         self._resources[resource.resource_id] = resource
 
-    async def find_resource_by_id(self, resource_id: UUID) -> Optional[AuditResource]:
+    async def find_resource_by_id(self, resource_id: UUID) -> AuditResource | None:
         return self._resources.get(resource_id)
 
-    async def find_all_resources(self) -> List[AuditResource]:
+    async def find_all_resources(self) -> list[AuditResource]:
         return list(self._resources.values())
 
-    async def find_available_resources(self) -> List[AuditResource]:
+    async def find_available_resources(self) -> list[AuditResource]:
         return [r for r in self._resources.values() if r.hours_remaining > 0 and r.is_active]
 
     async def save_allocation(self, allocation: ResourceAllocation) -> None:
         self._allocations[allocation.allocation_id] = allocation
 
-    async def find_allocation_by_id(self, allocation_id: UUID) -> Optional[ResourceAllocation]:
+    async def find_allocation_by_id(self, allocation_id: UUID) -> ResourceAllocation | None:
         return self._allocations.get(allocation_id)
 
-    async def find_allocations_by_audit(self, audit_id: UUID) -> List[ResourceAllocation]:
+    async def find_allocations_by_audit(self, audit_id: UUID) -> list[ResourceAllocation]:
         return [a for a in self._allocations.values() if a.planned_audit_id == audit_id]
 
     async def save_budget(self, budget: AuditBudget) -> None:
         self._budgets[budget.budget_id] = budget
 
-    async def find_budget_by_id(self, budget_id: UUID) -> Optional[AuditBudget]:
+    async def find_budget_by_id(self, budget_id: UUID) -> AuditBudget | None:
         return self._budgets.get(budget_id)
 
-    async def find_budget_by_plan(self, plan_id: UUID) -> Optional[AuditBudget]:
+    async def find_budget_by_plan(self, plan_id: UUID) -> AuditBudget | None:
         for b in self._budgets.values():
             if b.plan_id == plan_id:
                 return b
@@ -100,13 +107,13 @@ class AuditPlanningRepository:
     async def save_qa(self, qa: QualityAssurance) -> None:
         self._qa_reviews[qa.qa_id] = qa
 
-    async def find_qa_by_id(self, qa_id: UUID) -> Optional[QualityAssurance]:
+    async def find_qa_by_id(self, qa_id: UUID) -> QualityAssurance | None:
         return self._qa_reviews.get(qa_id)
 
-    async def find_all_qa_reviews(self) -> List[QualityAssurance]:
+    async def find_all_qa_reviews(self) -> list[QualityAssurance]:
         return list(self._qa_reviews.values())
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return {
             "total_universe_entities": len(self._universe),
             "high_risk_entities": len([e for e in self._universe.values() if e.risk_rating == "high"]),

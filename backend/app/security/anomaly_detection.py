@@ -3,8 +3,7 @@ Anomaly detection for login patterns and transaction activity.
 
 Monitors and scores suspicious behavior for risk-based authentication.
 """
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -219,7 +218,7 @@ class AnomalyDetection:
         return db.query(LoginAttempt).filter(
             LoginAttempt.user_id == user_id,
             LoginAttempt.success == 0,
-            LoginAttempt.timestamp > datetime.utcnow() - timedelta(minutes=minutes),
+            LoginAttempt.timestamp > datetime.now(UTC) - timedelta(minutes=minutes),
         ).count()
 
     @staticmethod
@@ -260,4 +259,3 @@ class AnomalyDetection:
     def mark_device_trusted(db: Session, device_id: int) -> None:
         """Mark a device as trusted."""
         # This is a placeholder for device trust management
-        pass

@@ -1,14 +1,20 @@
 """Commodity Routes - API endpoints for commodity risk management"""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
-from uuid import UUID
 from datetime import date
-from pydantic import BaseModel
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
 from ..models.commodity_models import (
-    CommodityPosition, CommodityCurve, CommodityExposure, CommodityScenario,
-    CommodityType, CommodityUnit, DeliveryMonth
+    CommodityCurve,
+    CommodityExposure,
+    CommodityPosition,
+    CommodityScenario,
+    CommodityType,
+    CommodityUnit,
+    DeliveryMonth,
 )
 from ..services.commodity_service import commodity_service
 
@@ -29,8 +35,8 @@ class CommodityPositionRequest(BaseModel):
 class CommodityCurveRequest(BaseModel):
     commodity_name: str
     commodity_type: CommodityType
-    tenors: List[str]
-    prices: List[Decimal]
+    tenors: list[str]
+    prices: list[Decimal]
     curve_date: date
 
 
@@ -44,13 +50,13 @@ class ScenarioRequest(BaseModel):
     portfolio_id: UUID
     scenario_name: str
     price_shocks: dict
-    volatility_shocks: Optional[dict] = None
+    volatility_shocks: dict | None = None
 
 
 @router.post("/positions", response_model=CommodityPosition)
 async def create_position(request: CommodityPositionRequest):
     """Create commodity position"""
-    position = await commodity_service.create_position(
+    return await commodity_service.create_position(
         portfolio_id=request.portfolio_id,
         commodity_type=request.commodity_type,
         commodity_name=request.commodity_name,
@@ -60,7 +66,6 @@ async def create_position(request: CommodityPositionRequest):
         delivery_month=request.delivery_month,
         delivery_year=request.delivery_year
     )
-    return position
 
 
 @router.get("/positions/{position_id}", response_model=CommodityPosition)
@@ -72,17 +77,16 @@ async def get_position(position_id: UUID):
     return position
 
 
-@router.get("/positions", response_model=List[CommodityPosition])
+@router.get("/positions", response_model=list[CommodityPosition])
 async def list_positions(
-    portfolio_id: Optional[UUID] = Query(None),
-    commodity_type: Optional[CommodityType] = Query(None),
-    commodity_name: Optional[str] = Query(None)
+    portfolio_id: UUID | None = Query(None),
+    commodity_type: CommodityType | None = Query(None),
+    commodity_name: str | None = Query(None)
 ):
     """List commodity positions"""
-    positions = await commodity_service.list_positions(
+    return await commodity_service.list_positions(
         portfolio_id, commodity_type, commodity_name
     )
-    return positions
 
 
 @router.put("/positions/{position_id}/price", response_model=CommodityPosition)
@@ -106,14 +110,13 @@ async def close_position(position_id: UUID):
 @router.post("/curves", response_model=CommodityCurve)
 async def create_curve(request: CommodityCurveRequest):
     """Create commodity forward curve"""
-    curve = await commodity_service.create_curve(
+    return await commodity_service.create_curve(
         commodity_name=request.commodity_name,
         commodity_type=request.commodity_type,
         tenors=request.tenors,
         prices=request.prices,
         curve_date=request.curve_date
     )
-    return curve
 
 
 @router.get("/curves/{commodity_name}", response_model=CommodityCurve)
@@ -125,69 +128,61 @@ async def get_curve(commodity_name: str):
     return curve
 
 
-@router.get("/curves", response_model=List[CommodityCurve])
-async def list_curves(commodity_type: Optional[CommodityType] = Query(None)):
+@router.get("/curves", response_model=list[CommodityCurve])
+async def list_curves(commodity_type: CommodityType | None = Query(None)):
     """List commodity curves"""
-    curves = await commodity_service.list_curves(commodity_type)
-    return curves
+    return await commodity_service.list_curves(commodity_type)
 
 
 @router.post("/exposures", response_model=CommodityExposure)
 async def calculate_exposure(request: ExposureRequest):
     """Calculate commodity exposure"""
-    exposure = await commodity_service.calculate_exposure(
+    return await commodity_service.calculate_exposure(
         portfolio_id=request.portfolio_id,
         commodity_type=request.commodity_type,
         exposure_date=request.exposure_date
     )
-    return exposure
 
 
-@router.get("/exposures/{portfolio_id}", response_model=List[CommodityExposure])
+@router.get("/exposures/{portfolio_id}", response_model=list[CommodityExposure])
 async def get_exposures(portfolio_id: UUID):
     """Get commodity exposures for portfolio"""
-    exposures = await commodity_service.get_exposures(portfolio_id)
-    return exposures
+    return await commodity_service.get_exposures(portfolio_id)
 
 
 @router.get("/exposures/{portfolio_id}/by-type")
 async def get_exposures_by_type(portfolio_id: UUID):
     """Get commodity exposures grouped by type"""
-    exposures = await commodity_service.get_exposures_by_type(portfolio_id)
-    return exposures
+    return await commodity_service.get_exposures_by_type(portfolio_id)
 
 
 @router.post("/scenarios", response_model=CommodityScenario)
 async def run_scenario(request: ScenarioRequest):
     """Run commodity scenario analysis"""
-    scenario = await commodity_service.run_scenario(
+    return await commodity_service.run_scenario(
         portfolio_id=request.portfolio_id,
         scenario_name=request.scenario_name,
         price_shocks=request.price_shocks,
         volatility_shocks=request.volatility_shocks
     )
-    return scenario
 
 
-@router.get("/scenarios/{portfolio_id}", response_model=List[CommodityScenario])
+@router.get("/scenarios/{portfolio_id}", response_model=list[CommodityScenario])
 async def get_scenarios(portfolio_id: UUID):
     """Get commodity scenarios for portfolio"""
-    scenarios = await commodity_service.get_scenarios(portfolio_id)
-    return scenarios
+    return await commodity_service.get_scenarios(portfolio_id)
 
 
 @router.get("/spot-prices")
-async def get_spot_prices(commodity_type: Optional[CommodityType] = Query(None)):
+async def get_spot_prices(commodity_type: CommodityType | None = Query(None)):
     """Get current spot prices"""
-    prices = await commodity_service.get_spot_prices(commodity_type)
-    return prices
+    return await commodity_service.get_spot_prices(commodity_type)
 
 
 @router.get("/delivery-schedule/{portfolio_id}")
 async def get_delivery_schedule(portfolio_id: UUID):
     """Get delivery schedule for portfolio"""
-    schedule = await commodity_service.get_delivery_schedule(portfolio_id)
-    return schedule
+    return await commodity_service.get_delivery_schedule(portfolio_id)
 
 
 @router.get("/statistics")

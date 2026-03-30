@@ -1,9 +1,10 @@
 """VaR Models - Value at Risk calculation models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -29,14 +30,14 @@ class VaRCalculation(BaseModel):
     var_amount: float
     var_percentage: float
     portfolio_value: float
-    expected_shortfall: Optional[float] = None
-    component_var: Dict[str, float] = {}
-    marginal_var: Dict[str, float] = {}
-    incremental_var: Dict[str, float] = {}
+    expected_shortfall: float | None = None
+    component_var: dict[str, float] = {}
+    marginal_var: dict[str, float] = {}
+    incremental_var: dict[str, float] = {}
     diversification_benefit: float = 0.0
     undiversified_var: float = 0.0
-    model_parameters: Dict[str, Any] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    model_parameters: dict[str, Any] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class VaRBacktest(BaseModel):
@@ -52,10 +53,10 @@ class VaRBacktest(BaseModel):
     expected_exceptions: float
     kupiec_test_stat: float
     kupiec_p_value: float
-    christoffersen_test_stat: Optional[float] = None
+    christoffersen_test_stat: float | None = None
     traffic_light_zone: str  # green, yellow, red
     pass_fail: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class VaRLimit(BaseModel):
@@ -68,9 +69,9 @@ class VaRLimit(BaseModel):
     warning_threshold: float = 80.0
     breach_status: bool = False
     effective_date: date
-    expiry_date: Optional[date] = None
+    expiry_date: date | None = None
     approved_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class VaRException(BaseModel):
@@ -81,9 +82,9 @@ class VaRException(BaseModel):
     actual_loss: float
     exception_amount: float
     exception_multiplier: float
-    explanation: Optional[str] = None
-    market_conditions: Dict[str, Any] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    explanation: str | None = None
+    market_conditions: dict[str, Any] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class VaRStatistics(BaseModel):
@@ -91,4 +92,4 @@ class VaRStatistics(BaseModel):
     average_var: float = 0.0
     total_exceptions: int = 0
     average_exception_rate: float = 0.0
-    by_method: Dict[str, int] = {}
+    by_method: dict[str, int] = {}

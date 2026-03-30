@@ -5,7 +5,7 @@ Each system can have its health checked separately to avoid cascading failures.
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 import psutil
@@ -35,7 +35,7 @@ class SystemHealth:
             "response_time_ms": round(self.response_time_ms, 2),
             "details": self.details or {},
             "error_message": self.error_message,
-            "last_checked": self.last_checked or datetime.utcnow().isoformat()
+            "last_checked": self.last_checked or datetime.now(UTC).isoformat()
         }
 
 
@@ -71,7 +71,7 @@ class DatabaseHealthAdapter(HealthCheckAdapter):
                     "users_count": len(users) if isinstance(users, list) else 0,
                     "adapter_type": "memory"
                 },
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
@@ -81,7 +81,7 @@ class DatabaseHealthAdapter(HealthCheckAdapter):
                 response_time_ms=response_time,
                 error_message=str(e),
                 details={"adapter_type": "memory"},
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
 
 
@@ -102,7 +102,7 @@ class AuthenticationHealthAdapter(HealthCheckAdapter):
                     "service": "JWT-based authentication",
                     "session_support": True
                 },
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
@@ -111,7 +111,7 @@ class AuthenticationHealthAdapter(HealthCheckAdapter):
                 status=HealthStatus.UNHEALTHY,
                 response_time_ms=response_time,
                 error_message=str(e),
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
 
 
@@ -132,7 +132,7 @@ class CacheHealthAdapter(HealthCheckAdapter):
                     "type": "memory-based",
                     "available": True
                 },
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
@@ -141,7 +141,7 @@ class CacheHealthAdapter(HealthCheckAdapter):
                 status=HealthStatus.UNHEALTHY,
                 response_time_ms=response_time,
                 error_message=str(e),
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
 
 
@@ -173,7 +173,7 @@ class SystemMetricsAdapter(HealthCheckAdapter):
                     "memory_available_mb": round(memory.available / (1024 * 1024), 2),
                     "memory_used_mb": round(memory.used / (1024 * 1024), 2)
                 },
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
@@ -182,7 +182,7 @@ class SystemMetricsAdapter(HealthCheckAdapter):
                 status=HealthStatus.DEGRADED,
                 response_time_ms=response_time,
                 error_message=str(e),
-                last_checked=datetime.utcnow().isoformat()
+                last_checked=datetime.now(UTC).isoformat()
             )
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -17,7 +17,7 @@ from ..models import (
 )
 from ..storage.memory_adapter import db, desc
 from ..utils.auth import get_current_user
-from ..utils.validators import ValidationError, Validators
+from ..utils.validators import Validators
 
 router = APIRouter()
 
@@ -48,7 +48,7 @@ async def create_account(
     db_session.commit()
     db_session.refresh(new_account)
 
-    return AccountResponse.from_orm(new_account)
+    return AccountResponse.model_validate(new_account)
 
 @router.post("/joint", status_code=status.HTTP_201_CREATED)
 async def create_joint_account(
@@ -145,7 +145,7 @@ async def create_joint_account(
     db_session.commit()
 
     # Create custom response with owners field
-    response = AccountResponse.from_orm(new_account).dict()
+    response = AccountResponse.model_validate(new_account).model_dump()
     # For memory-based system, manually create owners list
     response["owners"] = [
         {"id": current_user_obj.id, "username": current_user_obj.username, "email": current_user_obj.email},
@@ -188,7 +188,7 @@ async def get_accounts(
     # Sort by created_at
     all_accounts.sort(key=lambda x: x.created_at, reverse=True)
 
-    return [AccountResponse.from_orm(acc) for acc in all_accounts]
+    return [AccountResponse.model_validate(acc) for acc in all_accounts]
 
 @router.get("/summary", response_model=AccountSummary)
 async def get_account_summary(
@@ -229,7 +229,7 @@ async def get_account_summary(
         total_assets=round(total_assets, 2),
         total_liabilities=round(total_liabilities, 2),
         net_worth=round(net_worth, 2),
-        accounts=[AccountResponse.from_orm(acc) for acc in all_accounts]
+        accounts=[AccountResponse.model_validate(acc) for acc in all_accounts]
     )
 
 @router.get("/{account_id}", response_model=AccountResponse)
@@ -252,7 +252,7 @@ async def get_account(
             content={"detail": "Access to inactive account is forbidden"}
         )
 
-    return AccountResponse.from_orm(account)
+    return AccountResponse.model_validate(account)
 
 @router.get("/{account_id}/transactions")
 async def get_account_transactions(
@@ -356,16 +356,16 @@ async def update_account(
     )
 
     # Update allowed fields
-    update_data = account_update.dict(exclude_unset=True)
+    update_data = account_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if hasattr(account, field) and value is not None:
             setattr(account, field, value)
 
-    account.updated_at = datetime.utcnow()
+    account.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(account)
 
-    return AccountResponse.from_orm(account)
+    return AccountResponse.model_validate(account)
 
 @router.delete("/{account_id}")
 async def deactivate_account(
@@ -391,7 +391,7 @@ async def deactivate_account(
 
     # Deactivate account
     account.is_active = False
-    account.updated_at = datetime.utcnow()
+    account.updated_at = datetime.now(UTC)
     db_session.commit()
 
     return {"message": "Account deactivated successfully"}

@@ -2,7 +2,7 @@
 Mock database adapter to provide SQLAlchemy-like interface for mock data.
 """
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 T = TypeVar('T')
@@ -167,7 +167,7 @@ class MockSession:
         if 'id' not in obj_dict:
             obj_dict['id'] = str(uuid.uuid4())
         if 'created_at' not in obj_dict:
-            obj_dict['created_at'] = datetime.utcnow().isoformat()
+            obj_dict['created_at'] = datetime.now(UTC).isoformat()
 
         self._pending_commits.append((type(obj).__name__, obj_dict))
 

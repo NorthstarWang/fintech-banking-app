@@ -1,24 +1,31 @@
 """Rating Service - Credit rating and grading"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
+
 from ..models.rating_models import (
-    CreditRating, RatingScale, RatingGrade, RatingModel,
-    RatingMigration, RatingReview, RatingOverride, RatingStatistics,
-    RatingType, RatingAgency, RatingOutlook
+    CreditRating,
+    RatingAgency,
+    RatingMigration,
+    RatingModel,
+    RatingOutlook,
+    RatingOverride,
+    RatingReview,
+    RatingScale,
+    RatingStatistics,
+    RatingType,
 )
 
 
 class RatingService:
     def __init__(self):
-        self._ratings: Dict[UUID, CreditRating] = {}
-        self._scales: Dict[UUID, RatingScale] = {}
-        self._models: Dict[UUID, RatingModel] = {}
-        self._migrations: List[RatingMigration] = []
-        self._reviews: Dict[UUID, RatingReview] = {}
-        self._overrides: Dict[UUID, RatingOverride] = {}
-        self._entity_ratings: Dict[str, UUID] = {}
+        self._ratings: dict[UUID, CreditRating] = {}
+        self._scales: dict[UUID, RatingScale] = {}
+        self._models: dict[UUID, RatingModel] = {}
+        self._migrations: list[RatingMigration] = []
+        self._reviews: dict[UUID, RatingReview] = {}
+        self._overrides: dict[UUID, RatingOverride] = {}
+        self._entity_ratings: dict[str, UUID] = {}
         self._initialize_scales()
 
     def _initialize_scales(self):
@@ -69,10 +76,9 @@ class RatingService:
             grade_num = int(grade)
             if grade_num <= 4:
                 return "investment_grade"
-            elif grade_num <= 7:
+            if grade_num <= 7:
                 return "sub_investment_grade"
-            else:
-                return "default"
+            return "default"
         except ValueError:
             return "sub_investment_grade"
 
@@ -147,10 +153,10 @@ class RatingService:
         self._migrations.append(migration)
         return migration
 
-    async def get_rating(self, rating_id: UUID) -> Optional[CreditRating]:
+    async def get_rating(self, rating_id: UUID) -> CreditRating | None:
         return self._ratings.get(rating_id)
 
-    async def get_entity_rating(self, entity_id: str) -> Optional[CreditRating]:
+    async def get_entity_rating(self, entity_id: str) -> CreditRating | None:
         rating_id = self._entity_ratings.get(entity_id)
         if rating_id:
             return self._ratings.get(rating_id)
@@ -158,18 +164,18 @@ class RatingService:
 
     async def update_outlook(
         self, rating_id: UUID, outlook: RatingOutlook
-    ) -> Optional[CreditRating]:
+    ) -> CreditRating | None:
         rating = self._ratings.get(rating_id)
         if rating:
             rating.outlook = outlook
-            rating.updated_at = datetime.utcnow()
+            rating.updated_at = datetime.now(UTC)
         return rating
 
     async def create_review(
         self, rating_id: UUID, review_type: str,
         proposed_rating: str, rating_action: str,
         recommendation: str, reviewed_by: str
-    ) -> Optional[RatingReview]:
+    ) -> RatingReview | None:
         rating = self._ratings.get(rating_id)
         if not rating:
             return None
@@ -193,7 +199,7 @@ class RatingService:
         self, rating_id: UUID, override_rating: str,
         override_reason: str, override_type: str,
         approved_by: str
-    ) -> Optional[RatingOverride]:
+    ) -> RatingOverride | None:
         rating = self._ratings.get(rating_id)
         if not rating:
             return None
@@ -208,21 +214,21 @@ class RatingService:
             override_date=date.today(),
             expiry_date=date.today() + timedelta(days=365),
             approved_by=approved_by,
-            approval_date=datetime.utcnow()
+            approval_date=datetime.now(UTC)
         )
         self._overrides[override.override_id] = override
 
         # Apply override to rating
         rating.rating_grade = override_rating
         rating.probability_of_default = self._get_pd_for_grade(override_rating)
-        rating.updated_at = datetime.utcnow()
+        rating.updated_at = datetime.now(UTC)
 
         return override
 
-    async def get_ratings_by_grade(self, grade: str) -> List[CreditRating]:
+    async def get_ratings_by_grade(self, grade: str) -> list[CreditRating]:
         return [r for r in self._ratings.values() if r.rating_grade == grade]
 
-    async def get_migrations(self, entity_id: str = None) -> List[RatingMigration]:
+    async def get_migrations(self, entity_id: str | None = None) -> list[RatingMigration]:
         if entity_id:
             return [m for m in self._migrations if m.entity_id == entity_id]
         return self._migrations

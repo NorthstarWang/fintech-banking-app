@@ -4,11 +4,12 @@ SAR (Suspicious Activity Report) Models
 Defines data structures for SAR filing and management.
 """
 
+from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class SARStatus(str, Enum):
@@ -71,35 +72,35 @@ class SubjectInfo(BaseModel):
     is_internal: bool = False
 
     # Individual info
-    last_name: Optional[str] = None
-    first_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    suffix: Optional[str] = None
-    date_of_birth: Optional[date] = None
-    ssn_tin: Optional[str] = None
-    passport_number: Optional[str] = None
-    passport_country: Optional[str] = None
-    drivers_license: Optional[str] = None
-    drivers_license_state: Optional[str] = None
+    last_name: str | None = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    suffix: str | None = None
+    date_of_birth: date | None = None
+    ssn_tin: str | None = None
+    passport_number: str | None = None
+    passport_country: str | None = None
+    drivers_license: str | None = None
+    drivers_license_state: str | None = None
 
     # Entity info
-    entity_name: Optional[str] = None
-    entity_type: Optional[str] = None
-    ein: Optional[str] = None
-    naics_code: Optional[str] = None
+    entity_name: str | None = None
+    entity_type: str | None = None
+    ein: str | None = None
+    naics_code: str | None = None
 
     # Contact info
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zip_code: Optional[str] = None
-    country: Optional[str] = None
-    phone_numbers: List[str] = Field(default_factory=list)
-    email_addresses: List[str] = Field(default_factory=list)
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip_code: str | None = None
+    country: str | None = None
+    phone_numbers: list[str] = Field(default_factory=list)
+    email_addresses: list[str] = Field(default_factory=list)
 
     # Relationship
-    relationship_to_institution: Optional[str] = None
-    account_numbers: List[str] = Field(default_factory=list)
+    relationship_to_institution: str | None = None
+    account_numbers: list[str] = Field(default_factory=list)
 
     # Role
     role_in_activity: str = "subject"  # subject, beneficiary, conductor
@@ -113,21 +114,21 @@ class SuspiciousActivity(BaseModel):
 
     # Date range
     date_first_detected: datetime
-    date_activity_started: Optional[datetime] = None
-    date_activity_ended: Optional[datetime] = None
+    date_activity_started: datetime | None = None
+    date_activity_ended: datetime | None = None
 
     # Amount
     total_amount: float = 0.0
     currency: str = "USD"
 
     # Instruments
-    instruments_involved: List[str] = Field(default_factory=list)  # cash, wire, check, etc.
+    instruments_involved: list[str] = Field(default_factory=list)  # cash, wire, check, etc.
 
     # Products/Services
-    products_involved: List[str] = Field(default_factory=list)
+    products_involved: list[str] = Field(default_factory=list)
 
     # Geographic
-    countries_involved: List[str] = Field(default_factory=list)
+    countries_involved: list[str] = Field(default_factory=list)
 
 
 class TransactionDetail(BaseModel):
@@ -138,11 +139,11 @@ class TransactionDetail(BaseModel):
     amount: float
     currency: str = "USD"
     direction: str  # in, out
-    counterparty_name: Optional[str] = None
-    counterparty_account: Optional[str] = None
-    counterparty_institution: Optional[str] = None
-    location: Optional[str] = None
-    notes: Optional[str] = None
+    counterparty_name: str | None = None
+    counterparty_account: str | None = None
+    counterparty_institution: str | None = None
+    location: str | None = None
+    notes: str | None = None
 
 
 class Narrative(BaseModel):
@@ -152,9 +153,9 @@ class Narrative(BaseModel):
     content: str
     version: int = 1
     created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    modified_by: Optional[str] = None
-    modified_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    modified_by: str | None = None
+    modified_at: datetime | None = None
 
 
 class SARDocument(BaseModel):
@@ -165,9 +166,9 @@ class SARDocument(BaseModel):
     file_path: str
     file_size: int
     mime_type: str
-    description: Optional[str] = None
+    description: str | None = None
     uploaded_by: str
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SARApproval(BaseModel):
@@ -177,8 +178,8 @@ class SARApproval(BaseModel):
     approver_name: str
     approver_role: str
     decision: str  # approved, rejected, returned
-    comments: Optional[str] = None
-    approved_at: datetime = Field(default_factory=datetime.utcnow)
+    comments: str | None = None
+    approved_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class SARSubmission(BaseModel):
@@ -186,17 +187,17 @@ class SARSubmission(BaseModel):
     submission_id: UUID = Field(default_factory=uuid4)
     submission_date: datetime
     submission_method: str  # efiling, batch
-    batch_id: Optional[str] = None
+    batch_id: str | None = None
 
     # Filing reference
-    bsa_id: Optional[str] = None  # BSA tracking number
-    acknowledgment_number: Optional[str] = None
+    bsa_id: str | None = None  # BSA tracking number
+    acknowledgment_number: str | None = None
 
     # Response
     response_received: bool = False
-    response_date: Optional[datetime] = None
-    response_status: Optional[str] = None
-    response_errors: List[str] = Field(default_factory=list)
+    response_date: datetime | None = None
+    response_status: str | None = None
+    response_errors: list[str] = Field(default_factory=list)
 
 
 class SAR(BaseModel):
@@ -209,18 +210,18 @@ class SAR(BaseModel):
     status: SARStatus = SARStatus.DRAFT
 
     # Prior SAR reference
-    prior_sar_number: Optional[str] = None
-    prior_bsa_id: Optional[str] = None
+    prior_sar_number: str | None = None
+    prior_bsa_id: str | None = None
 
     # Filing institution
     filing_institution: FilingInstitution
 
     # Subjects
-    subjects: List[SubjectInfo] = Field(default_factory=list)
+    subjects: list[SubjectInfo] = Field(default_factory=list)
     primary_subject_index: int = 0
 
     # Suspicious activity
-    activities: List[SuspiciousActivity] = Field(default_factory=list)
+    activities: list[SuspiciousActivity] = Field(default_factory=list)
     primary_activity_type: SuspiciousActivityType
 
     # Financial summary
@@ -228,51 +229,51 @@ class SAR(BaseModel):
     cumulative_amount: float = 0.0
 
     # Transactions
-    transactions: List[TransactionDetail] = Field(default_factory=list)
+    transactions: list[TransactionDetail] = Field(default_factory=list)
     transaction_count: int = 0
 
     # Narrative
-    narratives: List[Narrative] = Field(default_factory=list)
-    full_narrative: Optional[str] = None
+    narratives: list[Narrative] = Field(default_factory=list)
+    full_narrative: str | None = None
 
     # Law enforcement contact
     law_enforcement_contacted: bool = False
-    law_enforcement_agency: Optional[str] = None
-    law_enforcement_contact_date: Optional[datetime] = None
+    law_enforcement_agency: str | None = None
+    law_enforcement_contact_date: datetime | None = None
 
     # Documents
-    documents: List[SARDocument] = Field(default_factory=list)
+    documents: list[SARDocument] = Field(default_factory=list)
 
     # Related records
-    case_ids: List[UUID] = Field(default_factory=list)
-    alert_ids: List[UUID] = Field(default_factory=list)
+    case_ids: list[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
 
     # Approval workflow
-    approvals: List[SARApproval] = Field(default_factory=list)
-    requires_approval_from: List[str] = Field(default_factory=list)
+    approvals: list[SARApproval] = Field(default_factory=list)
+    requires_approval_from: list[str] = Field(default_factory=list)
 
     # Submission
-    submissions: List[SARSubmission] = Field(default_factory=list)
-    last_submission: Optional[SARSubmission] = None
+    submissions: list[SARSubmission] = Field(default_factory=list)
+    last_submission: SARSubmission | None = None
 
     # Filing deadline
     filing_deadline: datetime
     extension_granted: bool = False
-    extension_reason: Optional[str] = None
-    new_deadline: Optional[datetime] = None
+    extension_reason: str | None = None
+    new_deadline: datetime | None = None
 
     # Preparer info
     prepared_by: str
-    prepared_at: datetime = Field(default_factory=datetime.utcnow)
+    prepared_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    submitted_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    submitted_at: datetime | None = None
 
     # Metadata
-    tags: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SARSummary(BaseModel):
@@ -287,15 +288,15 @@ class SARSummary(BaseModel):
     filing_deadline: datetime
     prepared_by: str
     created_at: datetime
-    submitted_at: Optional[datetime] = None
+    submitted_at: datetime | None = None
 
 
 class SARStatistics(BaseModel):
     """SAR statistics for reporting"""
     total_sars: int = 0
-    by_status: Dict[str, int] = Field(default_factory=dict)
-    by_activity_type: Dict[str, int] = Field(default_factory=dict)
-    by_sar_type: Dict[str, int] = Field(default_factory=dict)
+    by_status: dict[str, int] = Field(default_factory=dict)
+    by_activity_type: dict[str, int] = Field(default_factory=dict)
+    by_sar_type: dict[str, int] = Field(default_factory=dict)
     filed_this_month: int = 0
     filed_this_quarter: int = 0
     filed_this_year: int = 0
@@ -308,33 +309,33 @@ class SARStatistics(BaseModel):
 class SARCreateRequest(BaseModel):
     """Request to create a SAR"""
     sar_type: SARType = SARType.INITIAL
-    prior_sar_number: Optional[str] = None
-    case_ids: List[UUID] = Field(default_factory=list)
-    alert_ids: List[UUID] = Field(default_factory=list)
+    prior_sar_number: str | None = None
+    case_ids: list[UUID] = Field(default_factory=list)
+    alert_ids: list[UUID] = Field(default_factory=list)
     primary_activity_type: SuspiciousActivityType
 
 
 class SARUpdateRequest(BaseModel):
     """Request to update a SAR"""
-    status: Optional[SARStatus] = None
-    subjects: Optional[List[SubjectInfo]] = None
-    activities: Optional[List[SuspiciousActivity]] = None
-    full_narrative: Optional[str] = None
-    law_enforcement_contacted: Optional[bool] = None
-    law_enforcement_agency: Optional[str] = None
+    status: SARStatus | None = None
+    subjects: list[SubjectInfo] | None = None
+    activities: list[SuspiciousActivity] | None = None
+    full_narrative: str | None = None
+    law_enforcement_contacted: bool | None = None
+    law_enforcement_agency: str | None = None
 
 
 class SARSearchCriteria(BaseModel):
     """Search criteria for SARs"""
-    statuses: Optional[List[SARStatus]] = None
-    sar_types: Optional[List[SARType]] = None
-    activity_types: Optional[List[SuspiciousActivityType]] = None
-    subject_names: Optional[List[str]] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    min_amount: Optional[float] = None
-    max_amount: Optional[float] = None
-    prepared_by: Optional[List[str]] = None
+    statuses: list[SARStatus] | None = None
+    sar_types: list[SARType] | None = None
+    activity_types: list[SuspiciousActivityType] | None = None
+    subject_names: list[str] | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
+    prepared_by: list[str] | None = None
     overdue_only: bool = False
     page: int = 1
     page_size: int = 50

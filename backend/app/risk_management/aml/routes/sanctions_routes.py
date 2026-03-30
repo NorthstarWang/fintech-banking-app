@@ -4,13 +4,17 @@ Sanctions Screening Routes
 API endpoints for sanctions screening.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.sanction_models import (
-    SanctionListType, ScreeningRequest, ScreeningResult, SanctionListEntry,
-    BatchScreeningJob, SanctionListUpdate
+    SanctionListEntry,
+    SanctionListType,
+    SanctionListUpdate,
+    ScreeningRequest,
+    ScreeningResult,
 )
 from ..services.sanctions_screening_service import sanctions_screening_service
 
@@ -24,7 +28,7 @@ async def screen_entity(request: ScreeningRequest):
 
 
 @router.post("/batch-screen")
-async def batch_screen(entities: List[Dict[str, Any]], job_name: str, created_by: str = "system"):
+async def batch_screen(entities: list[dict[str, Any]], job_name: str, created_by: str = "system"):
     """Start a batch screening job"""
     return await sanctions_screening_service.batch_screen(entities, job_name, created_by)
 
@@ -47,8 +51,8 @@ async def get_batch_job(job_id: UUID):
     return job
 
 
-@router.get("/lists/{list_type}/entries", response_model=List[SanctionListEntry])
-async def get_sanction_entries(list_type: Optional[SanctionListType] = None):
+@router.get("/lists/{list_type}/entries", response_model=list[SanctionListEntry])
+async def get_sanction_entries(list_type: SanctionListType | None = None):
     """Get sanctions list entries"""
     return await sanctions_screening_service.get_sanction_entries(list_type)
 
@@ -60,7 +64,7 @@ async def add_sanction_entry(entry: SanctionListEntry):
 
 
 @router.put("/lists/entries/{entry_id}")
-async def update_sanction_entry(entry_id: UUID, updates: Dict[str, Any]):
+async def update_sanction_entry(entry_id: UUID, updates: dict[str, Any]):
     """Update a sanctions list entry"""
     entry = await sanctions_screening_service.update_sanction_entry(entry_id, updates)
     if not entry:

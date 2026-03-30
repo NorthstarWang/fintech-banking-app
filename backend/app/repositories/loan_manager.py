@@ -2,7 +2,7 @@
 Loan management system repository with in-memory storage.
 """
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from app.models.entities.loan_models import (
@@ -68,8 +68,8 @@ class LoanManager:
             'monthly_expenses': application.monthly_expenses,
             'collateral_description': application.collateral_description,
             'collateral_value': application.collateral_value,
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow(),
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC),
             'decision_date': None,
             'rejection_reason': None
         }
@@ -104,7 +104,7 @@ class LoanManager:
                     app_data['debt_to_income_ratio'] = round(monthly_expenses / monthly_income, 2)
 
                 if 'updated_at' not in app_data:
-                    app_data['updated_at'] = app_data.get('created_at', datetime.utcnow())
+                    app_data['updated_at'] = app_data.get('created_at', datetime.now(UTC))
 
                 # Ensure loan_type is lowercase (to match enum values)
                 if 'loan_type' in app_data and isinstance(app_data['loan_type'], str):
@@ -125,7 +125,7 @@ class LoanManager:
 
         # Update application status
         app['status'] = LoanStatus.PENDING_APPROVAL
-        app['updated_at'] = datetime.utcnow()
+        app['updated_at'] = datetime.now(UTC)
 
         # Generate offers based on credit score and loan type
         offers = self._generate_loan_offers(app)
@@ -133,11 +133,11 @@ class LoanManager:
         # Update application status based on offers
         if offers:
             app['status'] = LoanStatus.APPROVED
-            app['decision_date'] = datetime.utcnow()
+            app['decision_date'] = datetime.now(UTC)
         else:
             app['status'] = LoanStatus.APPLICATION
             app['rejection_reason'] = "Does not meet minimum requirements"
-            app['decision_date'] = datetime.utcnow()
+            app['decision_date'] = datetime.now(UTC)
 
         return offers
 
@@ -183,8 +183,8 @@ class LoanManager:
             'last_payment_date': None,
             'escrow_balance': None,
             'collateral_description': app.get('collateral_description'),
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
 
         self.data_manager.loans.append(loan_data)
@@ -251,7 +251,7 @@ class LoanManager:
             'extra_principal': max(0, principal_amount - (scheduled['principal'] if scheduled else 0)),
             'payment_type': payment.payment_type,
             'payment_date': payment_date,
-            'posted_date': datetime.utcnow(),
+            'posted_date': datetime.now(UTC),
             'remaining_balance': loan['current_balance'] - principal_amount,
             'note': payment.note
         }
@@ -266,7 +266,7 @@ class LoanManager:
         loan['total_interest_paid'] += interest_amount
         loan['last_payment_date'] = payment_date
         loan['next_payment_date'] = self._calculate_next_payment_date(payment_date)
-        loan['updated_at'] = datetime.utcnow()
+        loan['updated_at'] = datetime.now(UTC)
 
         # Check if loan is paid off
         if loan['current_balance'] <= 0:
@@ -532,8 +532,8 @@ class LoanManager:
             'balance': -offer['approved_amount'],  # Negative for liability
             'available_balance': 0,
             'status': 'ACTIVE',
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.now(UTC),
+            'updated_at': datetime.now(UTC)
         }
         self.data_manager.accounts.append(account)
         return account['id']
@@ -594,8 +594,8 @@ class LoanManager:
                 'origination_fee': round(origination_fee, 2),
                 'apr': round(apr, 3),
                 'special_conditions': [],
-                'expires_at': datetime.utcnow() + timedelta(days=30),
-                'created_at': datetime.utcnow()
+                'expires_at': datetime.now(UTC) + timedelta(days=30),
+                'created_at': datetime.now(UTC)
             }
 
             self.data_manager.loan_offers.append(offer_data)

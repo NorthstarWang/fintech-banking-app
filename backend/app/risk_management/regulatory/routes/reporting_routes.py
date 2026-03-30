@@ -1,11 +1,13 @@
 """Regulatory Reporting API Routes"""
 
-from typing import List, Optional, Dict, Any
 from datetime import date
+from typing import Any
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.reporting_models import ReportFrequency, ReportStatus, Regulator
+
+from ..models.reporting_models import Regulator, ReportFrequency, ReportStatus
 from ..services.reporting_service import reporting_service
 
 router = APIRouter(prefix="/reporting", tags=["Regulatory Reporting"])
@@ -32,7 +34,7 @@ class ScheduleCreateRequest(BaseModel):
     reporting_offset_days: int
     entity_id: str
     owner: str
-    data_sources: List[str]
+    data_sources: list[str]
     next_due_date: date
 
 
@@ -41,7 +43,7 @@ class ValidationRequest(BaseModel):
     validation_rule_id: str
     rule_description: str
     rule_type: str
-    expected_value: Optional[str] = None
+    expected_value: str | None = None
     actual_value: str
 
 
@@ -73,7 +75,7 @@ class AmendmentRequest(BaseModel):
     amended_report_id: UUID
     amendment_reason: str
     changes_summary: str
-    elements_changed: List[Dict[str, Any]]
+    elements_changed: list[dict[str, Any]]
     materiality_assessment: str
     approved_by: str
 
@@ -104,10 +106,10 @@ async def create_report(request: ReportCreateRequest):
     return {"report_id": str(report.report_id), "status": report.status.value}
 
 
-@router.get("/reports", response_model=List[dict])
+@router.get("/reports", response_model=list[dict])
 async def list_reports(
-    status: Optional[ReportStatus] = None,
-    regulator: Optional[str] = None
+    status: ReportStatus | None = None,
+    regulator: str | None = None
 ):
     """List regulatory reports"""
     if status:
@@ -156,7 +158,7 @@ async def submit_report(
     return {"report_id": str(report.report_id), "status": report.status.value, "submission_reference": report.submission_reference}
 
 
-@router.get("/reports/due", response_model=List[dict])
+@router.get("/reports/due", response_model=list[dict])
 async def list_due_reports(due_by: date = Query(...)):
     """List reports due by a specific date"""
     reports = await reporting_service.repository.find_reports_due_before(due_by)
@@ -175,8 +177,8 @@ async def create_schedule(request: ScheduleCreateRequest):
     return {"schedule_id": str(schedule.schedule_id), "next_due_date": str(schedule.next_due_date)}
 
 
-@router.get("/schedules", response_model=List[dict])
-async def list_schedules(active_only: bool = True, regulator: Optional[str] = None):
+@router.get("/schedules", response_model=list[dict])
+async def list_schedules(active_only: bool = True, regulator: str | None = None):
     """List reporting schedules"""
     if regulator:
         schedules = await reporting_service.repository.find_schedules_by_regulator(regulator)
@@ -198,14 +200,14 @@ async def validate_report(request: ValidationRequest):
     return {"validation_id": str(validation.validation_id), "passed": validation.passed, "severity": validation.severity}
 
 
-@router.get("/validations/{report_id}", response_model=List[dict])
+@router.get("/validations/{report_id}", response_model=list[dict])
 async def get_report_validations(report_id: UUID):
     """Get validations for a report"""
     validations = await reporting_service.repository.find_validations_by_report(report_id)
     return [{"validation_id": str(v.validation_id), "rule_description": v.rule_description, "passed": v.passed} for v in validations]
 
 
-@router.get("/validations/failed", response_model=List[dict])
+@router.get("/validations/failed", response_model=list[dict])
 async def list_failed_validations():
     """List all failed validations"""
     validations = await reporting_service.repository.find_failed_validations()
@@ -224,7 +226,7 @@ async def add_data_element(request: DataElementRequest):
     return {"element_id": str(element.element_id), "element_code": element.element_code}
 
 
-@router.get("/data-elements/{report_id}", response_model=List[dict])
+@router.get("/data-elements/{report_id}", response_model=list[dict])
 async def get_report_data_elements(report_id: UUID):
     """Get data elements for a report"""
     elements = await reporting_service.repository.find_data_elements_by_report(report_id)
@@ -243,7 +245,7 @@ async def report_exception(request: ExceptionRequest):
     return {"exception_id": str(exception.exception_id), "status": exception.status}
 
 
-@router.get("/exceptions/open", response_model=List[dict])
+@router.get("/exceptions/open", response_model=list[dict])
 async def list_open_exceptions():
     """List open exceptions"""
     exceptions = await reporting_service.repository.find_open_exceptions()
@@ -274,7 +276,7 @@ async def generate_calendar_entry(request: CalendarRequest):
     return {"calendar_id": str(calendar.calendar_id)}
 
 
-@router.get("/calendar/{year}/{month}", response_model=List[dict])
+@router.get("/calendar/{year}/{month}", response_model=list[dict])
 async def get_monthly_calendar(year: int, month: int):
     """Get reporting calendar for a month"""
     calendars = await reporting_service.repository.find_calendars_by_month(year, month)

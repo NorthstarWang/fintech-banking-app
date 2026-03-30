@@ -1,16 +1,12 @@
 """Fraud Case Routes - API endpoints for fraud case management"""
 
-from typing import Optional, List
-from datetime import datetime
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from ..models.fraud_case_models import (
-    FraudCase, CaseStatus, CasePriority, CaseOutcome, CaseNote, CaseEvidence
-)
+from ..models.fraud_case_models import CaseEvidence, CaseNote, CaseOutcome, CasePriority, CaseStatus, FraudCase
 from ..services.fraud_case_service import fraud_case_service
-
 
 router = APIRouter(prefix="/fraud/cases", tags=["Fraud Cases"])
 
@@ -27,10 +23,10 @@ class CreateCaseRequest(BaseModel):
 
 
 class UpdateCaseRequest(BaseModel):
-    status: Optional[CaseStatus] = None
-    priority: Optional[CasePriority] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
+    status: CaseStatus | None = None
+    priority: CasePriority | None = None
+    title: str | None = None
+    description: str | None = None
 
 
 class AssignInvestigatorRequest(BaseModel):
@@ -46,8 +42,8 @@ class AddNoteRequest(BaseModel):
 class AddEvidenceRequest(BaseModel):
     evidence_type: str
     description: str
-    file_name: Optional[str] = None
-    file_url: Optional[str] = None
+    file_name: str | None = None
+    file_url: str | None = None
     collected_by: str
 
 
@@ -66,7 +62,7 @@ class LinkAlertRequest(BaseModel):
 @router.post("/", response_model=FraudCase)
 async def create_case(request: CreateCaseRequest):
     """Create a new fraud case"""
-    case = await fraud_case_service.create_case(
+    return await fraud_case_service.create_case(
         customer_id=request.customer_id,
         customer_name=request.customer_name,
         account_id=request.account_id,
@@ -76,7 +72,6 @@ async def create_case(request: CreateCaseRequest):
         fraud_type=request.fraud_type,
         estimated_loss=request.estimated_loss
     )
-    return case
 
 
 @router.get("/{case_id}", response_model=FraudCase)
@@ -171,11 +166,11 @@ async def reopen_case(case_id: UUID, reason: str, reopened_by: str):
     return case
 
 
-@router.get("/", response_model=List[FraudCase])
+@router.get("/", response_model=list[FraudCase])
 async def list_cases(
-    status: Optional[CaseStatus] = None,
-    priority: Optional[CasePriority] = None,
-    investigator: Optional[str] = None,
+    status: CaseStatus | None = None,
+    priority: CasePriority | None = None,
+    investigator: str | None = None,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0)
 ):
@@ -187,19 +182,19 @@ async def list_cases(
     return cases[:limit]
 
 
-@router.get("/open", response_model=List[FraudCase])
+@router.get("/open", response_model=list[FraudCase])
 async def get_open_cases(limit: int = Query(default=100, le=500)):
     """Get all open fraud cases"""
     return await fraud_case_service.get_open_cases()
 
 
-@router.get("/customer/{customer_id}", response_model=List[FraudCase])
+@router.get("/customer/{customer_id}", response_model=list[FraudCase])
 async def get_customer_cases(customer_id: str, limit: int = Query(default=50, le=200)):
     """Get all cases for a specific customer"""
     return await fraud_case_service.get_cases_by_customer(customer_id)
 
 
-@router.get("/investigator/{investigator}", response_model=List[FraudCase])
+@router.get("/investigator/{investigator}", response_model=list[FraudCase])
 async def get_investigator_cases(investigator: str, limit: int = Query(default=50, le=200)):
     """Get all cases assigned to an investigator"""
     return await fraud_case_service.get_cases_by_investigator(investigator)

@@ -1,13 +1,12 @@
 """Sanctions Compliance API Routes"""
 
-from typing import List, Optional
-from uuid import UUID
 from decimal import Decimal
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.sanctions_models import (
-    SanctionsList, ScreeningType, AlertStatus
-)
+
+from ..models.sanctions_models import AlertStatus, SanctionsList, ScreeningType
 from ..services.sanctions_service import sanctions_service
 
 router = APIRouter(prefix="/sanctions", tags=["Sanctions Compliance"])
@@ -18,9 +17,9 @@ class ScreeningRequest(BaseModel):
     subject_type: str
     subject_name: str
     requestor: str
-    lists_to_screen: List[SanctionsList]
-    country: Optional[str] = None
-    date_of_birth: Optional[str] = None
+    lists_to_screen: list[SanctionsList]
+    country: str | None = None
+    date_of_birth: str | None = None
 
 
 class AlertReviewRequest(BaseModel):
@@ -31,11 +30,11 @@ class AlertReviewRequest(BaseModel):
 
 class CaseCreateRequest(BaseModel):
     case_type: str
-    source_alert_ids: List[UUID]
+    source_alert_ids: list[UUID]
     assigned_to: str
     priority: str
-    customer_id: Optional[str] = None
-    transaction_ids: Optional[List[str]] = None
+    customer_id: str | None = None
+    transaction_ids: list[str] | None = None
 
 
 class BlockTransactionRequest(BaseModel):
@@ -79,9 +78,9 @@ async def screen_entity(request: ScreeningRequest):
     }
 
 
-@router.get("/screenings", response_model=List[dict])
+@router.get("/screenings", response_model=list[dict])
 async def list_screenings(
-    screening_type: Optional[str] = None,
+    screening_type: str | None = None,
     with_matches_only: bool = False
 ):
     """List screening requests"""
@@ -110,8 +109,8 @@ async def get_screening(request_id: UUID):
     }
 
 
-@router.get("/alerts", response_model=List[dict])
-async def list_alerts(status: Optional[AlertStatus] = None, pending_only: bool = False):
+@router.get("/alerts", response_model=list[dict])
+async def list_alerts(status: AlertStatus | None = None, pending_only: bool = False):
     """List screening alerts"""
     if status:
         alerts = await sanctions_service.repository.find_alerts_by_status(status)
@@ -162,8 +161,8 @@ async def create_case(request: CaseCreateRequest):
     return {"case_id": str(case.case_id), "case_reference": case.case_reference}
 
 
-@router.get("/cases", response_model=List[dict])
-async def list_cases(open_only: bool = False, assigned_to: Optional[str] = None):
+@router.get("/cases", response_model=list[dict])
+async def list_cases(open_only: bool = False, assigned_to: str | None = None):
     """List sanctions cases"""
     if open_only:
         cases = await sanctions_service.repository.find_open_cases()
@@ -213,8 +212,8 @@ async def block_transaction(request: BlockTransactionRequest):
     return {"blocked_id": str(blocked.blocked_id), "transaction_id": blocked.transaction_id}
 
 
-@router.get("/blocked-transactions", response_model=List[dict])
-async def list_blocked_transactions(pending_release: bool = False, list_source: Optional[SanctionsList] = None):
+@router.get("/blocked-transactions", response_model=list[dict])
+async def list_blocked_transactions(pending_release: bool = False, list_source: SanctionsList | None = None):
     """List blocked transactions"""
     if pending_release:
         blocked = await sanctions_service.repository.find_blocked_pending_release()
@@ -246,8 +245,8 @@ async def process_list_update(request: ListUpdateRequest):
     return {"update_id": str(update.update_id), "list_source": update.list_source.value}
 
 
-@router.get("/list-updates", response_model=List[dict])
-async def list_updates(list_source: Optional[SanctionsList] = None):
+@router.get("/list-updates", response_model=list[dict])
+async def list_updates(list_source: SanctionsList | None = None):
     """List sanctions list updates"""
     if list_source:
         updates = await sanctions_service.repository.find_list_updates_by_source(list_source)

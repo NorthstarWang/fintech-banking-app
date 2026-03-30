@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 # Import shared enums from data_classes
 from .dto import (
@@ -24,12 +24,11 @@ from .dto import (
 
 # Base Models
 class BaseResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
     updated_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
 
 # User Models
 class UserCreate(BaseModel):
@@ -105,7 +104,7 @@ class AccountResponse(BaseResponse):
     interest_rate: float | None = None
     is_active: bool
 
-    @validator('balance', 'credit_limit', pre=True)
+    @field_validator('balance', 'credit_limit', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -119,7 +118,7 @@ class AccountSummary(BaseModel):
     net_worth: float
     accounts: list[AccountResponse]
 
-    @validator('total_assets', 'total_liabilities', 'net_worth', pre=True)
+    @field_validator('total_assets', 'total_liabilities', 'net_worth', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -162,7 +161,7 @@ class TransactionCreate(BaseModel):
     notes: str | None = None
     transaction_date: datetime
 
-    @validator('transaction_type', pre=True)
+    @field_validator('transaction_type', mode='before')
     @classmethod
     def normalize_transaction_type(cls, v):
         if isinstance(v, str):
@@ -170,7 +169,7 @@ class TransactionCreate(BaseModel):
             return v.lower()
         return v
 
-    @validator('transaction_date', pre=True)
+    @field_validator('transaction_date', mode='before')
     @classmethod
     def parse_transaction_date(cls, v):
         if isinstance(v, str):
@@ -217,7 +216,7 @@ class TransactionResponse(BaseResponse):
     reference_number: str | None = None
     recurring_rule_id: int | None = None
 
-    @validator('amount', pre=True)
+    @field_validator('amount', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -261,7 +260,7 @@ class BudgetResponse(BaseResponse):
     remaining_amount: float | None = None  # Calculated field
     percentage_used: float | None = None  # Calculated field
 
-    @validator('amount', 'spent_amount', 'remaining_amount', pre=True)
+    @field_validator('amount', 'spent_amount', 'remaining_amount', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -328,7 +327,7 @@ class GoalResponse(BaseResponse):
     allocation_priority: int | None = None
     allocation_source_types: list[str] | None = None
 
-    @validator('target_amount', 'current_amount', 'auto_transfer_amount', 'auto_allocate_fixed_amount', pre=True)
+    @field_validator('target_amount', 'current_amount', 'auto_transfer_amount', 'auto_allocate_fixed_amount', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -421,7 +420,7 @@ class GoalSummary(BaseModel):
     total_saved: float
     goals: list[GoalResponse]
 
-    @validator('total_target', 'total_saved', pre=True)
+    @field_validator('total_target', 'total_saved', mode='before')
     @classmethod
     def format_money_fields(cls, v):
         """Ensure all money fields have exactly 2 decimal places."""
@@ -468,6 +467,8 @@ class ConversationResponse(BaseResponse):
     unread_count: int | None = None  # Calculated per user
 
 class ConversationParticipantResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     conversation_id: int
     user_id: int
@@ -477,9 +478,6 @@ class ConversationParticipantResponse(BaseModel):
     is_muted: bool
     notification_enabled: bool
     username: str | None = None  # From join
-
-    class Config:
-        from_attributes = True
 
 # Message Models
 class MessageCreate(BaseModel):
@@ -506,13 +504,12 @@ class MessageResponse(BaseResponse):
     read_by_count: int | None = None  # Calculated
 
 class MessageReadReceiptResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     message_id: int
     user_id: int
     read_at: datetime
     username: str | None = None  # From join
-
-    class Config:
-        from_attributes = True
 
 # Chat Analytics
 class ChatSummary(BaseModel):
@@ -555,7 +552,7 @@ class DirectMessageResponse(BaseResponse):
         return self.message[:100] + "..." if len(self.message) > 100 else self.message
 
     @classmethod
-    def from_orm(cls, obj):
+    def from_orm_custom(cls, obj):
         # Create instance without attachments
         data = {
             "id": obj.id,
@@ -596,14 +593,13 @@ class MessageSettingsUpdate(BaseModel):
     auto_mark_read: bool | None = None
 
 class MessageSettingsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     user_id: int
     email_on_new_message: bool
     push_notifications: bool
     notification_sound: bool
     auto_mark_read: bool
-
-    class Config:
-        from_attributes = True
 
 class BlockUserRequest(BaseModel):
     username: str
@@ -644,6 +640,8 @@ class PaymentMethodUpdate(BaseModel):
     billing_zip: str | None = None
 
 class PaymentMethodResponse(PaymentMethodBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     status: PaymentMethodStatus
     card_last_four: str | None = None
@@ -656,9 +654,6 @@ class PaymentMethodResponse(PaymentMethodBase):
     created_at: datetime
     last_used_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
-
 # Two-Factor Authentication Models
 class TwoFactorSetup(BaseModel):
     method: TwoFactorMethod
@@ -670,15 +665,14 @@ class TwoFactorVerify(BaseModel):
     method: TwoFactorMethod
 
 class TwoFactorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     method: TwoFactorMethod
     is_enabled: bool
     is_primary: bool
     created_at: datetime
     last_used_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
 
 class TwoFactorSetupResponse(TwoFactorResponse):
     secret: str | None = None  # For TOTP setup
@@ -687,6 +681,8 @@ class TwoFactorSetupResponse(TwoFactorResponse):
 
 # Device/Session Models
 class UserDeviceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     device_id: str
     device_name: str
@@ -699,14 +695,13 @@ class UserDeviceResponse(BaseModel):
     created_at: datetime
     last_active_at: datetime
 
-    class Config:
-        from_attributes = True
-
 class DeviceTrustUpdate(BaseModel):
     is_trusted: bool
 
 # Security Audit Log Models
 class SecurityAuditLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     event_type: SecurityEventType
     device_name: str | None = None
@@ -717,11 +712,10 @@ class SecurityAuditLogResponse(BaseModel):
     metadata: dict[str, Any] | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-
 # Transaction Attachment Models
 class TransactionAttachment(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     transaction_id: int
     file_name: str
@@ -729,9 +723,6 @@ class TransactionAttachment(BaseModel):
     file_size: int
     file_url: str
     uploaded_at: datetime
-
-    class Config:
-        from_attributes = True
 
 class TransactionAttachmentCreate(BaseModel):
     file_name: str
@@ -746,6 +737,8 @@ class TransactionSplitCreate(BaseModel):
     description: str | None = None
 
 class TransactionSplitResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     transaction_id: int
     user_id: int
@@ -754,9 +747,6 @@ class TransactionSplitResponse(BaseModel):
     paid_at: datetime | None = None
     description: str | None = None
     user_name: str | None = None  # From join
-
-    class Config:
-        from_attributes = True
 
 # Export Models
 class ExportRequest(BaseModel):
@@ -854,6 +844,8 @@ class TransferResponse(TransactionResponse):
 # Linked Account Models
 class LinkedAccountResponse(BaseModel):
     """Response for a linked bank account"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     bank_link_id: int
     plaid_account_id: str
@@ -868,13 +860,12 @@ class LinkedAccountResponse(BaseModel):
     created_at: datetime | None = None
     last_synced_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
-
 
 # Currency Models
 class CurrencyInfoResponse(BaseModel):
     """Response for currency information"""
+    model_config = ConfigDict(from_attributes=True)
+
     code: str
     name: str
     symbol: str
@@ -882,9 +873,6 @@ class CurrencyInfoResponse(BaseModel):
     exchange_rate_to_usd: float = 1.0
     precision: int = 2
     supported_for_conversion: bool = True
-
-    class Config:
-        from_attributes = True
 
 
 class CurrencyConversionRequest(BaseModel):
@@ -908,9 +896,6 @@ class CurrencyConversionResponse(BaseResponse):
     conversion_date: datetime
     status: str = "completed"
     user_id: int
-
-    class Config:
-        from_attributes = True
 
 
 # Aliases for backwards compatibility (created in __init__.py after importing all models)

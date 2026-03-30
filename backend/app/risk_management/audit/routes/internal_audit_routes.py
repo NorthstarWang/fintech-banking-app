@@ -1,11 +1,12 @@
 """Internal Audit API Routes"""
 
-from typing import List, Optional
 from datetime import date
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Query
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from ..models.internal_audit_models import AuditType, AuditStatus, FindingSeverity
+
+from ..models.internal_audit_models import AuditStatus, AuditType, FindingSeverity
 from ..services.internal_audit_service import internal_audit_service
 
 router = APIRouter(prefix="/internal-audit", tags=["Internal Audit"])
@@ -15,14 +16,14 @@ class AuditCreateRequest(BaseModel):
     audit_name: str
     audit_type: AuditType
     audit_scope: str
-    audit_objectives: List[str]
+    audit_objectives: list[str]
     business_unit: str
     audit_period_start: date
     audit_period_end: date
     planned_start_date: date
     planned_end_date: date
     lead_auditor: str
-    audit_team: List[str]
+    audit_team: list[str]
     budgeted_hours: int
 
 
@@ -69,8 +70,8 @@ async def create_audit(request: AuditCreateRequest):
     return {"audit_id": str(audit.audit_id), "audit_reference": audit.audit_reference}
 
 
-@router.get("/audits", response_model=List[dict])
-async def list_audits(status: Optional[AuditStatus] = None, business_unit: Optional[str] = None):
+@router.get("/audits", response_model=list[dict])
+async def list_audits(status: AuditStatus | None = None, business_unit: str | None = None):
     if status:
         audits = await internal_audit_service.repository.find_audits_by_status(status)
     elif business_unit:
@@ -108,7 +109,7 @@ async def create_workpaper(request: WorkpaperCreateRequest):
     return {"workpaper_id": str(workpaper.workpaper_id), "workpaper_reference": workpaper.workpaper_reference}
 
 
-@router.get("/workpapers/{audit_id}", response_model=List[dict])
+@router.get("/workpapers/{audit_id}", response_model=list[dict])
 async def get_audit_workpapers(audit_id: UUID):
     workpapers = await internal_audit_service.repository.find_workpapers_by_audit(audit_id)
     return [{"workpaper_id": str(w.workpaper_id), "workpaper_title": w.workpaper_title, "status": w.status} for w in workpapers]
@@ -124,8 +125,8 @@ async def create_finding(request: FindingCreateRequest):
     return {"finding_id": str(finding.finding_id), "finding_reference": finding.finding_reference}
 
 
-@router.get("/findings", response_model=List[dict])
-async def list_findings(audit_id: Optional[UUID] = None, open_only: bool = False):
+@router.get("/findings", response_model=list[dict])
+async def list_findings(audit_id: UUID | None = None, open_only: bool = False):
     if audit_id:
         findings = await internal_audit_service.repository.find_findings_by_audit(audit_id)
     elif open_only:

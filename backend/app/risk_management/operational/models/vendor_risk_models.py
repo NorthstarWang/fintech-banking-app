@@ -1,11 +1,12 @@
 """Vendor Risk Models - Data models for third-party risk management"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class VendorTier(str, Enum):
@@ -55,34 +56,34 @@ class Vendor(BaseModel):
     vendor_code: str
     vendor_name: str
     legal_name: str
-    dba_name: Optional[str] = None
+    dba_name: str | None = None
     vendor_tier: VendorTier
     status: VendorStatus = VendorStatus.PROSPECTIVE
     service_category: ServiceCategory
-    services_provided: List[str]
+    services_provided: list[str]
     primary_contact: str
     contact_email: str
     contact_phone: str
     address: str
     country: str
-    tax_id: Optional[str] = None
-    duns_number: Optional[str] = None
+    tax_id: str | None = None
+    duns_number: str | None = None
     relationship_owner: str
     business_unit: str
-    onboarding_date: Optional[date] = None
-    contract_end_date: Optional[date] = None
+    onboarding_date: date | None = None
+    contract_end_date: date | None = None
     annual_spend: Decimal = Decimal("0")
     payment_terms: str
-    overall_risk_rating: Optional[RiskRating] = None
-    last_assessment_date: Optional[date] = None
-    next_assessment_date: Optional[date] = None
+    overall_risk_rating: RiskRating | None = None
+    last_assessment_date: date | None = None
+    next_assessment_date: date | None = None
     data_access: bool = False
     pii_access: bool = False
     system_access: bool = False
     critical_vendor: bool = False
     concentration_risk: bool = False
-    subcontractors: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    subcontractors: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class VendorContract(BaseModel):
@@ -121,7 +122,7 @@ class VendorAssessment(BaseModel):
     assessment_type: AssessmentType
     assessment_date: date
     assessor: str
-    reviewer: Optional[str] = None
+    reviewer: str | None = None
     status: str = "in_progress"
     financial_risk_rating: RiskRating
     operational_risk_rating: RiskRating
@@ -133,14 +134,14 @@ class VendorAssessment(BaseModel):
     residual_risk_score: int
     financial_stability: str
     years_in_business: int
-    certifications: List[str]
-    audit_reports: List[str]
-    insurance_coverage: Dict[str, Decimal]
-    findings: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
-    action_items: List[Dict[str, Any]] = Field(default_factory=list)
-    approved_by: Optional[str] = None
-    approval_date: Optional[date] = None
+    certifications: list[str]
+    audit_reports: list[str]
+    insurance_coverage: dict[str, Decimal]
+    findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    action_items: list[dict[str, Any]] = Field(default_factory=list)
+    approved_by: str | None = None
+    approval_date: date | None = None
 
 
 class VendorDueDiligence(BaseModel):
@@ -148,7 +149,7 @@ class VendorDueDiligence(BaseModel):
     vendor_id: UUID
     due_diligence_type: str
     request_date: date
-    completion_date: Optional[date] = None
+    completion_date: date | None = None
     status: str = "pending"
     background_check: bool = False
     financial_review: bool = False
@@ -158,11 +159,11 @@ class VendorDueDiligence(BaseModel):
     compliance_verification: bool = False
     sanctions_screening: bool = False
     adverse_media_check: bool = False
-    findings: Dict[str, Any] = Field(default_factory=dict)
-    risk_flags: List[str] = Field(default_factory=list)
+    findings: dict[str, Any] = Field(default_factory=dict)
+    risk_flags: list[str] = Field(default_factory=list)
     recommendation: str = ""
     performed_by: str
-    reviewed_by: Optional[str] = None
+    reviewed_by: str | None = None
 
 
 class VendorIncident(BaseModel):
@@ -175,15 +176,15 @@ class VendorIncident(BaseModel):
     description: str
     impact_description: str
     service_affected: str
-    root_cause: Optional[str] = None
-    vendor_response: Optional[str] = None
-    remediation_actions: List[str] = Field(default_factory=list)
-    remediation_deadline: Optional[date] = None
+    root_cause: str | None = None
+    vendor_response: str | None = None
+    remediation_actions: list[str] = Field(default_factory=list)
+    remediation_deadline: date | None = None
     status: str = "open"
-    resolution_date: Optional[datetime] = None
-    financial_impact: Optional[Decimal] = None
+    resolution_date: datetime | None = None
+    financial_impact: Decimal | None = None
     sla_breached: bool = False
-    credit_applied: Optional[Decimal] = None
+    credit_applied: Decimal | None = None
     escalated: bool = False
     regulatory_notification: bool = False
 
@@ -194,7 +195,7 @@ class VendorPerformance(BaseModel):
     review_period: str
     period_start: date
     period_end: date
-    sla_metrics: Dict[str, Decimal]
+    sla_metrics: dict[str, Decimal]
     overall_sla_compliance: Decimal
     quality_score: Decimal
     delivery_score: Decimal
@@ -204,9 +205,9 @@ class VendorPerformance(BaseModel):
     issues_reported: int
     issues_resolved: int
     incidents_count: int
-    strengths: List[str]
-    areas_for_improvement: List[str]
-    action_items: List[Dict[str, Any]]
+    strengths: list[str]
+    areas_for_improvement: list[str]
+    action_items: list[dict[str, Any]]
     reviewer: str
     review_date: date
 
@@ -230,4 +231,4 @@ class VendorRiskMetrics(BaseModel):
     average_performance_score: Decimal
     concentration_risk_vendors: int
     data_access_vendors: int
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

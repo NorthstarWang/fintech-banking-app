@@ -1,12 +1,13 @@
 """KYC Compliance API Routes"""
 
-from typing import List, Optional
 from datetime import date
-from uuid import UUID
 from decimal import Decimal
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from ..models.kyc_models import CustomerType, RiskRating
+
+from ..models.kyc_models import CustomerType
 from ..services.kyc_service import kyc_service
 
 router = APIRouter(prefix="/kyc", tags=["KYC Compliance"])
@@ -18,10 +19,10 @@ class CustomerOnboardingRequest(BaseModel):
     customer_type: CustomerType
     country_of_residence: str
     nationality: str
-    date_of_birth: Optional[date] = None
-    tax_id: Optional[str] = None
-    industry: Optional[str] = None
-    occupation: Optional[str] = None
+    date_of_birth: date | None = None
+    tax_id: str | None = None
+    industry: str | None = None
+    occupation: str | None = None
     source_of_funds: str
     expected_activity: str
 
@@ -32,14 +33,14 @@ class VerificationRequest(BaseModel):
     document_type: str
     document_number: str
     issuing_country: str
-    expiry_date: Optional[date] = None
+    expiry_date: date | None = None
     verified_by: str
 
 
 class EDDRequest(BaseModel):
     customer_id: str
     trigger_reason: str
-    additional_documents: List[str]
+    additional_documents: list[str]
     source_of_wealth: str
     business_rationale: str
     conducted_by: str
@@ -68,7 +69,7 @@ class PEPScreeningRequest(BaseModel):
 
 class AdverseMediaRequest(BaseModel):
     customer_id: str
-    search_terms: List[str]
+    search_terms: list[str]
     screened_by: str
 
 
@@ -105,9 +106,9 @@ async def get_customer_profile(customer_id: str):
     }
 
 
-@router.get("/profiles", response_model=List[dict])
+@router.get("/profiles", response_model=list[dict])
 async def list_profiles(
-    risk_rating: Optional[str] = None,
+    risk_rating: str | None = None,
     due_for_review: bool = False
 ):
     """List customer profiles"""
@@ -136,7 +137,7 @@ async def verify_customer(request: VerificationRequest):
     }
 
 
-@router.get("/verifications/{customer_id}", response_model=List[dict])
+@router.get("/verifications/{customer_id}", response_model=list[dict])
 async def get_customer_verifications(customer_id: str):
     """Get all verifications for a customer"""
     verifications = await kyc_service.repository.find_verifications_by_customer(customer_id)
@@ -180,7 +181,7 @@ async def perform_periodic_review(request: PeriodicReviewRequest):
     }
 
 
-@router.get("/reviews/overdue", response_model=List[dict])
+@router.get("/reviews/overdue", response_model=list[dict])
 async def list_overdue_reviews():
     """List overdue periodic reviews"""
     reviews = await kyc_service.repository.find_overdue_reviews()
@@ -198,7 +199,7 @@ async def register_beneficial_owner(request: BeneficialOwnerRequest):
     return {"owner_id": str(owner.owner_id), "owner_name": owner.owner_name}
 
 
-@router.get("/beneficial-owners/{customer_id}", response_model=List[dict])
+@router.get("/beneficial-owners/{customer_id}", response_model=list[dict])
 async def get_beneficial_owners(customer_id: str):
     """Get beneficial owners for a customer"""
     owners = await kyc_service.repository.find_beneficial_owners_by_customer(customer_id)
@@ -220,7 +221,7 @@ async def screen_for_pep(request: PEPScreeningRequest):
     }
 
 
-@router.get("/pep-screenings/matches", response_model=List[dict])
+@router.get("/pep-screenings/matches", response_model=list[dict])
 async def list_pep_matches():
     """List all PEP matches"""
     matches = await kyc_service.repository.find_pep_matches()

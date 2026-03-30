@@ -1,11 +1,12 @@
 """Basel Models - Data models for Basel III/IV regulatory compliance"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class RiskCategory(str, Enum):
@@ -48,8 +49,8 @@ class BaselCapitalRequirement(BaseModel):
     actual_capital: Decimal
     surplus_deficit: Decimal
     is_compliant: bool
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CreditRiskRWA(BaseModel):
@@ -60,13 +61,13 @@ class CreditRiskRWA(BaseModel):
     exposure_amount: Decimal
     risk_weight: Decimal
     rwa_amount: Decimal
-    pd: Optional[Decimal] = None
-    lgd: Optional[Decimal] = None
-    ead: Optional[Decimal] = None
-    maturity: Optional[Decimal] = None
-    correlation: Optional[Decimal] = None
-    collateral_value: Optional[Decimal] = None
-    guarantee_value: Optional[Decimal] = None
+    pd: Decimal | None = None
+    lgd: Decimal | None = None
+    ead: Decimal | None = None
+    maturity: Decimal | None = None
+    correlation: Decimal | None = None
+    collateral_value: Decimal | None = None
+    guarantee_value: Decimal | None = None
 
 
 class MarketRiskRWA(BaseModel):
@@ -78,9 +79,9 @@ class MarketRiskRWA(BaseModel):
     sensitivities_based: Decimal
     default_risk_charge: Decimal
     residual_risk_addon: Decimal
-    var_charge: Optional[Decimal] = None
-    stressed_var: Optional[Decimal] = None
-    incremental_risk: Optional[Decimal] = None
+    var_charge: Decimal | None = None
+    stressed_var: Decimal | None = None
+    incremental_risk: Decimal | None = None
     total_rwa: Decimal
 
 
@@ -132,8 +133,8 @@ class NetStableFundingRatio(BaseModel):
     entity_id: str
     available_stable_funding: Decimal
     required_stable_funding: Decimal
-    asf_components: Dict[str, Decimal]
-    rsf_components: Dict[str, Decimal]
+    asf_components: dict[str, Decimal]
+    rsf_components: dict[str, Decimal]
     nsfr_ratio: Decimal
     minimum_requirement: Decimal
     is_compliant: bool
@@ -171,8 +172,8 @@ class BaselReport(BaseModel):
     leverage_ratio: Decimal
     lcr: Decimal
     nsfr: Decimal
-    submission_date: Optional[date] = None
-    regulator_reference: Optional[str] = None
+    submission_date: date | None = None
+    regulator_reference: str | None = None
     status: str = "draft"
     generated_by: str
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

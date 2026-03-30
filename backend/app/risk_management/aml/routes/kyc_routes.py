@@ -4,14 +4,20 @@ KYC Routes
 API endpoints for KYC management.
 """
 
-from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 
 from ..models.kyc_models import (
-    KYCProfile, KYCStatus, KYCLevel, IdentityDocument, AddressVerification,
-    BiometricVerification, SourceOfFunds, SourceOfWealth, BeneficialOwner,
-    KYCCheck, EDDRequest, OnboardingWorkflow, KYCStatistics
+    AddressVerification,
+    BeneficialOwner,
+    BiometricVerification,
+    IdentityDocument,
+    KYCProfile,
+    KYCStatistics,
+    KYCStatus,
+    SourceOfFunds,
+    SourceOfWealth,
 )
 from ..services.kyc_service import kyc_service
 
@@ -63,7 +69,7 @@ async def add_identity_document(profile_id: UUID, document: IdentityDocument):
 @router.put("/profiles/{profile_id}/documents/{document_id}/verify")
 async def verify_document(
     profile_id: UUID, document_id: UUID, verified_by: str, is_verified: bool,
-    rejection_reason: Optional[str] = None
+    rejection_reason: str | None = None
 ):
     """Verify an identity document"""
     doc = await kyc_service.verify_document(profile_id, document_id, verified_by, is_verified, rejection_reason)
@@ -119,7 +125,7 @@ async def add_beneficial_owner(profile_id: UUID, owner: BeneficialOwner):
 
 @router.post("/profiles/{profile_id}/checks")
 async def run_kyc_check(
-    profile_id: UUID, check_type: str, check_name: str, provider: Optional[str] = None
+    profile_id: UUID, check_type: str, check_name: str, provider: str | None = None
 ):
     """Run a KYC check"""
     check = await kyc_service.run_kyc_check(profile_id, check_type, check_name, provider)

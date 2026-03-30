@@ -1,26 +1,33 @@
 """Loan Service - Loan origination and risk management"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
+
 from ..models.loan_models import (
-    LoanApplication, LoanRiskAssessment, Loan, LoanPayment,
-    DelinquencyRecord, LoanStatistics, LoanType, LoanStatus, RiskDecision
+    DelinquencyRecord,
+    Loan,
+    LoanApplication,
+    LoanPayment,
+    LoanRiskAssessment,
+    LoanStatistics,
+    LoanStatus,
+    LoanType,
+    RiskDecision,
 )
 
 
 class LoanService:
     def __init__(self):
-        self._applications: Dict[UUID, LoanApplication] = {}
-        self._assessments: Dict[UUID, LoanRiskAssessment] = {}
-        self._loans: Dict[UUID, Loan] = {}
-        self._payments: List[LoanPayment] = []
-        self._delinquencies: Dict[UUID, DelinquencyRecord] = {}
+        self._applications: dict[UUID, LoanApplication] = {}
+        self._assessments: dict[UUID, LoanRiskAssessment] = {}
+        self._loans: dict[UUID, Loan] = {}
+        self._payments: list[LoanPayment] = []
+        self._delinquencies: dict[UUID, DelinquencyRecord] = {}
         self._counter = 0
 
     def _generate_number(self, prefix: str) -> str:
         self._counter += 1
-        return f"{prefix}-{datetime.utcnow().strftime('%Y%m%d')}-{self._counter:06d}"
+        return f"{prefix}-{datetime.now(UTC).strftime('%Y%m%d')}-{self._counter:06d}"
 
     async def submit_application(
         self, customer_id: str, customer_name: str, loan_type: LoanType,
@@ -45,10 +52,10 @@ class LoanService:
         self._applications[application.application_id] = application
         return application
 
-    async def get_application(self, application_id: UUID) -> Optional[LoanApplication]:
+    async def get_application(self, application_id: UUID) -> LoanApplication | None:
         return self._applications.get(application_id)
 
-    async def assess_application(self, application_id: UUID, assessed_by: str) -> Optional[LoanRiskAssessment]:
+    async def assess_application(self, application_id: UUID, assessed_by: str) -> LoanRiskAssessment | None:
         application = self._applications.get(application_id)
         if not application:
             return None
@@ -91,14 +98,14 @@ class LoanService:
 
     async def make_decision(
         self, application_id: UUID, decision: RiskDecision,
-        reason: str, conditions: List[str] = None
-    ) -> Optional[LoanApplication]:
+        reason: str, conditions: list[str] | None = None
+    ) -> LoanApplication | None:
         application = self._applications.get(application_id)
         if not application:
             return None
 
         application.decision = decision
-        application.decision_date = datetime.utcnow()
+        application.decision_date = datetime.now(UTC)
         application.decision_reason = reason
         application.conditions = conditions or []
         application.status = LoanStatus.APPROVED if decision == RiskDecision.APPROVE else (
@@ -106,7 +113,7 @@ class LoanService:
         )
         return application
 
-    async def fund_loan(self, application_id: UUID) -> Optional[Loan]:
+    async def fund_loan(self, application_id: UUID) -> Loan | None:
         application = self._applications.get(application_id)
         if not application or application.decision != RiskDecision.APPROVE:
             return None
@@ -138,12 +145,12 @@ class LoanService:
         application.status = LoanStatus.FUNDED
         return loan
 
-    async def get_loan(self, loan_id: UUID) -> Optional[Loan]:
+    async def get_loan(self, loan_id: UUID) -> Loan | None:
         return self._loans.get(loan_id)
 
     async def record_payment(
         self, loan_id: UUID, payment_amount: float, payment_method: str
-    ) -> Optional[LoanPayment]:
+    ) -> LoanPayment | None:
         loan = self._loans.get(loan_id)
         if not loan:
             return None
@@ -178,7 +185,7 @@ class LoanService:
         self._payments.append(payment)
         return payment
 
-    async def record_delinquency(self, loan_id: UUID, amount_past_due: float) -> Optional[DelinquencyRecord]:
+    async def record_delinquency(self, loan_id: UUID, amount_past_due: float) -> DelinquencyRecord | None:
         loan = self._loans.get(loan_id)
         if not loan:
             return None
@@ -199,10 +206,10 @@ class LoanService:
         self._delinquencies[record.record_id] = record
         return record
 
-    async def get_customer_loans(self, customer_id: str) -> List[Loan]:
+    async def get_customer_loans(self, customer_id: str) -> list[Loan]:
         return [l for l in self._loans.values() if l.customer_id == customer_id]
 
-    async def get_delinquent_loans(self) -> List[Loan]:
+    async def get_delinquent_loans(self) -> list[Loan]:
         return [l for l in self._loans.values() if l.status == LoanStatus.DELINQUENT]
 
     async def get_statistics(self) -> LoanStatistics:

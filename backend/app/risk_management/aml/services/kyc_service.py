@@ -4,15 +4,25 @@ KYC Service
 Handles Know Your Customer operations and customer due diligence.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
-from uuid import UUID, uuid4
+from datetime import UTC, datetime, timedelta
+from typing import Any
+from uuid import UUID
 
 from ..models.kyc_models import (
-    KYCStatus, KYCLevel, DocumentType, VerificationMethod,
-    IdentityDocument, AddressVerification, BiometricVerification,
-    SourceOfFunds, SourceOfWealth, BeneficialOwner, KYCCheck,
-    KYCProfile, EDDRequest, OnboardingWorkflow, KYCStatistics
+    AddressVerification,
+    BeneficialOwner,
+    BiometricVerification,
+    DocumentType,
+    EDDRequest,
+    IdentityDocument,
+    KYCCheck,
+    KYCLevel,
+    KYCProfile,
+    KYCStatistics,
+    KYCStatus,
+    OnboardingWorkflow,
+    SourceOfFunds,
+    SourceOfWealth,
 )
 
 
@@ -20,9 +30,9 @@ class KYCService:
     """Service for KYC and customer due diligence operations"""
 
     def __init__(self):
-        self._profiles: Dict[UUID, KYCProfile] = {}
-        self._edd_requests: Dict[UUID, EDDRequest] = {}
-        self._onboarding_workflows: Dict[UUID, OnboardingWorkflow] = {}
+        self._profiles: dict[UUID, KYCProfile] = {}
+        self._edd_requests: dict[UUID, EDDRequest] = {}
+        self._onboarding_workflows: dict[UUID, OnboardingWorkflow] = {}
 
     async def create_profile(
         self, customer_id: str, customer_type: str, full_name: str, **kwargs
@@ -37,11 +47,11 @@ class KYCService:
         self._profiles[profile.profile_id] = profile
         return profile
 
-    async def get_profile(self, profile_id: UUID) -> Optional[KYCProfile]:
+    async def get_profile(self, profile_id: UUID) -> KYCProfile | None:
         """Get KYC profile by ID"""
         return self._profiles.get(profile_id)
 
-    async def get_profile_by_customer(self, customer_id: str) -> Optional[KYCProfile]:
+    async def get_profile_by_customer(self, customer_id: str) -> KYCProfile | None:
         """Get KYC profile by customer ID"""
         for profile in self._profiles.values():
             if profile.customer_id == customer_id:
@@ -50,21 +60,21 @@ class KYCService:
 
     async def update_profile_status(
         self, profile_id: UUID, status: KYCStatus, updated_by: str
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Update KYC profile status"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.kyc_status = status
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
 
         if status == KYCStatus.APPROVED:
             profile.approved_by = updated_by
-            profile.approved_at = datetime.utcnow()
+            profile.approved_at = datetime.now(UTC)
             # Set next review date based on risk level
             review_months = self._get_review_months(profile.risk_level)
-            profile.next_review_date = (datetime.utcnow() + timedelta(days=review_months * 30)).date()
+            profile.next_review_date = (datetime.now(UTC) + timedelta(days=review_months * 30)).date()
 
         return profile
 
@@ -80,14 +90,14 @@ class KYCService:
 
     async def add_identity_document(
         self, profile_id: UUID, document: IdentityDocument
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add identity document to profile"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.identity_documents.append(document)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
 
         # Update status if pending documents
         if profile.kyc_status == KYCStatus.PENDING_DOCUMENTS:
@@ -96,8 +106,8 @@ class KYCService:
         return profile
 
     async def verify_document(
-        self, profile_id: UUID, document_id: UUID, verified_by: str, is_verified: bool, rejection_reason: Optional[str] = None
-    ) -> Optional[IdentityDocument]:
+        self, profile_id: UUID, document_id: UUID, verified_by: str, is_verified: bool, rejection_reason: str | None = None
+    ) -> IdentityDocument | None:
         """Verify an identity document"""
         profile = self._profiles.get(profile_id)
         if not profile:
@@ -107,77 +117,77 @@ class KYCService:
             if doc.document_id == document_id:
                 doc.verification_status = "verified" if is_verified else "rejected"
                 doc.verified_by = verified_by
-                doc.verified_at = datetime.utcnow()
+                doc.verified_at = datetime.now(UTC)
                 if rejection_reason:
                     doc.rejection_reason = rejection_reason
-                profile.updated_at = datetime.utcnow()
+                profile.updated_at = datetime.now(UTC)
                 return doc
 
         return None
 
     async def add_address_verification(
         self, profile_id: UUID, address: AddressVerification
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add address verification to profile"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.address_verifications.append(address)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return profile
 
     async def add_biometric_verification(
         self, profile_id: UUID, biometric: BiometricVerification
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add biometric verification to profile"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.biometric_verifications.append(biometric)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return profile
 
     async def add_source_of_funds(
         self, profile_id: UUID, source: SourceOfFunds
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add source of funds declaration"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.sources_of_funds.append(source)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return profile
 
     async def add_source_of_wealth(
         self, profile_id: UUID, source: SourceOfWealth
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add source of wealth declaration"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.sources_of_wealth.append(source)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return profile
 
     async def add_beneficial_owner(
         self, profile_id: UUID, owner: BeneficialOwner
-    ) -> Optional[KYCProfile]:
+    ) -> KYCProfile | None:
         """Add beneficial owner (for corporate customers)"""
         profile = self._profiles.get(profile_id)
         if not profile:
             return None
 
         profile.beneficial_owners.append(owner)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return profile
 
     async def run_kyc_check(
-        self, profile_id: UUID, check_type: str, check_name: str, provider: Optional[str] = None
-    ) -> Optional[KYCCheck]:
+        self, profile_id: UUID, check_type: str, check_name: str, provider: str | None = None
+    ) -> KYCCheck | None:
         """Run a KYC check"""
         profile = self._profiles.get(profile_id)
         if not profile:
@@ -189,7 +199,7 @@ class KYCService:
             provider=provider,
             status="completed",
             result="pass",
-            completed_at=datetime.utcnow()
+            completed_at=datetime.now(UTC)
         )
 
         # Simulate check results based on type
@@ -207,10 +217,10 @@ class KYCService:
             check.result = "pass" if verified_docs else "fail"
 
         profile.checks.append(check)
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return check
 
-    async def calculate_risk_score(self, profile_id: UUID) -> Optional[float]:
+    async def calculate_risk_score(self, profile_id: UUID) -> float | None:
         """Calculate customer risk score"""
         profile = self._profiles.get(profile_id)
         if not profile:
@@ -245,7 +255,7 @@ class KYCService:
         profile.risk_score = score
         profile.risk_level = self._score_to_level(score)
         profile.requires_edd = score >= 70.0
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
 
         return score
 
@@ -253,15 +263,15 @@ class KYCService:
         """Convert risk score to risk level"""
         if score >= 80:
             return "very_high"
-        elif score >= 60:
+        if score >= 60:
             return "high"
-        elif score >= 40:
+        if score >= 40:
             return "medium"
         return "low"
 
     async def request_edd(
         self, profile_id: UUID, trigger_reason: str, trigger_type: str, triggered_by: str
-    ) -> Optional[EDDRequest]:
+    ) -> EDDRequest | None:
         """Request Enhanced Due Diligence"""
         profile = self._profiles.get(profile_id)
         if not profile:
@@ -273,7 +283,7 @@ class KYCService:
             trigger_reason=trigger_reason,
             trigger_type=trigger_type,
             triggered_by=triggered_by,
-            due_date=datetime.utcnow() + timedelta(days=30)
+            due_date=datetime.now(UTC) + timedelta(days=30)
         )
 
         # Set required documents and checks based on trigger type
@@ -292,13 +302,13 @@ class KYCService:
         # Update profile
         profile.requires_edd = True
         profile.edd_reason = trigger_reason
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
 
         return edd
 
     async def complete_edd(
-        self, edd_id: UUID, findings: List[Dict[str, Any]], recommendation: str, completed_by: str
-    ) -> Optional[EDDRequest]:
+        self, edd_id: UUID, findings: list[dict[str, Any]], recommendation: str, completed_by: str
+    ) -> EDDRequest | None:
         """Complete an EDD request"""
         edd = self._edd_requests.get(edd_id)
         if not edd:
@@ -307,14 +317,14 @@ class KYCService:
         edd.findings = findings
         edd.recommendation = recommendation
         edd.status = "completed"
-        edd.completed_at = datetime.utcnow()
+        edd.completed_at = datetime.now(UTC)
 
         # Update profile
         profile = self._profiles.get(edd.kyc_profile_id)
         if profile:
             profile.edd_completed = True
-            profile.edd_completed_at = datetime.utcnow()
-            profile.updated_at = datetime.utcnow()
+            profile.edd_completed_at = datetime.now(UTC)
+            profile.updated_at = datetime.now(UTC)
 
         return edd
 
@@ -354,7 +364,7 @@ class KYCService:
             required_checks=["identity", "sanctions", "pep", "adverse_media"],
             documents_required=len(required_docs),
             checks_required=4,
-            expires_at=datetime.utcnow() + timedelta(days=30)
+            expires_at=datetime.now(UTC) + timedelta(days=30)
         )
 
         self._onboarding_workflows[workflow.workflow_id] = workflow
@@ -362,7 +372,7 @@ class KYCService:
 
     async def advance_onboarding(
         self, workflow_id: UUID, completed_step: str
-    ) -> Optional[OnboardingWorkflow]:
+    ) -> OnboardingWorkflow | None:
         """Advance onboarding workflow to next step"""
         workflow = self._onboarding_workflows.get(workflow_id)
         if not workflow:
@@ -376,7 +386,7 @@ class KYCService:
             workflow.current_step = workflow.pending_steps[0]
         else:
             workflow.status = "completed"
-            workflow.completed_at = datetime.utcnow()
+            workflow.completed_at = datetime.now(UTC)
             workflow.current_step = "completed"
 
         return workflow

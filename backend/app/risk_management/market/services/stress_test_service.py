@@ -1,22 +1,28 @@
 """Stress Test Service - Market risk stress testing service"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
+from typing import Any
 from uuid import UUID
+
 from ..models.stress_test_models import (
-    StressScenario, StressTestResult, HistoricalScenario,
-    SensitivityAnalysis, ReverseStressTest, StressTestStatistics,
-    ScenarioType, ScenarioSeverity
+    HistoricalScenario,
+    ReverseStressTest,
+    ScenarioSeverity,
+    ScenarioType,
+    SensitivityAnalysis,
+    StressScenario,
+    StressTestResult,
+    StressTestStatistics,
 )
 
 
 class StressTestService:
     def __init__(self):
-        self._scenarios: Dict[UUID, StressScenario] = {}
-        self._results: Dict[UUID, StressTestResult] = {}
-        self._historical: Dict[UUID, HistoricalScenario] = {}
-        self._sensitivities: Dict[UUID, SensitivityAnalysis] = {}
-        self._reverse_tests: Dict[UUID, ReverseStressTest] = {}
+        self._scenarios: dict[UUID, StressScenario] = {}
+        self._results: dict[UUID, StressTestResult] = {}
+        self._historical: dict[UUID, HistoricalScenario] = {}
+        self._sensitivities: dict[UUID, SensitivityAnalysis] = {}
+        self._reverse_tests: dict[UUID, ReverseStressTest] = {}
         self._initialize_scenarios()
 
     def _initialize_scenarios(self):
@@ -58,7 +64,7 @@ class StressTestService:
     async def create_scenario(
         self, scenario_name: str, scenario_type: ScenarioType,
         severity: ScenarioSeverity, description: str,
-        shocks: Dict[str, Dict[str, float]], created_by: str
+        shocks: dict[str, dict[str, float]], created_by: str
     ) -> StressScenario:
         scenario = StressScenario(
             scenario_name=scenario_name,
@@ -76,13 +82,13 @@ class StressTestService:
         self._scenarios[scenario.scenario_id] = scenario
         return scenario
 
-    async def get_scenario(self, scenario_id: UUID) -> Optional[StressScenario]:
+    async def get_scenario(self, scenario_id: UUID) -> StressScenario | None:
         return self._scenarios.get(scenario_id)
 
     async def run_stress_test(
         self, scenario_id: UUID, portfolio_id: UUID,
-        portfolio_value: float, positions: List[Dict[str, Any]]
-    ) -> Optional[StressTestResult]:
+        portfolio_value: float, positions: list[dict[str, Any]]
+    ) -> StressTestResult | None:
         scenario = self._scenarios.get(scenario_id)
         if not scenario:
             return None
@@ -133,7 +139,7 @@ class StressTestService:
 
     async def run_sensitivity_analysis(
         self, portfolio_id: UUID, risk_factor: str,
-        shock_sizes: List[float], base_pnl_impacts: List[float]
+        shock_sizes: list[float], base_pnl_impacts: list[float]
     ) -> SensitivityAnalysis:
         # Calculate sensitivity (first derivative) and convexity (second derivative)
         if len(shock_sizes) >= 2 and len(base_pnl_impacts) >= 2:
@@ -187,7 +193,7 @@ class StressTestService:
         self._reverse_tests[test.test_id] = test
         return test
 
-    async def get_all_scenarios(self) -> List[StressScenario]:
+    async def get_all_scenarios(self) -> list[StressScenario]:
         return list(self._scenarios.values())
 
     async def get_statistics(self) -> StressTestStatistics:

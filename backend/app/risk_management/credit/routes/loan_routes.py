@@ -1,13 +1,11 @@
 """Loan Routes - API endpoints for loan management"""
 
-from typing import Optional, List
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..models.loan_models import (
-    LoanApplication, Loan, LoanPayment, LoanType, LoanStatus, RiskDecision
-)
+from ..models.loan_models import Loan, LoanApplication, LoanPayment, LoanStatus, LoanType, RiskDecision
 from ..services.loan_service import loan_service
 
 router = APIRouter(prefix="/credit/loans", tags=["Credit Loans"])
@@ -27,7 +25,7 @@ class SubmitApplicationRequest(BaseModel):
 class MakeDecisionRequest(BaseModel):
     decision: RiskDecision
     reason: str
-    conditions: List[str] = []
+    conditions: list[str] = []
 
 
 class RecordPaymentRequest(BaseModel):
@@ -38,7 +36,7 @@ class RecordPaymentRequest(BaseModel):
 @router.post("/applications", response_model=LoanApplication)
 async def submit_application(request: SubmitApplicationRequest):
     """Submit a loan application"""
-    application = await loan_service.submit_application(
+    return await loan_service.submit_application(
         customer_id=request.customer_id,
         customer_name=request.customer_name,
         loan_type=request.loan_type,
@@ -48,7 +46,6 @@ async def submit_application(request: SubmitApplicationRequest):
         annual_income=request.annual_income,
         monthly_debt=request.monthly_debt
     )
-    return application
 
 
 @router.get("/applications/{application_id}", response_model=LoanApplication)
@@ -109,13 +106,13 @@ async def record_payment(loan_id: UUID, request: RecordPaymentRequest):
     return payment
 
 
-@router.get("/customer/{customer_id}", response_model=List[Loan])
+@router.get("/customer/{customer_id}", response_model=list[Loan])
 async def get_customer_loans(customer_id: str):
     """Get all loans for a customer"""
     return await loan_service.get_customer_loans(customer_id)
 
 
-@router.get("/delinquent", response_model=List[Loan])
+@router.get("/delinquent", response_model=list[Loan])
 async def get_delinquent_loans():
     """Get all delinquent loans"""
     return await loan_service.get_delinquent_loans()
@@ -123,8 +120,8 @@ async def get_delinquent_loans():
 
 @router.get("/")
 async def list_loans(
-    status: Optional[LoanStatus] = None,
-    loan_type: Optional[LoanType] = None,
+    status: LoanStatus | None = None,
+    loan_type: LoanType | None = None,
     limit: int = Query(default=100, le=500)
 ):
     """List loans with optional filters"""

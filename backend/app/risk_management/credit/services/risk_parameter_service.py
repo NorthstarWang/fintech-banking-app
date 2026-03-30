@@ -1,26 +1,34 @@
 """Risk Parameter Service - PD, LGD, EAD modeling"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date
+from typing import Any
 from uuid import UUID
+
 from ..models.risk_parameter_models import (
-    PDModel, LGDModel, EADModel, RiskParameterEstimate,
-    ExpectedLossCalculation, UnexpectedLossCalculation,
-    ParameterBacktest, ParameterStressTest, RiskParameterStatistics,
-    ParameterType, ModelApproach
+    EADModel,
+    ExpectedLossCalculation,
+    LGDModel,
+    ModelApproach,
+    ParameterBacktest,
+    ParameterStressTest,
+    ParameterType,
+    PDModel,
+    RiskParameterEstimate,
+    RiskParameterStatistics,
+    UnexpectedLossCalculation,
 )
 
 
 class RiskParameterService:
     def __init__(self):
-        self._pd_models: Dict[UUID, PDModel] = {}
-        self._lgd_models: Dict[UUID, LGDModel] = {}
-        self._ead_models: Dict[UUID, EADModel] = {}
-        self._estimates: Dict[UUID, RiskParameterEstimate] = {}
-        self._el_calculations: Dict[UUID, ExpectedLossCalculation] = {}
-        self._ul_calculations: Dict[UUID, UnexpectedLossCalculation] = {}
-        self._backtests: Dict[UUID, ParameterBacktest] = {}
-        self._stress_tests: Dict[UUID, ParameterStressTest] = []
+        self._pd_models: dict[UUID, PDModel] = {}
+        self._lgd_models: dict[UUID, LGDModel] = {}
+        self._ead_models: dict[UUID, EADModel] = {}
+        self._estimates: dict[UUID, RiskParameterEstimate] = {}
+        self._el_calculations: dict[UUID, ExpectedLossCalculation] = {}
+        self._ul_calculations: dict[UUID, UnexpectedLossCalculation] = {}
+        self._backtests: dict[UUID, ParameterBacktest] = {}
+        self._stress_tests: dict[UUID, ParameterStressTest] = []
 
     async def register_pd_model(
         self, model_name: str, segment: str, approach: ModelApproach,
@@ -41,7 +49,7 @@ class RiskParameterService:
         self._pd_models[model.model_id] = model
         return model
 
-    async def get_pd_model(self, model_id: UUID) -> Optional[PDModel]:
+    async def get_pd_model(self, model_id: UUID) -> PDModel | None:
         return self._pd_models.get(model_id)
 
     async def register_lgd_model(
@@ -67,7 +75,7 @@ class RiskParameterService:
         self._lgd_models[model.model_id] = model
         return model
 
-    async def get_lgd_model(self, model_id: UUID) -> Optional[LGDModel]:
+    async def get_lgd_model(self, model_id: UUID) -> LGDModel | None:
         return self._lgd_models.get(model_id)
 
     async def register_ead_model(
@@ -94,8 +102,8 @@ class RiskParameterService:
     async def estimate_parameters(
         self, entity_id: str, entity_type: str, segment: str,
         pd_model_id: UUID, lgd_model_id: UUID, ead_model_id: UUID,
-        input_factors: Dict[str, Any]
-    ) -> Dict[str, RiskParameterEstimate]:
+        input_factors: dict[str, Any]
+    ) -> dict[str, RiskParameterEstimate]:
         estimates = {}
 
         # PD Estimate
@@ -171,7 +179,6 @@ class RiskParameterService:
         el_pct = pd * lgd * 100
 
         # Risk weight calculation (simplified Basel approach)
-        correlation = 0.12 * (1 - 2.718 ** (-50 * pd)) / (1 - 2.718 ** (-50))
         rwa = ead * 12.5 * el_pct / 100  # Simplified
 
         calculation = ExpectedLossCalculation(
@@ -229,12 +236,12 @@ class RiskParameterService:
     async def run_backtest(
         self, model_id: UUID, parameter_type: ParameterType,
         period_start: date, period_end: date,
-        predicted: List[float], actual: List[float],
+        predicted: list[float], actual: list[float],
         backtested_by: str
     ) -> ParameterBacktest:
         # Calculate accuracy metrics
         if predicted and actual and len(predicted) == len(actual):
-            accuracy = 1 - sum(abs(p - a) for p, a in zip(predicted, actual)) / len(predicted)
+            accuracy = 1 - sum(abs(p - a) for p, a in zip(predicted, actual, strict=False)) / len(predicted)
         else:
             accuracy = 0.0
 
@@ -256,7 +263,7 @@ class RiskParameterService:
 
     async def run_stress_test(
         self, parameter_type: ParameterType, scenario_name: str,
-        base_value: float, stress_factors: Dict[str, float],
+        base_value: float, stress_factors: dict[str, float],
         tested_by: str
     ) -> ParameterStressTest:
         stress_multiplier = 1.0 + sum(stress_factors.values())

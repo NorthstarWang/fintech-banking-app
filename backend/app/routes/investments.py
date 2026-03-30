@@ -2,6 +2,8 @@
 Investment management API routes for ETF, stock, and crypto trading.
 """
 
+from datetime import UTC
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.models.entities.investment_models import (
@@ -72,9 +74,8 @@ async def get_performance_history(
     current_user = Depends(get_current_user)
 ) -> dict:
     """Get performance history for an account."""
-    from datetime import datetime, timedelta
-    from decimal import Decimal
     import random
+    from datetime import datetime, timedelta
 
     # Verify account ownership
     account = investment_manager.get_account(account_id, current_user["user_id"])
@@ -102,7 +103,7 @@ async def get_performance_history(
     current_value = base_value
 
     for i in range(days, -1, -1):
-        date = datetime.utcnow() - timedelta(days=i)
+        date = datetime.now(UTC) - timedelta(days=i)
         dates.append(date.strftime("%Y-%m-%d"))
 
         # Simulate value changes

@@ -1,13 +1,21 @@
 """KYC Service - Business logic for Know Your Customer compliance"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, timedelta
-from uuid import UUID
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
 from ..models.kyc_models import (
-    CustomerProfile, CorporateCustomer, IdentityVerification, EnhancedDueDiligence,
-    PeriodicReview, BeneficialOwner, KYCReport, CustomerType, RiskRating,
-    VerificationStatus, DocumentType
+    BeneficialOwner,
+    CustomerProfile,
+    CustomerType,
+    DocumentType,
+    EnhancedDueDiligence,
+    IdentityVerification,
+    KYCReport,
+    PeriodicReview,
+    RiskRating,
+    VerificationStatus,
 )
 from ..repositories.kyc_repository import kyc_repository
 
@@ -18,17 +26,24 @@ class KYCService:
 
     def _calculate_risk_score(self, profile: CustomerProfile) -> int:
         score = 50
-        if profile.pep_status: score += 30
-        if profile.sanctions_status: score += 50
-        if profile.adverse_media: score += 20
+        if profile.pep_status:
+            score += 30
+        if profile.sanctions_status:
+            score += 50
+        if profile.adverse_media:
+            score += 20
         high_risk_countries = ["AF", "KP", "IR", "SY"]
-        if profile.country_of_residence in high_risk_countries: score += 25
-        if profile.expected_monthly_volume > Decimal("100000"): score += 15
+        if profile.country_of_residence in high_risk_countries:
+            score += 25
+        if profile.expected_monthly_volume > Decimal("100000"):
+            score += 15
         return min(score, 100)
 
     def _determine_rating(self, score: int) -> RiskRating:
-        if score >= 80: return RiskRating.HIGH
-        if score >= 50: return RiskRating.MEDIUM
+        if score >= 80:
+            return RiskRating.HIGH
+        if score >= 50:
+            return RiskRating.MEDIUM
         return RiskRating.LOW
 
     async def create_customer_profile(
@@ -51,7 +66,7 @@ class KYCService:
         await self.repository.save_profile(profile)
         return profile
 
-    async def get_profile(self, profile_id: UUID) -> Optional[CustomerProfile]:
+    async def get_profile(self, profile_id: UUID) -> CustomerProfile | None:
         return await self.repository.find_profile_by_id(profile_id)
 
     async def verify_identity(
@@ -68,12 +83,12 @@ class KYCService:
         return verification
 
     async def complete_verification(
-        self, verification_id: UUID, verified_by: str, passed: bool, failure_reason: Optional[str] = None
-    ) -> Optional[IdentityVerification]:
+        self, verification_id: UUID, verified_by: str, passed: bool, failure_reason: str | None = None
+    ) -> IdentityVerification | None:
         verification = await self.repository.find_verification_by_id(verification_id)
         if verification:
             verification.status = VerificationStatus.VERIFIED if passed else VerificationStatus.FAILED
-            verification.verification_date = datetime.utcnow()
+            verification.verification_date = datetime.now(UTC)
             verification.verified_by = verified_by
             verification.failure_reason = failure_reason
         return verification
@@ -81,7 +96,7 @@ class KYCService:
     async def perform_edd(
         self, profile_id: UUID, trigger_reason: str, conducted_by: str,
         business_relationship_purpose: str, expected_transactions: str,
-        geographical_exposure: List[str], next_review_date: date
+        geographical_exposure: list[str], next_review_date: date
     ) -> EnhancedDueDiligence:
         edd = EnhancedDueDiligence(
             profile_id=profile_id, trigger_reason=trigger_reason, edd_date=date.today(),
@@ -149,7 +164,7 @@ class KYCService:
         await self.repository.save_report(report)
         return report
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         return await self.repository.get_statistics()
 
 

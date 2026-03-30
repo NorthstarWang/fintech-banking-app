@@ -3,7 +3,7 @@ Mock implementation for messages routes.
 """
 from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repositories.data_manager import data_manager
 
 router = APIRouter()
@@ -59,8 +59,8 @@ async def send_message(data: Dict[str, Any], current_user: Dict[str, Any] = Depe
         "priority": data.get("priority", "normal"),
         "is_read": False,  # Changed from "read" to "is_read"
         "read": False,  # Keep for compatibility
-        "sent_at": datetime.utcnow().isoformat(),  # Changed from "created_at" to "sent_at"
-        "created_at": datetime.utcnow().isoformat(),  # Keep for compatibility
+        "sent_at": datetime.now(timezone.utc).isoformat(),  # Changed from "created_at" to "sent_at"
+        "created_at": datetime.now(timezone.utc).isoformat(),  # Keep for compatibility
         "attachments": data.get("attachments", [])  # Support attachments on send
     }
     
@@ -132,7 +132,7 @@ async def save_draft(data: Dict[str, Any], current_user: Dict[str, Any] = Depend
         "subject": data.get("subject", ""),
         "message": data.get("message", ""),
         "is_draft": True,
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     data_manager.messages.append(draft)
     return draft
@@ -285,7 +285,7 @@ async def mark_read(message_id: str, current_user: Dict[str, Any] = Depends(get_
     
     message["is_read"] = True
     message["read"] = True
-    message["read_at"] = datetime.utcnow().isoformat()
+    message["read_at"] = datetime.now(timezone.utc).isoformat()
     
     return message
 
@@ -324,8 +324,8 @@ async def reply_message(message_id: str, data: Dict[str, Any], current_user: Dic
         "reply_to": message_id,
         "is_read": False,
         "read": False,
-        "sent_at": datetime.utcnow().isoformat(),
-        "created_at": datetime.utcnow().isoformat()
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     data_manager.messages.append(reply)
@@ -392,7 +392,7 @@ async def add_attachment(message_id: str, data: Dict[str, Any], current_user: Di
         "filename": data.get("filename", "attachment"),
         "size": data.get("size", 0),
         "type": data.get("type", "application/octet-stream"),
-        "uploaded_at": datetime.utcnow().isoformat()
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
     }
     
     message["attachments"].append(attachment)

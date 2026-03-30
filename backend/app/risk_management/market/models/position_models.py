@@ -1,9 +1,9 @@
 """Position Models - Trading position and P&L models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -45,8 +45,8 @@ class TradingPosition(BaseModel):
     status: PositionStatus = PositionStatus.OPEN
     risk_weight: float = 1.0
     var_contribution: float = 0.0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DailyPnL(BaseModel):
@@ -64,8 +64,8 @@ class DailyPnL(BaseModel):
     mtm_pnl: float
     new_trade_pnl: float
     fees_and_costs: float = 0.0
-    pnl_attribution: Dict[str, float] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    pnl_attribution: dict[str, float] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PnLAttribution(BaseModel):
@@ -84,9 +84,9 @@ class PnLAttribution(BaseModel):
     roll_pnl: float
     trade_pnl: float
     unexplained_pnl: float
-    by_asset_class: Dict[str, float] = {}
-    by_risk_factor: Dict[str, float] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    by_asset_class: dict[str, float] = {}
+    by_risk_factor: dict[str, float] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PortfolioValuation(BaseModel):
@@ -100,11 +100,11 @@ class PortfolioValuation(BaseModel):
     cash_balance: float
     collateral_value: float
     net_asset_value: float
-    by_asset_class: Dict[str, float] = {}
-    by_currency: Dict[str, float] = {}
-    by_sector: Dict[str, float] = {}
-    concentration_metrics: Dict[str, float] = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    by_asset_class: dict[str, float] = {}
+    by_currency: dict[str, float] = {}
+    by_sector: dict[str, float] = {}
+    concentration_metrics: dict[str, float] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class TradingBook(BaseModel):
@@ -121,7 +121,7 @@ class TradingBook(BaseModel):
     gross_limit: float
     net_limit: float
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PositionStatistics(BaseModel):
@@ -129,5 +129,5 @@ class PositionStatistics(BaseModel):
     total_market_value: float = 0.0
     total_unrealized_pnl: float = 0.0
     total_realized_pnl: float = 0.0
-    by_asset_class: Dict[str, int] = {}
-    by_status: Dict[str, int] = {}
+    by_asset_class: dict[str, int] = {}
+    by_status: dict[str, int] = {}

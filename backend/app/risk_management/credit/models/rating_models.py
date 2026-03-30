@@ -1,9 +1,10 @@
 """Rating Models - Credit rating and grading models"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -44,29 +45,29 @@ class CreditRating(BaseModel):
     rating_date: date
     effective_date: date
     review_date: date
-    expiry_date: Optional[date] = None
-    previous_rating: Optional[str] = None
-    rating_change: Optional[str] = None  # upgrade, downgrade, affirmed
-    rating_factors: List[Dict[str, Any]] = []
+    expiry_date: date | None = None
+    previous_rating: str | None = None
+    rating_change: str | None = None  # upgrade, downgrade, affirmed
+    rating_factors: list[dict[str, Any]] = []
     rating_rationale: str
     rated_by: str
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
     status: str = "active"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingScale(BaseModel):
     scale_id: UUID = Field(default_factory=uuid4)
     scale_name: str
     rating_agency: RatingAgency
-    grades: List[Dict[str, Any]] = []
+    grades: list[dict[str, Any]] = []
     default_grade: str
-    pd_mapping: Dict[str, float] = {}
-    lgd_mapping: Dict[str, float] = {}
+    pd_mapping: dict[str, float] = {}
+    lgd_mapping: dict[str, float] = {}
     is_active: bool = True
     effective_date: date
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingGrade(BaseModel):
@@ -91,15 +92,15 @@ class RatingModel(BaseModel):
     entity_type: str
     segment: str
     version: str
-    factors: List[Dict[str, Any]] = []
-    factor_weights: Dict[str, float] = {}
+    factors: list[dict[str, Any]] = []
+    factor_weights: dict[str, float] = {}
     calibration_date: date
-    validation_date: Optional[date] = None
-    accuracy_metrics: Dict[str, float] = {}
+    validation_date: date | None = None
+    accuracy_metrics: dict[str, float] = {}
     status: str = "active"
     created_by: str
-    approved_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingMigration(BaseModel):
@@ -111,11 +112,11 @@ class RatingMigration(BaseModel):
     migration_type: str  # upgrade, downgrade, default
     migration_date: date
     migration_reason: str
-    trigger_events: List[str] = []
+    trigger_events: list[str] = []
     migration_steps: int = 0
     previous_pd: float
     new_pd: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingReview(BaseModel):
@@ -127,17 +128,17 @@ class RatingReview(BaseModel):
     current_rating: str
     proposed_rating: str
     rating_action: str  # affirm, upgrade, downgrade, withdraw
-    financial_analysis: Dict[str, Any] = {}
-    qualitative_factors: Dict[str, Any] = {}
-    industry_analysis: Dict[str, Any] = {}
-    peer_comparison: Dict[str, Any] = {}
+    financial_analysis: dict[str, Any] = {}
+    qualitative_factors: dict[str, Any] = {}
+    industry_analysis: dict[str, Any] = {}
+    peer_comparison: dict[str, Any] = {}
     recommendation: str
     reviewed_by: str
     review_notes: str
     status: str = "pending"
-    approved_by: Optional[str] = None
-    approved_date: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    approved_by: str | None = None
+    approved_date: datetime | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingOverride(BaseModel):
@@ -148,20 +149,20 @@ class RatingOverride(BaseModel):
     override_rating: str
     override_reason: str
     override_type: str  # quantitative, qualitative, expert
-    supporting_factors: List[str] = []
+    supporting_factors: list[str] = []
     override_date: date
     expiry_date: date
     approved_by: str
     approval_date: datetime
     status: str = "active"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class RatingStatistics(BaseModel):
     total_ratings: int = 0
-    by_grade: Dict[str, int] = {}
-    by_category: Dict[str, int] = {}
-    by_outlook: Dict[str, int] = {}
+    by_grade: dict[str, int] = {}
+    by_category: dict[str, int] = {}
+    by_outlook: dict[str, int] = {}
     upgrades_ytd: int = 0
     downgrades_ytd: int = 0
     defaults_ytd: int = 0

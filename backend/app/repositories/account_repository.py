@@ -2,7 +2,7 @@
 Account repository for managing account data in the mock system.
 """
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from app.repositories.base_repository import BaseRepository
@@ -38,7 +38,7 @@ class AccountRepository(BaseRepository[dict[str, Any]]):
     def _generate_account_number(self) -> str:
         """Generate a unique account number."""
         # Simple format: ACC + timestamp + random digits
-        timestamp = datetime.utcnow().strftime('%Y%m%d')
+        timestamp = datetime.now(UTC).strftime('%Y%m%d')
         random_part = str(uuid.uuid4().int)[:6]
         return f"ACC{timestamp}{random_part}"
 
@@ -75,7 +75,7 @@ class AccountRepository(BaseRepository[dict[str, Any]]):
         elif operation == 'subtract':
             account['balance'] -= amount
 
-        account['updated_at'] = datetime.utcnow().isoformat()
+        account['updated_at'] = datetime.now(UTC).isoformat()
         return True
 
     def get_total_balance(self, user_id: str) -> dict[str, Any]:
@@ -108,5 +108,5 @@ class AccountRepository(BaseRepository[dict[str, Any]]):
             return False
 
         account['is_active'] = False
-        account['updated_at'] = datetime.utcnow().isoformat()
+        account['updated_at'] = datetime.now(UTC).isoformat()
         return True

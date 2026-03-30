@@ -1,25 +1,31 @@
 """Collateral Repository - Data access layer for collateral"""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import UTC, date, datetime
+from typing import Any
 from uuid import UUID
+
 from ..models.collateral_models import (
-    Collateral, CollateralValuation, CollateralAllocation,
-    CollateralHaircut, CollateralMonitoring, Guarantee,
-    CollateralType, CollateralStatus
+    Collateral,
+    CollateralAllocation,
+    CollateralHaircut,
+    CollateralMonitoring,
+    CollateralStatus,
+    CollateralType,
+    CollateralValuation,
+    Guarantee,
 )
 
 
 class CollateralRepository:
     def __init__(self):
-        self._collaterals: Dict[UUID, Collateral] = {}
-        self._valuations: Dict[UUID, CollateralValuation] = {}
-        self._allocations: Dict[UUID, CollateralAllocation] = {}
-        self._haircuts: Dict[UUID, CollateralHaircut] = {}
-        self._monitoring: Dict[UUID, CollateralMonitoring] = {}
-        self._guarantees: Dict[UUID, Guarantee] = {}
-        self._owner_index: Dict[str, List[UUID]] = {}
-        self._code_index: Dict[str, UUID] = {}
+        self._collaterals: dict[UUID, Collateral] = {}
+        self._valuations: dict[UUID, CollateralValuation] = {}
+        self._allocations: dict[UUID, CollateralAllocation] = {}
+        self._haircuts: dict[UUID, CollateralHaircut] = {}
+        self._monitoring: dict[UUID, CollateralMonitoring] = {}
+        self._guarantees: dict[UUID, Guarantee] = {}
+        self._owner_index: dict[str, list[UUID]] = {}
+        self._code_index: dict[str, UUID] = {}
 
     async def save(self, collateral: Collateral) -> Collateral:
         self._collaterals[collateral.collateral_id] = collateral
@@ -30,31 +36,31 @@ class CollateralRepository:
             self._owner_index[collateral.owner_id].append(collateral.collateral_id)
         return collateral
 
-    async def find_by_id(self, collateral_id: UUID) -> Optional[Collateral]:
+    async def find_by_id(self, collateral_id: UUID) -> Collateral | None:
         return self._collaterals.get(collateral_id)
 
-    async def find_by_code(self, code: str) -> Optional[Collateral]:
+    async def find_by_code(self, code: str) -> Collateral | None:
         cid = self._code_index.get(code)
         if cid:
             return self._collaterals.get(cid)
         return None
 
-    async def find_by_owner(self, owner_id: str) -> List[Collateral]:
+    async def find_by_owner(self, owner_id: str) -> list[Collateral]:
         cids = self._owner_index.get(owner_id, [])
         return [self._collaterals[cid] for cid in cids if cid in self._collaterals]
 
-    async def find_by_type(self, col_type: CollateralType) -> List[Collateral]:
+    async def find_by_type(self, col_type: CollateralType) -> list[Collateral]:
         return [c for c in self._collaterals.values() if c.collateral_type == col_type]
 
-    async def find_by_status(self, status: CollateralStatus) -> List[Collateral]:
+    async def find_by_status(self, status: CollateralStatus) -> list[Collateral]:
         return [c for c in self._collaterals.values() if c.status == status]
 
-    async def find_requiring_valuation(self) -> List[Collateral]:
+    async def find_requiring_valuation(self) -> list[Collateral]:
         today = date.today()
         return [c for c in self._collaterals.values() if c.next_valuation_date and c.next_valuation_date <= today]
 
     async def update(self, collateral: Collateral) -> Collateral:
-        collateral.updated_at = datetime.utcnow()
+        collateral.updated_at = datetime.now(UTC)
         self._collaterals[collateral.collateral_id] = collateral
         return collateral
 
@@ -62,11 +68,11 @@ class CollateralRepository:
         self._valuations[valuation.valuation_id] = valuation
         return valuation
 
-    async def find_valuations_by_collateral(self, collateral_id: UUID) -> List[CollateralValuation]:
+    async def find_valuations_by_collateral(self, collateral_id: UUID) -> list[CollateralValuation]:
         valuations = [v for v in self._valuations.values() if v.collateral_id == collateral_id]
         return sorted(valuations, key=lambda x: x.valuation_date, reverse=True)
 
-    async def find_latest_valuation(self, collateral_id: UUID) -> Optional[CollateralValuation]:
+    async def find_latest_valuation(self, collateral_id: UUID) -> CollateralValuation | None:
         valuations = await self.find_valuations_by_collateral(collateral_id)
         return valuations[0] if valuations else None
 
@@ -74,17 +80,17 @@ class CollateralRepository:
         self._allocations[allocation.allocation_id] = allocation
         return allocation
 
-    async def find_allocations_by_collateral(self, collateral_id: UUID) -> List[CollateralAllocation]:
+    async def find_allocations_by_collateral(self, collateral_id: UUID) -> list[CollateralAllocation]:
         return [a for a in self._allocations.values() if a.collateral_id == collateral_id]
 
-    async def find_allocations_by_facility(self, facility_id: UUID) -> List[CollateralAllocation]:
+    async def find_allocations_by_facility(self, facility_id: UUID) -> list[CollateralAllocation]:
         return [a for a in self._allocations.values() if a.facility_id == facility_id]
 
     async def save_haircut(self, haircut: CollateralHaircut) -> CollateralHaircut:
         self._haircuts[haircut.haircut_id] = haircut
         return haircut
 
-    async def find_haircut_by_type(self, col_type: CollateralType) -> Optional[CollateralHaircut]:
+    async def find_haircut_by_type(self, col_type: CollateralType) -> CollateralHaircut | None:
         for h in self._haircuts.values():
             if h.collateral_type == col_type:
                 return h
@@ -94,17 +100,17 @@ class CollateralRepository:
         self._monitoring[monitoring.monitoring_id] = monitoring
         return monitoring
 
-    async def find_monitoring_by_collateral(self, collateral_id: UUID) -> List[CollateralMonitoring]:
+    async def find_monitoring_by_collateral(self, collateral_id: UUID) -> list[CollateralMonitoring]:
         return [m for m in self._monitoring.values() if m.collateral_id == collateral_id]
 
     async def save_guarantee(self, guarantee: Guarantee) -> Guarantee:
         self._guarantees[guarantee.guarantee_id] = guarantee
         return guarantee
 
-    async def find_guarantees_by_facility(self, facility_id: UUID) -> List[Guarantee]:
+    async def find_guarantees_by_facility(self, facility_id: UUID) -> list[Guarantee]:
         return [g for g in self._guarantees.values() if g.guaranteed_facility_id == facility_id]
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         total_value = sum(c.current_value for c in self._collaterals.values())
         by_type = {}
         for col in self._collaterals.values():

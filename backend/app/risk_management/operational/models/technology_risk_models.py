@@ -1,11 +1,12 @@
 """Technology Risk Models - Data models for IT risk management"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
-from uuid import UUID, uuid4
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 
 class AssetType(str, Enum):
@@ -65,50 +66,50 @@ class ITAsset(BaseModel):
     business_unit: str
     location: str
     environment: str  # production, staging, development
-    ip_address: Optional[str] = None
-    hostname: Optional[str] = None
-    operating_system: Optional[str] = None
-    version: Optional[str] = None
-    vendor: Optional[str] = None
-    support_end_date: Optional[date] = None
+    ip_address: str | None = None
+    hostname: str | None = None
+    operating_system: str | None = None
+    version: str | None = None
+    vendor: str | None = None
+    support_end_date: date | None = None
     data_classification: str
     pii_stored: bool = False
     pci_scope: bool = False
     sox_scope: bool = False
-    last_scan_date: Optional[date] = None
+    last_scan_date: date | None = None
     vulnerability_count: int = 0
     compliance_status: str = "compliant"
     is_active: bool = True
     created_date: date = Field(default_factory=date.today)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class Vulnerability(BaseModel):
     vulnerability_id: UUID = Field(default_factory=uuid4)
-    cve_id: Optional[str] = None
+    cve_id: str | None = None
     title: str
     description: str
     severity: VulnerabilitySeverity
-    cvss_score: Optional[Decimal] = None
-    cvss_vector: Optional[str] = None
-    affected_assets: List[UUID] = Field(default_factory=list)
-    affected_systems: List[str] = Field(default_factory=list)
+    cvss_score: Decimal | None = None
+    cvss_vector: str | None = None
+    affected_assets: list[UUID] = Field(default_factory=list)
+    affected_systems: list[str] = Field(default_factory=list)
     discovery_date: date
     discovery_source: str
     exploit_available: bool = False
     actively_exploited: bool = False
     patch_available: bool = False
-    patch_id: Optional[str] = None
-    remediation_steps: List[str] = Field(default_factory=list)
-    workaround: Optional[str] = None
+    patch_id: str | None = None
+    remediation_steps: list[str] = Field(default_factory=list)
+    workaround: str | None = None
     status: str = "open"
-    assigned_to: Optional[str] = None
-    due_date: Optional[date] = None
-    remediation_date: Optional[date] = None
+    assigned_to: str | None = None
+    due_date: date | None = None
+    remediation_date: date | None = None
     false_positive: bool = False
     risk_accepted: bool = False
-    acceptance_reason: Optional[str] = None
-    acceptance_expiry: Optional[date] = None
+    acceptance_reason: str | None = None
+    acceptance_expiry: date | None = None
 
 
 class PatchManagement(BaseModel):
@@ -118,19 +119,19 @@ class PatchManagement(BaseModel):
     vendor: str
     release_date: date
     severity: str
-    affected_products: List[str]
-    affected_assets: List[UUID] = Field(default_factory=list)
-    cve_addressed: List[str] = Field(default_factory=list)
+    affected_products: list[str]
+    affected_assets: list[UUID] = Field(default_factory=list)
+    cve_addressed: list[str] = Field(default_factory=list)
     status: PatchStatus = PatchStatus.PENDING
-    scheduled_date: Optional[date] = None
-    applied_date: Optional[date] = None
-    applied_by: Optional[str] = None
+    scheduled_date: date | None = None
+    applied_date: date | None = None
+    applied_by: str | None = None
     test_required: bool = True
-    test_status: Optional[str] = None
-    test_date: Optional[date] = None
+    test_status: str | None = None
+    test_date: date | None = None
     rollback_plan: bool = False
-    change_ticket: Optional[str] = None
-    notes: Optional[str] = None
+    change_ticket: str | None = None
+    notes: str | None = None
 
 
 class TechRiskAssessment(BaseModel):
@@ -143,15 +144,15 @@ class TechRiskAssessment(BaseModel):
     integrity_risk: str
     availability_risk: str
     overall_risk_rating: str
-    threats_identified: List[str]
-    vulnerabilities_found: List[str]
-    controls_in_place: List[str]
-    control_gaps: List[str]
-    recommendations: List[str]
-    action_items: List[Dict[str, Any]] = Field(default_factory=list)
-    next_assessment_date: Optional[date] = None
+    threats_identified: list[str]
+    vulnerabilities_found: list[str]
+    controls_in_place: list[str]
+    control_gaps: list[str]
+    recommendations: list[str]
+    action_items: list[dict[str, Any]] = Field(default_factory=list)
+    next_assessment_date: date | None = None
     status: str = "completed"
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
 
 
 class SecurityIncident(BaseModel):
@@ -164,22 +165,22 @@ class SecurityIncident(BaseModel):
     description: str
     detected_time: datetime
     reported_time: datetime
-    affected_assets: List[UUID] = Field(default_factory=list)
+    affected_assets: list[UUID] = Field(default_factory=list)
     affected_users: int = 0
     data_compromised: bool = False
-    data_type_compromised: Optional[List[str]] = None
-    records_affected: Optional[int] = None
-    attack_vector: Optional[str] = None
-    indicators_of_compromise: List[str] = Field(default_factory=list)
-    containment_time: Optional[datetime] = None
-    eradication_time: Optional[datetime] = None
-    recovery_time: Optional[datetime] = None
-    closure_time: Optional[datetime] = None
-    root_cause: Optional[str] = None
-    lessons_learned: List[str] = Field(default_factory=list)
+    data_type_compromised: list[str] | None = None
+    records_affected: int | None = None
+    attack_vector: str | None = None
+    indicators_of_compromise: list[str] = Field(default_factory=list)
+    containment_time: datetime | None = None
+    eradication_time: datetime | None = None
+    recovery_time: datetime | None = None
+    closure_time: datetime | None = None
+    root_cause: str | None = None
+    lessons_learned: list[str] = Field(default_factory=list)
     regulatory_notification: bool = False
-    notification_date: Optional[datetime] = None
-    financial_impact: Optional[Decimal] = None
+    notification_date: datetime | None = None
+    financial_impact: Decimal | None = None
 
 
 class AccessReview(BaseModel):
@@ -199,10 +200,10 @@ class AccessReview(BaseModel):
     orphan_accounts: int
     dormant_accounts: int
     segregation_conflicts: int
-    findings: List[str] = Field(default_factory=list)
+    findings: list[str] = Field(default_factory=list)
     status: str = "in_progress"
-    completion_date: Optional[date] = None
-    next_review_date: Optional[date] = None
+    completion_date: date | None = None
+    next_review_date: date | None = None
 
 
 class ChangeRisk(BaseModel):
@@ -211,17 +212,17 @@ class ChangeRisk(BaseModel):
     change_title: str
     change_type: str  # standard, normal, emergency
     change_date: date
-    affected_systems: List[UUID]
+    affected_systems: list[UUID]
     risk_category: str
     risk_score: int
     impact_assessment: str
     rollback_plan: bool
     test_plan: bool
     approval_status: str
-    approved_by: Optional[str] = None
+    approved_by: str | None = None
     implementation_status: str
     post_implementation_review: bool = False
-    issues_found: List[str] = Field(default_factory=list)
+    issues_found: list[str] = Field(default_factory=list)
     created_by: str
 
 
@@ -246,4 +247,4 @@ class TechRiskMetrics(BaseModel):
     access_reviews_completed: int
     access_reviews_pending: int
     compliance_score: Decimal
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

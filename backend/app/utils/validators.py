@@ -52,7 +52,7 @@ class Validators:
 
         category = db.query(Category).filter(
             Category.id == category_id,
-            ORClause(Category.is_system == True, Category.user_id == user_id)
+            ORClause(Category.is_system == True, Category.user_id == user_id)  # noqa: E712
         ).first()
 
         if not category:

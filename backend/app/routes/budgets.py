@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from dateutil.relativedelta import relativedelta
@@ -128,7 +128,7 @@ async def create_budget(
     # Calculate initial usage
     usage = calculate_budget_usage(new_budget, db_session, current_user['user_id'])
 
-    response = BudgetResponse.from_orm(new_budget)
+    response = BudgetResponse.model_validate(new_budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
@@ -157,7 +157,7 @@ async def get_budgets(
     results = []
     for budget in budgets:
         usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
-        response = BudgetResponse.from_orm(budget)
+        response = BudgetResponse.model_validate(budget)
         response.spent_amount = usage['spent_amount']
         response.remaining_amount = usage['remaining_amount']
         response.percentage_used = usage['percentage_used']
@@ -192,7 +192,7 @@ async def get_budget_summary(
         total_budgeted += budget.amount
         total_spent += usage['spent_amount']
 
-        response = BudgetResponse.from_orm(budget)
+        response = BudgetResponse.model_validate(budget)
         response.spent_amount = usage['spent_amount']
         response.remaining_amount = usage['remaining_amount']
         response.percentage_used = usage['percentage_used']
@@ -225,7 +225,7 @@ async def get_budget(
 
     usage = calculate_budget_usage(budget, db_session, current_user['user_id'])
 
-    response = BudgetResponse.from_orm(budget)
+    response = BudgetResponse.model_validate(budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
@@ -267,7 +267,7 @@ async def update_budget(
     if update_data.is_active is not None:
         budget.is_active = update_data.is_active
 
-    budget.updated_at = datetime.utcnow()
+    budget.updated_at = datetime.now(UTC)
     db_session.commit()
     db_session.refresh(budget)
 
@@ -309,7 +309,7 @@ async def update_budget(
 
         # Log budget alert
 
-    response = BudgetResponse.from_orm(budget)
+    response = BudgetResponse.model_validate(budget)
     response.spent_amount = usage['spent_amount']
     response.remaining_amount = usage['remaining_amount']
     response.percentage_used = usage['percentage_used']
@@ -338,7 +338,7 @@ async def delete_budget(
 
     # Soft delete - just deactivate
     budget.is_active = False
-    budget.updated_at = datetime.utcnow()
+    budget.updated_at = datetime.now(UTC)
     db_session.commit()
 
     # Log deletion
