@@ -77,6 +77,7 @@ backend/comprehensive_*.py
 backend/final_*.py
 backend/simple_joint_test.py
 backend/create_all_mock_routes.py
+backend/.mypy_cache/
 
 CLAUDE.md
 
