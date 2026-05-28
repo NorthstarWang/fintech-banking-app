@@ -2,18 +2,20 @@
 """Systematically run all tests and capture results"""
 
 import subprocess
-import json
+import sys
 from pathlib import Path
+
 
 def run_test_file(test_file):
     """Run a single test file and capture results"""
     try:
         result = subprocess.run(
-            ['python3', '-m', 'pytest', test_file, '-v', '--tb=short'],
+            [sys.executable, '-m', 'pytest', test_file, '-v', '--tb=short'],
             capture_output=True,
             text=True,
             timeout=90,
-            cwd='tests'
+            cwd='tests',
+            check=False,
         )
         return {
             'file': test_file,
@@ -125,9 +127,9 @@ def main():
                 f.write(f"\nSTDERR:\n{result['stderr']}\n")
             f.write("\n\n")
 
-    print(f"Detailed results written to: test_results_detailed.txt")
+    print("Detailed results written to: test_results_detailed.txt")
 
     return 0 if len(failed_files) == 0 and len(error_files) == 0 else 1
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())

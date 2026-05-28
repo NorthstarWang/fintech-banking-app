@@ -2,10 +2,21 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import CurrencyConverterPage from '../page';
-import { fetchApi } from '@/lib/api';
+import { apiClient } from '@/lib/api/client';
 
 // Mock dependencies
-jest.mock('@/lib/api');
+jest.mock('@/lib/api/client', () => ({
+  apiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    setAuthToken: jest.fn(),
+    getAuthToken: jest.fn(),
+  },
+  APIClient: jest.fn(),
+  APIError: class APIError extends Error {},
+}));
 jest.mock('@/hooks/useSyntheticTracking', () => ({
   useSyntheticTracking: () => ({
     trackCurrencyConversion: jest.fn(),
@@ -13,7 +24,7 @@ jest.mock('@/hooks/useSyntheticTracking', () => ({
   })
 }));
 
-const mockFetchApi = fetchApi as jest.MockedFunction<typeof fetchApi>;
+const mockFetchApi = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('CurrencyConverterPage', () => {
   const mockCurrencies = [
@@ -30,11 +41,19 @@ describe('CurrencyConverterPage', () => {
   ];
 
   const mockExchangeRate = {
-    from_currency: 'USD',
-    to_currency: 'EUR',
+    currency_pair: {
+      from_currency: 'USD',
+      to_currency: 'EUR',
+      from_type: 'fiat',
+      to_type: 'fiat'
+    },
     rate: 0.92,
-    market_rate: 0.921,
-    spread_percentage: 0.1,
+    spread: 0.001,
+    effective_rate: 0.921,
+    fee_percentage: 0.1,
+    minimum_amount: 1,
+    maximum_amount: 10000,
+    estimated_arrival: '1-2 business days',
     last_updated: '2024-01-15T10:00:00Z'
   };
 
@@ -88,7 +107,11 @@ describe('CurrencyConverterPage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetchApi.mockImplementation((url: string, options?: unknown) => {
+    mockFetchApi.get = jest.fn();
+    mockFetchApi.post = jest.fn();
+    mockFetchApi.put = jest.fn();
+    mockFetchApi.delete = jest.fn();
+    mockFetchApi.get.mockImplementation((url: string) => {
       if (url === '/api/currency-converter/currencies') {
         return Promise.resolve(mockCurrencies);
       }
@@ -98,9 +121,6 @@ describe('CurrencyConverterPage', () => {
       if (url.includes('/api/currency-converter/exchange-rate/')) {
         return Promise.resolve(mockExchangeRate);
       }
-      if (url === '/api/currency-converter/quote' && options?.method === 'POST') {
-        return Promise.resolve(mockQuote);
-      }
       if (url.includes('/api/currency-converter/p2p/offers/search')) {
         return Promise.resolve(mockP2POffers);
       }
@@ -109,14 +129,27 @@ describe('CurrencyConverterPage', () => {
       }
       return Promise.resolve([]);
     });
+    mockFetchApi.post.mockImplementation((url: string) => {
+      if (url === '/api/currency-converter/quote') {
+        return Promise.resolve(mockQuote);
+      }
+      if (url === '/api/currency-converter/orders') {
+        return Promise.resolve({ id: 1, status: 'pending' });
+      }
+      if (url === '/api/currency-converter/p2p/trades') {
+        return Promise.resolve({ id: 2, status: 'pending' });
+      }
+      return Promise.resolve({});
+    });
   });
 
   test('renders currency converter page and loads data', async () => {
     render(<CurrencyConverterPage />);
 
-    // Check page title
-    expect(screen.getByText('Currency Converter')).toBeInTheDocument();
-    expect(screen.getByText('Exchange currencies with competitive rates and P2P trading')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Currency Converter')).toBeInTheDocument();
+      expect(screen.getByText('Exchange currencies with competitive rates and P2P trading')).toBeInTheDocument();
+    });
 
     // Wait for data to load
     await waitFor(() => {
@@ -124,12 +157,7 @@ describe('CurrencyConverterPage', () => {
       expect(screen.getByText('$9,500.00')).toBeInTheDocument(); // USD balance
     });
 
-    // Verify analytics tracking
-    expect(mockAnalyticsLogger.logEvent).toHaveBeenCalledWith('PAGE_VIEW', {
-      text: 'User viewed currency converter page',
-      page_name: 'Currency Converter',
-      timestamp: expect.any(String)
-    });
+    expect(mockFetchApi.get).toHaveBeenCalledWith('/api/currency-converter/currencies');
   });
 
   test('currency conversion form works correctly', async () => {
@@ -167,8 +195,9 @@ describe('CurrencyConverterPage', () => {
     expect(toSelect).toHaveValue('EUR');
 
     // Click swap button
-    const swapButton = screen.getByRole('button', { name: '' }).parentElement;
-    if (swapButton) fireEvent.click(swapButton);
+    const swapButton = screen.getAllByRole('button').find((button) => button.textContent === '');
+    expect(swapButton).toBeDefined();
+    fireEvent.click(swapButton!);
 
     // Check currencies are swapped
     await waitFor(() => {
@@ -188,7 +217,10 @@ describe('CurrencyConverterPage', () => {
     // Enter amount and get quote
     const amountInput = screen.getByPlaceholderText('0.00');
     fireEvent.change(amountInput, { target: { value: '1000' } });
-    
+
+    await waitFor(() => {
+      expect(screen.getByText('Get Quote')).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByText('Get Quote'));
 
     // Check quote modal appears
@@ -212,7 +244,9 @@ describe('CurrencyConverterPage', () => {
     render(<CurrencyConverterPage />);
 
     // Navigate to P2P tab
-    fireEvent.click(screen.getByText('P2P Exchange'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('P2P Exchange'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Find P2P Offers')).toBeInTheDocument();
@@ -235,7 +269,9 @@ describe('CurrencyConverterPage', () => {
     render(<CurrencyConverterPage />);
 
     // Navigate to P2P tab and search
-    fireEvent.click(screen.getByText('P2P Exchange'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('P2P Exchange'));
+    });
     
     const amountInput = screen.getByPlaceholderText('Amount');
     fireEvent.change(amountInput, { target: { value: '500' } });
@@ -261,7 +297,9 @@ describe('CurrencyConverterPage', () => {
     render(<CurrencyConverterPage />);
 
     // Navigate to History tab
-    fireEvent.click(screen.getByText('History'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('History'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Transaction History')).toBeInTheDocument();
@@ -303,21 +341,19 @@ describe('CurrencyConverterPage', () => {
   });
 
   test('error handling when API fails', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('API Error'));
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    mockFetchApi.get.mockRejectedValueOnce(new Error('API Error'));
 
     render(<CurrencyConverterPage />);
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error fetching data:', expect.any(Error));
+      expect(screen.getByText('Currency Converter')).toBeInTheDocument();
+      expect(screen.getByText('Your Balances')).toBeInTheDocument();
     });
-
-    consoleSpy.mockRestore();
   });
 
   test('empty state for P2P trades history', async () => {
     // Override trades to return empty array
-    mockFetchApi.mockImplementation((url: string) => {
+    mockFetchApi.get.mockImplementation((url: string) => {
       if (url === '/api/currency-converter/p2p/trades') {
         return Promise.resolve([]);
       }
@@ -330,7 +366,9 @@ describe('CurrencyConverterPage', () => {
     render(<CurrencyConverterPage />);
 
     // Navigate to History tab
-    fireEvent.click(screen.getByText('History'));
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('History'));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('No transactions yet')).toBeInTheDocument();

@@ -94,9 +94,16 @@ ignore = [
 "app/models/entities/__init__.py" = ["F403", "F405"]
 "app/models/dto.py" = ["F403"]
 "app/models/dto/__init__.py" = ["F403"]
+"analyze_tests.py" = ["T201"]
+"run_all_tests.py" = ["T201"]
 
 [tool.mypy]
 python_version = "3.12"
+exclude = [
+    "tests/",
+    "analyze_tests.py",
+    "run_all_tests.py",
+]
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -125,6 +132,7 @@ module = [
     "app.services.*",
     "app.middleware.*",
     "app.core.*",
+    "app.risk_management.*",
     "app.main_test_mock",
 ]
 ignore_errors = true

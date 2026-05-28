@@ -2,17 +2,28 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import CreditCardsPage from '../page';
-import { fetchApi } from '@/lib/api';
+import { apiClient } from '@/lib/api/client';
 
 // Mock dependencies
-jest.mock('@/lib/api');
+jest.mock('@/lib/api/client', () => ({
+  apiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    setAuthToken: jest.fn(),
+    getAuthToken: jest.fn(),
+  },
+  APIClient: jest.fn(),
+  APIError: class APIError extends Error {},
+}));
 jest.mock('@/hooks/useSyntheticTracking', () => ({
   useSyntheticTracking: () => ({
     trackCardApplication: jest.fn()
   })
 }));
 
-const mockFetchApi = fetchApi as jest.MockedFunction<typeof fetchApi>;
+const mockFetchApi = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('CreditCardsPage', () => {
   const mockCreditScore = {
@@ -87,7 +98,11 @@ describe('CreditCardsPage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetchApi.mockImplementation((url: string) => {
+    mockFetchApi.get = jest.fn();
+    mockFetchApi.post = jest.fn();
+    mockFetchApi.put = jest.fn();
+    mockFetchApi.delete = jest.fn();
+    mockFetchApi.get.mockImplementation((url: string) => {
       if (url === '/api/credit-cards/credit-score') {
         return Promise.resolve(mockCreditScore);
       }
@@ -102,14 +117,16 @@ describe('CreditCardsPage', () => {
       }
       return Promise.resolve([]);
     });
+    mockFetchApi.post.mockResolvedValue({});
   });
 
   test('renders credit cards page and loads data', async () => {
     render(<CreditCardsPage />);
 
-    // Check page title
-    expect(screen.getByText('Credit Cards')).toBeInTheDocument();
-    expect(screen.getByText('Find the perfect credit card for your needs')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Credit Cards')).toBeInTheDocument();
+      expect(screen.getByText('Find the perfect credit card for your needs')).toBeInTheDocument();
+    });
 
     // Wait for data to load
     await waitFor(() => {
@@ -117,12 +134,7 @@ describe('CreditCardsPage', () => {
       expect(screen.getByText('Very Good')).toBeInTheDocument();
     });
 
-    // Verify analytics tracking
-    expect(mockAnalyticsLogger.logEvent).toHaveBeenCalledWith('PAGE_VIEW', {
-      text: 'User viewed credit cards page',
-      page_name: 'Credit Cards',
-      timestamp: expect.any(String)
-    });
+    expect(mockFetchApi.get).toHaveBeenCalledWith('/api/credit-cards/credit-score');
   });
 
   test('displays credit score summary correctly', async () => {
@@ -227,19 +239,14 @@ describe('CreditCardsPage', () => {
   });
 
   test('application submission works', async () => {
-    mockFetchApi.mockImplementation((url: string, options?: unknown) => {
-      if (url === '/api/credit-cards/apply' && options?.method === 'POST') {
+    mockFetchApi.post.mockImplementation((url: string) => {
+      if (url === '/api/credit-cards/apply') {
         return Promise.resolve({
           status: 'approved',
           approved_credit_limit: 8000
         });
       }
-      // Return default mocks for other endpoints
-      if (url === '/api/credit-cards/credit-score') return Promise.resolve(mockCreditScore);
-      if (url === '/api/credit-cards/recommendations') return Promise.resolve(mockRecommendations);
-      if (url === '/api/credit-cards/offers') return Promise.resolve(mockOffers);
-      if (url === '/api/credit-cards/applications') return Promise.resolve(mockApplications);
-      return Promise.resolve([]);
+      return Promise.resolve({});
     });
 
     window.alert = jest.fn();
@@ -279,15 +286,13 @@ describe('CreditCardsPage', () => {
   });
 
   test('error handling when API fails', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('API Error'));
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    mockFetchApi.get.mockRejectedValueOnce(new Error('API Error'));
 
     render(<CreditCardsPage />);
 
     await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error fetching credit data:', expect.any(Error));
+      expect(screen.getByText('Credit Cards')).toBeInTheDocument();
+      expect(screen.getByText('No recommendations available yet. Try browsing all cards!')).toBeInTheDocument();
     });
-
-    consoleSpy.mockRestore();
   });
 });

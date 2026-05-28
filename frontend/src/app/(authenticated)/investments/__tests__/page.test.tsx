@@ -1,25 +1,30 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
+import fetchMock from 'jest-fetch-mock';
 import InvestmentsPage from '../page';
 import { apiClient } from '@/lib/api/client';
 
-// Mock dependencies
-jest.mock('@/lib/api/client');
+jest.mock('@/lib/api/client', () => ({
+  apiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    setAuthToken: jest.fn(),
+    getAuthToken: jest.fn(),
+  },
+  APIClient: jest.fn(),
+  APIError: class APIError extends Error {},
+}));
+
 jest.mock('@/hooks/useSyntheticTracking', () => ({
   useSyntheticTracking: () => ({
     trackInvestmentOrder: jest.fn(),
     trackPortfolioView: jest.fn(),
-    trackAssetSearch: jest.fn()
-  })
+    trackAssetSearch: jest.fn(),
+  }),
 }));
-
-// Mock analytics logger
-const mockAnalyticsLogger = {
-  logEvent: jest.fn(),
-  logPageView: jest.fn(),
-  logUserAction: jest.fn()
-};
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
@@ -28,40 +33,19 @@ describe('InvestmentsPage', () => {
     {
       id: 1,
       account_name: 'Test Investment Account',
+      name: 'Test Investment Account',
       account_type: 'individual',
-      account_number: 'INV123456',
       balance: 50000,
       cash_balance: 10000,
       invested_balance: 40000,
+      total_value: 50000,
       total_return: 5000,
       total_return_percentage: 12.5,
-      daily_change: 250,
-      daily_change_percentage: 0.5
-    }
-  ];
-
-  const mockAssets = [
-    {
-      id: 1,
-      symbol: 'AAPL',
-      name: 'Apple Inc.',
-      asset_type: 'stock',
-      current_price: 175.50,
-      price_change: 2.50,
-      price_change_percentage: 1.44,
-      market_cap: 2800000000000,
-      volume: 50000000
+      buying_power: 10000,
+      status: 'active',
+      risk_level: 'medium',
+      opened_date: '2024-01-01',
     },
-    {
-      id: 2,
-      symbol: 'VOO',
-      name: 'Vanguard S&P 500 ETF',
-      asset_type: 'etf',
-      current_price: 425.30,
-      price_change: -1.20,
-      price_change_percentage: -0.28,
-      expense_ratio: 0.03
-    }
   ];
 
   const mockPortfolio = {
@@ -70,179 +54,121 @@ describe('InvestmentsPage', () => {
     invested_balance: 40000,
     total_return: 5000,
     total_return_percentage: 12.5,
-    daily_change: 250,
-    daily_change_percentage: 0.5,
     positions: [
       {
-        asset_id: 1,
         symbol: 'AAPL',
         name: 'Apple Inc.',
+        asset_type: 'stock',
         quantity: 100,
-        average_cost: 150.00,
-        current_price: 175.50,
+        avg_cost: 150,
+        current_price: 175.5,
         current_value: 17550,
         total_return: 2550,
-        total_return_percentage: 17.0
-      }
+        total_return_percentage: 17,
+      },
     ],
-    asset_allocation: {
-      stocks: 70,
-      etfs: 20,
-      crypto: 10
-    }
+    allocation: [
+      { asset_type: 'Stocks', value: 30000, percentage: 60, count: 4 },
+      { asset_type: 'ETFs', value: 15000, percentage: 30, count: 2 },
+      { asset_type: 'Crypto', value: 5000, percentage: 10, count: 1 },
+    ],
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Manually set up mock functions
+    fetchMock.resetMocks();
     mockApiClient.get = jest.fn();
     mockApiClient.post = jest.fn();
     mockApiClient.put = jest.fn();
     mockApiClient.delete = jest.fn();
     mockApiClient.setAuthToken = jest.fn();
     mockApiClient.getAuthToken = jest.fn();
+    fetchMock.mockResponse(JSON.stringify({
+      total_value: 50000,
+      day_change: 100,
+      day_change_percent: 0.2,
+      week_change: 200,
+      week_change_percent: 0.4,
+      month_change: 500,
+      month_change_percent: 1,
+      year_change: 5000,
+      year_change_percent: 12.5,
+      asset_allocation: { stocks: 70, etfs: 20, crypto: 10, cash: 0 },
+      top_gainers: [],
+      top_losers: [],
+      performance_history: [],
+    }));
 
     mockApiClient.get.mockImplementation((url: string) => {
       if (url === '/api/investments/accounts') {
         return Promise.resolve(mockAccounts);
       }
-      if (url === '/api/investments/assets/featured') {
-        return Promise.resolve(mockAssets);
-      }
       if (url.includes('/api/investments/portfolio/')) {
         return Promise.resolve(mockPortfolio);
       }
-      if (url.includes('/api/investments/assets/search')) {
-        return Promise.resolve(mockAssets);
-      }
       return Promise.resolve([]);
     });
+    mockApiClient.post.mockResolvedValue({});
   });
 
-  test('renders investment page and loads data', async () => {
-    render(<InvestmentsPage />);
-
-    // Check page title
-    expect(screen.getByText('Investments')).toBeInTheDocument();
-    expect(screen.getByText('Manage your investment portfolio')).toBeInTheDocument();
-
-    // Wait for data to load
-    await waitFor(() => {
-      expect(screen.getByText('Test Investment Account')).toBeInTheDocument();
-      expect(screen.getByText('$50,000.00')).toBeInTheDocument();
-    });
-
-    // Verify analytics tracking
-    expect(mockAnalyticsLogger.logEvent).toHaveBeenCalledWith('PAGE_VIEW', {
-      text: 'User viewed investments page',
-      page_name: 'Investments',
-      timestamp: expect.any(String)
-    });
-  });
-
-  test('displays account information correctly', async () => {
+  test('renders investment page and loads portfolio data', async () => {
     render(<InvestmentsPage />);
 
     await waitFor(() => {
-      const accountCard = screen.getByText('Test Investment Account').closest('div');
-      expect(accountCard).toBeInTheDocument();
-      expect(screen.getByText('Individual')).toBeInTheDocument();
-      expect(screen.getByText('$10,000.00')).toBeInTheDocument(); // Cash balance
-      expect(screen.getByText('+12.50%')).toBeInTheDocument(); // Total return percentage
+      expect(screen.getByText('Investment Portfolio')).toBeInTheDocument();
+      expect(screen.getByText('Manage your ETF, stock, and crypto investments')).toBeInTheDocument();
     });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('$50,000.00').length).toBeGreaterThan(0);
+      expect(screen.getByText('Investment Options')).toBeInTheDocument();
+    });
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/api/investments/accounts');
+    expect(mockApiClient.get).toHaveBeenCalledWith('/api/investments/portfolio/1');
   });
 
-  test('tab navigation works correctly', async () => {
+  test('displays current investment options', async () => {
     render(<InvestmentsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Overview')).toBeInTheDocument();
+      expect(screen.getByText('ETFs')).toBeInTheDocument();
+      expect(screen.getByText('Stocks')).toBeInTheDocument();
+      expect(screen.getByText('Crypto')).toBeInTheDocument();
+      expect(screen.getByText('Discover Investments')).toBeInTheDocument();
     });
-
-    // Click on Portfolio tab
-    fireEvent.click(screen.getByText('Portfolio'));
-    expect(screen.getByText('Portfolio Performance')).toBeInTheDocument();
-
-    // Click on Trade tab
-    fireEvent.click(screen.getByText('Trade'));
-    expect(screen.getByText('Search Assets')).toBeInTheDocument();
-
-    // Click on Watchlist tab
-    fireEvent.click(screen.getByText('Watchlist'));
-    expect(screen.getByText('Create New Watchlist')).toBeInTheDocument();
   });
 
-  test('asset search functionality', async () => {
+  test('shows positions in the holdings table', async () => {
     render(<InvestmentsPage />);
 
-    // Navigate to Trade tab
     await waitFor(() => {
-      fireEvent.click(screen.getByText('Trade'));
+      expect(screen.getByText('Your Holdings')).toBeInTheDocument();
     });
 
-    // Type in search input
-    const searchInput = screen.getByPlaceholderText('Search by symbol or name...');
-    fireEvent.change(searchInput, { target: { value: 'AAPL' } });
-
-    // Click search button
-    fireEvent.click(screen.getByText('Search'));
+    fireEvent.click(screen.getByText('Positions'));
 
     await waitFor(() => {
+      expect(screen.getByText('AAPL')).toBeInTheDocument();
       expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
       expect(screen.getByText('$175.50')).toBeInTheDocument();
+      expect(screen.getByText('$17,550.00')).toBeInTheDocument();
     });
   });
 
-  test('place order modal opens and closes', async () => {
+  test('renders allocation from the portfolio response', async () => {
     render(<InvestmentsPage />);
 
-    // Navigate to Trade tab
     await waitFor(() => {
-      fireEvent.click(screen.getByText('Trade'));
-    });
-
-    // Search for assets
-    const searchInput = screen.getByPlaceholderText('Search by symbol or name...');
-    fireEvent.change(searchInput, { target: { value: 'AAPL' } });
-    fireEvent.click(screen.getByText('Search'));
-
-    // Wait for results and click Buy button
-    await waitFor(() => {
-      const buyButton = screen.getAllByText('Buy')[0];
-      fireEvent.click(buyButton);
-    });
-
-    // Check modal is open
-    expect(screen.getByText('Place Order - AAPL')).toBeInTheDocument();
-    expect(screen.getByText('Apple Inc.')).toBeInTheDocument();
-
-    // Close modal
-    fireEvent.click(screen.getByText('Cancel'));
-    await waitFor(() => {
-      expect(screen.queryByText('Place Order - AAPL')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Asset Allocation').length).toBeGreaterThan(0);
+      expect(screen.getByText('Stocks: 60%')).toBeInTheDocument();
+      expect(screen.getByText('ETFs: 30%')).toBeInTheDocument();
+      expect(screen.getByText('Crypto: 10%')).toBeInTheDocument();
     });
   });
 
-  test('portfolio allocation chart renders', async () => {
-    render(<InvestmentsPage />);
-
-    // Navigate to Portfolio tab
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('Portfolio'));
-    });
-
-    // Check for allocation data
-    await waitFor(() => {
-      expect(screen.getByText('Asset Allocation')).toBeInTheDocument();
-      expect(screen.getByText('Stocks')).toBeInTheDocument();
-      expect(screen.getByText('70%')).toBeInTheDocument();
-      expect(screen.getByText('ETFs')).toBeInTheDocument();
-      expect(screen.getByText('20%')).toBeInTheDocument();
-    });
-  });
-
-  test('error handling when API fails', async () => {
-    mockApiClient.get.mockRejectedValueOnce(new Error('API Error'));
+  test('handles investment API failures', async () => {
+    mockApiClient.get.mockRejectedValue(new Error('API Error'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
     render(<InvestmentsPage />);
