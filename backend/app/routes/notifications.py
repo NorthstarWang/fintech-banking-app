@@ -64,7 +64,7 @@ async def get_unread_count(
         "by_type": by_type
     }
 
-@router.put("/{notification_id}", response_model=NotificationResponse)
+@router.put("/{notification_id:int}", response_model=NotificationResponse)
 async def update_notification(
     request: Request,
     notification_id: int,
@@ -125,7 +125,7 @@ async def mark_all_read(
 
     return {"message": f"Marked {count} notifications as read"}
 
-@router.delete("/{notification_id}")
+@router.delete("/{notification_id:int}")
 async def delete_notification(
     request: Request,
     notification_id: int,

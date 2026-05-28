@@ -3,7 +3,7 @@ import logging
 import uuid
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 import asyncio
 
@@ -98,7 +98,7 @@ class Saga:
     If one step fails, previous steps are compensated in reverse order.
     """
 
-    def __init__(self, saga_id: str = None):
+    def __init__(self, saga_id: Optional[str] = None):
         self.saga_id = saga_id or str(uuid.uuid4())
         self.steps: List[SagaStep] = []
         self.status = SagaStatus.PENDING
@@ -211,7 +211,7 @@ class SagaOrchestrator:
     def __init__(self):
         self.sagas: Dict[str, Saga] = {}
 
-    def create_saga(self, saga_id: str = None) -> Saga:
+    def create_saga(self, saga_id: Optional[str] = None) -> Saga:
         """Create a new saga."""
         saga = Saga(saga_id)
         self.sagas[saga.saga_id] = saga

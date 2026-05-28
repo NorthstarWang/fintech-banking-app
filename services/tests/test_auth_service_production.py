@@ -17,10 +17,9 @@ Test Organization:
 import pytest
 import asyncio
 import time
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+import hashlib
 import bcrypt
-from typing import Dict, Any
+from typing import Dict
 
 # Import the components to test
 # Note: In actual project, would import from auth_service
@@ -31,10 +30,17 @@ from typing import Dict, Any
 # For this template, we'll define the classes inline
 class PasswordManager:
     @staticmethod
+    def _bcrypt_input(password: str) -> bytes:
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            return hashlib.sha256(password_bytes).hexdigest().encode('utf-8')
+        return password_bytes
+
+    @staticmethod
     def hash_password(password: str) -> str:
         try:
             salt = bcrypt.gensalt(rounds=12)
-            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            hashed = bcrypt.hashpw(PasswordManager._bcrypt_input(password), salt)
             return hashed.decode('utf-8')
         except Exception as e:
             raise ValueError("Password hashing failed") from e
@@ -42,7 +48,7 @@ class PasswordManager:
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
         try:
-            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+            return bcrypt.checkpw(PasswordManager._bcrypt_input(password), hashed.encode('utf-8'))
         except Exception:
             return False
 

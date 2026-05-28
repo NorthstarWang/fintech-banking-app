@@ -302,7 +302,7 @@ export const Header: React.FC<HeaderProps> = ({ _onMenuToggle }) => {
     { value: 'contacts', label: 'Contacts', icon: <UserPlus size={16} />, href: '/contacts' },
     { value: 'transfer', label: 'Transfer Money', icon: <RefreshCcw size={16} />, href: '/transfer' },
     { value: 'p2p', label: 'Send to Friend', icon: <Send size={16} />, href: '/p2p' },
-    { value: 'analytics-dashboard', label: 'Analytics', icon: <LineChart size={16} />, href: '/analytics-dashboard' },
+    { value: 'analytics', label: 'Analytics', icon: <LineChart size={16} />, href: '/analytics' },
     { value: 'business', label: 'Business', icon: <Building2 size={16} />, href: '/business' },
     { value: 'invoices', label: 'Invoices', icon: <FileText size={16} />, href: '/invoices' },
     { value: 'subscriptions', label: 'Subscriptions', icon: <CalendarDays size={16} />, href: '/subscriptions' },

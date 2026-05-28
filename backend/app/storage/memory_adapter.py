@@ -482,7 +482,7 @@ class MemoryQuery:
                         results = [r for r in results if r.get(field) in value]
                 elif op == 'contains':
                     results = [r for r in results if value in r.get(field, '')]
-                elif op == 'ilike':
+                elif op in {'like', 'ilike'}:
                     # Case-insensitive like
                     pattern = value.replace('%', '').lower()
                     results = [r for r in results if pattern in str(r.get(field, '')).lower()]

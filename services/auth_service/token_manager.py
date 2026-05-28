@@ -1,11 +1,16 @@
 """JWT token management for authentication service."""
 import jwt
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _env_or_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value if value is not None else default
 
 
 class TokenManager:
@@ -13,15 +18,15 @@ class TokenManager:
 
     def __init__(
         self,
-        secret_key: str = None,
+        secret_key: Optional[str] = None,
         algorithm: str = "HS256",
         token_expiry_hours: int = 24
     ):
-        self.secret_key = secret_key or os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+        self.secret_key: str = secret_key or _env_or_default("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
         self.algorithm = algorithm
         self.token_expiry = timedelta(hours=token_expiry_hours)
 
-    def generate_token(self, user_id: int, username: str, **additional_claims) -> Dict[str, str]:
+    def generate_token(self, user_id: int, username: str, **additional_claims) -> Dict[str, Any]:
         """Generate a JWT token."""
         now = datetime.utcnow()
         expiry = now + self.token_expiry
@@ -49,7 +54,7 @@ class TokenManager:
             "user_id": user_id
         }
 
-    def verify_token(self, token: str) -> Optional[Dict]:
+    def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify and decode a JWT token."""
         try:
             payload = jwt.decode(
@@ -83,7 +88,7 @@ def get_token_manager() -> TokenManager:
 
 
 def init_token_manager(
-    secret_key: str = None,
+    secret_key: Optional[str] = None,
     algorithm: str = "HS256",
     token_expiry_hours: int = 24
 ) -> TokenManager:

@@ -48,7 +48,7 @@ class ServiceClient:
         self.instance = instance
         self.retry_config = retry_config or RetryConfig()
         self.timeout = timeout
-        self._last_call_timestamp = None
+        self._last_call_timestamp: Optional[datetime] = None
 
     async def request(
         self,
@@ -81,8 +81,7 @@ class ServiceClient:
                     if response.status_code < 400:
                         logger.info(
                             f"Request to {self.service_name} successful",
-                            status_code=response.status_code,
-                            endpoint=endpoint
+                            extra={"status_code": response.status_code, "endpoint": endpoint}
                         )
                         return {
                             "status": "success",
@@ -94,8 +93,7 @@ class ServiceClient:
                     if response.status_code not in self.retry_config.retry_on_status_codes:
                         logger.error(
                             f"Request to {self.service_name} failed",
-                            status_code=response.status_code,
-                            endpoint=endpoint
+                            extra={"status_code": response.status_code, "endpoint": endpoint}
                         )
                         return {
                             "status": "error",
@@ -108,9 +106,7 @@ class ServiceClient:
                         delay = self.retry_config.get_delay(attempt)
                         logger.warning(
                             f"Retrying request to {self.service_name}",
-                            attempt=attempt + 1,
-                            delay=delay,
-                            status_code=response.status_code
+                            extra={"attempt": attempt + 1, "delay": delay, "status_code": response.status_code}
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -118,8 +114,7 @@ class ServiceClient:
                     # Max retries exceeded
                     logger.error(
                         f"Request to {self.service_name} failed after retries",
-                        status_code=response.status_code,
-                        endpoint=endpoint
+                        extra={"status_code": response.status_code, "endpoint": endpoint}
                     )
                     return {
                         "status": "error",
@@ -130,7 +125,7 @@ class ServiceClient:
             except asyncio.TimeoutError:
                 logger.warning(
                     f"Request to {self.service_name} timed out",
-                    attempt=attempt + 1
+                    extra={"attempt": attempt + 1}
                 )
                 if attempt < self.retry_config.max_retries - 1:
                     delay = self.retry_config.get_delay(attempt)
@@ -146,8 +141,7 @@ class ServiceClient:
             except Exception as e:
                 logger.error(
                     f"Request to {self.service_name} failed with exception",
-                    error=str(e),
-                    attempt=attempt + 1
+                    extra={"error": str(e), "attempt": attempt + 1}
                 )
                 if attempt < self.retry_config.max_retries - 1:
                     delay = self.retry_config.get_delay(attempt)

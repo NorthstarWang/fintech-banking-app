@@ -1,6 +1,6 @@
 """Health check utilities for microservices."""
 from typing import Dict, Any, Callable, Optional
-from datetime import datetime
+from datetime import UTC, datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class HealthCheck:
             self.error_message = str(e)
             logger.error(f"Health check '{self.name}' failed: {e}")
 
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(UTC)
 
         return {
             "name": self.name,
@@ -84,7 +84,7 @@ class ServiceHealthChecker:
         return {
             "service": self.service_name,
             "status": "healthy" if all_healthy else "unhealthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "checks": results
         }
 

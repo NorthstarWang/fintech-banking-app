@@ -6,11 +6,10 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
-from typing import Optional
 
 from ..core.correlation_id import CorrelationIDMiddleware, StructuredLogger
-from ..core.api_client import get_client_factory, ServiceClient
-from ..core.service_registry import get_registry, init_registry
+from ..core.api_client import get_client_factory
+from ..core.service_registry import init_registry
 from ..core.health_check import ServiceHealthChecker
 
 # Initialize logging

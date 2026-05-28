@@ -1,8 +1,7 @@
 """Circuit breaker pattern implementation for resilient service communication."""
-import time
 import logging
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Callable, Any, Optional
 import threading
 
@@ -36,7 +35,7 @@ class CircuitBreaker:
         name: str,
         failure_threshold: int = 5,
         recovery_timeout: int = 60,
-        expected_exception: type = Exception,
+        expected_exception: type[BaseException] = Exception,
         max_concurrent_calls: Optional[int] = None
     ):
         """
@@ -119,7 +118,7 @@ class CircuitBreaker:
             self._on_success()
             return result
 
-        except self.expected_exception as e:
+        except self.expected_exception:
             self._on_failure()
             raise
 
@@ -188,7 +187,7 @@ class CircuitBreakerManager:
         name: str,
         failure_threshold: int = 5,
         recovery_timeout: int = 60,
-        expected_exception: type = Exception,
+        expected_exception: type[BaseException] = Exception,
         max_concurrent_calls: Optional[int] = None
     ) -> CircuitBreaker:
         """Get existing or create new circuit breaker."""

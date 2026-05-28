@@ -45,6 +45,10 @@ class ModelAttribute:
         """Create an ILIKE clause for case-insensitive pattern matching."""
         return ComparisonClause(self, pattern, 'ilike')
 
+    def like(self, pattern):
+        """Create a LIKE clause for SQLAlchemy-compatible pattern matching."""
+        return ComparisonClause(self, pattern, 'like')
+
 
 class AscOrder:
     """Represents an ascending order descriptor."""
@@ -630,6 +634,74 @@ class SpendingLimitPeriod:
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
+
+
+class RoundUpConfig(BaseMemoryModel):
+    """Round-up savings configuration model."""
+    __tablename__ = "round_up_configs"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('status', 'active')
+        self._data.setdefault('multiplier', 1.0)
+        self._data.setdefault('max_round_up_amount', 10.0)
+        self._data.setdefault('enabled_categories', None)
+        self._data.setdefault('total_saved', 0.0)
+        self._data.setdefault('transaction_count', 0)
+        self._data.setdefault('last_round_up_at', None)
+
+
+class RoundUpTransaction(BaseMemoryModel):
+    """Round-up transaction model."""
+    __tablename__ = "round_up_transactions"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('original_amount', 0.0)
+        self._data.setdefault('round_up_amount', 0.0)
+        self._data.setdefault('multiplied_amount', 0.0)
+
+
+class SavingsRule(BaseMemoryModel):
+    """Automated savings rule model."""
+    __tablename__ = "savings_rules"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('is_active', True)
+        self._data.setdefault('total_saved', 0.0)
+        self._data.setdefault('execution_count', 0)
+        self._data.setdefault('last_executed_at', None)
+        self._data.setdefault('trigger_conditions', None)
+
+
+class SavingsChallenge(BaseMemoryModel):
+    """Savings challenge model."""
+    __tablename__ = "savings_challenges"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('description', '')
+        self._data.setdefault('challenge_type', 'individual')
+        self._data.setdefault('status', 'active')
+        self._data.setdefault('target_amount', 0.0)
+        self._data.setdefault('reward_description', None)
+        self._data.setdefault('rules', [])
+        if 'start_date' not in self._data:
+            self._data['start_date'] = datetime.now(UTC)
+        if 'end_date' not in self._data:
+            self._data['end_date'] = datetime.now(UTC) + timedelta(days=30)
+
+
+class ChallengeParticipant(BaseMemoryModel):
+    """Savings challenge participant model."""
+    __tablename__ = "challenge_participants"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._data.setdefault('current_amount', 0.0)
+        if 'joined_at' not in self._data:
+            self._data['joined_at'] = datetime.now(UTC)
 
 
 # Subscription Models

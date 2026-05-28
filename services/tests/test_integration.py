@@ -1,12 +1,10 @@
 """Integration tests for microservices communication."""
 import pytest
-import asyncio
-from datetime import datetime
 
 from services.core.service_registry import ServiceRegistry, ServiceInstance
-from services.core.api_client import ServiceClient, RetryConfig, ServiceClientFactory
+from services.core.api_client import RetryConfig
 from services.core.correlation_id import CorrelationContext, get_correlation_id, get_service_name
-from services.core.health_check import ServiceHealthChecker, HealthCheck
+from services.core.health_check import ServiceHealthChecker
 
 
 class TestServiceRegistry:

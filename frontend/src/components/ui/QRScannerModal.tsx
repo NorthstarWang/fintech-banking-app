@@ -73,6 +73,23 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     setIsScanning(false);
   };
 
+  const parseQRCodePayload = (data: string): Record<string, unknown> => {
+    try {
+      const url = new URL(data);
+      if (url.protocol === 'bankflow:' && url.hostname === 'p2p') {
+        return {
+          recipient_id: url.searchParams.get('recipient') ?? undefined,
+          amount: url.searchParams.get('amount') ?? undefined,
+          description: url.searchParams.get('description') ?? undefined,
+        };
+      }
+    } catch {
+      // Manual entries may be opaque codes rather than payment links.
+    }
+
+    return { code: data };
+  };
+
   const handleScan = async (data: string) => {
     if (isProcessing) return;
     
@@ -80,7 +97,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setIsProcessing(true);
       
       // Process the QR code through the backend
-      const result = await p2pApi.scanQRCode({ qr_data: data });
+      const result = await p2pApi.scanQRCode(parseQRCodePayload(data));
       
       showSuccess('QR Code Scanned', 'Successfully processed the QR code');
       

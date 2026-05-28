@@ -1,7 +1,7 @@
 """In-memory service discovery registry for service-to-service communication."""
-from typing import Dict, List, Optional
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 import threading
 import logging
 
@@ -18,14 +18,8 @@ class ServiceInstance:
     health_check_url: str
     api_key: str
     is_healthy: bool = True
-    last_heartbeat: datetime = None
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.last_heartbeat is None:
-            self.last_heartbeat = datetime.utcnow()
-        if self.metadata is None:
-            self.metadata = {}
+    last_heartbeat: datetime = field(default_factory=lambda: datetime.now(UTC))
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def base_url(self) -> str:
@@ -122,7 +116,7 @@ class ServiceRegistry:
             if service_name in self._services:
                 for instance in self._services[service_name]:
                     if instance.instance_id == instance_id:
-                        instance.last_heartbeat = datetime.utcnow()
+                        instance.last_heartbeat = datetime.now(UTC)
                         instance.is_healthy = True
                         return True
             return False
@@ -141,7 +135,7 @@ class ServiceRegistry:
     def check_stale_instances(self):
         """Remove instances that haven't sent heartbeat within timeout."""
         with self._lock:
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             removed = []
 
             for service_name, instances in self._services.items():

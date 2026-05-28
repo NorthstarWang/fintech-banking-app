@@ -8,14 +8,19 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+def _env_or_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value if value is not None else default
+
+
 class mTLSConfig:
     """Configuration for mutual TLS between services."""
 
     def __init__(
         self,
-        cert_file: str = None,
-        key_file: str = None,
-        ca_file: str = None,
+        cert_file: Optional[str] = None,
+        key_file: Optional[str] = None,
+        ca_file: Optional[str] = None,
         verify_peer: bool = True
     ):
         """
@@ -27,9 +32,9 @@ class mTLSConfig:
             ca_file: Path to CA certificate for verification
             verify_peer: Whether to verify peer certificates
         """
-        self.cert_file = cert_file or os.getenv("MTLS_CERT_FILE", "/etc/mtls/certs/service.crt")
-        self.key_file = key_file or os.getenv("MTLS_KEY_FILE", "/etc/mtls/certs/service.key")
-        self.ca_file = ca_file or os.getenv("MTLS_CA_FILE", "/etc/mtls/certs/ca.crt")
+        self.cert_file: str = cert_file or _env_or_default("MTLS_CERT_FILE", "/etc/mtls/certs/service.crt")
+        self.key_file: str = key_file or _env_or_default("MTLS_KEY_FILE", "/etc/mtls/certs/service.key")
+        self.ca_file: str = ca_file or _env_or_default("MTLS_CA_FILE", "/etc/mtls/certs/ca.crt")
         self.verify_peer = verify_peer
 
         self._validate_files()
@@ -172,9 +177,9 @@ def get_mtls_config() -> mTLSConfig:
 
 
 def init_mtls_config(
-    cert_file: str = None,
-    key_file: str = None,
-    ca_file: str = None,
+    cert_file: Optional[str] = None,
+    key_file: Optional[str] = None,
+    ca_file: Optional[str] = None,
     verify_peer: bool = True
 ) -> mTLSConfig:
     """Initialize global mTLS config."""

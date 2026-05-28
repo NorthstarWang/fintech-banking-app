@@ -81,6 +81,14 @@ export interface P2PQRCodeResponse {
   expires_at: string;
 }
 
+export interface P2PQRCodeScanResult {
+  recipient_id?: string;
+  recipient?: string;
+  amount?: number | string;
+  description?: string;
+  valid?: boolean;
+}
+
 export const p2pApi = {
   // Get P2P contacts
   getContacts: async (): Promise<P2PContact[]> => {
@@ -113,7 +121,7 @@ export const p2pApi = {
   },
 
   // Scan QR code
-  scanQRCode: async (qrData: { code: string; type?: string }): Promise<{ recipient: string; amount?: number; description?: string }> => {
+  scanQRCode: async (qrData: Record<string, unknown>): Promise<P2PQRCodeScanResult> => {
     return await apiClient.post('/api/p2p/scan-qr', qrData);
   },
 
@@ -127,12 +135,12 @@ export const p2pApi = {
     const response = await apiClient.post(`/api/p2p/payment-requests/${requestId}/accept`, {
       source_account_id: accountId
     });
-    return response.data;
+    return response;
   },
 
   // Decline payment request
   declinePaymentRequest: async (requestId: string): Promise<{ success: boolean; message?: string }> => {
     const response = await apiClient.post(`/api/p2p/payment-requests/${requestId}/decline`);
-    return response.data;
+    return response;
   }
 };

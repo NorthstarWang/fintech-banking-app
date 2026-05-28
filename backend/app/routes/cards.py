@@ -32,6 +32,10 @@ from ..utils.validators import ValidationError
 
 router = APIRouter()
 
+def enum_value(value: Any) -> Any:
+    """Return enum values while preserving plain memory-model strings."""
+    return value.value if hasattr(value, "value") else value
+
 # Pydantic model for creating virtual card from parent card (no account_id needed)
 class CardFromParentCreate(BaseModel):
     spending_limit: float | None = None
@@ -686,7 +690,7 @@ async def get_card_transactions(
             "transaction_date": t.transaction_date.isoformat(),
             "merchant": t.description[:20] if t.description else "Unknown",
             "category": t.category.name if t.category else "Uncategorized",
-            "status": t.status.value
+            "status": enum_value(t.status)
         })
 
     return result
@@ -760,7 +764,7 @@ async def get_card_statement(
             "date": t.transaction_date.isoformat(),
             "description": t.description or "Unknown",
             "amount": t.amount,
-            "type": t.transaction_type.value
+            "type": enum_value(t.transaction_type)
         })
 
     return CardStatementResponse(
@@ -1081,7 +1085,7 @@ async def get_spending_limits(
         limits_with_usage.append({
             "id": limit.id,
             "limit_amount": limit.limit_amount,
-            "limit_period": limit.limit_period.value,
+            "limit_period": enum_value(limit.limit_period),
             "current_usage": current_usage,
             "remaining": max(0, limit.limit_amount - current_usage),
             "merchant_categories": limit.merchant_categories,
@@ -1396,7 +1400,7 @@ async def freeze_unfreeze_card(
         user_id=card.user_id,
         account_id=card.account_id,
         card_name=getattr(card, 'card_name', getattr(card, 'name', f"Card {card.id}")),
-        card_type=card.card_type.value if hasattr(card.card_type, 'value') else str(card.card_type),
+        card_type=enum_value(card.card_type),
         last_four=get_last_four(card.card_number) if card.card_number else "0000",
         issuer=getattr(card, 'issuer', None),
         is_active=card.status == CardStatus.ACTIVE,
@@ -1589,143 +1593,3 @@ async def get_card_analytics(
         period_start=start_date,
         period_end=end_date
     )
-
-
-@router.get("/analytics", response_model=dict[str, Any])
-async def get_analytics(
-    current_user: dict = Depends(get_current_user),
-    db_session: Any = Depends(db.get_db_dependency)
-):
-    """Get overall analytics for all cards"""
-    # Get all user's cards
-    cards = db_session.query(Card).filter(
-        Card.user_id == current_user['user_id']
-    ).all()
-
-    # Calculate totals
-    total_cards = len(cards)
-    active_cards = sum(1 for card in cards if card.status == CardStatus.ACTIVE)
-
-    # Initialize counters
-    total_credit_limit = 0
-    total_balance = 0
-    cards_by_type = {
-        'credit': 0,
-        'debit': 0,
-        'virtual': 0
-    }
-
-    # Get associated accounts for credit cards
-    for card in cards:
-        # Count by type
-        if card.card_type == CardType.CREDIT:
-            cards_by_type['credit'] += 1
-            # Get account for credit limit and balance
-            account = db_session.query(Account).filter(
-                Account.id == card.account_id,
-                Account.account_type == AccountType.CREDIT_CARD
-            ).first()
-            if account:
-                total_credit_limit += account.credit_limit or 0
-                total_balance += abs(account.balance) if account.balance < 0 else 0
-        elif card.card_type == CardType.DEBIT:
-            cards_by_type['debit'] += 1
-        elif card.card_type == CardType.VIRTUAL:
-            cards_by_type['virtual'] += 1
-
-    # Calculate utilization rate
-    utilization_rate = (total_balance / total_credit_limit * 100) if total_credit_limit > 0 else 0
-
-    # Get spending by category for all cards in the last 30 days
-    end_date = datetime.now(UTC)
-    start_date = end_date - timedelta(days=30)
-
-    spending_by_category = {}
-    total_spent = 0
-    transaction_count = 0
-
-    for card in cards:
-        transactions = db_session.query(Transaction).filter(
-            Transaction.account_id == card.account_id,
-            Transaction.transaction_date >= start_date,
-            Transaction.transaction_date <= end_date,
-            Transaction.transaction_type == TransactionType.DEBIT
-        ).all()
-
-        for t in transactions:
-            transaction_count += 1
-            total_spent += t.amount
-
-            # Group by category
-            if t.category:
-                category_name = t.category.name
-                spending_by_category[category_name] = spending_by_category.get(category_name, 0) + t.amount
-            else:
-                # Default category if none assigned
-                spending_by_category['Other'] = spending_by_category.get('Other', 0) + t.amount
-
-    # Calculate average transaction size
-    average_transaction_size = total_spent / transaction_count if transaction_count > 0 else 0
-
-    return {
-        "total_credit_limit": total_credit_limit,
-        "total_balance": total_balance,
-        "utilization_rate": round(utilization_rate, 2),
-        "cards_by_type": cards_by_type,
-        "spending_by_category": spending_by_category,
-        "average_transaction_size": round(average_transaction_size, 2),
-        "total_cards": total_cards,
-        "active_cards": active_cards
-    }
-
-
-@router.get("/virtual", response_model=list[dict[str, Any]])
-async def get_virtual_cards(
-    account_id: int | None = Query(None, description="Filter by account ID"),
-    include_expired: bool = Query(False, description="Include expired virtual cards"),
-    current_user: dict = Depends(get_current_user),
-    db_session: Any = Depends(db.get_db_dependency)
-):
-    """Get all virtual cards for the current user"""
-    # Base query for virtual cards
-    query = db_session.query(Card).filter(
-        Card.user_id == current_user['user_id'],
-        Card.card_type == CardType.VIRTUAL
-    )
-
-    # Filter by account if specified
-    if account_id:
-        query = query.filter(Card.account_id == account_id)
-
-    # Filter out expired cards unless requested
-    if not include_expired:
-        query = query.filter(Card.status != CardStatus.EXPIRED)
-
-    virtual_cards = query.all()
-
-    # Build response
-    response_cards = []
-    for card in virtual_cards:
-        card._data if hasattr(card, '_data') else card
-
-        response_data = {
-            "id": card.id,
-            "account_id": card.account_id,
-            "card_number_masked": mask_card_number(card.card_number) if card.card_number else "****",
-            "card_type": "VIRTUAL",
-            "status": card.status.value if hasattr(card.status, 'value') else str(card.status),
-            "spending_limit": getattr(card, 'spending_limit', None),
-            "spent_amount": getattr(card, 'spent_amount', 0),
-            "merchant_restrictions": getattr(card, 'merchant_restrictions', []),
-            "single_use": getattr(card, 'single_use', False),
-            "name": getattr(card, 'name', f"Virtual Card {card.id}"),
-            "created_at": card.created_at.isoformat() if card.created_at else None,
-            "expires_at": card.expiry_date.isoformat() if card.expiry_date else None,
-            "last_used_at": getattr(card, 'last_used_at', None),
-            "is_virtual": True,
-            "parent_card_id": getattr(card, 'parent_card_id', None)
-        }
-
-        response_cards.append(response_data)
-
-    return response_cards

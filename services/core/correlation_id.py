@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 import logging
 
-correlation_id_var = contextvars.ContextVar('correlation_id', default=None)
-service_name_var = contextvars.ContextVar('service_name', default=None)
+correlation_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar('correlation_id', default=None)
+service_name_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar('service_name', default=None)
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,8 @@ class CorrelationContext:
     def __init__(self, service_name: str, correlation_id: Optional[str] = None):
         self.service_name = service_name
         self.correlation_id = correlation_id or str(uuid.uuid4())
-        self.token_correlation = None
-        self.token_service = None
+        self.token_correlation: Optional[contextvars.Token[Optional[str]]] = None
+        self.token_service: Optional[contextvars.Token[Optional[str]]] = None
 
     def __enter__(self):
         """Enter context and set correlation variables."""

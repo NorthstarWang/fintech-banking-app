@@ -1,7 +1,6 @@
 """Distributed tracing with OpenTelemetry span management."""
 import logging
 import uuid
-from datetime import datetime
 from typing import Dict, Optional, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
@@ -112,8 +111,8 @@ class Span:
 
 
 # Context variables for tracing
-current_span_context = contextvars.ContextVar('span_context', default=None)
-current_span = contextvars.ContextVar('span', default=None)
+current_span_context: contextvars.ContextVar[Optional[SpanContext]] = contextvars.ContextVar('span_context', default=None)
+current_span: contextvars.ContextVar[Optional[Span]] = contextvars.ContextVar('span', default=None)
 
 
 class Tracer:
@@ -193,7 +192,7 @@ class TracingContext:
         self.kind = kind
         self.attributes = attributes
         self.span: Optional[Span] = None
-        self.token = None
+        self.token: Optional[contextvars.Token[Optional[Span]]] = None
 
     def __enter__(self) -> Span:
         """Enter tracing context."""
@@ -207,6 +206,9 @@ class TracingContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit tracing context."""
+        if self.span is None:
+            return
+
         if exc_type is not None:
             self.span.set_status(SpanStatus.ERROR, f"{exc_type.__name__}: {exc_val}")
         else:
@@ -232,7 +234,7 @@ class AsyncTracingContext:
         self.kind = kind
         self.attributes = attributes
         self.span: Optional[Span] = None
-        self.token = None
+        self.token: Optional[contextvars.Token[Optional[Span]]] = None
 
     async def __aenter__(self) -> Span:
         """Enter async tracing context."""
@@ -246,6 +248,9 @@ class AsyncTracingContext:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Exit async tracing context."""
+        if self.span is None:
+            return
+
         if exc_type is not None:
             self.span.set_status(SpanStatus.ERROR, f"{exc_type.__name__}: {exc_val}")
         else:

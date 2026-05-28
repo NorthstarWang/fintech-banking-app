@@ -3,24 +3,23 @@ Notification Service FastAPI Application.
 
 Provides email, SMS, and push notification capabilities.
 """
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from ..core.correlation_id import CorrelationIDMiddleware, StructuredLogger
 from ..core.health_check import ServiceHealthChecker
-from ..core.service_registry import get_registry, init_registry
+from ..core.service_registry import init_registry
 from .models import (
     SendNotificationRequest,
     NotificationResponse,
     NotificationStatus,
-    BatchNotificationRequest,
-    GetNotificationsRequest
+    BatchNotificationRequest
 )
 
 # Initialize logging
@@ -66,21 +65,21 @@ user_notifications: Dict[int, List[str]] = {}
 async def send_email(recipient: str, subject: str, body: str) -> bool:
     """Send email notification."""
     # TODO: Integrate with email service (SendGrid, AWS SES, etc.)
-    logger.info(f"Sending email", recipient=recipient, subject=subject)
+    logger.info("Sending email", recipient=recipient, subject=subject)
     return True
 
 
 async def send_sms(recipient: str, body: str) -> bool:
     """Send SMS notification."""
     # TODO: Integrate with SMS service (Twilio, AWS SNS, etc.)
-    logger.info(f"Sending SMS", recipient=recipient, body=body)
+    logger.info("Sending SMS", recipient=recipient, body=body)
     return True
 
 
 async def send_push(device_token: str, subject: str, body: str) -> bool:
     """Send push notification."""
     # TODO: Integrate with push notification service (Firebase, etc.)
-    logger.info(f"Sending push notification", device_token=device_token, subject=subject)
+    logger.info("Sending push notification", device_token=device_token, subject=subject)
     return True
 
 
@@ -137,7 +136,7 @@ async def send_notification(request: Request, notif: SendNotificationRequest):
             success = False
 
         # Store notification record
-        notification = {
+        notification: Dict[str, Any] = {
             "id": notification_id,
             "user_id": notif.user_id,
             "notification_type": notif.notification_type.value,
@@ -155,7 +154,7 @@ async def send_notification(request: Request, notif: SendNotificationRequest):
         user_notifications[notif.user_id].append(notification_id)
 
         logger.info(
-            f"Notification sent",
+            "Notification sent",
             notification_id=notification_id,
             user_id=notif.user_id,
             type=notif.notification_type.value
@@ -165,7 +164,7 @@ async def send_notification(request: Request, notif: SendNotificationRequest):
 
     except Exception as e:
         logger.error(
-            f"Failed to send notification",
+            "Failed to send notification",
             notification_id=notification_id,
             user_id=notif.user_id,
             error=str(e)
@@ -200,7 +199,7 @@ async def send_batch_notifications(request: Request, batch: BatchNotificationReq
             logger.error(f"Failed to send batch notification to user {user_id}: {str(e)}")
             continue
 
-    logger.info(f"Batch notifications sent", count=len(results), total=len(batch.user_ids))
+    logger.info("Batch notifications sent", count=len(results), total=len(batch.user_ids))
 
     return {
         "sent": len(results),
@@ -228,7 +227,7 @@ async def get_user_notifications(
     ]
 
     logger.info(
-        f"Retrieved user notifications",
+        "Retrieved user notifications",
         user_id=user_id,
         count=len(result),
         total=len(notif_ids)

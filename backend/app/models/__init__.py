@@ -116,6 +116,7 @@ from .memory_models import (
     CardStatus as CardStatus,
     CardType as CardType,
     Category as Category,
+    ChallengeParticipant as ChallengeParticipantMemory,
     CollateralPosition as CollateralPosition,
     Contact as Contact,
     ContactStatus as ContactStatus,
@@ -161,6 +162,10 @@ from .memory_models import (
     PaymentMethodType as PaymentMethodType,
     Receipt as ReceiptMemory,
     RecurringRule as RecurringRule,
+    RoundUpConfig as RoundUpConfigMemory,
+    RoundUpTransaction as RoundUpTransactionMemory,
+    SavingsChallenge as SavingsChallengeMemory,
+    SavingsRule as SavingsRuleMemory,
     SecurityAuditLog as SecurityAuditLog,
     SecurityEvent as SecurityEvent,
     SecurityEventType as SecurityEventType,
@@ -464,11 +469,11 @@ Receipt = ReceiptMemory
 SpendingLimit = CardLimitResponse
 MessageSettings = MessageSettingsResponse
 MessageFolder = MessageFolderResponse
-RoundUpConfig = RoundUpConfigResponse
-SavingsChallenge = SavingsChallengeResponse
-SavingsRule = SavingsRuleResponse
+RoundUpConfig = RoundUpConfigMemory
+SavingsChallenge = SavingsChallengeMemory
+SavingsRule = SavingsRuleMemory
 CancellationReminder = CancellationReminderResponse
-RoundUpTransaction = RoundUpTransactionResponse
+RoundUpTransaction = RoundUpTransactionMemory
 
 # Create placeholder classes for missing database models
 # These models are used in routes but don't exist in memory_models yet
@@ -493,13 +498,6 @@ class BlockedUser(_BaseModel):
     reason: str | None = None
     blocked_at: str | None = None
 
-class ChallengeParticipant(_BaseModel):
-    """Placeholder for ChallengeParticipant model"""
-    model_config = _ConfigDict(from_attributes=True)
-
-    challenge_id: int
-    user_id: int
-    current_amount: float = 0.0
-    joined_at: str | None = None
+ChallengeParticipant = ChallengeParticipantMemory
 
 __all__ = [name for name in dir() if not name.startswith('_')]

@@ -324,7 +324,7 @@ async def get_goal_contributions(
     return {
         "goal_id": goal_id,
         "goal_name": goal.name,
-        "contributions": [c.dict() for c in contributions]
+        "contributions": [c.to_dict() for c in contributions]
     }
 
 @router.delete("/{goal_id}")

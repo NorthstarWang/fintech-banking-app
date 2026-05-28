@@ -28,6 +28,10 @@ from ..utils.auth import get_current_user
 
 router = APIRouter()
 
+def enum_value(value: Any) -> Any:
+    """Return enum values while preserving plain memory-model strings."""
+    return value.value if hasattr(value, "value") else value
+
 def calculate_credit_score_range(score: int) -> CreditScoreRange:
     """Determine credit score range category"""
     if score >= 800:
@@ -180,7 +184,7 @@ async def get_credit_history(
             {
                 "score": s.score,
                 "date": s.last_updated.isoformat(),
-                "provider": s.provider.value
+                "provider": enum_value(s.provider)
             }
             for s in scores
         ]
@@ -476,7 +480,7 @@ async def generate_credit_report(
     total_limit = 0
 
     for account in accounts:
-        if account.account_type.value == "credit_card":
+        if enum_value(account.account_type) == "credit_card":
             balance = account.balance
             limit = account.credit_limit or 5000
             total_balance += balance

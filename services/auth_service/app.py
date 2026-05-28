@@ -13,15 +13,15 @@ Security Features:
 - Environment variable validation on startup
 - Structured logging with security context
 """
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import RequestValidationError
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+import hashlib
+from datetime import datetime
+from typing import Any, Dict, Union
 from contextlib import asynccontextmanager
 import asyncio
 
@@ -32,19 +32,18 @@ except ImportError:
     raise ImportError("bcrypt required: pip install bcrypt")
 
 try:
-    from pydantic import BaseModel, EmailStr, validator, ValidationError as PydanticValidationError
+    from pydantic import ValidationError as PydanticValidationError
 except ImportError:
     raise ImportError("pydantic required: pip install pydantic")
 
 from ..core.correlation_id import CorrelationIDMiddleware, StructuredLogger, get_correlation_id
 from ..core.health_check import ServiceHealthChecker
-from ..core.service_registry import get_registry, init_registry
+from ..core.service_registry import init_registry
 from .models import (
     UserRegistrationRequest,
     UserLoginRequest,
     TokenResponse,
     UserProfileResponse,
-    SessionInfo,
     PasswordChangeRequest
 )
 from .token_manager import init_token_manager, get_token_manager
@@ -209,6 +208,13 @@ class PasswordManager:
     """Manages password hashing and verification."""
 
     @staticmethod
+    def _bcrypt_input(password: str) -> bytes:
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            return hashlib.sha256(password_bytes).hexdigest().encode('utf-8')
+        return password_bytes
+
+    @staticmethod
     def hash_password(password: str) -> str:
         """
         Hash password using bcrypt.
@@ -224,7 +230,7 @@ class PasswordManager:
         """
         try:
             salt = bcrypt.gensalt(rounds=12)
-            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            hashed = bcrypt.hashpw(PasswordManager._bcrypt_input(password), salt)
             return hashed.decode('utf-8')
         except Exception as e:
             logger.error("Password hashing failed", error=str(e))
@@ -243,7 +249,7 @@ class PasswordManager:
             True if password matches, False otherwise
         """
         try:
-            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+            return bcrypt.checkpw(PasswordManager._bcrypt_input(password), hashed.encode('utf-8'))
         except Exception as e:
             logger.error("Password verification failed", error=str(e))
             return False
@@ -271,7 +277,7 @@ async def lifespan(app: FastAPI):
     logger.info("Authentication Service starting up")
     try:
         registry = init_registry()
-        token_manager_instance = init_token_manager()
+        init_token_manager()
 
         instance_id = os.getenv("SERVICE_INSTANCE_ID", "auth-1")
         service_host = os.getenv("SERVICE_HOST", "localhost")
@@ -412,7 +418,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # ==================== ENDPOINTS ====================
 
 @app.get("/health")
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> Union[Dict[str, Any], JSONResponse]:
     """
     Health check endpoint.
 
@@ -421,7 +427,6 @@ async def health_check() -> Dict[str, Any]:
     """
     try:
         health_status = await health_checker.run_all_checks()
-        status_code = 200 if health_status["status"] == "healthy" else 503
 
         logger.debug("Health check performed", status=health_status["status"])
         return health_status
@@ -432,6 +437,17 @@ async def health_check() -> Dict[str, Any]:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "unhealthy", "error": str(e)}
         )
+
+
+def _extract_user_id(payload: Dict[str, Any]) -> int:
+    """Extract a validated integer user id from a token payload."""
+    user_id = payload.get("user_id")
+    if not isinstance(user_id, int):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+    return user_id
 
 
 @app.post("/register", response_model=UserProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -488,7 +504,7 @@ async def register(
             user_id = user_id_counter
             user_id_counter += 1
 
-            user = {
+            user: Dict[str, Any] = {
                 "id": user_id,
                 "username": user_data.username,
                 "email": user_data.email,
@@ -676,7 +692,7 @@ async def get_current_user(request: Request) -> UserProfileResponse:
                 detail="Invalid or expired token"
             )
 
-        user_id = payload.get("user_id")
+        user_id = _extract_user_id(payload)
         async with db_lock:
             user = users_db.get(user_id)
 
@@ -741,7 +757,7 @@ async def update_profile(
                 detail="Invalid or expired token"
             )
 
-        user_id = payload.get("user_id")
+        user_id = _extract_user_id(payload)
 
         async with db_lock:
             user = users_db.get(user_id)
@@ -836,7 +852,7 @@ async def change_password(
                 detail="Invalid or expired token"
             )
 
-        user_id = payload.get("user_id")
+        user_id = _extract_user_id(payload)
 
         # Validate new password
         password_validator.validate(password_data.new_password)

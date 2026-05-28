@@ -176,7 +176,7 @@ async def get_savings_summary(
     }
 
 
-@router.get("/{goal_id}", response_model=dict)
+@router.get("/{goal_id:int}", response_model=dict)
 async def get_savings_goal(
     goal_id: int,
     current_user: dict = Depends(get_current_user),
@@ -227,7 +227,7 @@ async def get_savings_goal(
     }
 
 
-@router.put("/{goal_id}", response_model=dict)
+@router.put("/{goal_id:int}", response_model=dict)
 async def update_savings_goal(
     goal_id: int,
     goal_update: dict,
@@ -285,7 +285,7 @@ async def update_savings_goal(
     }
 
 
-@router.post("/{goal_id}/contribute", response_model=dict)
+@router.post("/{goal_id:int}/contribute", response_model=dict)
 async def contribute_to_goal(
     request: Request,
     goal_id: int,
@@ -378,7 +378,7 @@ async def contribute_to_goal(
     }
 
 
-@router.post("/{goal_id}/withdraw", response_model=dict)
+@router.post("/{goal_id:int}/withdraw", response_model=dict)
 async def withdraw_from_goal(
     request: Request,
     goal_id: int,
@@ -450,7 +450,7 @@ async def withdraw_from_goal(
     }
 
 
-@router.delete("/{goal_id}", status_code=status.HTTP_200_OK)
+@router.delete("/{goal_id:int}", status_code=status.HTTP_200_OK)
 async def delete_savings_goal(
     request: Request,
     goal_id: int,
@@ -527,7 +527,7 @@ async def list_savings_goals(
 
     return response
 
-@router.get("/{goal_id}/history", response_model=list[dict])
+@router.get("/{goal_id:int}/history", response_model=list[dict])
 async def get_goal_history(
     goal_id: int,
     current_user: dict = Depends(get_current_user),
@@ -591,7 +591,7 @@ async def get_goal_history(
     # Return in reverse chronological order
     return list(reversed(history))
 
-@router.get("/{goal_id}/projections", response_model=dict)
+@router.get("/{goal_id:int}/projections", response_model=dict)
 async def get_goal_projections(
     goal_id: int,
     current_user: dict = Depends(get_current_user),
@@ -665,7 +665,7 @@ async def get_goal_projections(
     }
 
 
-@router.put("/{goal_id}/auto-transfer", response_model=dict)
+@router.put("/{goal_id:int}/auto-transfer", response_model=dict)
 async def configure_auto_transfer(
     request: Request,
     goal_id: int,
@@ -718,7 +718,7 @@ async def configure_auto_transfer(
     }
 
 
-@router.get("/{goal_id}/milestones", response_model=list[dict])
+@router.get("/{goal_id:int}/milestones", response_model=list[dict])
 async def get_goal_milestones(
     goal_id: int,
     current_user: dict = Depends(get_current_user),

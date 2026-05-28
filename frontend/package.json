@@ -10,8 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --maxWorkers=2",
-    "prepare": "[ \"$NODE_ENV\" != \"production\" ] && husky || true"
+    "test:ci": "jest --ci --maxWorkers=2",
+    "prepare": "node -e \"const fs=require('fs'); if (process.env.NODE_ENV !== 'production' && fs.existsSync('.git')) require('child_process').spawnSync('husky', { stdio: 'inherit', shell: true })\""
   },
   "dependencies": {
     "date-fns": "^4.1.0",

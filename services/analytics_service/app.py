@@ -12,13 +12,9 @@ from datetime import datetime
 
 from ..core.correlation_id import CorrelationIDMiddleware, StructuredLogger
 from ..core.health_check import ServiceHealthChecker
-from ..core.service_registry import get_registry, init_registry
+from ..core.service_registry import init_registry
 from .models import (
-    AnalyticsQueryRequest,
-    CashFlowResponse,
-    SpendingTrendResponse,
-    HealthScoreResponse,
-    AnomalyResponse
+    AnalyticsQueryRequest
 )
 
 # Initialize logging
@@ -96,7 +92,7 @@ async def health_check():
 async def query_analytics(request: Request, query: AnalyticsQueryRequest):
     """Query analytics data."""
     logger.info(
-        f"Analytics query received",
+        "Analytics query received",
         user_id=query.user_id,
         metric=query.metric
     )
@@ -117,11 +113,11 @@ async def query_analytics(request: Request, query: AnalyticsQueryRequest):
                 detail=f"Unknown metric: {query.metric}"
             )
 
-        logger.info(f"Analytics query completed", user_id=query.user_id, metric=query.metric)
+        logger.info("Analytics query completed", user_id=query.user_id, metric=query.metric)
         return result
 
     except Exception as e:
-        logger.error(f"Analytics query failed", user_id=query.user_id, error=str(e))
+        logger.error("Analytics query failed", user_id=query.user_id, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Analytics query failed: {str(e)}"

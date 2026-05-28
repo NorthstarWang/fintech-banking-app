@@ -1,10 +1,9 @@
 """Event sourcing store for transaction events."""
 import logging
-from typing import List, Dict, Any
-from dataclasses import dataclass, asdict
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +27,8 @@ class Event:
     timestamp: datetime
     data: Dict[str, Any]
     version: int
-    correlation_id: str = None
-    service_name: str = None
+    correlation_id: Optional[str] = None
+    service_name: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary."""
@@ -58,8 +57,8 @@ class EventStore:
         event_type: EventType,
         aggregate_id: str,
         data: Dict[str, Any],
-        correlation_id: str = None,
-        service_name: str = None
+        correlation_id: Optional[str] = None,
+        service_name: Optional[str] = None
     ) -> Event:
         """Append an event to the store."""
         import uuid
@@ -80,7 +79,7 @@ class EventStore:
 
         self.events.append(event)
         logger.info(
-            f"Event appended to store",
+            "Event appended to store",
             extra={
                 "event_type": event_type.value,
                 "aggregate_id": aggregate_id,
@@ -106,7 +105,7 @@ class EventStore:
     def replay_events(self, aggregate_id: str) -> Dict[str, Any]:
         """Replay events to reconstruct current state."""
         events = self.get_events_for_aggregate(aggregate_id)
-        state = {"transaction_id": aggregate_id, "status": "unknown", "events": []}
+        state: Dict[str, Any] = {"transaction_id": aggregate_id, "status": "unknown", "events": []}
 
         for event in events:
             if event.event_type == EventType.TRANSACTION_INITIATED:
@@ -146,7 +145,7 @@ class EventStore:
         }
         logger.info(f"Snapshot created for {aggregate_id}")
 
-    def get_snapshot(self, aggregate_id: str) -> Dict[str, Any]:
+    def get_snapshot(self, aggregate_id: str) -> Optional[Dict[str, Any]]:
         """Get latest snapshot."""
         return self.snapshots.get(aggregate_id)
 
@@ -156,7 +155,7 @@ class EventStore:
 
 
 # Global event store
-_event_store: EventStore = None
+_event_store: Optional[EventStore] = None
 
 
 def get_event_store() -> EventStore:

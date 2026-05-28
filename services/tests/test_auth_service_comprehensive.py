@@ -13,8 +13,7 @@ Coverage Target:
 """
 import pytest
 import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+import hashlib
 import bcrypt
 
 # Note: In actual project, would import from auth_service
@@ -30,14 +29,24 @@ def password_manager():
     """Provide PasswordManager instance."""
     class PasswordManager:
         @staticmethod
+        def _bcrypt_input(password: str) -> bytes:
+            password_bytes = password.encode('utf-8')
+            if len(password_bytes) > 72:
+                return hashlib.sha256(password_bytes).hexdigest().encode('utf-8')
+            return password_bytes
+
+        @staticmethod
         def hash_password(password: str) -> str:
             salt = bcrypt.gensalt(rounds=12)
-            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            hashed = bcrypt.hashpw(PasswordManager._bcrypt_input(password), salt)
             return hashed.decode('utf-8')
 
         @staticmethod
         def verify_password(password: str, hashed: str) -> bool:
-            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+            try:
+                return bcrypt.checkpw(PasswordManager._bcrypt_input(password), hashed.encode('utf-8'))
+            except ValueError:
+                return False
 
     return PasswordManager()
 
@@ -220,7 +229,7 @@ class TestPasswordValidator:
 
     def test_password_missing_digit_fails(self, password_validator):
         """Test that password without digit fails."""
-        password = "SecurePass!"
+        password = "SecurePassword!"
         with pytest.raises(Exception, match="digit"):
             password_validator.validate(password)
 
@@ -417,7 +426,6 @@ class TestConcurrency:
     @pytest.mark.asyncio
     async def test_concurrent_rate_limit_checks(self, login_tracker):
         """Test that rate limiting is thread-safe."""
-        import asyncio
 
         async def attempt_login():
             if not login_tracker.check_limit("user"):

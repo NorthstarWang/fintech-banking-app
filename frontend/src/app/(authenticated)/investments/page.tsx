@@ -255,7 +255,7 @@ export default function InvestmentsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => router.push(`/investments/learn/${key}`)}
+                      onClick={() => router.push('/investments/discover')}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <Info className="w-5 h-5" />
