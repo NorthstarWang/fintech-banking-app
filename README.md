@@ -1,539 +1,235 @@
-# BankFlow - Modern Banking & Finance Platform
+# BankFlow — Retail Digital Banking Platform
 
-A comprehensive personal finance and banking platform built with Next.js and FastAPI. This full-featured application provides extensive financial management tools including multi-account management, investment tracking, budgeting, peer-to-peer payments, and advanced analytics.
+BankFlow is the retail digital-banking platform powering day-to-day money management for consumer and small-business customers. It provides multi-account banking, payments and transfers, card management, lending, budgeting and goals, investments, and customer analytics behind a single API surface and a unified web experience.
 
-## Documentation
+This repository contains the full platform: the FastAPI service layer, the Next.js customer web application, the service-decomposition workstream under `services/`, and the Kubernetes deployment manifests under `k8s/`.
 
-For comprehensive documentation about the platform, please refer to:
+## Contents
 
-- **[Feature Overview](docs/project-feature-overview.md)** - Complete feature inventory and implementation status
-- **[User Flow Documentation](docs/user-flow-documentation.md)** - Detailed user interaction flows and workflows
-- **[Backend API Specification](docs/backend-api-specification.md)** - Complete API endpoint documentation
-- **[Frontend Architecture Guide](docs/frontend-architecture-guide.md)** - Frontend components and structure
+- [Architecture](#architecture)
+- [Domain Modules](#domain-modules)
+- [Technology Stack](#technology-stack)
+- [Local Development](#local-development)
+- [Quality Gates](#quality-gates)
+- [Testing Strategy](#testing-strategy)
+- [Deployment and Runtime](#deployment-and-runtime)
+- [Platform Documentation](#platform-documentation)
 
-## Getting Started
+## Architecture
+
+The platform follows a modular-monolith design on the backend, with an active workstream extracting high-traffic capabilities into standalone services behind an API gateway.
+
+```
+fintech-banking-app/
+├── backend/                  # Core FastAPI application
+│   ├── app/
+│   │   ├── routes/           # HTTP API — one router per domain module
+│   │   ├── services/         # Domain services, event sourcing, saga orchestration
+│   │   ├── repositories/     # Data access layer and domain managers
+│   │   ├── models/           # Core models, entities, DTOs, enums
+│   │   ├── storage/          # Storage adapters (in-memory development data layer)
+│   │   ├── middleware/       # CSRF, rate limiting, input sanitization, security headers
+│   │   ├── security/         # Field encryption, audit logging, anomaly detection
+│   │   ├── risk_management/  # AML, fraud, credit, market, operational, regulatory risk
+│   │   └── core/             # Configuration (Pydantic settings) and structured logging
+│   └── tests/                # Pytest suites
+├── frontend/                 # Next.js 15 customer web application
+│   └── src/
+│       ├── app/              # App Router pages (public and authenticated route groups)
+│       ├── components/       # Domain-organized component library
+│       ├── contexts/ hooks/ lib/ services/ utils/
+│       └── __tests__/        # Jest integration tests
+├── services/                 # Extracted services: api_gateway, auth, accounts,
+│                             # transactions, payments, investments, notifications,
+│                             # analytics, risk
+├── k8s/                      # Kubernetes manifests (base, services, monitoring)
+├── docs/                     # Architecture, operations, and API documentation
+├── docker-compose.yaml       # Two-tier local stack (backend + frontend)
+└── docker-compose.services.yml  # Gateway + extracted services stack
+```
+
+**Request flow.** The frontend calls the backend over a versioned REST surface mounted under `/api/*` (see `backend/app/main_banking.py` for the full router registry). Authentication is JWT-based with refresh tokens; cross-cutting concerns — request IDs, rate limiting, CSRF protection, input sanitization, security headers, and centralized error handling — are applied as ASGI middleware. Analytics supports WebSocket streaming for live dashboard updates.
+
+**Data layer.** Storage is abstracted behind repository classes and storage adapters (`backend/app/storage/`). Local development and CI run against the in-memory data layer (`USE_MOCK_DB=true`, the default), which boots with deterministic seeded customers, accounts, transactions, budgets, and goals so every environment starts from a known state. A SQLAlchemy/SQLite-backed configuration is available via `DATABASE_URL`.
+
+**Platform services.** Beyond CRUD, the backend includes an event-sourcing subsystem (event store, schemas, streaming), saga-pattern orchestration for multi-step money movement, a transaction coordinator and monitoring service, and a structured audit logger (`backend/app/services/`).
+
+## Domain Modules
+
+Each module corresponds to a router in `backend/app/routes/` and, where customer-facing, a route group in `frontend/src/app/(authenticated)/`.
+
+| Module | Backend | What it does |
+|---|---|---|
+| Accounts | `accounts.py` | Multi-account management across checking, savings, credit, investment, and loan products; balances and account lifecycle |
+| Transactions | `transactions.py`, `recurring.py` | Transaction history, categorization, search and filtering, recurring transaction detection and management |
+| Transfers & Payments | `transfers.py`, `payment_methods.py` | Internal and external transfers, payment-method management |
+| P2P Payments | `p2p.py` | Person-to-person transfers, payment requests, and splitting |
+| Budgets & Goals | `budgets.py`, `goals.py` | Category budgets with threshold alerts; savings goals with contribution tracking |
+| Smart Savings | `savings.py` | Round-up rules and automated savings transfers |
+| Cards | `cards.py`, `credit_cards.py` | Physical and virtual card issuance, freeze/unfreeze, spending controls, credit-card servicing |
+| Credit | `credit.py` | Credit score monitoring, simulation, and utilization tracking |
+| Lending | `loans.py` | Loan products, schedules, and servicing |
+| Insurance | `insurance.py` | Insurance policy management |
+| Investments | `investments.py` | Portfolio and position management |
+| Digital Assets | `crypto.py` | Digital-asset account support |
+| Currency | `currency_converter.py` | Multi-currency conversion |
+| Business Banking | `business.py` | Invoicing, expense tracking, and business account servicing |
+| Subscriptions | `subscriptions.py` | Recurring-merchant detection and subscription cost analysis |
+| Messaging & Contacts | `messages.py`, `conversations.py`, `contacts.py` | Payment-context messaging, conversations, and contact management |
+| Notifications | `notifications.py` | Customer notification delivery and preferences |
+| Analytics | `analytics.py`, `analytics_export.py`, `analytics_intelligence.py`, `analytics_websocket.py` | Spending insights, cash-flow analysis, report exports, and live streaming updates |
+| Search & Exports | `search.py`, `exports.py`, `uploads.py` | Cross-entity search, data import/export, file uploads |
+| Identity & Access | `auth.py`, `users.py`, `security.py`, `security_dashboard.py` | Registration, login, JWT/refresh tokens, session and device security, security dashboard |
+| Unified Financial System | `unified.py`, `banking.py` | Aggregated cross-product views and banking integration surface |
+| Health | `health.py` | Liveness/readiness endpoints for orchestration probes |
+
+### Risk Management
+
+`backend/app/risk_management/` is organized as a self-contained domain with its own models, repositories, routes, and services per discipline:
+
+- **AML** — anti-money-laundering screening workflows
+- **Fraud** — fraud detection rules and case handling
+- **Credit / Market / Operational** — exposure and risk assessment
+- **Regulatory & Audit** — regulatory reporting structures and audit trails
+- **Data Quality** — data-integrity checks feeding the risk pipeline
+
+### Security Controls
+
+Application-level controls live in `backend/app/security/` and `backend/app/middleware/`: field-level encryption, request signing, device fingerprinting, anomaly detection, audit logging, CSRF protection, rate limiting, input sanitization, and security response headers. Swagger UI is disabled in production unless explicitly enabled (`ENABLE_SWAGGER_UI`).
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, python-jose (JWT), bcrypt, cryptography |
+| Frontend | Next.js 15 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Framer Motion |
+| Backend QA | Ruff, Mypy, Pytest |
+| Frontend QA | ESLint 9, TypeScript strict mode, Jest 29, Testing Library, MSW |
+| Tooling | Husky + lint-staged pre-commit hooks |
+| Runtime | Docker multi-stage images, Docker Compose, Kubernetes |
+
+## Local Development
 
 ### Prerequisites
 
-- Docker and Docker Compose installed
-- Node.js 20+ (for local development)
-- Python 3.12+ (for local development)
+- Python 3.12+
+- Node.js 20+
+- Docker and Docker Compose (for the containerized stack)
 
-### Environment Setup
-
-Before running the application, configure your environment variables:
-
-#### Frontend Environment Variables
-
-Create a `.env` file in the `frontend` directory (or copy from `.env.example`):
+### Backend
 
 ```bash
-# Frontend .env
+cd backend
+pip install -r requirements.txt
+cp .env.example .env          # adjust as needed
+uvicorn app.main:app --reload # serves on http://localhost:8000
+```
+
+Key environment variables (see `backend/app/core/config.py` for the full validated set):
+
+```bash
+ENVIRONMENT=development
+API_HOST=0.0.0.0
+API_PORT=8000
+USE_MOCK_DB=true        # in-memory development data layer (default)
+SECRET_KEY=...          # required for non-development environments
+JWT_SECRET=...          # required for non-development environments
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev               # serves on http://localhost:3000
+```
+
+Create `frontend/.env` with:
+
+```bash
 NODE_ENV=development
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-#### Backend Environment Variables
-
-Create a `.env` file in the `backend` directory (or copy from `.env.example`):
+### Containerized stack
 
 ```bash
-# Backend .env
-ENVIRONMENT=development
-API_HOST=0.0.0.0
-API_PORT=8000
-USE_MOCK_DB=true
-
-# For production, set these:
-# SECRET_KEY=your-production-secret-key
-# JWT_SECRET=your-production-jwt-secret
-```
-
-**Note**: Never commit `.env` files to version control. Use `.env.example` as a template.
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd bankflow
-
-# Copy environment files
-cp frontend/.env.example frontend/.env
-cp backend/.env.example backend/.env
-
-# Start the application
 docker-compose up --build
-
-# Access the application
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Documentation: http://localhost:8000/docs
+# Frontend:  http://localhost:3000
+# API:       http://localhost:8000
+# API docs:  http://localhost:8000/docs (non-production)
 ```
 
-### Local Development Setup
+### Seeded development accounts
 
-#### Frontend Development
+The in-memory development data layer boots with fixture customers carrying 90 days of transaction history, budgets, goals, and contact relationships:
 
-```bash
-cd frontend
+- Standard users: `john_doe`, `jane_smith`, `mike_wilson`, `sarah_jones`, `david_brown` (password `password123`)
+- Administrative user: `admin` (password `admin123`)
 
-# Install dependencies
-npm install
+These credentials exist only in the local development data layer and are never used in deployed environments.
 
-# Run linter
-npm run lint
+## Quality Gates
 
-# Run type check
-npx tsc --noEmit
+All changes must pass the following checks before merge. Pre-commit hooks (Husky + lint-staged) enforce the frontend gates locally; CI runs the full set.
 
-# Run tests
-npm test
-
-# Start development server
-npm run dev
-```
-
-#### Backend Development
+**Backend** (run from `backend/`):
 
 ```bash
-cd backend
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run linter
 python -m ruff check .
-
-# Run type check
 python -m mypy . --ignore-missing-imports
-
-# Run tests (when available)
 python -m pytest
-
-# Start development server
-uvicorn app.main:app --reload
 ```
 
-### Docker Deployment
+**Frontend** (run from `frontend/`):
 
-#### Docker Compose Configuration
-The application uses Docker Compose for orchestrating both frontend and backend services. The configuration includes:
-
-- **Frontend Service**: Next.js application running on port 3000
-- **Backend Service**: FastAPI application running on port 8000
-- **Environment Variables**: Configurable through `.env` file or docker-compose environment section
-- **Health Checks**: Built-in health monitoring for both services
-- **Production-Ready Images**: Multi-stage builds for optimized container sizes
-
-#### Production Dockerfile Features
-
-**Backend Dockerfile**:
-- Multi-stage build for smaller image size
-- Non-root user execution for security
-- Health check endpoint configuration
-- Configurable worker count and environment mode
-- Signal handling for graceful shutdown
-
-**Frontend Dockerfile**:
-- Multi-stage build with separate builder and runner stages
-- Next.js standalone output for minimal runtime
-- dumb-init for proper signal handling
-- Non-root user (nextjs) for security
-- Optimized for production with minimal dependencies
-
-#### Environment Configuration
 ```bash
-# Backend environment variables
-ENV=production          # or development
-PORT=8000              # API port
-WORKERS=4              # Number of uvicorn workers
-
-# Frontend environment variables
-NODE_ENV=production    # Node environment
-NEXT_PUBLIC_API_URL=http://backend:8000  # Backend API URL
+npm run lint
+npx tsc --noEmit
+npm test            # or: npm run test:ci
+npm run build
 ```
 
-#### Docker Commands
-```bash
-# Build and start in detached mode
-docker-compose up --build -d
+## Testing Strategy
 
-# View logs
-docker-compose logs -f
+**Backend** — Pytest suites in `backend/tests/` cover each domain module (accounts, auth, budgets, business, cards, credit cards, investments, messages, notifications, savings, subscriptions, transactions, users), the analytics system, and the security stack (anomaly detection, audit logging, device fingerprinting, field encryption, request signing, security responses). Cross-cutting suites include endpoint smoke tests, transaction concurrency tests, and production-feature verification. Suites run against the in-memory data layer for deterministic, isolated execution.
 
-# Stop services
-docker-compose down
+**Frontend** — Jest with Testing Library and jsdom, with MSW for API interception. Integration tests live in `frontend/src/__tests__/integration/`; coverage reporting is available via `npm run test:coverage`.
 
-# Rebuild specific service
-docker-compose up --build frontend
+## Deployment and Runtime
 
-# Execute commands in running container
-docker-compose exec backend python -m pytest
-docker-compose exec frontend npm run lint
-```
+### Container images
 
+Both tiers ship multi-stage Dockerfiles: the backend runs uvicorn workers as a non-root user with health-check configuration and graceful shutdown handling; the frontend uses Next.js standalone output with `dumb-init` and a non-root `nextjs` user.
 
-### Default Login Credentials
-- Regular users: `john_doe`, `jane_smith`, `mike_wilson`, `sarah_jones`, `david_brown`
-  - Password: `password123`
-- Admin user: `admin`
-  - Password: `admin123`
+### Compose topologies
 
-## Application Overview
+- `docker-compose.yaml` — the standard two-service stack (backend + frontend) with health checks.
+- `docker-compose.services.yml` — the decomposed topology: an API gateway fronting the extracted auth, notification, and analytics services on a dedicated network, configured via gateway API keys.
 
-This banking application combines personal finance management with social payment features, offering comprehensive financial tools that go beyond typical banking apps. The application includes advanced features for business banking, investment tracking, and intelligent financial planning.
+### Kubernetes
 
-### Core Financial Features
+Manifests live under `k8s/`:
 
+- `k8s/base/` — namespace, ConfigMap, Secrets, ServiceAccount, and NetworkPolicy
+- `k8s/services/` — Deployments for the API gateway and auth service
+- `k8s/monitoring/` — Prometheus scrape configuration
 
-#### Multi-Account Management
-- Support for multiple account types: Checking, Savings, Credit Cards, Investments, and Loans
-- Real-time balance tracking across all accounts
-- Account grouping and organization
-- Institution tracking with mock bank integrations
-- Interest rate management for savings and loans
-- Credit limit tracking for credit cards
-- Investment portfolio overview
+The backend exposes health endpoints (`backend/app/routes/health.py`) for liveness and readiness probes, and supports optional Prometheus metrics and Sentry error reporting via configuration.
 
+## Platform Documentation
 
-#### Advanced Transaction Management
-- Automated transaction categorization with AI-powered merchant detection
-- Split transactions for shared expenses
-- Recurring transaction detection and management
-- Transaction tagging and notes
-- Receipt attachment support
-- Transaction search with advanced filters
-- Bulk transaction editing
-- Transaction status tracking (pending, completed, failed)
-
-#### Comprehensive Budgeting System
-- Multiple budget periods: Weekly, Monthly, and Yearly
-- Category-based spending limits with visual progress tracking
-- Budget alerts at customizable thresholds (default 80%)
-- Budget vs actual spending analysis
-- Budget templates for quick setup
-- Rollover budgets for unused funds
-- Budget sharing between family members
-- Historical budget performance tracking
-
-#### Financial Goals & Planning
-- Short-term and long-term goal setting
-- Automated savings contributions
-- Goal milestones with celebration animations
-- Multiple goal types: Emergency Fund, Vacation, Home Purchase, etc.
-- Goal progress visualization with charts
-- Collaborative goals for couples/families
-- Goal achievement predictions based on saving patterns
-
-### Advanced Features
-
-#### Smart Card Management
-- Physical and virtual card support
-- Instant card freeze/unfreeze with toggle animations
-- Per-merchant spending limits and controls
-- Transaction-specific virtual card generation
-- Card usage analytics and insights
-- Fraud detection alerts
-- International transaction controls
-- Contactless payment settings
-- ATM withdrawal limits
-- Card replacement requests
-
-#### Credit Score & Management
-- Real-time credit score monitoring
-- Credit score simulator for "what-if" scenarios
-- Personalized tips for credit improvement
-- Credit utilization tracking with alerts
-- Credit report generation with detailed breakdowns
-- Credit card recommendation engine
-- Debt payoff calculator
-- Credit history timeline
-- Score change notifications
-
-#### Intelligent Savings Tools
-- Automatic round-up savings on all purchases
-- Rule-based automatic transfers
-- Savings challenges with gamification
-- High-yield savings account recommendations
-- Savings goal optimization with AI
-- Emergency fund calculator
-- Savings rate analysis
-- Micro-investing integration
-- Spare change investment options
-
-#### Business Banking Suite
-- Professional invoice generation with templates
-- Expense tracking with receipt scanning
-- Advanced transaction categorization for tax purposes
-- Mileage tracking for business travel
-- Quarterly tax estimation
-- Profit/loss reporting
-- Client payment tracking
-- Vendor management
-- Business credit card controls
-- Expense approval workflows
-
-#### Subscription Intelligence
-- Automatic subscription detection from transaction history
-- Subscription cost analysis and optimization
-- Free trial expiration alerts
-- Cancellation reminders and assistance
-- Subscription sharing recommendations
-- Price increase notifications
-- Alternative service suggestions
-- Subscription calendar view
-- Usage tracking for value analysis
-
-### Social & Communication Features
-
-#### Peer-to-Peer Payments
-- Instant money transfers between users
-- Payment requests with custom messages
-- Group payment splitting
-- Payment scheduling
-- QR code payments
-- Payment history with social context
-- Emoji reactions to payments
-- Payment limits and controls
-
-#### Integrated Messaging
-- In-app chat for payment context
-- Transaction-linked conversations
-- Group chats for shared expenses
-- Read receipts and typing indicators
-- Message reactions and replies
-- Voice message support
-- Payment request buttons in chat
-- Expense splitting in conversations
-
-#### Contact Management
-- Smart contact suggestions based on transaction history
-- Favorite contacts for quick access
-- Contact grouping (Family, Friends, Work)
-- Payment frequency tracking
-- Birthday reminders with gift suggestions
-- Contact blocking for security
-
-### Security & Privacy Features
-
-#### Advanced Authentication
-- Two-factor authentication (SMS, Email, Authenticator apps)
-- Biometric authentication (Face ID, Touch ID simulation)
-- Device trust management
-- Login attempt monitoring
-- Session management across devices
-- Security questions backup
-- Emergency access setup
-
-#### Privacy Controls
-- Transaction privacy settings
-- Data export capabilities
-- Account deletion options
-- Third-party app permissions
-- Marketing preference controls
-- Data sharing transparency
-
-### Analytics & Insights
-
-#### Spending Intelligence
-- AI-powered spending insights
-- Unusual spending alerts
-- Category trend analysis
-- Merchant spending patterns
-- Predictive budget warnings
-- Cash flow forecasting
-- Net worth tracking
-- Investment performance
-
-#### Financial Reports
-- Monthly/Yearly financial summaries
-- Tax-ready reports
-- Expense reports by category
-- Income analysis
-- Custom report generation
-- Report scheduling and automation
-- PDF/CSV export options
-
-### Mobile-First Features
-
-#### Responsive Design
-- Fully responsive across all devices
-- Touch-optimized interactions
-- Swipe gestures for common actions
-- Pull-to-refresh functionality
-- Mobile-specific navigation drawer
-- Haptic feedback simulation
-
-#### Mobile-Specific Components
-- Slide-to-confirm for secure transactions
-- Touch ID/Face ID UI components
-- Mobile-optimized data tables
-- Bottom sheet modals
-- Floating action buttons
-- Gesture-based navigation
-
-### Accessibility Features
-- Screen reader compatibility
-- High contrast mode
-- Keyboard navigation support
-- Font size adjustments
-- Color blind friendly palettes
-- Voice command integration
-
-### Integration Capabilities
-- Bank account linking simulation
-- Credit card integration
-- Investment account connections
-- Cryptocurrency wallet support
-- PayPal/Venmo style integrations
-- Apple Pay/Google Pay simulation
-
-## Mock Data
-
-The application comes pre-populated with comprehensive, realistic mock data:
-
-### Users
-- 5 regular users with complete profiles and transaction history
-- 1 admin user for administrative access
-- Each user has unique spending patterns and financial situations
-
-### Financial Data
-- 90 days of detailed transaction history per user
-- 16 system-defined spending categories with icons
-- 21 common merchants with logos and category mappings
-- Multiple account types per user with realistic balances
-- Pre-configured budgets with varying spending levels
-- Active financial goals at different progress stages
-- Recurring transactions for subscriptions and bills
-
-### Social Features
-- Pre-established contact relationships between users
-- Rich message history for payment context
-- Group conversations for shared expenses
-- Payment request threads
-- Transaction comments and reactions
-
-## API Endpoints
-
-- Authentication endpoints for secure access
-- Account management with balance tracking
-- Transaction APIs with advanced filtering
-- Budget creation and monitoring
-- Goal tracking and contributions
-- Category management
-
-### Advanced Feature APIs
-- Card management and controls
-- Credit score simulation
-- Business banking operations
-- Subscription detection and analysis
-- Savings automation rules
-- Contact and messaging systems
-
-## Frontend Pages
-
-### Public Pages
-- `/` - Landing page with feature showcase
-- `/login` - Secure user login
-- `/register` - New user registration
-
-### Core Banking Pages
-- `/dashboard` - Comprehensive financial overview
-- `/accounts` - Multi-account management
-- `/transactions` - Transaction history and search
-- `/budget` - Budget creation and tracking
-- `/goals` - Financial goal management
-
-### Advanced Feature Pages
-- `/cards` - Card management with virtual cards
-- `/credit` - Credit score and management
-- `/savings` - Smart savings tools
-- `/business` - Business banking suite
-- `/subscriptions` - Subscription management
-- `/p2p` - Peer-to-peer payments
-- `/messages` - Payment messaging
-- `/analytics` - Financial insights
-- `/settings` - User preferences
-- `/security` - Security settings
-
-## Architecture
-
-- **Frontend**: Next.js 15 with App Router, TypeScript, Tailwind CSS
-- **Backend**: FastAPI with async support, SQLAlchemy ORM
-- **Database**: SQLite with in-memory option for development
-- **Authentication**: JWT-based with refresh tokens
-- **Real-time**: WebSocket support for live updates
-
-## Development Features
-
-- Hot reload for both frontend and backend
-- Comprehensive error logging
-- Mock data generation with seed support
-- API documentation with Swagger UI
-- TypeScript for type safety
-- Extensive component library
-- Responsive design system
-- Performance monitoring
-
-## Production Readiness
-
-### Code Quality
-- ✅ ESLint and TypeScript strict mode enabled
-- ✅ Ruff + Mypy for Python linting and type checking
-- ✅ All debug code removed (console.log, print statements)
-- ✅ Pre-commit hooks for automated quality checks
-- ✅ CI/CD pipeline with GitHub Actions
-
-### Security
-- ✅ No hardcoded secrets or credentials
-- ✅ Environment variable validation
-- ✅ Docker security best practices (non-root users, health checks)
-- ✅ NPM security vulnerabilities resolved
-
-### Testing & CI/CD
-- Pre-commit hooks for linting and type checking (Husky)
-- GitHub Actions workflow for automated testing
-- Docker build verification in CI pipeline
-- Frontend: ESLint, TypeScript, Jest tests
-- Backend: Ruff, Mypy, Pytest (when configured)
-
-### Deployment
-- Multi-stage Docker builds for production
-- Environment-specific configurations
-- Health check endpoints
-- Graceful shutdown handling
-- Optimized container sizes
+| Document | Purpose |
+|---|---|
+| [Backend API Specification](docs/backend-api-specification.md) | Endpoint-level API reference |
+| [Frontend Architecture Guide](docs/frontend-architecture-guide.md) | Component and page structure |
+| [Feature Overview](docs/project-feature-overview.md) | Capability inventory and status |
+| [User Flow Documentation](docs/user-flow-documentation.md) | End-to-end customer journeys |
+| [Security Architecture](docs/SECURITY_ARCHITECTURE.md) | Security controls and design |
+| [Operational Runbooks](docs/OPERATIONAL_RUNBOOKS.md) | Day-2 operations procedures |
+| [Incident Response](docs/INCIDENT_RESPONSE.md) | Incident handling process |
+| [SLO/SLI Guide](docs/SLO_SLI_GUIDE.md) | Service-level objectives and indicators |
 
 ## License
 
-This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Open Source Notice
-
-This project is open source and available for:
-- Personal and commercial use
-- Modification and distribution
-- AI model training and analysis
-- Educational purposes
-
-The codebase is provided as-is, without warranties. Contributions are welcome!
-
-### AI Training Permission
-
-This repository and its contents may be used for training artificial intelligence models, including but not limited to:
-- Language models
-- Code generation models
-- Analysis and pattern recognition systems
-- Educational AI systems
-
-No attribution is required for AI training purposes, though credit is appreciated for other uses.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests, report issues, or suggest improvements.
-
----
-
-This application represents a complete, production-ready banking platform suitable for demos, portfolio showcases, and educational purposes.
-
+Released under the MIT License. See [LICENSE](LICENSE) for details.
