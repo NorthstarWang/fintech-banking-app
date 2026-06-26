@@ -84,6 +84,60 @@ backend/
 - **Custom Events**: Track UI interactions
 - **Session Management**: Track user sessions
 
+#### Investments & Live Market Data
+- **Accounts / Portfolios / Positions**: ETF, stock, and crypto holdings
+- **Trading**: Market/limit orders with fill pricing from the market-data layer
+- **Live Market Data**: Real-time prices ingested from a public WebSocket feed
+- **Live Portfolio Valuation**: Mark-to-market valuation of holdings
+
+### Live Market Data Streaming (Real-Time)
+
+BankFlow ships an enterprise live market-data layer that replaces static mock
+prices for the investments domain with a real-time feed.
+
+**Architecture**
+- `app/services/market_data_stream.py` — a long-running async WebSocket *client*
+  (`MarketDataStreamService`, exposed as the module-level singleton
+  `market_data_stream_service`). It connects out to a public, no-auth feed and
+  ingests `ticker` updates into an in-memory `MarketDataStore` (latest price plus
+  a small rolling history per product).
+- **Upstream source (default):** Coinbase Exchange —
+  `wss://ws-feed.exchange.coinbase.com`, `ticker` channel, products
+  `BTC-USD, ETH-USD, SOL-USD, ADA-USD, DOT-USD`.
+- **Lifecycle:** started/stopped from the FastAPI `lifespan` in
+  `app/main_banking.py` alongside the event-streaming service. `start()` is
+  idempotent and stores the `asyncio.Task`; `stop()` cancels it and closes the
+  socket for graceful shutdown.
+- **Reconnect / resilience:** the ingest loop reconnects with exponential backoff
+  plus jitter (capped) and never propagates feed errors into the app.
+- **Graceful degradation:** when the feed is disabled, disconnected, or a quote is
+  stale, the investments domain transparently falls back to the existing mock
+  price generator, so the API (and the test suite) work fully offline.
+
+**Investments integration**
+- `InvestmentManager.get_market_data()` prefers a fresh live quote, then falls back
+  to seeded mock pricing. This feeds trade fill pricing, buying-power checks, and
+  the asset-detail endpoints.
+- Portfolio read paths (`get_positions`, `get_portfolio`, `get_investment_summary`,
+  `get_portfolio_summary`) re-mark positions to market
+  (`current_value = shares * live_price`) for symbols covered by the feed, so
+  valuation reflects live prices instead of frozen mark-at-fill values.
+
+**Endpoints** (under `/api/investments`)
+- `GET /market-data/live/{symbol}` — latest live quote for a symbol (falls back to
+  a mock quote with `"is_live": false, "source": "mock_fallback"` when offline).
+- `GET /market-data/stream/status` — operational status of the streaming service
+  (enabled, connected, products, last update, per-product freshness).
+- `GET /portfolio/{account_id}/live-valuation` — mark-to-market valuation of an
+  account's holdings, with a per-holding `price_source` (`live` vs `mock`) flag.
+
+**Configuration** (`app/core/config.py`, overridable via env / `.env`)
+- `MARKET_DATA_ENABLED` (default `true`)
+- `MARKET_DATA_SOURCE_URL` (default `wss://ws-feed.exchange.coinbase.com`)
+- `MARKET_DATA_PRODUCTS` (comma-separated or JSON list)
+- `MARKET_DATA_RECONNECT_MIN_SECONDS` / `MARKET_DATA_RECONNECT_MAX_SECONDS`
+- `MARKET_DATA_HISTORY_SIZE`, `MARKET_DATA_STALENESS_SECONDS`
+
 ### Mock Data Generation
 
 The backend automatically generates realistic mock data on startup:

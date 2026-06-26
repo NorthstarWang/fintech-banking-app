@@ -17,5 +17,6 @@ qrcode==7.4.2
 reportlab==4.4.2
 Pillow==11.2.1
 requests==2.32.4
+websockets==15.0.1
 PyPDF2==3.0.1
 psutil==6.1.1

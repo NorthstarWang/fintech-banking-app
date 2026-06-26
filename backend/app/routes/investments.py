@@ -30,6 +30,7 @@ from app.models.entities.investment_models import (
 )
 from app.repositories.data_manager import data_manager
 from app.repositories.investment_manager import InvestmentManager
+from app.services.market_data_stream import market_data_stream_service
 from app.utils.auth import get_current_user
 
 router = APIRouter()
@@ -398,6 +399,65 @@ async def get_batch_market_data(
     """Get market data for multiple symbols (comma-separated)."""
     symbol_list = [s.strip().upper() for s in symbols.split(",")]
     return [investment_manager.get_market_data(symbol) for symbol in symbol_list]
+
+# Live market-data (real-time feed) endpoints
+@router.get("/market-data/stream/status")
+async def get_market_data_stream_status(
+    current_user = Depends(get_current_user)
+) -> dict:
+    """Operational status of the live market-data streaming service."""
+    return market_data_stream_service.get_status()
+
+@router.get("/market-data/live/{symbol}")
+async def get_live_market_data(
+    symbol: str,
+    current_user = Depends(get_current_user)
+) -> dict:
+    """
+    Get the latest live quote for a symbol from the real-time feed.
+
+    Falls back to the mock generator when no fresh live quote is available, so the
+    endpoint always returns a usable quote whether or not the feed is connected.
+    """
+    symbol = symbol.upper()
+    quote = market_data_stream_service.get_live_quote(symbol)
+    if quote is not None:
+        data = quote.to_dict()
+        data["is_live"] = True
+        data["source"] = "live_feed"
+        return data
+
+    # Graceful degradation to mock pricing.
+    market_data = investment_manager.get_market_data(symbol)
+    return {
+        "symbol": symbol,
+        "price": float(market_data.last_price),
+        "bid": float(market_data.bid_price),
+        "ask": float(market_data.ask_price),
+        "open_24h": float(market_data.open_price),
+        "high_24h": float(market_data.high_price),
+        "low_24h": float(market_data.low_price),
+        "volume_24h": market_data.volume,
+        "timestamp": market_data.timestamp.isoformat(),
+        "is_live": False,
+        "source": "mock_fallback"
+    }
+
+@router.get("/portfolio/{account_id}/live-valuation")
+async def get_live_portfolio_valuation(
+    account_id: int,
+    current_user = Depends(get_current_user)
+) -> dict:
+    """
+    Value an account's holdings using live market prices where available.
+
+    Holdings covered by the live feed are marked-to-market; the rest fall back to
+    stored values, with a per-holding ``price_source`` flag.
+    """
+    valuation = investment_manager.get_live_portfolio_valuation(account_id, current_user["user_id"])
+    if valuation is None:
+        raise HTTPException(status_code=404, detail="Account or portfolio not found")
+    return valuation
 
 # Summary and analytics
 @router.get("/summary", response_model=InvestmentSummaryResponse)

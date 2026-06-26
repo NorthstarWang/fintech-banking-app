@@ -34,8 +34,16 @@ from app.models.entities.investment_models import (
 class InvestmentManager:
     """Manages investment-related data and operations."""
 
-    def __init__(self, data_manager):
+    def __init__(self, data_manager, market_data_service=None):
         self.data_manager = data_manager
+        # Live market-data feed (crypto). Falls back to the module-level singleton
+        # so existing callers `InvestmentManager(data_manager)` keep working. The
+        # service degrades gracefully to mock prices whenever a live quote is
+        # missing or stale, so the app stays fully functional offline.
+        if market_data_service is None:
+            from app.services.market_data_stream import market_data_stream_service
+            market_data_service = market_data_stream_service
+        self.market_data_service = market_data_service
 
     def _generate_account_number(self) -> str:
         """Generate unique investment account number."""
@@ -132,6 +140,9 @@ class InvestmentManager:
         positions = [p for p in self.data_manager.investment_positions
                     if p['portfolio_id'] == portfolio['id']]
 
+        # Re-mark to market using the live feed before computing allocation.
+        self._remark_positions_to_market(positions)
+
         asset_allocation = self._calculate_asset_allocation(positions, float(account.balance))
         portfolio['asset_allocation'] = asset_allocation
         portfolio['positions_count'] = len(positions)
@@ -154,6 +165,10 @@ class InvestmentManager:
         positions = [p for p in self.data_manager.investment_positions
                     if p['portfolio_id'] == portfolio_id]
 
+        # Re-mark to market using the live feed (mark-to-market), falling back to
+        # stored values for symbols the feed does not cover.
+        self._remark_positions_to_market(positions)
+
         # Update current prices and calculate gains
         total_value = sum(p['current_value'] for p in positions)
 
@@ -163,6 +178,83 @@ class InvestmentManager:
             responses.append(self._position_to_response(position))
 
         return responses
+
+    def get_live_portfolio_valuation(self, account_id: int, user_id: int) -> dict[str, Any] | None:
+        """
+        Value a portfolio's holdings using live market prices where available.
+
+        Each holding is priced from the live feed when a fresh quote exists for its
+        symbol (``current_value = shares * live_price``); otherwise the stored
+        mark-at-fill value is used and flagged as ``mock``. Returns a per-holding
+        breakdown plus totals, making the live-vs-mock split explicit.
+        """
+        # Verify account ownership.
+        account = self.get_account(account_id, user_id)
+        if not account:
+            return None
+
+        portfolio = next((p for p in self.data_manager.investment_portfolios
+                         if p['account_id'] == account_id), None)
+        if not portfolio:
+            return None
+
+        positions = [p for p in self.data_manager.investment_positions
+                    if p['portfolio_id'] == portfolio['id']]
+
+        holdings = []
+        total_live_value = 0.0
+        total_cost_basis = 0.0
+        live_count = 0
+
+        for position in positions:
+            symbol = position.get('symbol', '')
+            shares = position.get('shares', 0)
+            cost_basis = float(position.get('cost_basis', 0))
+            live_price = self._live_price_for_symbol(symbol)
+
+            if live_price is not None:
+                current_value = shares * live_price
+                price = live_price
+                source = 'live'
+                live_count += 1
+            else:
+                current_value = float(position.get('current_value', 0))
+                price = (current_value / shares) if shares else 0.0
+                source = 'mock'
+
+            unrealized = current_value - cost_basis
+            holdings.append({
+                'symbol': symbol,
+                'asset_type': position.get('asset_type', 'stock'),
+                'shares': round(shares, 6),
+                'price': round(price, 2),
+                'current_value': round(current_value, 2),
+                'cost_basis': round(cost_basis, 2),
+                'unrealized_gain_loss': round(unrealized, 2),
+                'unrealized_gain_loss_percent': round((unrealized / cost_basis * 100), 2) if cost_basis > 0 else 0.0,
+                'price_source': source
+            })
+            total_live_value += current_value
+            total_cost_basis += cost_basis
+
+        total_unrealized = total_live_value - total_cost_basis
+        service = getattr(self, 'market_data_service', None)
+        feed_connected = bool(getattr(service, '_connected', False)) if service else False
+
+        return {
+            'account_id': account_id,
+            'portfolio_id': portfolio['id'],
+            'total_value': round(total_live_value, 2),
+            'total_cost_basis': round(total_cost_basis, 2),
+            'total_unrealized_gain_loss': round(total_unrealized, 2),
+            'total_unrealized_gain_loss_percent': round((total_unrealized / total_cost_basis * 100), 2) if total_cost_basis > 0 else 0.0,
+            'positions_count': len(positions),
+            'live_priced_count': live_count,
+            'mock_priced_count': len(positions) - live_count,
+            'feed_connected': feed_connected,
+            'valued_at': datetime.now(UTC).isoformat(),
+            'holdings': holdings
+        }
 
     def place_order(self, user_id: int, order_data: TradeOrderCreate) -> TradeOrderResponse:
         """Place a new trade order."""
@@ -274,11 +366,20 @@ class InvestmentManager:
         return self._watchlist_to_response(watchlist)
 
     def get_market_data(self, symbol: str) -> MarketDataResponse:
-        """Get real-time market data for a symbol."""
-        # In real implementation, this would fetch from market data provider
-        # For now, return mock data based on stored assets
+        """
+        Get real-time market data for a symbol.
 
-        # Try ETF first
+        Prefers the live streaming feed (crypto products) and falls back to the
+        seeded mock generator for symbols the feed does not cover or whenever the
+        live quote is stale/unavailable. This keeps trade pricing and asset detail
+        endpoints working identically whether or not the feed is connected.
+        """
+        # Live feed first (covers crypto products such as BTC/ETH/SOL).
+        live = self._live_market_data(symbol)
+        if live is not None:
+            return live
+
+        # Try ETF
         etf = next((e for e in self.data_manager.etf_assets if e['symbol'] == symbol), None)
         if etf:
             return self._generate_market_data(symbol, etf['price'])
@@ -288,8 +389,71 @@ class InvestmentManager:
         if stock:
             return self._generate_market_data(symbol, stock['price'])
 
+        # Try crypto seed (previously fell through to the 100.0 default)
+        crypto = next((c for c in self.data_manager.crypto_assets if c['symbol'] == symbol), None)
+        if crypto:
+            return self._generate_market_data(symbol, crypto.get('price', 100.0))
+
         # Default mock data
         return self._generate_market_data(symbol, 100.0)
+
+    def _live_market_data(self, symbol: str) -> MarketDataResponse | None:
+        """
+        Build a MarketDataResponse from the live feed when a fresh quote exists.
+
+        Returns ``None`` (so the caller falls back to mock data) when the feed is
+        disabled, disconnected, the symbol is uncovered, or the quote is stale.
+        """
+        service = getattr(self, 'market_data_service', None)
+        if service is None:
+            return None
+        try:
+            quote = service.get_live_quote(symbol)
+        except Exception:
+            # The price path must never raise into the trading/valuation flow.
+            return None
+        if quote is None:
+            return None
+
+        return MarketDataResponse(
+            symbol=symbol,
+            bid_price=Decimal(str(round(quote.bid, 2))),
+            ask_price=Decimal(str(round(quote.ask, 2))),
+            last_price=Decimal(str(round(quote.price, 2))),
+            volume=int(quote.volume_24h),
+            open_price=Decimal(str(round(quote.open_24h, 2))),
+            high_price=Decimal(str(round(quote.high_24h, 2))),
+            low_price=Decimal(str(round(quote.low_24h, 2))),
+            close_price=Decimal(str(round(quote.open_24h, 2))),
+            timestamp=quote.timestamp
+        )
+
+    def _live_price_for_symbol(self, symbol: str) -> float | None:
+        """Latest fresh live price for a symbol, or ``None`` to use stored value."""
+        service = getattr(self, 'market_data_service', None)
+        if service is None:
+            return None
+        try:
+            return service.get_live_price(symbol)
+        except Exception:
+            return None
+
+    def _remark_positions_to_market(self, positions: list[dict[str, Any]]) -> None:
+        """
+        Re-mark positions to market using live prices where available.
+
+        Portfolio valuation in this repo is otherwise mark-at-fill: ``current_value``
+        is frozen after a trade. When a fresh live price exists for a position's
+        symbol we recompute ``current_value = shares * live_price`` in place so all
+        downstream read paths (positions, allocation, summaries) reflect the live
+        feed. Symbols without a live quote keep their stored value unchanged.
+        """
+        for position in positions:
+            live_price = self._live_price_for_symbol(position.get('symbol', ''))
+            if live_price is None:
+                continue
+            shares = position.get('shares', 0)
+            position['current_value'] = shares * live_price
 
     def get_investment_summary(self, user_id: int) -> InvestmentSummaryResponse:
         """Get comprehensive investment summary for a user."""
@@ -330,6 +494,10 @@ class InvestmentManager:
                 positions = [p for p in self.data_manager.investment_positions
                            if p['portfolio_id'] == portfolio['id']]
                 all_positions.extend(positions)
+
+        # Re-mark to market using the live feed so summary performers/allocation
+        # reflect live prices where available.
+        self._remark_positions_to_market(all_positions)
 
         asset_allocation = self._calculate_overall_asset_allocation(all_positions, float(total_portfolio_value))
 
@@ -1124,6 +1292,10 @@ class InvestmentManager:
                 positions = [p for p in self.data_manager.investment_positions
                            if p['portfolio_id'] == portfolio['id']]
                 all_positions.extend(positions)
+
+        # Re-mark to market using the live feed before computing allocation and
+        # gainers/losers.
+        self._remark_positions_to_market(all_positions)
 
         # Calculate asset allocation breakdown
         asset_allocation = {"stocks": 0.0, "etfs": 0.0, "crypto": 0.0, "cash": 0.0}

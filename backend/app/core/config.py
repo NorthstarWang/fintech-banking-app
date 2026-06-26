@@ -77,6 +77,36 @@ class Settings(BaseSettings):
     sentry_dsn: str | None = Field(default=None)
     prometheus_enabled: bool = Field(default=False)
 
+    # Market Data Streaming (Live Feed)
+    market_data_enabled: bool = Field(
+        default=True,
+        description="Enable the live market-data WebSocket ingestion service"
+    )
+    market_data_source_url: str = Field(
+        default="wss://ws-feed.exchange.coinbase.com",
+        description="Upstream public WebSocket feed URL for real-time market data"
+    )
+    market_data_products: list[str] = Field(
+        default=["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "DOT-USD"],
+        description="Product IDs to subscribe to on the live market-data feed"
+    )
+    market_data_reconnect_min_seconds: float = Field(
+        default=1.0,
+        description="Initial reconnect backoff (seconds) for the market-data feed"
+    )
+    market_data_reconnect_max_seconds: float = Field(
+        default=60.0,
+        description="Maximum reconnect backoff (seconds) for the market-data feed"
+    )
+    market_data_history_size: int = Field(
+        default=120,
+        description="Number of recent ticks retained per product in the rolling history"
+    )
+    market_data_staleness_seconds: float = Field(
+        default=30.0,
+        description="Age (seconds) after which a live quote is considered stale and falls back to mock pricing"
+    )
+
     # External Services
     smtp_host: str | None = Field(default=None)
     smtp_port: int = Field(default=587)
@@ -100,6 +130,20 @@ class Settings(BaseSettings):
         allowed = ["development", "staging", "production", "test"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
+        return v
+
+    @field_validator("market_data_products", mode="before")
+    @classmethod
+    def parse_market_data_products(cls, v: object) -> object:
+        """Allow products to be provided as a comma-separated env string."""
+        if isinstance(v, str):
+            stripped = v.strip()
+            if not stripped:
+                return []
+            # Support JSON list style or simple comma-separated style
+            if stripped.startswith("["):
+                return v
+            return [item.strip() for item in stripped.split(",") if item.strip()]
         return v
 
     @field_validator("log_level", mode="before")

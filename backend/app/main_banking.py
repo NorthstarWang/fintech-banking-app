@@ -79,9 +79,17 @@ async def lifespan(app: FastAPI):
     await event_streaming_service.start_background_tasks()
     logger.info("Event streaming service initialized")
 
+    # Initialize live market-data streaming service (degrades gracefully to mock
+    # pricing if the upstream feed is unreachable).
+    from .services.market_data_stream import market_data_stream_service
+    await market_data_stream_service.start()
+    logger.info("Market data streaming service initialized")
+
     yield
 
     # Shutdown
+    from .services.market_data_stream import market_data_stream_service as _mds
+    await _mds.stop()
     logger.info("Application shutdown")
 
 app = FastAPI(

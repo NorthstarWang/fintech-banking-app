@@ -19,7 +19,8 @@ test_files = [
     "tests/test_savings.py",
     "tests/test_subscriptions.py",
     "tests/test_business.py",
-    "tests/test_users.py"
+    "tests/test_users.py",
+    "tests/test_market_data_stream.py"
 ]
 
 results = {}

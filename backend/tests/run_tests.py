@@ -31,7 +31,8 @@ class TestRunner:
             "test_business",
             "test_subscriptions",
             "test_notifications",
-            "test_messages"
+            "test_messages",
+            "test_market_data_stream"
         ]
         self.results = {}
         self.start_time = None
